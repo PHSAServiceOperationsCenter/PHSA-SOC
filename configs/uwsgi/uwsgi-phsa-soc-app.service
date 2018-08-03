@@ -1,0 +1,16 @@
+[Unit]
+Description=PHSA Service Operations Center uWSGI app
+After=syslog.target
+
+[Service]
+ExecStart=/usr/bin/uwsgi --ini /home/steodore/phsa/sbin/poc/poc/configs/uwsgi/uwsgi.ini
+User=root
+Group=root
+Restart=on-failure
+KillSignal=SIGQUIT
+RuntimeDirectory=uwsgi
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target

@@ -20,8 +20,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 class SslCertificatesConfig(AppConfig):
-    name = 'ssl_certificates'
-    verbose_name = _('SSL Certificates Monitoring')
+    name = 'ssl_cert_tracker'
+    verbose_name = _('SSL Certificates Tracker')
 
     def ready(self):
         """

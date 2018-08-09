@@ -27,6 +27,8 @@ ALLOWED_HOSTS = ['*', ]
 # Application definition
 
 INSTALLED_APPS = [
+    'orion_integration.apps.OrionIntegrationConfig',
+    'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,7 +47,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'poc.urls'
+ROOT_URLCONF = 'p_soc_auto.urls'
 
 TEMPLATES = [
     {
@@ -63,7 +65,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'poc.wsgi.application'
+WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
 
 # Database
@@ -117,3 +119,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# orion logins
+ORION_URL = 'orion.vch.ca'
+ORION_USER = 'CSTmonitor'
+ORION_PASSWORD = 'phsa123'

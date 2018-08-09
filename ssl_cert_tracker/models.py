@@ -16,7 +16,7 @@ django models for the ssl_certificates app
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from base.models import BaseModel
+from p_soc_auto_base.models import BaseModel
 
 
 class Service(BaseModel, models.Model):
@@ -86,7 +86,5 @@ class Certificate(BaseModel, models.Model):
     md5 = models.CharField(max_length=128)
     sha1 = models.CharField(max_length=256)
     
-class Node(models.Model):
-    dns=models.CharField(max_length=263)
-    caption=models.CharField(max_length=263)
+
 

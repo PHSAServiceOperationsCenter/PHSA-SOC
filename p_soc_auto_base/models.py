@@ -46,5 +46,13 @@ class BaseModel(models.Model):
         _('enabled'), db_index=True, default=True, null=False, blank=False)
     notes = models.TextField(_('notes'), null=True, blank=True)
 
+    @classmethod
+    def get_or_create_user(cls, username):
+        user = get_user_model().objects.filter(username__iexact=username)
+        if not user.exists():
+            get_user_model().objects.create_user(username)
+
+        return user.get()
+
     class Meta:
-        abstract=True
+        abstract = True

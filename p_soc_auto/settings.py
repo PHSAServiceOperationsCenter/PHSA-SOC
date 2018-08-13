@@ -75,7 +75,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'phsa_database',
-        'HOST': '',
+        'HOST': '10.1.80.68',
         'PASSWORD': 'phsa_db_password',
         'USER': 'phsa_db_user',
     }
@@ -121,6 +121,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # orion logins
-ORION_URL = 'orion.vch.ca'
+ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
 ORION_PASSWORD = 'phsa123'
+ORION_VERIFY_SSL_CERT = False
+ORION_TIMEOUT = (7.0, 16.0)
+"""
+:var ORION_TIMEOUT: the timeouts used by the `requests` module
+
+    the values in the tuple are in seconds; the first value is the connection
+    timeout, the second one is the read tiemout
+
+"""

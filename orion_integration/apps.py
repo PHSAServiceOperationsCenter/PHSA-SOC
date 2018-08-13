@@ -17,6 +17,7 @@ __updated__ = '2018_08_07'
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 
+
 class OrionIntegrationConfig(AppConfig):
     """
     App class for the orion_integration django app
@@ -24,7 +25,7 @@ class OrionIntegrationConfig(AppConfig):
     name = 'orion_integration'
     verbose_name = _(
         'PHSA Service Operations Center Orion Integration Application')
-    
+
     def ready(self):
         """
         imports

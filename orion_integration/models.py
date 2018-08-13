@@ -23,6 +23,20 @@ from p_soc_auto_base.models import BaseModel
 from .orion import OrionClient
 
 
+class OrionQueryError(Exception):
+    """
+    raise if the model doesn't have an orion_query attribute
+    """
+    pass
+
+
+class OrionMappingsError(Exception):
+    """
+    raise if the model doesn't have an orion_mappings attribute
+    """
+    pass
+
+
 class OrionBaseModel(BaseModel, models.Model):
     """
     most (if not all) Orion objects need an orion_id key that comes from the
@@ -31,6 +45,9 @@ class OrionBaseModel(BaseModel, models.Model):
     then we also need the fields from the BaseModel; let's use this as the
     base class for all the models here
     """
+    orion_query = None
+    orion_mappings = None
+
     orion_id = models.BigIntegerField(
         _('Orion Object Id'), db_index=True, unique=True, blank=False,
         help_text=_(
@@ -50,6 +67,16 @@ class OrionBaseModel(BaseModel, models.Model):
             be invoked from all the classes inheriting form that particular
             base class
         """
+        if cls.orion_query is None:
+            raise OrionQueryError(
+                _('%s is not providing a value for the Orion query'
+                  % cls._meta.label))
+
+        if cls.orion_mappings is None:
+            raise OrionMappingsError(
+                _('%s is not providing a value for the Orion mappings'
+                  % cls._meta.label))
+
         user = cls.get_or_create_user(settings.ORION_USER)
         data = OrionClient.populate_from_query(cls)
         for data_item in data:

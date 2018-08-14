@@ -125,7 +125,7 @@ ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
 ORION_PASSWORD = 'phsa123'
 ORION_VERIFY_SSL_CERT = False
-ORION_TIMEOUT = (7.0, 16.0)
+ORION_TIMEOUT = (10.0, 22.0)
 """
 :var ORION_TIMEOUT: the timeouts used by the `requests` module
 

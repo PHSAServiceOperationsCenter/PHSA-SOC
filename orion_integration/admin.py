@@ -16,7 +16,7 @@ __updated__ = '2018_08_08'
 
 from django.contrib import admin
 
-from .models import OrionNode, OrionNodeCategory, OrionNodeStatus
+from .models import OrionNode, OrionNodeCategory
 
 
 @admin.register(OrionNode)

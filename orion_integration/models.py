@@ -224,3 +224,56 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
         app_label = 'orion_integration'
         verbose_name = _('Orion Node Category')
         verbose_name_plural = _('Orion Node Categories')
+
+
+class OrionAPMApplication(OrionBaseModel, models.Model):
+    """
+    Application monitored by Orion
+    """
+    orion_query = (
+        'SELECT ApplicationID, Name, NodeID, DetailsUrl, FullyQualifiedName,'
+        ' Description, Status, StatusDescription FROM Orion.APM.Application')
+    orion_mappings = (('orion_id', 'ApplicationID', None),
+                      ('application_name', 'Name', None),
+                      ('node', 'NodeID', 'orion_integration.OrionNode'),
+                      ('details_url', 'DetailsUrl', None),
+                      ('full_name', 'FullyQualifiedName', None),
+                      ('notes', 'Description', None),
+                      ('status_orion_id', 'Status', None),
+                      ('status', 'StatusDescription', None))
+
+    application_name = models.CharField(
+        _('Application Name'), max_length=254, db_index=True, blank=False,
+        null=False, help_text=_(
+            'The application name as reported by Orion.APM.Application'))
+    node = models.ForeignKey(
+        'OrionNode', on_delete=models.CASCADE, verbose_name=_('Orion Node'),
+        help_text=_('The node where the application is running'))
+    details_url = models.TextField(
+        _('Application Details URL'), blank=True, null=True)
+    full_name = models.TextField(
+        _('Application Fully Qualified Name'), blank=True, null=True)
+    status = models.CharField(
+        _('Node Status'), max_length=254, db_index=True,
+        blank=False, null=False)
+    status_orion_id = models.BigIntegerField(
+        _('Orion Node Status Id'), db_index=True, blank=False, default=0,
+        help_text=_(
+            'This will probably changes but that is how they do it for the'
+            ' moment; boohoo'))
+
+    @classmethod
+    def update_or_create_from_orion(cls):
+        """
+        override :method:`OrionBaseModel.update_or_create_from_orion` to make
+        sure that the foreign keys are already available in
+        :class:`OrionNodeCategory`
+        """
+        if not OrionNode.objects.count():
+            OrionNode.update_or_create_from_orion()
+        super(OrionAPMApplication, cls).update_or_create_from_orion()
+
+    class Meta:
+        app_label = 'orion_integration'
+        verbose_name = 'Orion Application'
+        verbose_name_plural = 'Orion Applications'

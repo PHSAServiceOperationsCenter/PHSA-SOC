@@ -18,6 +18,7 @@ datadir=/var/lib/mysql
 socket=/var/lib/mysql/mysql.sock
 log-error=/var/log/mariadb/mariadb.log
 pid-file=/run/mariadb/mariadb.pid
+strict_mode=TRADITIONAL
 
 
 #

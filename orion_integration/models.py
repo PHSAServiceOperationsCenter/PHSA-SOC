@@ -14,6 +14,7 @@ django models for the orion_integration app
 """
 __updated__ = '2018_08_08'
 
+from django.apps import apps
 from django.conf import settings
 from django.db import IntegrityError, models
 from django.utils.translation import gettext_lazy as _
@@ -79,12 +80,20 @@ class OrionBaseModel(BaseModel, models.Model):
 
         user = cls.get_or_create_user(settings.ORION_USER)
         data = OrionClient.populate_from_query(cls)
+        import ipdb
+        ipdb.set_trace()
         for data_item in data:
             orion_mapping = dict()
             for mapping in cls.orion_mappings:
-                orion_mapping[mapping[0]] = data_item[mapping[1]]
+                if mapping[2] is None:
+                    orion_mapping[mapping[0]] = data_item[mapping[1]]
+                else:
+                    app, model = mapping[2].split('.')
+                    model = apps.get_model(app, model)
+                    orion_mapping[mapping[0]] = model.objects.filter(
+                        orion_id__exact=data_item[mapping[1]]).get()
 
-            orion_mapping.update(update_by=user)
+            orion_mapping.update(updated_by=user)
             try:
                 cls.objects.update_or_create(**orion_mapping)
             except IntegrityError:
@@ -95,34 +104,32 @@ class OrionBaseModel(BaseModel, models.Model):
         abstract = True
 
 
-class OrionNodeStatus(OrionBaseModel, models.Model):
-    """
-    """
-    status = models.CharField(
-        _('Node Status'), max_length=254, db_index=True, unique=True,
-        blank=False, null=False)
-
-    class Meta:
-        app_label = 'orion_integration'
-        verbose_name = 'Orion Node Status'
-        verbose_name_plural = 'Orion Node Statuses'
-
-
 class OrionNode(OrionBaseModel, models.Model):
     """
     reference:
     `Orion Node<http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`_
 
-    query:
-    SELECT IPAddress, Caption, NodeDescription, Description, DNS, 
-    Category, Vendor, Location, Status, MachineType,  NodeName, DetailsUrl
-    FROM Orion.Nodes WHERE Category = (Category.category=server)
-    we will have to change this if we ever start worrying about routers and
-    stuff
-
     """
+    orion_query = (
+        'SELECT NodeID, IPAddress, Caption, NodeDescription, Description, DNS,'
+        ' Category, Vendor, Location, Status, StatusDescription, MachineType,'
+        ' NodeName, DetailsUrl FROM Orion.Nodes')
+    orion_mappings = (('orion_id', 'NodeID', None),
+                      ('node_caption', 'Caption', None),
+                      ('category', 'Category',
+                       'orion_integration.OrionNodeCategory'),
+                      ('ip_address', 'IPAddress', None),
+                      ('node_name', 'NodeDescription', None),
+                      ('notes', 'Description', None),
+                      ('node_dns', 'DNS', None),
+                      ('vendor', 'Vendor', None),
+                      ('location', 'Location', None),
+                      ('machine_type', 'MachineType', None),
+                      ('status_orion_id', 'Status', None),
+                      ('status', 'StatusDescription', None),
+                      ('details_url', 'DetailsUrl', None))
     node_caption = models.CharField(
-        _('Node Caption'), db_index=True, unique=True, blank=False,
+        _('Node Caption'), db_index=True,  blank=False,
         max_length=254, null=False)
     category = models.ForeignKey(
         'OrionNodeCategory', on_delete=models.PROTECT,
@@ -142,7 +149,21 @@ class OrionNode(OrionBaseModel, models.Model):
     machine_type = models.CharField(
         _('Machine Type'), db_index=True, blank=True, null=True,
         max_length=254, help_text=_('this needs to become a foreign key'))
-    status = models.ForeignKey('OrionNodeStatus', on_delete=models.PROTECT)
+    status = models.CharField(
+        _('Node Status'), max_length=254, db_index=True,
+        blank=False, null=False)
+    status_orion_id = models.BigIntegerField(
+        _('Orion Node Status Id'), db_index=True, blank=False, default=0,
+        help_text=_(
+            'This will probably changes but that is how they do it for the'
+            ' moment; boohoo'))
+    details_url = models.TextField(
+        _('Node Details URL'), blank=True, null=True)
+
+    class Meta:
+        app_label = 'orion_integration'
+        verbose_name = 'Orion Node'
+        verbose_name_plural = 'Orion Nodes'
 
 
 class OrionNodeCategory(OrionBaseModel, models.Model):

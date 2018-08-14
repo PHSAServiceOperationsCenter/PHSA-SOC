@@ -16,7 +16,7 @@ __updated__ = '2018_08_08'
 
 from django.contrib import admin
 
-from .models import OrionNode, OrionNodeCategory
+from .models import OrionNode, OrionNodeCategory, OrionAPMApplication
 
 
 @admin.register(OrionNode)
@@ -26,6 +26,11 @@ class OrionNodeAdmin(admin.ModelAdmin):
 
 @admin.register(OrionNodeCategory)
 class OrionNodeCategoryAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(OrionAPMApplication)
+class OrionAPMApplicationAdmin(admin.ModelAdmin):
     pass
 
 

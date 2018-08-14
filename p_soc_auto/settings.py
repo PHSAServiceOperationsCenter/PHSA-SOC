@@ -75,7 +75,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'phsa_database',
-        'HOST': '10.1.80.68',
+        'HOST': '',
         'PASSWORD': 'phsa_db_password',
         'USER': 'phsa_db_user',
     }

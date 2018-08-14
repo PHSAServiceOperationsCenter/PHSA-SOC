@@ -16,7 +16,7 @@ __updated__ = '2018_08_08'
 
 from django.apps import apps
 from django.conf import settings
-from django.db import IntegrityError, models
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
@@ -55,7 +55,7 @@ class OrionBaseModel(BaseModel, models.Model):
             'Use the value in this field to query the Orion server'))
 
     @classmethod
-    def update_or_create_from_orion(cls):
+    def update_or_create_from_orion(cls, username=settings.ORION_USER):
         """
         class method to update or create orion model instances
 
@@ -67,6 +67,18 @@ class OrionBaseModel(BaseModel, models.Model):
             note that this method is defined in a base class so that it can
             be invoked from all the classes inheriting form that particular
             base class
+
+            see notes about :var:`orion_query` and :var:`orion_mappings`. this
+            method expects that the classes supporting it have those variables
+            defined
+
+        :raises:
+
+            :exception:`OrionQueryError` if :var:`orion_query` is not
+            defined in the calling model
+
+            :exception:`OrionMappnngsError` if :var:`orion_mappings` is not
+            defined in the calling class
         """
         if cls.orion_query is None:
             raise OrionQueryError(
@@ -78,10 +90,8 @@ class OrionBaseModel(BaseModel, models.Model):
                 _('%s is not providing a value for the Orion mappings'
                   % cls._meta.label))
 
-        user = cls.get_or_create_user(settings.ORION_USER)
+        user = cls.get_or_create_user(username)
         data = OrionClient.populate_from_query(cls)
-        import ipdb
-        ipdb.set_trace()
         for data_item in data:
             orion_mapping = dict()
             for mapping in cls.orion_mappings:
@@ -93,12 +103,20 @@ class OrionBaseModel(BaseModel, models.Model):
                     orion_mapping[mapping[0]] = model.objects.filter(
                         orion_id__exact=data_item[mapping[1]]).get()
 
-            orion_mapping.update(updated_by=user)
+            orion_mapping.update(updated_by=user, created_by=user)
             try:
-                cls.objects.update_or_create(**orion_mapping)
-            except IntegrityError:
-                orion_mapping.update(created_by=user)
-                cls.objects.update_or_create(**orion_mapping)
+                qs = cls.objects.filter(
+                    orion_id__exact=orion_mapping['orion_id'])
+                if qs.exists():
+                    orion_mapping.pop('orion_id')
+                    orion_mapping.pop('created_by', None)
+
+                    qs.update(**orion_mapping)
+                else:
+                    cls.objects.update_or_create(**orion_mapping)
+            except Exception as err:
+                print('%s when acquiring Orion object %s' %
+                      (str(err), orion_mapping))
 
     class Meta:
         abstract = True
@@ -110,12 +128,21 @@ class OrionNode(OrionBaseModel, models.Model):
     `Orion Node<http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`_
 
     """
+    #: the Orion query used to populate this model
     orion_query = (
-        'SELECT NodeID, IPAddress, Caption, NodeDescription, Description, DNS,'
-        ' Category, Vendor, Location, Status, StatusDescription, MachineType,'
-        ' NodeName, DetailsUrl FROM Orion.Nodes')
+        'SELECT NodeID, ObjectSubType, IPAddress, Caption, NodeDescription,'
+        ' Description, DNS,Category, Vendor, Location, Status,'
+        ' StatusDescription, MachineType, NodeName, DetailsUrl'
+        ' FROM Orion.Nodes')
+    #: mapping between model fields and data returned by the Orion query
+    #: must be a 3 variables tuple: the first variable is the name of the
+    #: field, the second variable is the name of the column in the Orion
+    #: schema, and the third column describes a foreign key mapping
+    #: if necessary; it is formatted as app_lable.ModelName and it will
+    #: prepare a Model.objects.filter().get() to retrieve the foreign key
     orion_mappings = (('orion_id', 'NodeID', None),
                       ('node_caption', 'Caption', None),
+                      ('sensor', 'ObjectSubType', None),
                       ('category', 'Category',
                        'orion_integration.OrionNodeCategory'),
                       ('ip_address', 'IPAddress', None),
@@ -134,11 +161,14 @@ class OrionNode(OrionBaseModel, models.Model):
     category = models.ForeignKey(
         'OrionNodeCategory', on_delete=models.PROTECT,
         verbose_name=_('Orion Node Category'))
+    sensor = models.CharField(
+        _('Sensor'), db_index=True, blank=False, null=False, max_length=16,
+        default='ICMP', help_text=_('Maps to Orion.Nodes.ObjectSubtype'))
     ip_address = models.GenericIPAddressField(
-        _('IP Address'), db_index=True, unique=True, blank=False, null=False,
+        _('IP Address'), db_index=True, blank=False, null=False,
         protocol='IPv4')
-    node_name = models.CharField(
-        _('Node Name'), db_index=True, blank=False, null=False, max_length=254)
+    node_name = models.TextField(
+        _('Node Name'), blank=False, null=False)
     node_dns = models.CharField(
         _('DNS'), db_index=True, blank=False, null=False, max_length=254)
     node_description = models.TextField(_('Orion Node Description'))
@@ -160,6 +190,17 @@ class OrionNode(OrionBaseModel, models.Model):
     details_url = models.TextField(
         _('Node Details URL'), blank=True, null=True)
 
+    @classmethod
+    def update_or_create_from_orion(cls):
+        """
+        override :method:`OrionBaseModel.update_or_create_from_orion` to make
+        sure that the foreign keys are already available in
+        :class:`OrionNodeCategory`
+        """
+        if not OrionNodeCategory.objects.count():
+            OrionNodeCategory.update_or_create_from_orion()
+        super(OrionNode, cls).update_or_create_from_orion()
+
     class Meta:
         app_label = 'orion_integration'
         verbose_name = 'Orion Node'
@@ -172,8 +213,8 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
     SELECT Description FROM Orion.NodeCategories
     """
     orion_query = 'SELECT CategoryID, Description FROM Orion.NodeCategories'
-    orion_mappings = (('orion_id', 'CategoryID'),
-                      ('category', 'Description'))
+    orion_mappings = (('orion_id', 'CategoryID', None),
+                      ('category', 'Description', None))
     category = models.CharField(
         _('Orion Node Category'), db_index=True, unique=True, null=False,
         blank=False, max_length=254, help_text=_(

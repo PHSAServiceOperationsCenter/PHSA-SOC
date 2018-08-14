@@ -11,9 +11,9 @@ django models for the orion_integration app
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
-"""
-__updated__ = '2018_08_08'
 
+:updated:    aug.4, 2018
+"""
 from django.apps import apps
 from django.conf import settings
 from django.db import models

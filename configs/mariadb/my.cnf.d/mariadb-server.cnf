@@ -18,8 +18,14 @@ datadir=/var/lib/mysql
 socket=/var/lib/mysql/mysql.sock
 log-error=/var/log/mariadb/mariadb.log
 pid-file=/run/mariadb/mariadb.pid
+
+# force errors on truncate vaues
 strict_mode=TRADITIONAL
 
+# character set and collation
+# there were errors when sucking data out of orion
+character-set-server=utf8
+collation_server=utf8_general_ci
 
 #
 # * Galera-related settings

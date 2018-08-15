@@ -80,6 +80,9 @@ class OrionBaseModel(BaseModel, models.Model):
             :exception:`OrionMappnngsError` if :var:`orion_mappings` is not
             defined in the calling class
         """
+        return_dict = dict(
+            status=_('pending'), model=cls._meta.verbose_name, orion_rows=0,
+            updated_records=0, created_records=0, errored_records=0)
         if cls.orion_query is None:
             raise OrionQueryError(
                 _('%s is not providing a value for the Orion query'
@@ -92,6 +95,8 @@ class OrionBaseModel(BaseModel, models.Model):
 
         user = cls.get_or_create_user(username)
         data = OrionClient.populate_from_query(cls)
+        return_dict['status'] = _('in progress')
+        return_dict['orion_rows'] = len(data)
         for data_item in data:
             orion_mapping = dict()
             for mapping in cls.orion_mappings:
@@ -103,7 +108,10 @@ class OrionBaseModel(BaseModel, models.Model):
                     orion_mapping[mapping[0]] = model.objects.filter(
                         orion_id__exact=data_item[mapping[1]]).get()
 
-            orion_mapping.update(updated_by=user, created_by=user)
+            updated_records = orion_mapping.update(
+                updated_by=user, created_by=user)
+            if updated_records:
+                return_dict['updated_records'] += updated_records
             try:
                 qs = cls.objects.filter(
                     orion_id__exact=orion_mapping['orion_id'])
@@ -113,10 +121,20 @@ class OrionBaseModel(BaseModel, models.Model):
 
                     qs.update(**orion_mapping)
                 else:
-                    cls.objects.update_or_create(**orion_mapping)
+                    obj, created = cls.objects.update_or_create(
+                        **orion_mapping)
+                    if created:
+                        return_dict['created_records'] += 1
+                    else:
+                        return_dict['updated_records'] += 1
             except Exception as err:
+                return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %
                       (str(err), orion_mapping))
+
+        return_dict['status'] = 'done'
+
+        return return_dict
 
     class Meta:
         abstract = True
@@ -197,9 +215,15 @@ class OrionNode(OrionBaseModel, models.Model):
         sure that the foreign keys are already available in
         :class:`OrionNodeCategory`
         """
+        ret = []
         if not OrionNodeCategory.objects.count():
-            OrionNodeCategory.update_or_create_from_orion()
-        super(OrionNode, cls).update_or_create_from_orion()
+            _ = OrionNodeCategory.update_or_create_from_orion()
+            ret.append(_)
+
+        _ = super(OrionNode, cls).update_or_create_from_orion()
+        ret.append(_)
+
+        return ret
 
     class Meta:
         app_label = 'orion_integration'
@@ -269,9 +293,15 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
         sure that the foreign keys are already available in
         :class:`OrionNodeCategory`
         """
+        ret = []
         if not OrionNode.objects.count():
-            OrionNode.update_or_create_from_orion()
-        super(OrionAPMApplication, cls).update_or_create_from_orion()
+            _ = OrionNode.update_or_create_from_orion()
+            ret.append(_)
+
+        _ = super(OrionAPMApplication, cls).update_or_create_from_orion()
+        ret.append(_)
+
+        return ret
 
     class Meta:
         app_label = 'orion_integration'

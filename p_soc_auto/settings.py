@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -133,3 +135,10 @@ ORION_TIMEOUT = (10.0, 22.0)
     timeout, the second one is the read tiemout
 
 """
+
+# celery settings
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TASK_SERIALIZER = 'json'

@@ -16,7 +16,7 @@ django models for the ssl_certificates app
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from base.models import BaseModel
+from p_soc_auto_base.models import BaseModel
 
 
 class Service(BaseModel, models.Model):
@@ -28,7 +28,7 @@ class Service(BaseModel, models.Model):
         max_length=64)
     host = models.CharField(
         _('host'), db_index=True, null=False, blank=False,
-        max_length=255, help_text=_('this needs to be a foreign key'))
+        max_length=255, help_text=_('this may end up being a foreign key'))
     port = models.CharField(
         _('port'), db_index=True, null=False, blank=False,
         max_length=5)
@@ -74,6 +74,7 @@ class Certificate(BaseModel, models.Model):
 
         _SHA-1: bb20 b03f fb93 e177 ff23 a743 8949 601a 41ae c61c
     """
+    service = models.OneToOneField(Service)
     subject = models.TextField()
     subject_alt_name = models.TextField()
     issuer = models.TextField()
@@ -84,3 +85,6 @@ class Certificate(BaseModel, models.Model):
     not_valid_after = models.DateTimeField()
     md5 = models.CharField(max_length=128)
     sha1 = models.CharField(max_length=256)
+    
+
+

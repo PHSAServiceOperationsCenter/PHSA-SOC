@@ -15,28 +15,28 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*', ]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'orion_integration.apps.OrionIntegrationConfig',
+    'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -49,7 +49,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'poc.urls'
+ROOT_URLCONF = 'p_soc_auto.urls'
 
 TEMPLATES = [
     {
@@ -67,7 +67,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'poc.wsgi.application'
+WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
 
 # Database
@@ -75,8 +75,11 @@ WSGI_APPLICATION = 'poc.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'phsa_database',
+        'HOST': '',
+        'PASSWORD': 'phsa_db_password',
+        'USER': 'phsa_db_user',
     }
 }
 
@@ -118,3 +121,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# orion logins
+ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
+ORION_USER = 'CSTmonitor'
+ORION_PASSWORD = 'phsa123'
+ORION_VERIFY_SSL_CERT = False
+ORION_TIMEOUT = (10.0, 22.0)
+"""
+:var ORION_TIMEOUT: the timeouts used by the `requests` module
+
+    the values in the tuple are in seconds; the first value is the connection
+    timeout, the second one is the read tiemout
+
+"""
+
+# celery settings
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_TASK_SERIALIZER = 'json'

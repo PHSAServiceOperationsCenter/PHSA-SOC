@@ -8,6 +8,7 @@ import xml.dom.minidom
 import sys
 import logging
 import datetime
+import pylint
 
 from pocApp.models import MyCertsData
 from orion_integration.lib import OrionSslNode
@@ -102,7 +103,6 @@ def go(node):
                 logger.info('nMap Record successfully uploaded')
             except Exception as e:
                 logger.error('Failed to upload nMap Record: '+ str(e))
-                print ("We have an error go...")
                 rc = "Failed"
     return rc
 
@@ -116,7 +116,6 @@ def getnmapdata():
             rc = go.delay(node)
     except Exception as e:
         logger.error('Failed to get nMap Record: '+ str(e))
-        print ("We have an error in getnmapdata...")
         rc = "Failed"
         
         

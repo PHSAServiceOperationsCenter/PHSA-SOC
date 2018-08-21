@@ -1,0 +1,17 @@
+[Unit]
+Description=PHSA Automation Celery Beat Service
+After=network.target
+
+[Service]
+Type=forking
+User=root
+Group=root
+ExecStart=/bin/sh -c '/home/steodore/.envs/carmina/bin/celery beat \
+	-A p_soc_auto -l info --logfile=/var/log/phsa_celery/beat.log \
+	--pidfile=/var/run/celery_beat.pid  \
+	--workdir=/home/steodore/phsa/sbin/p_soc_auto \
+	--scheduler=django_celery_beat.schedulers:DatabaseScheduler &'
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target

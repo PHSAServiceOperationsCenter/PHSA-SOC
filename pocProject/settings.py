@@ -68,14 +68,6 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(seconds=10),
     },
 }
-#CELERYBEAT_SCHEDULE = {
-#    'my_scheduled_job': {
-#        'task': 'getnmapdata', # the same goes in the task name
-#        'task': 'certrules', # the same goes in the task name
-#        #'task': 'go', # the same goes in the task name
-#        'schedule': timedelta(seconds=10),
-#    },
-#}
 
 CELERY_RESULT_BACKEND = "amqp"
 #CELERY_IMPORTS = ("pocProject", )
@@ -99,10 +91,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pocProject.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASES = {
     'default': {

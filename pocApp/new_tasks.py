@@ -107,7 +107,7 @@ def go(node):
     return rc
 
 
-@task()
+@shared_task
 def getnmapdata():
     rc = "success"
     try:

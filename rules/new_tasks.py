@@ -19,7 +19,7 @@ logger = logging.Logger('catch_all')
 from pyknow import *
 
 class MyFact(Fact):
-    """Info about the traffic light."""
+    """Info about the CertDate."""
     pass
 
 

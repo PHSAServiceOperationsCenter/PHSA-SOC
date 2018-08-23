@@ -16,4 +16,5 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 @app.task(bind=True)
 def debug_task(self):
+    """debug_task..."""
     print('Request: {0!r}'.format(self.request))

@@ -9,10 +9,10 @@ import logging
 import datetime
 from datetime import datetime
 from datetime import date
-from pocApp.models import MyCertsData
+from ssl_cert_tracker.models import TestCertsData
 from rules.models import MyCertsRule
 
-from pocApp.serializers import MyCertsDataSerializer
+from ssl_cert_tracker.serializers import MyCertsDataSerializer
 from rules.serializers import MyCertsRuleSerializer
 logger = logging.Logger('catch_all')
 
@@ -84,7 +84,8 @@ class CertificateRule(KnowledgeEngine):
 
 @shared_task
 def certrules():
-    engine = CertificateRule()
-    engine.reset()
-    engine.declare(MyFact())
-    engine.run()
+    return
+    # engine = CertificateRule()
+    # engine.reset()
+    # engine.declare(MyFact())
+    # engine.run()

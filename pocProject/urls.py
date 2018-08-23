@@ -19,6 +19,6 @@ from django.conf.urls import url, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('pocapp/', include('pocApp.urls')),
+    path('ssl_cert_tracker/', include('ssl_cert_tracker.urls')),
     path('rules/', include('rules.urls')),
 ]

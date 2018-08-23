@@ -41,10 +41,9 @@ INSTALLED_APPS = [
     'rest_framework', 
     'orion_integration', 
     'p_soc_auto_base', 
-    'pocApp',
+    'ssl_cert_tracker', 
     'rules', 
     'django_celery_beat',
-    #'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -60,7 +59,7 @@ MIDDLEWARE = [
 
 CELERY_BEAT_SCHEDULE = {
     'getnmapdata_scheduled_job': {
-        'task': 'pocApp.new_tasks.getnmapdata', # the same goes in the task name
+        'task': 'ssl_cert_tracker.new_tasks.getnmapdata', # the same goes in the task name
         'schedule': timedelta(seconds=10),
     },
    'rules_scheduled_job': {
@@ -71,7 +70,7 @@ CELERY_BEAT_SCHEDULE = {
 
 CELERY_RESULT_BACKEND = "amqp"
 #CELERY_IMPORTS = ("pocProject", )
-CELERY_IMPORTS = ('pocApp.new_tasks', 'rules.new_tasks', )
+CELERY_IMPORTS = ('ssl_cert_tracker.new_tasks', 'rules.new_tasks', )
 ROOT_URLCONF = 'pocProject.urls'
 
 TEMPLATES = [
@@ -92,11 +91,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pocProject.wsgi.application'
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'testdb',
+#         'USER':'root',
+#         'OPTIONS': {
+#             'sql_mode': 'traditional',
+#         }
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'testdb',
-        'USER':'root',
+        'NAME': 'phsa_database',
+        'USER':'phsa_db_user',
+        'PASSWORD':'phsa_db_password',
         'OPTIONS': {
             'sql_mode': 'traditional',
         }

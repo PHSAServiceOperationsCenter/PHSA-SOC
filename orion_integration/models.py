@@ -12,7 +12,6 @@ django models for the orion_integration app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    aug.4, 2018
 """
 from django.apps import apps
 from django.conf import settings

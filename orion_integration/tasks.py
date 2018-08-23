@@ -20,5 +20,5 @@ def populate_from_orion():
 
 
 @shared_task
-def heart_beat(x, y):
+def heart_beat():
     return wikiquote.quote_of_the_day()

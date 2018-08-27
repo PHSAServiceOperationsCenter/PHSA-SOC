@@ -40,6 +40,7 @@ ALLOWED_HOSTS = ['*', ]
 # Application definition
 
 INSTALLED_APPS = [
+    'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'django.contrib.admin',

@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from .models import (
     TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,
-    NotificationEventForRuleDemo)
+    NotificationEventForRuleDemo, RegexRule)
 
 
 @admin.register(TinDataForRuleDemos)
@@ -17,8 +17,8 @@ class TinDataAdmin(admin.ModelAdmin):
 
 @admin.register(IntervalRule)
 class IntervalRuleAdmin(admin.ModelAdmin):
-    list_display = ('rule', 'min_val', 'max_val')
-    list_editable = ('min_val', 'max_val')
+    list_display = ('rule', 'min_val', 'interval')
+    list_editable = ('min_val', 'interval')
 
 
 @admin.register(ExpirationRule)
@@ -38,3 +38,9 @@ class RuleAppliesAdmin(admin.ModelAdmin):
 class NotificationEventForRuleDemoAdmin(admin.ModelAdmin):
     list_display = ('notification', 'notification_level', 'notification_type',
                     'notification_args')
+
+
+@admin.register(RegexRule)
+class RegexRule(admin.ModelAdmin):
+    list_display = ('rule', 'match_string')
+    list_editable = ('match_string',)

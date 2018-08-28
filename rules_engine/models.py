@@ -15,6 +15,7 @@ django models for the rules_engine app
 """
 import collections
 import datetime
+import re
 
 from decimal import Decimal
 
@@ -100,14 +101,53 @@ class Rule(BaseModel, models.Model):
         verbose_name_plural = _('Basic Rules')
 
 
+class RegexRule(Rule, models.Model):
+    """
+    rules of type 'is string in fact'
+
+    useful for looking for speific messages in log files
+    """
+    match_string = models.CharField(
+        _('raise when matching'), max_length=253, db_index=True, blank=False,
+        null=False)
+
+    def apply_rule(self):
+        """
+        apply this rule to all registered content_type, field_name combinations
+        """
+        re_find = re.compile(self.match_string, flags=re.I | re.M)
+        for rule_applies in RuleApplies.objects.filter(rule=self):
+            queryset = rule_applies.\
+                content_type.get_all_objects_for_this_type()
+            for obj in queryset:
+                try:
+                    fact = str(rule_applies.get_fact_for_field(obj))
+                except Exception as err:
+                    self.raise_notification(
+                        model=rule_applies.content_type.name,
+                        field=rule_applies.field_name,
+                        value=fact, critical=str(err))
+
+                if re_find.search(fact):
+                    self.raise_notification(
+                        model=rule_applies.content_type.name,
+                        field=rule_applies.field_name,
+                        value=fact, match=self.match_string)
+
+    class Meta:
+        app_label = 'rules_engine'
+        verbose_name = _('String Match Rule')
+        verbose_name_plural = _('String Match Rules')
+
+
 class IntervalRule(Rule, models.Model):
     """
     class for interval based rules
 
     run the action if the fact is a number and it is not contained in the
-    interval defined by :var:`min_val` and :var:`max_val`
+    interval defined by :var:`min_val` and :var:`interval`
     """
-    max_val = models.DecimalField(
+    interval = models.DecimalField(
         _('minimum acceptable value'), max_digits=5, decimal_places=2,
         default=Decimal('000.00'))
     min_val = models.DecimalField(
@@ -115,22 +155,39 @@ class IntervalRule(Rule, models.Model):
         default=Decimal('100.00'))
 
     def apply_rule(self):
+        """
+        apply this rule to all the content_type, field_name combinations
+        associated with it
+        """
         for rule_applies in RuleApplies.objects.filter(rule=self):
             queryset = rule_applies.\
                 content_type.get_all_objects_for_this_type()
             for obj in queryset:
-                fact = Decimal(rule_applies.get_fact_for_field(obj))
-                if not fact.is_finite():
+                try:
+                    fact = Decimal(rule_applies.get_fact_for_field(obj))
+                    if not fact.is_finite():
+                        self.raise_notification(
+                            model=rule_applies.content_type.name,
+                            field=rule_applies.field_name,
+                            value=fact, critical='not a number')
+                except Exception as err:
                     self.raise_notification(
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
-                        value=fact, critical='not a number')
-                if not self.min_val <= fact <= self.max_val:
+                        value=fact, critical=str(err))
+
+                if not self.min_val <= fact <= self.min_val + self.interval:
                     self.raise_notification(
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact,
-                        min_val=self.min_val, max_val=self.max_val)
+                        min_val=self.min_val,
+                        max_val=self.min_val + self.interval)
+
+    class Meta:
+        app_label = 'rules_engine'
+        verbose_name = _('Interval Rule')
+        verbose_name_plural = _('Interval Rules')
 
 
 class ExpirationRule(Rule, models.Model):
@@ -165,6 +222,11 @@ class ExpirationRule(Rule, models.Model):
                         value=fact,
                         valid_after=self.valid_after,
                         expire_in_less_than=self.grace_period)
+
+    class Meta:
+        app_label = 'rules_engine'
+        verbose_name = _('Certificate Validity Rule')
+        verbose_name_plural = _('Certificate Validity Rules')
 
 
 class RuleApplies(BaseModel, models.Model):

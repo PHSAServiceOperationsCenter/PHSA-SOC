@@ -131,10 +131,11 @@ USE_L10N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.0/howto/static-files/
-
+STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+MEDIA_URL = '/media/'
 
 # orion logins
 ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'

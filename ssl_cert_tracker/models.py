@@ -13,63 +13,93 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
+from django.conf import settings
 from django.db import models
-from django.db.models import signals
-from django.dispatch import receiver
+from p_soc_auto_base.models import BaseModel
 
-class TestCertsData(models.Model):
-    """TestCertsData. Model struture for NMap result response. """
-    orion_id =  models.CharField(max_length=100, blank=True, null=True)
-    addresses =  models.CharField(max_length=100, blank=True, null=True)
+class NmapCertsData(BaseModel, models.Model):
+    """NmapCertsData. Model struture for NMap result response. """
+    orion_id = models.CharField(max_length=100, blank=True, null=True)
+    addresses = models.CharField(max_length=100, blank=True, null=True)
     not_before = models.DateTimeField(null=True, blank=True)
     not_after = models.DateTimeField(null=True, blank=True)
     xml_data = models.TextField()
-    common_name =  models.CharField(max_length=100, blank=True, null=True)
-    organization_name =  models.CharField(max_length=100, blank=True, null=True)
-    country_name =  models.CharField(max_length=100, blank=True, null=True)
-    sig_algo =  models.CharField(max_length=100, blank=True, null=True)
-    name =  models.CharField(max_length=100, blank=True, null=True)
-    bits =  models.CharField(max_length=100, blank=True, null=True)
-    md5 =  models.CharField(max_length=100, blank=True, null=True)
-    sha1 =  models.CharField(max_length=100, blank=True, null=True)
-    
-    xml_data =  models.TextField(blank=True, null=True)
+    common_name = models.CharField(max_length=100, blank=True, null=True)
+    organization_name = models.CharField(max_length=100, blank=True, null=True)
+    country_name = models.CharField(max_length=100, blank=True, null=True)
+    sig_algo = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    bits = models.CharField(max_length=100, blank=True, null=True)
+    md5 = models.CharField(max_length=100, blank=True, null=True)
+    sha1 = models.CharField(max_length=100, blank=True, null=True)
+
+    @classmethod
+    def get_user(cls, username=settings.ORION_USER):
+        """get_user. """
+        user = cls.get_or_create_user(username)
+        return user
+
 
     def update_cert_history(self, pk_val=False):
+        """update_cert_history. """
         if pk_val:
-            orion_id_count = TestCertsHistory.objects.filter(orion_id = self.orion_id).count()
-            print(orion_id_count)
-            if orion_id_count == 0:
-                print ("We are doing insert....")
-                obj = TestCertsHistory(cert_id = int(pk_val), orion_id=self.orion_id, md5=self.md5, status="new",xml_data=self.xml_data )
+            orion_id_count = NmapHistory.objects.filter(orion_id=self.orion_id).count()
+            if orion_id_count == 0: #this is insert
+                obj = NmapHistory(cert_id=int(pk_val), \
+                orion_id=self.orion_id, \
+                md5=self.md5, \
+                status="new", \
+                xml_data=self.xml_data)
                 obj.save()
             else: # this is either update/insert
-                md5_count = TestCertsHistory.objects.filter(orion_id=self.orion_id).filter(md5=self.md5).count()
+                md5_count = NmapHistory.objects.filter(orion_id=self.orion_id).filter(md5=self.md5).count()
                 if md5_count == 0:
-                    print ("We are doing insert....")
-                    obj = TestCertsHistory(cert_id=int(pk_val), \
+                    obj = NmapHistory(cert_id=int(pk_val), \
                                            orion_id=self.orion_id, \
                                            md5=self.md5, \
                                            status="changed", \
                                            xml_data=self.xml_data)
                     obj.save()
                 else:
-                    print ("Certificate found.....We are doing update....")
-                    TestCertsHistory.objects.filter(orion_id=self.orion_id).update(status="found")
+                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found")
 
     def save(self, *args, **kwargs):
-        print("We are in Model.save")
-        super(TestCertsData,self).save(*args, **kwargs)
+        super(NmapCertsData, self).save(*args, **kwargs)
         pk_val = self.pk
-        print(pk_val)
-
         self.update_cert_history(pk_val)
+    
+    def get_cert_handle(o_id):
+        """get_cert_handle """
+        return NmapCertsData.objects.get(orion_id = o_id)
 
-class TestCertsHistory(models.Model):
-    """TestCertsHistory. Model struture for NMap result diff response. """
+    def get_cert_state(o_id, hash_md5):
+        """orion_id_exist """
+        if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
+            return_code = 1 # new reord
+        elif NmapCertsData.objects.filter(orion_id=o_id).filter(md5=hash_md5).count() == 0:
+            return_code = 2 # cert changed
+        else: # cert has not changed
+            return_code = 0
+        return return_code
+
+    def __str__(self):
+        """__str__ """
+        return self.orion_id
+
+class NmapHistory(models.Model):
+    """NmapHistory. Model struture for NMap result diff response. """
     cert_id = models.IntegerField()
     orion_id = models.CharField(max_length=100, blank=True, null=True)
-    md5 =  models.CharField(max_length=100, blank=True, null=True)
+    md5 = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True)
     xml_data = models.TextField()
+
+    def __str__(self):
+        return self.cert_id
+
+class NmapCertsScript(BaseModel, models.Model):
+    """NmapCertsScript. Model struture for NMap scripts. https://nmap.org/nsedoc/"""
+    name = models.CharField(max_length=100, blank=True, null=True)
+    command = models.CharField(max_length=100, blank=True, null=True)
+    description = models.TextField()
 

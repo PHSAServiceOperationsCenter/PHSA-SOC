@@ -40,6 +40,7 @@ ALLOWED_HOSTS = ['*', ]
 # Application definition
 
 INSTALLED_APPS = [
+    'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'django.contrib.admin',
@@ -152,6 +153,6 @@ ORION_TIMEOUT = (10.0, 22.0)
 # celery settings
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 
-CELERY_ACCEPT_CONTENT = ['json']
+CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TASK_SERIALIZER = 'json'

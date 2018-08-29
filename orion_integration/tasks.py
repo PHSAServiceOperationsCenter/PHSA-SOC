@@ -13,7 +13,9 @@ def populate_from_orion():
     """
     update the models in orion_integration from the orion server
 
-    the method invoked will take care of intermediate models like OrionNode
+    the method invoked will take care of intermediate models
+    like OrionNode
+
     this may need to change to a more maintainable code
     """
     return OrionAPMApplication.update_or_create_from_orion()

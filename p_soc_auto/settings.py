@@ -134,7 +134,7 @@ USE_TZ = True
 STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
+    'ssl_cert_tracker.apps.SslCertificatesConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -134,7 +135,7 @@ USE_TZ = True
 STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins

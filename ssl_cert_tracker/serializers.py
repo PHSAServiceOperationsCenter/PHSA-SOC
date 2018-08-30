@@ -1,5 +1,18 @@
-# api/serializers.py
+"""
+.. _models:
 
+django models for the ssl_certificates app
+
+:module:    serializers.py
+
+:copyright:
+
+    Copyright 2018 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    ali.rahmat@phsa.ca
+
+"""
 from rest_framework import serializers
 from .models import NmapCertsData, NmapHistory
 

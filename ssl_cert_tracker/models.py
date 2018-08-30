@@ -14,20 +14,21 @@ django models for the ssl_certificates app
 
 """
 from datetime import datetime
-
-from django.conf import settings
 from django.db import models
 from p_soc_auto_base.models import BaseModel
 
 class NmapCertsData(BaseModel, models.Model):
     """NmapCertsData. Model struture for NMap result response. """
     orion_id = models.CharField(max_length=100, blank=True, null=True)
-    addresses = models.CharField(max_length=100, blank=True, null=True)
+    addresses = models.CharField(max_length=100, blank=False, null=False)
     not_before = models.DateTimeField(null=True, blank=True)
     not_after = models.DateTimeField(null=True, blank=True)
     xml_data = models.TextField()
-    common_name = models.CharField(max_length=100, blank=True, null=True)
-    organization_name = models.CharField(max_length=100, blank=True, null=True)
+    common_name = models.CharField(max_length=100, blank=True, null=True, \
+    help_text="A unique title for common_name")
+    organization_name = models.CharField(max_length=100, \
+    blank=True, null=True, \
+    help_text="A unique title for organization_name")
     country_name = models.CharField(max_length=100, blank=True, null=True)
     sig_algo = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -44,32 +45,33 @@ class NmapCertsData(BaseModel, models.Model):
                 orion_id=self.orion_id, \
                 md5=self.md5, \
                 status="new", \
-                retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"), \
+                retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
                 xml_data=self.xml_data)
                 obj.save()
             else: # this is either update/insert
                 md5_count = NmapHistory.objects.filter(orion_id=self.orion_id, md5=self.md5).count()
                 if md5_count == 0:
                     obj = NmapHistory(cert_id=int(pk_val), \
-                                           orion_id=self.orion_id, \
-                                           md5=self.md5, \
-                                           status="changed", \
-                                           retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"), \
-                                           xml_data=self.xml_data)
+                                      orion_id=self.orion_id, \
+                                      md5=self.md5, \
+                                      status="changed", \
+                                      retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
+                                      xml_data=self.xml_data)
                     obj.save()
                 else:
                     NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found", \
-                    retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"))
+                    retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
 
     def save(self, *args, **kwargs):
         super(NmapCertsData, self).save(*args, **kwargs)
         pk_val = self.pk
         self.update_cert_history(pk_val)
-    
+    @staticmethod
     def get_cert_handle(o_id):
         """get_cert_handle """
-        return NmapCertsData.objects.get(orion_id = o_id)
+        return NmapCertsData.objects.get(orion_id=o_id)
 
+    @staticmethod
     def get_cert_state(o_id, hash_md5):
         """orion_id_exist """
         if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
@@ -79,7 +81,7 @@ class NmapCertsData(BaseModel, models.Model):
         else: # cert has not changed
             NmapHistory.objects.filter(orion_id=o_id, \
                                        md5=hash_md5).update( \
-                                       retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"))
+                                       retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
             return_code = 0
         return return_code
 
@@ -97,7 +99,5 @@ class NmapHistory(models.Model):
 
 class NmapCertsScript(BaseModel, models.Model):
     """NmapCertsScript. Model struture for NMap scripts. https://nmap.org/nsedoc/"""
-    name = models.CharField(max_length=100,  unique=True, blank=True, null=True)
+    name = models.CharField(max_length=100, unique=True, blank=True, null=True)
     command = models.CharField(max_length=100, blank=True, null=True)
-
-

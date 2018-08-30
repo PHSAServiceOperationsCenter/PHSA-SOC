@@ -19,5 +19,4 @@ from django.conf.urls import url, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('ssl_cert_tracker/', include('ssl_cert_tracker.urls')),
 ]

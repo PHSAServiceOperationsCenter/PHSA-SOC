@@ -29,9 +29,7 @@ class SslCertificatesConfig(AppConfig):
     def ready(self):
         """
         the cleanest way to import modules from other
-        
         to avoid circular import errors django provides this method that
         guarantees that imports will only happen after all the applications
         have been loaded
         """
-        from base.models import BaseModel

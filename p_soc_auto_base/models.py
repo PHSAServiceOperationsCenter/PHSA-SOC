@@ -40,7 +40,7 @@ class BaseModel(models.Model):
         _('created on'), db_index=True, auto_now_add=True,
         help_text=_('object creation time stamp'))
     updated_on = models.DateTimeField(
-        _('updated on'), db_index=True, auto_now_add=False,
+        _('updated on'), db_index=True, auto_now=True,
         help_text=_('object update time stamp'))
     enabled = models.BooleanField(
         _('enabled'), db_index=True, default=True, null=False, blank=False)

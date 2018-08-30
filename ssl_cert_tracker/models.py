@@ -10,81 +10,94 @@ django models for the ssl_certificates app
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    ali.rahmat@phsa.ca
 
 """
+from datetime import datetime
 from django.db import models
-from django.utils.translation import gettext_lazy as _
-
 from p_soc_auto_base.models import BaseModel
 
+class NmapCertsData(BaseModel, models.Model):
+    """NmapCertsData. Model struture for NMap result response. """
+    orion_id = models.CharField(max_length=100, blank=True, null=True)
+    addresses = models.CharField(max_length=100, blank=False, null=False)
+    not_before = models.DateTimeField(null=True, blank=True)
+    not_after = models.DateTimeField(null=True, blank=True)
+    xml_data = models.TextField()
+    common_name = models.CharField(max_length=100, blank=True, null=True, \
+    help_text="A unique title for common_name")
+    organization_name = models.CharField(max_length=100, \
+    blank=True, null=True, \
+    help_text="A unique title for organization_name")
+    country_name = models.CharField(max_length=100, blank=True, null=True)
+    sig_algo = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
+    bits = models.CharField(max_length=100, blank=True, null=True)
+    md5 = models.CharField(max_length=100, blank=True, null=True)
+    sha1 = models.CharField(max_length=100, blank=True, null=True)
 
-class Service(BaseModel, models.Model):
-    """
+    def update_cert_history(self, pk_val=False):
+        """update_cert_history. """
+        if pk_val:
+            orion_id_count = NmapHistory.objects.filter(orion_id=self.orion_id).count()
+            if orion_id_count == 0: #this is insert
+                obj = NmapHistory(cert_id=int(pk_val), \
+                orion_id=self.orion_id, \
+                md5=self.md5, \
+                status="new", \
+                retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
+                xml_data=self.xml_data)
+                obj.save()
+            else: # this is either update/insert
+                md5_count = NmapHistory.objects.filter(orion_id=self.orion_id, md5=self.md5).count()
+                if md5_count == 0:
+                    obj = NmapHistory(cert_id=int(pk_val), \
+                                      orion_id=self.orion_id, \
+                                      md5=self.md5, \
+                                      status="changed", \
+                                      retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
+                                      xml_data=self.xml_data)
+                    obj.save()
+                else:
+                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found", \
+                    retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
 
-    """
-    service = models.CharField(
-        _('service'), db_index=True, null=False, blank=False,
-        max_length=64)
-    host = models.CharField(
-        _('host'), db_index=True, null=False, blank=False,
-        max_length=255, help_text=_('this may end up being a foreign key'))
-    port = models.CharField(
-        _('port'), db_index=True, null=False, blank=False,
-        max_length=5)
+    def save(self, *args, **kwargs):
+        super(NmapCertsData, self).save(*args, **kwargs)
+        pk_val = self.pk
+        self.update_cert_history(pk_val)
+    @staticmethod
+    def get_cert_handle(o_id):
+        """get_cert_handle """
+        return NmapCertsData.objects.get(orion_id=o_id)
 
-    class Meta:
-        verbose_name = _('Service')
-        verbose_name_plural = _('Services')
-        unique_together = (('service', 'host', 'port',),)
+    @staticmethod
+    def get_cert_state(o_id, hash_md5):
+        """orion_id_exist """
+        if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
+            return_code = 1 # new reord
+        elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
+            return_code = 2 # cert changed
+        else: # cert has not changed
+            NmapHistory.objects.filter(orion_id=o_id, \
+                                       md5=hash_md5).update( \
+                                       retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
+            return_code = 0
+        return return_code
 
+class NmapHistory(models.Model):
+    """NmapHistory. Model struture for NMap result diff response. """
+    cert_id = models.IntegerField()
+    orion_id = models.CharField(max_length=100, blank=True, null=True)
+    md5 = models.CharField(max_length=100, blank=True, null=True)
+    status = models.CharField(max_length=100, blank=True, null=True)
+    retreived = models.DateTimeField(null=True, blank=True)
+    xml_data = models.TextField()
 
-class Certificate(BaseModel, models.Model):
-    """
-    certificates
+    def __str__(self):
+        return self.cert_id
 
-    example:
-
-        Subject: 
-            commonName=www.paypal.com/
-            organizationName=PayPal, Inc./
-            stateOrProvinceName=California/countryName=US
-
-        Subject Alternative Name: 
-            DNS:history.paypal.com, DNS:t.paypal.com, 
-            DNS:c.paypal.com, DNS:c6.paypal.com, 
-            DNS:developer.paypal.com, DNS:p.paypal.com, 
-            DNS:www.paypal.com
-
-        Issuer: 
-            commonName=Symantec Class 3 EV SSL CA - G3/
-            organizationName=Symantec Corporation/countryName=US
-
-        Public Key type: rsa
-
-        Public Key bits: 2048
-
-        Signature Algorithm: sha256WithRSAEncryption
-
-        Not valid before: 2017-09-22T00:00:00
-
-        Not valid after:  2019-10-30T23:59:59
-
-        MD5:   cfce 8a0f 2e07 87ab 22bf 977f cb98 28aa
-
-        _SHA-1: bb20 b03f fb93 e177 ff23 a743 8949 601a 41ae c61c
-    """
-    service = models.OneToOneField(Service)
-    subject = models.TextField()
-    subject_alt_name = models.TextField()
-    issuer = models.TextField()
-    pki_type = models.CharField(max_length=16)
-    pki_bits = models.CharField(max_length=4)
-    pki_algo = models.CharField(max_length=128)
-    not_valid_before = models.DateTimeField()
-    not_valid_after = models.DateTimeField()
-    md5 = models.CharField(max_length=128)
-    sha1 = models.CharField(max_length=256)
-    
-
-
+class NmapCertsScript(BaseModel, models.Model):
+    """NmapCertsScript. Model struture for NMap scripts. https://nmap.org/nsedoc/"""
+    name = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    command = models.CharField(max_length=100, blank=True, null=True)

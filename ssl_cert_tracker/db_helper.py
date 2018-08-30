@@ -21,8 +21,8 @@ def Insert_Into_CertsData(json_data):
             msg = "failure"
             logging.error("Error accessing django model NmapCertsData get_cert_state:%s", msg)
             return
-        elif cert_status == 0: #  cert has not changed
-            msg = "To be decided!"
+        elif cert_status == 0: #  un-changed, update retreived column in cert hist
+            msg = "un-changed, update retreived column in cert hist!"
             logging.info("Cert data update:.... %s", msg)
             return
         elif cert_status == 1:# new reord

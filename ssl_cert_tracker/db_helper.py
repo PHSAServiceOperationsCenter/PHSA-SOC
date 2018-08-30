@@ -8,12 +8,14 @@ from django.core.exceptions import ObjectDoesNotExist
 from ssl_cert_tracker.models import NmapCertsData, NmapHistory
 from django.conf import settings
 
+from .utils import *
+
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
 def Insert_Into_CertsData(json_data): 
     """Insert_Into_CertsData check if record already exist then update otherwise insert """
     try:
-        cert_user = NmapCertsData.get_user()
+        NmapCertsData.created_by=NmapCertsData.get_or_create_user(username='PHSA_User')
         cert_status = NmapCertsData.get_cert_state(json_data["orion_id"], json_data["md5"])
         if cert_status not in [0, 1, 2]:
             msg = "failure"
@@ -35,8 +37,8 @@ def Insert_Into_CertsData(json_data):
         db_certs.orion_id = json_data["orion_id"]
         db_certs.addresses = json_data["addresses"]
         
-        db_certs.created_by_id= cert_user.id
-        db_certs.updated_by_id= cert_user.id
+        db_certs.created_by_id= NmapCertsData.created_by.id
+        db_certs.updated_by_id= NmapCertsData.created_by.id
         
         db_certs.updated_on = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f")
                
@@ -69,16 +71,5 @@ def process_date_field(date_text):
         if date_text != datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
             raise ValueError
         return True
-    except ValueError:
-        return False
-
-def validate(date_text):
-    """check if date_text is a valid date  """
-    try:
-        if date_text != datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
-            raise ValueError
-        return True
-    except TypeError:
-        return False
     except ValueError:
         return False

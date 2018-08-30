@@ -13,6 +13,8 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
+from datetime import datetime
+
 from django.conf import settings
 from django.db import models
 from p_soc_auto_base.models import BaseModel
@@ -42,19 +44,22 @@ class NmapCertsData(BaseModel, models.Model):
                 orion_id=self.orion_id, \
                 md5=self.md5, \
                 status="new", \
+                retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"), \
                 xml_data=self.xml_data)
                 obj.save()
             else: # this is either update/insert
-                md5_count = NmapHistory.objects.filter(orion_id=self.orion_id).filter(md5=self.md5).count()
+                md5_count = NmapHistory.objects.filter(orion_id=self.orion_id, md5=self.md5).count()
                 if md5_count == 0:
                     obj = NmapHistory(cert_id=int(pk_val), \
                                            orion_id=self.orion_id, \
                                            md5=self.md5, \
                                            status="changed", \
+                                           retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"), \
                                            xml_data=self.xml_data)
                     obj.save()
                 else:
-                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found")
+                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found", \
+                    retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"))
 
     def save(self, *args, **kwargs):
         super(NmapCertsData, self).save(*args, **kwargs)
@@ -72,6 +77,9 @@ class NmapCertsData(BaseModel, models.Model):
         elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
             return_code = 2 # cert changed
         else: # cert has not changed
+            NmapHistory.objects.filter(orion_id=o_id, \
+                                       md5=hash_md5).update( \
+                                       retreived = datetime.now().strftime ("%Y-%m-%d %H:%M:%S.%f"))
             return_code = 0
         return return_code
 
@@ -81,6 +89,7 @@ class NmapHistory(models.Model):
     orion_id = models.CharField(max_length=100, blank=True, null=True)
     md5 = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True)
+    retreived = models.DateTimeField(null=True, blank=True)
     xml_data = models.TextField()
 
     def __str__(self):

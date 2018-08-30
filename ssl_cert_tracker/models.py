@@ -33,13 +33,6 @@ class NmapCertsData(BaseModel, models.Model):
     md5 = models.CharField(max_length=100, blank=True, null=True)
     sha1 = models.CharField(max_length=100, blank=True, null=True)
 
-    @classmethod
-    def get_user(cls, username=settings.ORION_USER):
-        """get_user. """
-        user = cls.get_or_create_user(username)
-        return user
-
-
     def update_cert_history(self, pk_val=False):
         """update_cert_history. """
         if pk_val:
@@ -76,15 +69,11 @@ class NmapCertsData(BaseModel, models.Model):
         """orion_id_exist """
         if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
             return_code = 1 # new reord
-        elif NmapCertsData.objects.filter(orion_id=o_id).filter(md5=hash_md5).count() == 0:
+        elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
             return_code = 2 # cert changed
         else: # cert has not changed
             return_code = 0
         return return_code
-
-    def __str__(self):
-        """__str__ """
-        return self.orion_id
 
 class NmapHistory(models.Model):
     """NmapHistory. Model struture for NMap result diff response. """
@@ -99,7 +88,7 @@ class NmapHistory(models.Model):
 
 class NmapCertsScript(BaseModel, models.Model):
     """NmapCertsScript. Model struture for NMap scripts. https://nmap.org/nsedoc/"""
-    name = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100,  unique=True, blank=True, null=True)
     command = models.CharField(max_length=100, blank=True, null=True)
-    description = models.TextField()
+
 

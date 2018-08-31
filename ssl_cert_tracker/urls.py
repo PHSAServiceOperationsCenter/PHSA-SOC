@@ -11,4 +11,10 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
-#import ipdb;ipdb.set_trace()
+
+from django.conf.urls import url
+from  .import views
+
+urlpatterns = [
+    url(r'^$', views.index, name="index"),
+]

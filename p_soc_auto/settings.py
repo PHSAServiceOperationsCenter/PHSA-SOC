@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
+    'ssl_cert_tracker.apps.SslCertificatesConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

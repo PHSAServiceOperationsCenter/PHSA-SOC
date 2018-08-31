@@ -14,40 +14,39 @@ api classes and functions for the orion_integration app
 
 :updated:    aug. 14, 2018
 """
-from .models import OrionNode
+from .models import OrionNode, OrionCernerCSTNode
 
 
-class OrionSslNode(object):
+class OrionSslNode():
     '''
     class for orion ssl nodes
     '''
+    ssl_filters = dict(orionapmapplication__application_name__icontains='ssl')
+
     @classmethod
-    def nodes(cls):
+    def nodes(cls, cerner_cst=True):
         """
         :returns: a django queryset object with all the SSL nodes
         """
-        return OrionNode.objects.\
-            filter(orionapmapplication__application_name__icontains='ssl').\
-            all()
+        if cerner_cst:
+            return OrionCernerCSTNode.objects.filter(**cls.ssl_filters).all()
+
+        return OrionNode.objects.filter(**cls.ssl_filters).all()
 
     @classmethod
-    def count(cls):
+    def count(cls, cerner_cst=True):
         """
         :returns: the number of SSL nodes
         :rtype: int
         """
-        return OrionNode.objects.\
-            filter(orionapmapplication__application_name__icontains='ssl').\
-            count()
+        return cls.nodes(cerner_cst=cerner_cst).count()
 
     @classmethod
-    def ip_addresses(cls):
+    def ip_addresses(cls, cerner_cst=True):
         """
         :returns: the list of ip addresses for orion ssl nodes
         :rtype: list
         """
         return list(
-            OrionNode.objects.
-            filter(orionapmapplication__application_name__icontains='ssl').
-            values_list('ip_address', flat=True)
-        )
+            cls.nodes(cerner_cst=cerner_cst).values_list('ip_address',
+                                                         flat=True))

@@ -22,6 +22,22 @@ from p_soc_auto_base.models import BaseModel
 
 from .orion import OrionClient
 
+# pylint:disable=R0903
+
+
+class OrionCernerCSTNodeManager(models.Manager):
+    """
+    django custom manager filters on Cerner-CST by default
+    """
+
+    def get_queryset(self):
+        """
+        override the default get_queryset() method
+        """
+        return super().\
+            get_queryset().filter(program_application__exact='Cerner-CST')
+# pylint:enable=R0903
+
 
 class OrionQueryError(Exception):
     """
@@ -46,13 +62,14 @@ class OrionBaseModel(BaseModel, models.Model):
     base class for all the models here
     """
     orion_query = None
-    orion_mappings = None
+    orion_mappings = []
 
     orion_id = models.BigIntegerField(
         _('Orion Object Id'), db_index=True, unique=True, blank=False,
         help_text=_(
             'Use the value in this field to query the Orion server'))
 
+    # pylint:disable=R0914
     @classmethod
     def update_or_create_from_orion(cls, username=settings.ORION_USER):
         """
@@ -80,21 +97,21 @@ class OrionBaseModel(BaseModel, models.Model):
             defined in the calling class
         """
         return_dict = dict(
-            status=_('pending'), model=cls._meta.verbose_name, orion_rows=0,
+            status='pending', model=cls._meta.verbose_name, orion_rows=0,
             updated_records=0, created_records=0, errored_records=0)
         if cls.orion_query is None:
             raise OrionQueryError(
-                _('%s is not providing a value for the Orion query'
-                  % cls._meta.label))
+                '%s is not providing a value for the Orion query'
+                % cls._meta.label)
 
-        if cls.orion_mappings is None:
+        if not cls.orion_mappings:
             raise OrionMappingsError(
-                _('%s is not providing a value for the Orion mappings'
-                  % cls._meta.label))
+                '%s is not providing a value for the Orion mappings'
+                % cls._meta.label)
 
         user = cls.get_or_create_user(username)
         data = OrionClient.populate_from_query(cls)
-        return_dict['status'] = _('in progress')
+        return_dict['status'] = 'in progress'
         return_dict['orion_rows'] = len(data)
         for data_item in data:
             orion_mapping = dict()
@@ -120,13 +137,13 @@ class OrionBaseModel(BaseModel, models.Model):
 
                     qs.update(**orion_mapping)
                 else:
-                    obj, created = cls.objects.update_or_create(
+                    _, created = cls.objects.update_or_create(
                         **orion_mapping)
                     if created:
                         return_dict['created_records'] += 1
                     else:
                         return_dict['updated_records'] += 1
-            except Exception as err:
+            except Exception as err:    # pylint:disable=W0703
                 return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %
                       (str(err), orion_mapping))
@@ -134,18 +151,10 @@ class OrionBaseModel(BaseModel, models.Model):
         return_dict['status'] = 'done'
 
         return return_dict
+    # pylint:enable=R0914
 
     class Meta:
         abstract = True
-
-
-class OrionNodeCustomPropery(OrionBaseModel, models.Model):
-    """
-    reference:
-    `Orion Node<http://solarwinds.github.io/OrionSDK/schema/Orion.NodesCustomProperties.html>`_
-    """
-    orion_query = (
-        '')
 
 
 class OrionNode(OrionBaseModel, models.Model):
@@ -164,9 +173,9 @@ class OrionNode(OrionBaseModel, models.Model):
         ' oncp.Address, oncp.Building, oncp.City, oncp.Closet, oncp.Comments,'
         ' oncp.DeviceType, oncp.HA, oncp.HardwareIncidentStatus,'
         ' oncp.IncidentStatus, oncp.Make, oncp.NodeOwner, oncp.OutOfBand,'
-        ' oncp.PONumber, oncp.ProgramApplication, oncp.ProgramApplicationType,'
+        ' oncp.ProgramApplication, oncp.ProgramApplicationType,'
         ' oncp.Provider, oncp.Region, oncp.Site, oncp.SiteContactName,'
-        ' oncp.SiteHours, oncp.SitePhone, oncp.SiteType, oncp.Type,'
+        ' oncp.SiteHours, oncp.SitePhone, oncp.SiteType,'
         ' oncp.WANbandwidth, oncp.WANnode, oncp.WANProvider'
         ' FROM Orion.Nodes(nolock=true) ons'
         ' LEFT JOIN Orion.NodesCustomProperties(nolock=true) oncp'
@@ -191,31 +200,97 @@ class OrionNode(OrionBaseModel, models.Model):
                       ('machine_type', 'MachineType', None),
                       ('status_orion_id', 'Status', None),
                       ('status', 'StatusDescription', None),
-                      ('details_url', 'DetailsUrl', None))
+                      ('details_url', 'DetailsUrl', None),
+                      ('address', 'Address', None),
+                      ('building', 'Building', None),
+                      ('city', 'City', None),
+                      ('closet', 'Closet', None),
+                      ('comments', 'Comments', None),
+                      ('device_type', 'DeviceType', None),
+                      ('ha', 'HA', None),
+                      ('hardware_incident_status', 'HardwareIncidentStatus',
+                       None),
+                      ('incident_status', 'IncidentStatus', None),
+                      ('make', 'Make', None),
+                      ('node_owner', 'NodeOwner', None),
+                      ('out_of_band', 'OutOfBand', None),
+                      ('program_application', 'ProgramApplication', None),
+                      ('program_application_type', 'ProgramApplicationType',
+                       None),
+                      ('provider', 'Provider', None),
+                      ('region', 'Region', None),
+                      ('site', 'Site', None),
+                      ('site_contact_name', 'SiteContactName', None),
+                      ('site_hours', 'SiteHours', None),
+                      ('site_phone', 'SitePhone', None),
+                      ('site_type', 'SiteType', None),
+                      ('wan_bandwidth', 'WANbandwidth', None),
+                      ('wan_node', 'WANnode', None),
+                      ('wan_provider', 'WANProvider', None))
 
     address = models.CharField(
-        _('Address'), db_index=True,  blank=False, max_length=254, null=False)
+        _('Address'), db_index=True, blank=True, max_length=254, null=True)
     building = models.CharField(
-        _('Building'), db_index=True,  blank=False, max_length=254, null=False)
+        _('Building'), db_index=True, blank=True, max_length=254, null=True)
     city = models.CharField(
-        _('City'), db_index=True,  blank=False, max_length=64, null=False)
+        _('City'), db_index=True, blank=True, max_length=64, null=True)
     closet = models.CharField(
-        _('Closet'), db_index=True,  blank=False, max_length=254, null=False)
-    comments = models.TextField(_('Comments'))
+        _('Closet'), db_index=True, blank=True, max_length=254, null=True)
+    comments = models.TextField(_('Comments'), blank=True, null=True)
     device_type = models.CharField(
-        _('Device Type'), db_index=True,  blank=False, max_length=64,
-        null=False)
+        _('Device Type'), db_index=True, blank=True, max_length=64,
+        null=True)
     ha = models.CharField(
-        _('HA'), db_index=True,  blank=False, max_length=32, null=False)
-    hardware_incident_status = models.TextField(_('Hardware Incident Status'))
-    incident_status = models.TextField(_('Incident Status'))
+        _('HA'), db_index=True, blank=True, max_length=32, null=True)
+    hardware_incident_status = models.TextField(
+        _('Hardware Incident Status'), blank=True, null=True)
+    incident_status = models.TextField(
+        _('Incident Status'), blank=True, null=True)
     make = models.CharField(
-        _('Make'), db_index=True,  blank=False, max_length=254, null=False)
+        _('Make'), db_index=True, blank=True, max_length=254, null=True)
     node_owner = models.CharField(
-        _('Node Owner'), db_index=True,  blank=False, max_length=254, null=False)
-
+        _('Node Owner'), db_index=True, blank=True, max_length=254,
+        null=True)
+    out_of_band = models.CharField(
+        _('out of band'), max_length=64, blank=True, null=True)
+    program_application = models.CharField(
+        _('program application'), db_index=True, blank=True, max_length=254,
+        null=True)
+    program_application_type = models.CharField(
+        _('program application type'), db_index=True, blank=True,
+        max_length=64, null=True)
+    provider = models.CharField(
+        _('provider'), db_index=True, blank=True,
+        max_length=64, null=True)
+    region = models.CharField(
+        _('region'), db_index=True, blank=True,
+        max_length=64, null=True)
+    site = models.CharField(
+        _('site'), db_index=True, blank=True, max_length=254,
+        null=True)
+    site_contact_name = models.CharField(
+        _('site contact name'), db_index=True, blank=True, max_length=254,
+        null=True)
+    site_hours = models.CharField(
+        _('site hours'), db_index=True, blank=True, max_length=254,
+        null=True)
+    site_phone = models.CharField(
+        _('site phone'), db_index=True, blank=True, max_length=32,
+        null=True)
+    site_type = models.CharField(
+        _('site type'), db_index=True, blank=True, max_length=32,
+        null=True)
+    wan_bandwidth = models.CharField(
+        _('WAN bandwidth'), db_index=True, blank=True, max_length=32,
+        null=True)
+    wan_node = models.CharField(
+        _('WAN node'), db_index=True, blank=True, max_length=32,
+        null=True)
+    wan_provider = models.CharField(
+        _('WAN provider'), db_index=True, blank=True, max_length=254,
+        null=True)
     node_caption = models.CharField(
-        _('Node Caption'), db_index=True,  blank=False,
+        _('Node Caption'), db_index=True, blank=False,
         max_length=254, null=False)
     category = models.ForeignKey(
         'OrionNodeCategory', on_delete=models.CASCADE,
@@ -250,7 +325,7 @@ class OrionNode(OrionBaseModel, models.Model):
         _('Node Details URL'), blank=True, null=True)
 
     @classmethod
-    def update_or_create_from_orion(cls):
+    def update_or_create_from_orion(cls):  # pylint:disable=W0221
         """
         override :method:`OrionBaseModel.update_or_create_from_orion` to make
         sure that the foreign keys are already available in
@@ -258,13 +333,11 @@ class OrionNode(OrionBaseModel, models.Model):
         """
         ret = []
         if not OrionNodeCategory.objects.count():
-            _ = OrionNodeCategory.update_or_create_from_orion()
-            ret.append(_)
+            result = OrionNodeCategory.update_or_create_from_orion()
+            ret.append(result)
 
-        import ipdb
-        ipdb.set_trace()
-        _ = super(OrionNode, cls).update_or_create_from_orion()
-        ret.append(_)
+        result = super(OrionNode, cls).update_or_create_from_orion()
+        ret.append(result)
 
         return ret
 
@@ -274,50 +347,16 @@ class OrionNode(OrionBaseModel, models.Model):
         verbose_name_plural = 'Orion Nodes'
 
 
-#=========================================================================
-# class OrionCSTNode(OrionNode, models.Model):
-#     """
-#     override the OrionNode class to handle Cerner-CST nodes
-#
-#     it is in reallty just a subset of Orion.Nodes using
-#     Orion.NodesCustomProperty
-#     """
-#     orion_query = (
-#         "SELECT ons.NodeID, ons.ObjectSubType, ons.IPAddress, ons.Caption,"
-#         " ons.NodeDescription, ons.Description, ons.DNS, ons.Category,"
-#         " ons.Vendor, ons.Location, ons.Status, ons.StatusDescription,"
-#         " ons.MachineType, ons.NodeName, ons.DetailsUrl"
-#         " FROM Orion.Nodes(nolock=true) ons"
-#         " JOIN Orion.NodesCustomProperties(nolock=true) oncp on"
-#         " ons.NodeID = oncp.NodeID"
-#         " WHERE oncp.ProgramApplication = 'Cerner-CST'")
-#     #: mapping between model fields and data returned by the Orion query
-#     #: must be a 3 variables tuple: the first variable is the name of the
-#     #: field, the second variable is the name of the column in the Orion
-#     #: schema, and the third column describes a foreign key mapping
-#     #: if necessary; it is formatted as app_lable.ModelName and it will
-#     #: prepare a Model.objects.filter().get() to retrieve the foreign key
-#     orion_mappings = (('orion_id', 'NodeID', None),
-#                       ('node_caption', 'Caption', None),
-#                       ('sensor', 'ObjectSubType', None),
-#                       ('category', 'Category',
-#                        'orion_integration.OrionNodeCategory'),
-#                       ('ip_address', 'IPAddress', None),
-#                       ('node_name', 'NodeDescription', None),
-#                       ('notes', 'Description', None),
-#                       ('node_dns', 'DNS', None),
-#                       ('vendor', 'Vendor', None),
-#                       ('location', 'Location', None),
-#                       ('machine_type', 'MachineType', None),
-#                       ('status_orion_id', 'Status', None),
-#                       ('status', 'StatusDescription', None),
-#                       ('details_url', 'DetailsUrl', None))
-#
-#     class Meta:
-#         app_label = 'orion_integration'
-#         verbose_name = 'Orion Cerner CST Node'
-#         verbose_name_plural = 'Orion Cerner CST Nodes'
-#=========================================================================
+class OrionCernerCSTNode(OrionNode):
+    """
+    proxy model to show just the Cerner CST nodes
+    """
+    objects = OrionCernerCSTNodeManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Orion Cerner CST Node'
+        verbose_name_plural = 'Orion Cerner CST Nodes'
 
 
 class OrionNodeCategory(OrionBaseModel, models.Model):
@@ -376,7 +415,7 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
             ' moment; boohoo'))
 
     @classmethod
-    def update_or_create_from_orion(cls):
+    def update_or_create_from_orion(cls):  # pylint:disable=W0221
         """
         override :method:`OrionBaseModel.update_or_create_from_orion` to make
         sure that the foreign keys are already available in
@@ -385,11 +424,11 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
         """
         ret = []
         if not OrionNode.objects.count():
-            _ = OrionNode.update_or_create_from_orion()
-            ret.append(_)
+            result = OrionNode.update_or_create_from_orion()
+            ret.append(result)
 
-        _ = super(OrionAPMApplication, cls).update_or_create_from_orion()
-        ret.append(_)
+        result = super(OrionAPMApplication, cls).update_or_create_from_orion()
+        ret.append(result)
 
         return ret
 

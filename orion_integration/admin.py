@@ -17,14 +17,14 @@ __updated__ = '2018_08_08'
 from django.contrib import admin
 
 from .models import (
-    OrionNode, OrionNodeCategory, OrionAPMApplication, OrionCSTNode,
+    OrionNode, OrionNodeCategory, OrionAPMApplication, OrionCernerCSTNode,
 )
 
 
-@admin.register(OrionCSTNode)
-class OrionCSTNodeAdmin(admin.ModelAdmin):
+@admin.register(OrionCernerCSTNode)
+class OrionCernerCSTNodeAdmin(admin.ModelAdmin):
     """
-    admin intrface for the OrionCSTNode model
+    admin interface for the OrionCernerCSTNode model
     """
     pass
 

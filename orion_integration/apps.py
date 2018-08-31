@@ -28,6 +28,7 @@ class OrionIntegrationConfig(AppConfig):
 
     def ready(self):
         """
-        imports
+        in case of circular imports or app not ready place imports
+        in this method
         """
-        from p_soc_auto_base.models import BaseModel
+        pass

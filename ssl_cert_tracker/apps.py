@@ -12,8 +12,9 @@ django apps module for the ssl_certificates app
 
 :contact:    serban.teodorescu@phsa.ca
 
+:updated:    Jul. 24, 2018
+
 """
-__updated__ = '2018_07_24'
 
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _

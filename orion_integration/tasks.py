@@ -18,9 +18,13 @@ def populate_from_orion():
 
     this may need to change to a more maintainable code
     """
+    # TODO: this needs to becoma a chain that also deletes the models
     return OrionAPMApplication.update_or_create_from_orion()
 
 
 @shared_task
 def heart_beat():
+    """
+    return a quote from wikiquote just for grins
+    """
     return wikiquote.quote_of_the_day()

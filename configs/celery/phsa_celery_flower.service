@@ -6,10 +6,12 @@ After=network.target
 Type=forking
 User=root
 Group=root
+WorkingDirectory=/home/steodore/phsa/sbin/p_soc_auto
 ExecStart=/bin/sh -c '/home/steodore/.envs/carmina/bin/celery flower \
-    -A p_soc_auto --inspect --persistent --log-file-prefix=/var/log/ \
+    -A p_soc_auto --inspect --persistent \
+    --log-file-prefix=/var/log/phsa_celery/celery-flower.log \
     --logging=info &'
-ExecStop=/bin/kill -s TERM $MAINPID
+ExecStop=/bin/kill -q TERM $MAINPID
 
 [Install]
 WantedBy=multi-user.target

@@ -124,10 +124,8 @@ class OrionBaseModel(BaseModel, models.Model):
                     orion_mapping[mapping[0]] = model.objects.filter(
                         orion_id__exact=data_item[mapping[1]]).get()
 
-            updated_records = orion_mapping.update(
-                updated_by=user, created_by=user)
-            if updated_records:
-                return_dict['updated_records'] += updated_records
+            orion_mapping.update(updated_by=user, created_by=user)
+
             try:
                 qs = cls.objects.filter(
                     orion_id__exact=orion_mapping['orion_id'])

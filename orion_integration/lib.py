@@ -19,7 +19,14 @@ from .models import OrionNode, OrionCernerCSTNode
 
 class OrionSslNode():
     '''
-    class for orion ssl nodes
+    class with methods for retrieving orion nodes information
+
+    the :var:`<ssl_filters>` is used to accept Orion's definition of SSL
+
+    all the methods defined here will by default not use this filter.
+
+    the methods defined here can also distinguish between Cerner-CST nodes and
+    all nodes
     '''
     ssl_filters = dict(orionapmapplication__application_name__icontains='ssl')
 
@@ -49,6 +56,8 @@ class OrionSslNode():
         """
         :returns: the number of SSL nodes
         :rtype: int
+
+        see :method:`<nodes>` for argument details
         """
         return cls.nodes(cerner_cst=cerner_cst, orion_ssl=orion_ssl).count()
 
@@ -57,6 +66,8 @@ class OrionSslNode():
         """
         :returns: the list of ip addresses for orion ssl nodes
         :rtype: list
+
+        see :method:`<nodes>` for argument details
         """
         return list(
             cls.nodes(cerner_cst=cerner_cst, orion_ssl=orion_ssl).

@@ -106,14 +106,16 @@ class OrionBaseModel(BaseModel, models.Model):
             self.not_seen_since = None
             self.save()
             return ('exists',
-                    self._meta.model.objects.filter(pk=self.pk).values_list())
+                    list(self._meta.model.objects.
+                         filter(pk=self.pk).values_list()))
 
         if not self.not_seen_since:
             self.not_seen_since = timezone.now()
             self.save()
 
         return ('not seen since: %s' % self.not_seen_since,
-                self._meta.model.objects.filter(pk=self.pk).values_list())
+                list(self._meta.model.objects.
+                     filter(pk=self.pk).values_list()))
 
     # pylint:disable=R0914
     @classmethod

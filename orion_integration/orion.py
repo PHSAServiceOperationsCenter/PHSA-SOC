@@ -59,7 +59,7 @@ class OrionClient():
     """
 
     @classmethod
-    def populate_from_query(cls, model, **params):
+    def query(cls, orion_query, **params):
         """
         query the Orion server
 
@@ -73,7 +73,7 @@ class OrionClient():
         response = SESSION.post(
             '{}/Query'.format(settings.ORION_URL),
             data=json.dumps(
-                dict(query=model.orion_query, params=params),
+                dict(query=orion_query, params=params),
                 default=serialize_custom_json),
             timeout=settings.ORION_TIMEOUT
         )

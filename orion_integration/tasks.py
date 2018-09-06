@@ -1,10 +1,21 @@
-'''
-Created on Aug 15, 2018
+"""
+.. _tasks:
 
-@author: serban
-'''
-import wikiquote
-from celery import shared_task
+celery tasks for the orion_integration app
+
+:module:    p_soc_auto.orion_integration.tasks
+
+:copyright:
+
+    Copyright 2018 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Sep. 5, 2018
+
+"""
+from celery import shared_task, group
 from orion_integration.models import (
     OrionAPMApplication, OrionNodeCategory, OrionNode,
 )
@@ -20,33 +31,25 @@ def populate_from_orion():
 
     this may need to change to a more maintainable code
     """
-    # TODO: this needs to becoma a chain that also deletes the models
     return OrionAPMApplication.update_or_create_from_orion()
 
 
+@shared_task(task_serializer='pickle', result_serializer='pickle')
+def orion_entity_exists(instance):
+    """
+    does this thing still exist in orion?
+    """
+    return instance.exists_in_orion()
+
+
 @shared_task
-def heart_beat():
+def vet_orion_data():
     """
-    return a quote from wikiquote just for grins
+    loop through orion models and instances and look if the orion objects
+    are still there
     """
-    return wikiquote.quote_of_the_day()
+    for model in [OrionAPMApplication, OrionNodeCategory, OrionNode, ]:
+        group(orion_entity_exists.s((instance).set(serializer='pickle')) for
+              instance in model.objects.filter(enabled=True).all())()
 
-
-@shared_task
-def purge_orion_data(model):
-    """
-    delete all instances of a django model
-    :arg model: the :class:`<django.db.models.Model>`
-
-    :returns:
-
-        the model verbose_name property if no instances were found for
-        deletion or the number of instances that were deletes. see
-        `<https://docs.djangoproject.com/en/2.1/ref/models/querysets/#delete>`_
-
-    #TODO: replace this with `<https://trello.com/c/bDHdD6FV>`_
-    """
-    if model.objects.exists():
-        return model.objects.all().delete()
-
-    return 'no records found for {}'.format(model._meta.verbose_name)
+    return 'bootstrapped orion data vetting'

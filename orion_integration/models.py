@@ -16,6 +16,7 @@ django models for the orion_integration app
 from django.apps import apps
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
@@ -46,6 +47,13 @@ class OrionQueryError(Exception):
     pass
 
 
+class OrionIdQueryError(Exception):
+    """
+    raise if one tries to look for an orion entity without a defined query
+    """
+    pass
+
+
 class OrionMappingsError(Exception):
     """
     raise if the model doesn't have an orion_mappings attribute
@@ -63,11 +71,49 @@ class OrionBaseModel(BaseModel, models.Model):
     """
     orion_query = None
     orion_mappings = []
+    orion_id_query = None
 
     orion_id = models.BigIntegerField(
         _('Orion Object Id'), db_index=True, unique=True, blank=False,
         help_text=_(
             'Use the value in this field to query the Orion server'))
+    not_seen_since = models.DateTimeField(
+        _('Not Seen Since'), db_index=True, blank=True, null=True,
+        help_text=_(
+            'populated if this Orion entity is not available anymore on'
+            ' the Orion server'))
+
+    def exists_in_orion(self):
+        """
+        is this orion entity instance still available on the orion server?
+        if not, set the :var:`<not_seen_since>`. if the orion entity is seen
+        again, reset the :var:`<not_seen_since>`
+
+        uses an orion query looking for the orion entity identified by
+        the :var:`<orion_id.` value of the instance. the query needs to be
+        defined in :var:`<orion_id_query>`
+
+        :returns: `True`/`false`
+        """
+        if self.orion_id_query is None:
+            raise OrionIdQueryError(
+                'undefined orion query for object %s' % self)
+
+        data = OrionClient.query(orion_query='%s = %s' % (self.orion_id_query,
+                                                          self.orion_id))
+
+        if data:
+            self.not_seen_since = None
+            self.save()
+            return ('exists',
+                    self._meta.model.objects.filter(pk=self.pk).values_list())
+
+        if not self.not_seen_since:
+            self.not_seen_since = timezone.now()
+            self.save()
+
+        return ('not seen since: %s' % self.not_seen_since,
+                self._meta.model.objects.filter(pk=self.pk).values_list())
 
     # pylint:disable=R0914
     @classmethod
@@ -110,7 +156,7 @@ class OrionBaseModel(BaseModel, models.Model):
                 % cls._meta.label)
 
         user = cls.get_or_create_user(username)
-        data = OrionClient.populate_from_query(cls)
+        data = OrionClient.query(orion_query=cls.orion_query)
         return_dict['status'] = 'in progress'
         return_dict['orion_rows'] = len(data)
         for data_item in data:
@@ -161,6 +207,9 @@ class OrionNode(OrionBaseModel, models.Model):
     `Orion Node<http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`_
 
     """
+    #: the Orion query to verify if objects from this model exist in Orion
+    orion_id_query = ('SELECT NodeID FROM Orion.Nodes WHERE NodeID')
+
     #: the Orion query used to populate this model
     orion_query = (
         'SELECT ons.NodeID, ons.ObjectSubType, ons.IPAddress, ons.Caption,'
@@ -177,7 +226,9 @@ class OrionNode(OrionBaseModel, models.Model):
         ' oncp.WANbandwidth, oncp.WANnode, oncp.WANProvider'
         ' FROM Orion.Nodes(nolock=true) ons'
         ' LEFT JOIN Orion.NodesCustomProperties(nolock=true) oncp'
-        ' on ons.NodeID = oncp.NodeID')
+        ' on ons.NodeID = oncp.NodeID'
+    )
+
     #: mapping between model fields and data returned by the Orion query
     #: must be a 3 variables tuple: the first variable is the name of the
     #: field, the second variable is the name of the column in the Orion
@@ -362,6 +413,9 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
     query:
     SELECT Description FROM Orion.NodeCategories
     """
+    orion_id_query = (
+        'SELECT CategoryID FROM Orion.NodeCategories WHERE CategoryID'
+    )
     orion_query = 'SELECT CategoryID, Description FROM Orion.NodeCategories'
     orion_mappings = (('orion_id', 'CategoryID', None),
                       ('category', 'Description', None))
@@ -380,9 +434,13 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
     """
     Application monitored by Orion
     """
+    orion_id_query = (
+        'SELECT ApplicationID FROM Orion.APM.Application WHERE ApplicationID'
+    )
     orion_query = (
         'SELECT ApplicationID, Name, NodeID, DetailsUrl, FullyQualifiedName,'
-        ' Description, Status, StatusDescription FROM Orion.APM.Application')
+        ' Description, Status, StatusDescription FROM Orion.APM.Application'
+    )
     orion_mappings = (('orion_id', 'ApplicationID', None),
                       ('application_name', 'Name', None),
                       ('node', 'NodeID', 'orion_integration.OrionNode'),

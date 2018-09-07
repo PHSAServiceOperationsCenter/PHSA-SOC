@@ -42,7 +42,7 @@ if not SESSION.verify:
 def serialize_custom_json(obj):
     """
     datetime objects need to be in ISO format before the json module can
-    serialize
+    serialize them
     """
     _ = None
     if isinstance(obj, datetime):
@@ -66,9 +66,9 @@ class OrionClient():
         :arg str query: the query string
         :arg dict params: the query params
 
-        :returns: a dict ?
+        :returns: a `dict`
 
-        :raises: a exception
+        :raises:
         """
         response = SESSION.post(
             '{}/Query'.format(settings.ORION_URL),

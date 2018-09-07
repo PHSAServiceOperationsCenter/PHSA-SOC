@@ -28,12 +28,16 @@ from .orion import OrionClient
 
 class OrionCernerCSTNodeManager(models.Manager):
     """
-    django custom manager filters on Cerner-CST by default
+    django custom manager that adds a filter on Cerner-CST by default
     """
 
     def get_queryset(self):
         """
         override the default get_queryset() method
+
+        when using `django.queryset.objects` this method makes sure
+        that a filter is applied without having to explicitly call
+        :method:`django.queryset.filter`
         """
         return super().\
             get_queryset().filter(program_application__exact='Cerner-CST')
@@ -47,13 +51,6 @@ class OrionQueryError(Exception):
     pass
 
 
-class OrionIdQueryError(Exception):
-    """
-    raise if one tries to look for an orion entity without a defined query
-    """
-    pass
-
-
 class OrionMappingsError(Exception):
     """
     raise if the model doesn't have an orion_mappings attribute
@@ -63,11 +60,11 @@ class OrionMappingsError(Exception):
 
 class OrionBaseModel(BaseModel, models.Model):
     """
-    most (if not all) Orion objects need an orion_id key that comes from the
-    Orion server
+    use this class as the parent for all the models that are caching Orion
+    entities
 
-    then we also need the fields from the BaseModel; let's use this as the
-    base class for all the models here
+    most (if not all) Orion objects need an orion_id key that comes from the
+    Orion server; this class provides that field
     """
     orion_query = None
     orion_mappings = []
@@ -86,19 +83,27 @@ class OrionBaseModel(BaseModel, models.Model):
     def exists_in_orion(self):
         """
         is this orion entity instance still available on the orion server?
-        if not, set the :var:`<not_seen_since>`. if the orion entity is seen
-        again, reset the :var:`<not_seen_since>`
+
+        if the entity is present on the Orion server, just return
+
+        if this is the first time the orion entity is not available on the
+        Orion server, set the :var:`not_seen_since` to
+        ``django.utils.timezone.now``.
+
+        if this is not the first time the entity has not been seen, return
+
+        if the orion entity is seen again, reset the :var:`not_seen_since`
+        to ``None``
 
         uses an orion query looking for the orion entity identified by
-        the :var:`<orion_id.` value of the instance. the query needs to be
-        defined in :var:`<orion_id_query>`
+        the :var:`orion_id.` value of the instance. the query needs to be
+        defined in :var:`orion_id_query`
 
-        :returns: `True`/`false`
+        :returns: a ``tuple`` with the first member being "exists" or
+                  "not seen since: :attr:`not_seen_since`" and the
+                  instance ``values_list``
+
         """
-        if self.orion_id_query is None:
-            raise OrionIdQueryError(
-                'undefined orion query for object %s' % self)
-
         data = OrionClient.query(orion_query='%s = %s' % (self.orion_id_query,
                                                           self.orion_id))
 
@@ -143,6 +148,17 @@ class OrionBaseModel(BaseModel, models.Model):
 
             :exception:`OrionMappnngsError` if :var:`orion_mappings` is not
             defined in the calling class
+
+        :returns: a ``dict`` with these keys
+                :key status:
+                :key model:
+                :key orion_rows: the number of rows returned by the Orion call
+                :key updated_records: the number of objects that have been
+                                      updated during the Orion call
+                :key created_records: the number of objects that have been
+                                      created during the Orion call
+                :key errored_records: the number of objects that
+                                      threw an error during the Orion call
         """
         return_dict = dict(
             status='pending', model=cls._meta.verbose_name, orion_rows=0,
@@ -381,6 +397,13 @@ class OrionNode(OrionBaseModel, models.Model):
         override :method:`OrionBaseModel.update_or_create_from_orion` to make
         sure that the foreign keys are already available in
         :class:`OrionNodeCategory`
+
+        this basically calls a chain of
+        :method:`OrionBaseModel.update_or_create_from_orion`, one for each
+        model required for referential integrity
+
+        :returns: a list of the returns for each call in the chain
+        :rtype: ``list`` of ``dict``
         """
         ret = []
         if not OrionNodeCategory.objects.count():
@@ -401,6 +424,9 @@ class OrionNode(OrionBaseModel, models.Model):
 class OrionCernerCSTNode(OrionNode):
     """
     proxy model to show just the Cerner CST nodes
+
+    see
+    `Django proxy models<https://docs.djangoproject.com/en/2.1/topics/db/models/#proxy-models>`_
     """
     objects = OrionCernerCSTNodeManager()
 

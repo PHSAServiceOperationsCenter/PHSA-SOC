@@ -27,38 +27,57 @@ def populate_from_orion():
     """
     update the models in orion_integration from the orion server
 
-    the method invoked will take care of intermediate models
-    like OrionNode
+    the models are provided as an internal ``list``
 
-    this may need to change to a more maintainable code
+    this task needs to be registered with celery and needs to be
+    controlled via celery beat because currently it is not being
+    invoked any where else. it is also responsible for pre-populating
+    all the orion data caching models
+
+    :returns: a list of models that were updated
+
     """
+    ret = []
     for model in [OrionNodeCategory, OrionNode, OrionAPMApplication, ]:
-        return model.update_or_create_from_orion()
+        _ret = model.update_or_create_from_orion()
+        ret.append(_ret)
+
+    return ret
 
 
 @shared_task(task_serializer='pickle', result_serializer='pickle')
-def orion_entity_exists(model_name, pk):
+def orion_entity_exists(model_name, primary_key):
     """
-    does this thing still exist in orion?
+    task that answers the question "does this thing still exist in orion?"
+
+    this task is per-instance task: for each orion integration model instance
+    another instance of this task is invoked
 
     :arg str model_name: the name of the orion objects model
     :arg int pk: the primary key of the object
 
     :returns: a representation of the orion object tagged with "exists" or
               with "not seen since:"
+
+              see
+              :method:`<orion_integration.models.OrionBaseModel.exists_in_orion>`
     """
     return apps.get_model('orion_integration', model_name).objects.\
-        get(pk=pk).exists_in_orion()
+        get(pk=primary_key).exists_in_orion()
 
 
 @shared_task
 def verify_known_orion_data():
     """
-    check that existing orion objects data still matches what the Orion
-    server thinks
+    group task that is responsible for launching the
+    :function:`<orion_entity_exists>`
+
+    see
+    `<http://docs.celeryproject.org/en/latest/userguide/canvas.html?highlight=groups#groups>`_
+    for details about celery groups
 
     :returns: a list with the orion objects models and the number of objects
-              fro each model
+              for each model
     """
     ret = []
     for model in [OrionNodeCategory, OrionAPMApplication, OrionNode]:

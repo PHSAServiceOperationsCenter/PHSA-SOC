@@ -11,9 +11,9 @@ django apps module for the orion integration app
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
-"""
-__updated__ = '2018_08_07'
 
+:updated:    aug. 7, 2018
+"""
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
 

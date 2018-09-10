@@ -15,6 +15,7 @@ django models for the ssl_certificates app
 """
 
 from datetime import datetime
+from django.utils.dateparse import parse_datetime
 import time
 import logging
 from ssl_cert_tracker.models import NmapCertsData
@@ -51,16 +52,11 @@ def insert_into_certs_data(json_data):
         db_certs.updated_by_id = NmapCertsData.created_by.id
         db_certs.updated_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
         if validate(json_data["not_before"]):
-            not_after_posix = \
-            time.mktime(datetime.strptime(json_data["not_before"], \
-            "%Y-%m-%d").timetuple())
-            db_certs.not_before = \
-            datetime.utcfromtimestamp(not_after_posix).isoformat() + 'Z'
+            db_certs.not_before = parse_datetime(json_data["not_before"])
+        else:
+            print ("JSON not_beforeJSON not_beforeJSON not_beforeJSON not_beforeJSON not_before:-1-1-1-1-1-1-")
         if validate(json_data["not_after"]):
-            not_after_posix = \
-            time.mktime(datetime.strptime(json_data["not_after"], "%Y-%m-%d").timetuple())
-            db_certs.not_after = \
-            datetime.utcfromtimestamp(not_after_posix).isoformat() + 'Z'
+            db_certs.not_after = parse_datetime(json_data["not_after"])
         db_certs.common_name = json_data["common_name"]
         db_certs.organization_name = json_data["organization_name"]
         db_certs.country_name = json_data["country_name"]

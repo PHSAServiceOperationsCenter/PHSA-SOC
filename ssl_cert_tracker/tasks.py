@@ -41,7 +41,6 @@ def go_node(node_id, node_address):
             xml_data = nmap_task.stdout
             break
         except EnvironmentError as ex:
-            #msg = "Attempt No.: " + str(count) + " Error Scanning host:" +  node_address
             logging.error("Error proceesing xml_cert message:%s", ex)
 
     if count < 5:

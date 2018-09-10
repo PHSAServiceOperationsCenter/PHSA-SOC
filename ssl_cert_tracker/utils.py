@@ -14,18 +14,19 @@ django models for the ssl_certificates app
 
 """
 import logging
-from datetime import datetime
 import xml.dom.minidom
+from dateutil import parser
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
 def validate(date_text):
     """check if date_text is a valid date  """
     try:
-        if date_text != datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
-            raise ValueError
+        parser.parse(date_text[0:10])
         return True
     except TypeError:
+        return False
+    except IndexError:
         return False
     except ValueError:
         return False
@@ -55,12 +56,14 @@ def check_tag(elem, record, k, tag):
         if elem.getAttribute("key") == tag:
             if record[k] is None:
                 record[k] = elem.childNodes[0].nodeValue
+    except IndexError as ex:
+        record[k] = None
+        logging.info("nMap Record does not have commonName tag:%s", str(ex))
     except xml.parsers.expat.ExpatError as ex:
         logging.info("nMap Record does not have commonName tag:%s", ex.msg)
 
 def process_xml_cert(node_id, doc):
     """process xml from dom object"""
-
     for host in doc.getElementsByTagName("host"):
         scripts = host.getElementsByTagName("script")
         record = init_record()
@@ -68,7 +71,7 @@ def process_xml_cert(node_id, doc):
         record["addresses"] = host.getElementsByTagName("address")
         record["orion_id"] = node_id
         for script in scripts:
-            for elem in script.getElementsByTagName("elem"): # Get cert details for each target
+            for elem in script.getElementsByTagName("elem"):
                 check_tag(elem, record, "common_name", "commonName")
                 check_tag(elem, record, "organization_name", "organizationName")
                 check_tag(elem, record, "organization_name", "organizationName")
@@ -80,5 +83,4 @@ def process_xml_cert(node_id, doc):
                 check_tag(elem, record, "not_after", "notAfter")
                 check_tag(elem, record, "md5", "md5")
                 check_tag(elem, record, "sha1", "sha1")
-
-        return record
+        return  record

@@ -23,7 +23,7 @@ from orion_integration.models import (
 
 
 @shared_task
-def populate_from_orion():
+def populate_from_orion(queue='shared'):
     """
     update the models in orion_integration from the orion server
 
@@ -45,7 +45,9 @@ def populate_from_orion():
     return ret
 
 
-@shared_task(task_serializer='pickle', result_serializer='pickle')
+@shared_task(
+    task_serializer='pickle',
+    result_serializer='pickle', rate_limit='5/s', queue='orion')
 def orion_entity_exists(model_name, primary_key):
     """
     task that answers the question "does this thing still exist in orion?"
@@ -67,7 +69,7 @@ def orion_entity_exists(model_name, primary_key):
 
 
 @shared_task
-def verify_known_orion_data():
+def verify_known_orion_data(queue='shared'):
     """
     group task that is responsible for launching the
     :function:`<orion_entity_exists>`

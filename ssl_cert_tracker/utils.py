@@ -14,7 +14,7 @@ django models for the ssl_certificates app
 
 """
 import logging
-from datetime import datetime
+from dateutil import parser
 import xml.dom.minidom
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
@@ -22,10 +22,11 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 def validate(date_text):
     """check if date_text is a valid date  """
     try:
-        if date_text != datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
-            raise ValueError
+        parser.parse(date_text[0:10])
         return True
     except TypeError:
+        return False
+    except IndexError:
         return False
     except ValueError:
         return False
@@ -55,8 +56,12 @@ def check_tag(elem, record, k, tag):
         if elem.getAttribute("key") == tag:
             if record[k] is None:
                 record[k] = elem.childNodes[0].nodeValue
+    except IndexError as ex:
+        record[k] = None
+        print("IndexError nMap Record does not have commonName tag:%s" + str(ex))
     except xml.parsers.expat.ExpatError as ex:
-        logging.info("nMap Record does not have commonName tag:%s", ex.msg)
+       # logging.info("nMap Record does not have commonName tag:%s", ex.msg)
+        print("nMap Record does not have commonName tag:%s" + ex.msg)
 
 def process_xml_cert(node_id, doc):
     """process xml from dom object"""
@@ -80,5 +85,4 @@ def process_xml_cert(node_id, doc):
                 check_tag(elem, record, "not_after", "notAfter")
                 check_tag(elem, record, "md5", "md5")
                 check_tag(elem, record, "sha1", "sha1")
-
-        return record
+        return  record

@@ -160,6 +160,9 @@ class IntervalRule(Rule, models.Model):
         associated with it
         """
         for rule_applies in RuleApplies.objects.filter(rule=self):
+            # TODO: isolate the get queryset call inot a separate fundtion
+            # and raise a nitification if the call fails
+            # https://github.com/PHSAServiceOperationsCenter/poc/issues/14
             queryset = rule_applies.\
                 content_type.get_all_objects_for_this_type()
             for obj in queryset:

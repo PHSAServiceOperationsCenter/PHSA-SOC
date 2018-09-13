@@ -12,9 +12,11 @@ celery tasks for the rules_engine app
 
 :contact:    serban.teodorescu@phsa.ca
 
+:updated:    Sep. 5, 2018
+
 """
-from celery import shared_task, group, signature
 from django.utils import timezone
+from celery import shared_task, group
 
 from .models import RegexRule, IntervalRule, ExpirationRule
 

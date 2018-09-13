@@ -13,6 +13,7 @@ class TinDataAdmin(admin.ModelAdmin):
     list_editable = ('data_datetime_1', 'data_number_1',
                      'data_string_1', 'data_datetime_2', 'data_number_2',
                      'data_string_2')
+    search_fields = ['data_name', ]
 
 
 @admin.register(IntervalRule)

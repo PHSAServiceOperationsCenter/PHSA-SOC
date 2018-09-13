@@ -30,12 +30,19 @@ from jsonfield import JSONField
 from p_soc_auto_base.models import BaseModel
 
 
+class NotificationError(Exception):
+    """
+    raise if there is an error in creating the notification record
+    """
+    pass
+
+
 class TinDataForRuleDemos(BaseModel, models.Model):
     """
     just a test class to screw around; will go away soon
     """
     data_name = models.CharField(
-        'something', max_length=64, db_index=True, unique=True, blank=False,
+        'data_name', max_length=64, db_index=True, unique=True, blank=False,
         null=False)
     data_datetime_1 = models.DateTimeField('data_datetime_1')
     data_number_1 = models.IntegerField('data_number_1')
@@ -81,9 +88,19 @@ class Rule(BaseModel, models.Model):
     applies = models.ManyToManyField(
         ContentType, through='RuleApplies')
 
-    def raise_notification(self, **kwargs):
+    def raise_notification(
+            self, notification_type=None, notification_notes=None, **kwargs):
+        """
+        raise a notification
+
+        currently this just creates a record in the notification table
+        """
+        if notification_type is None:
+            raise NotificationError('must specify a notification type')
+
         notification = NotificationEventForRuleDemo(
-            notification='%s: notify from %s' % (timezone.now(), self.rule))
+            notification='%s: notify from %s' % (timezone.now(), self.rule),
+            notification_type=notification_type, notes=notification_notes)
         notification.notification_args = dict(**kwargs)
         notification.created_by_id = 1
         notification.updated_by_id = 1
@@ -105,7 +122,7 @@ class RegexRule(Rule, models.Model):
     """
     rules of type 'is string in fact'
 
-    useful for looking for speific messages in log files
+    useful for looking for specific messages in log files
     """
     match_string = models.CharField(
         _('raise when matching'), max_length=253, db_index=True, blank=False,
@@ -117,19 +134,30 @@ class RegexRule(Rule, models.Model):
         """
         re_find = re.compile(self.match_string, flags=re.I | re.M)
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = str(rule_applies.get_fact_for_field(obj))
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
-                        value=fact, critical=str(err))
+                        expected=self.match_string,
+                        value=fact, notification_note=str(err))
 
                 if re_find.search(fact):
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, match=self.match_string)
@@ -148,10 +176,10 @@ class IntervalRule(Rule, models.Model):
     interval defined by :var:`min_val` and :var:`interval`
     """
     interval = models.DecimalField(
-        _('minimum acceptable value'), max_digits=5, decimal_places=2,
+        _('interval'), max_digits=5, decimal_places=2,
         default=Decimal('000.00'))
     min_val = models.DecimalField(
-        _('maximum acceptable value'), max_digits=5, decimal_places=2,
+        _('minimum acceptable value'), max_digits=5, decimal_places=2,
         default=Decimal('100.00'))
 
     def apply_rule(self):
@@ -160,27 +188,43 @@ class IntervalRule(Rule, models.Model):
         associated with it
         """
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            # TODO: isolate the get queryset call inot a separate fundtion
-            # and raise a nitification if the call fails
-            # https://github.com/PHSAServiceOperationsCenter/poc/issues/14
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = Decimal(rule_applies.get_fact_for_field(obj))
                     if not fact.is_finite():
                         self.raise_notification(
+                            notification_type='invalid rule',
+                            notification_note=(
+                                'was looking for something between %s and %s'
+                                % (str(self.min_val),
+                                   str(self.min_val + self.interval))),
                             model=rule_applies.content_type.name,
                             field=rule_applies.field_name,
                             value=fact, critical='not a number')
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
+                        notification_note=(
+                            'was looking for something between %s and %s'
+                            % (str(self.min_val),
+                               str(self.min_val + self.interval))),
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, critical=str(err))
 
                 if not self.min_val <= fact <= self.min_val + self.interval:
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact,
@@ -204,8 +248,16 @@ class ExpirationRule(Rule, models.Model):
 
     def apply_rule(self):
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = rule_applies.get_fact_for_field(obj)
@@ -213,6 +265,11 @@ class ExpirationRule(Rule, models.Model):
                         fact = datetime_parser.parse(fact)
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
+                        notification_note=(
+                            'was looking for something between %s and %s'
+                            % (str(self.valid_after),
+                               str(timezone.now() + self.grace_period))),
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, critical=str(err))
@@ -220,6 +277,7 @@ class ExpirationRule(Rule, models.Model):
                 if not self.valid_after <= fact <= timezone.now() \
                         + self.grace_period:
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact,

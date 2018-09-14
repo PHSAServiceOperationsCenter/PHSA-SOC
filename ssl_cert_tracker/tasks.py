@@ -29,7 +29,7 @@ from .utils import process_xml_cert
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
 
-@shared_task(rate_limit='30/s', queue='nmap')
+@shared_task(rate_limit='0.5/s', queue='nmap')
 def go_node(node_id, node_address):
     """Celery worker for each orion node"""
     xml_data = ""

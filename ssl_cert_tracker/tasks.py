@@ -31,6 +31,7 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 @shared_task
 def go_node(node_id, node_address):
     """Celery worker for each orion node"""
+    return True
     xml_data = ""
     count = 0
     while count < 5:
@@ -40,7 +41,7 @@ def go_node(node_id, node_address):
             nmap_task.run()
             xml_data = nmap_task.stdout
             break
-        except EnvironmentError as ex:
+        except Exception as ex:
             logging.error("Error proceesing xml_cert message:%s", ex)
 
     if count < 5:

@@ -19,8 +19,8 @@ from ssl_cert_tracker.models import NmapCertsData, NmapHistory
 
 @pytest.mark.django_db
 def test_insert_into_certs_data():
-    """test_check_tag_valid reads a valid xml file
-    from data folder and checks the tags"""
+    """test_insert_into_certs_data inserts data into model then
+    do a sanity check"""
     NmapCertsData.created_by = NmapCertsData.get_or_create_user(username='PHSA_User')
     cert = NmapCertsData(xml_data = "sample data", \
                          addresses = "10.10.10.10", \

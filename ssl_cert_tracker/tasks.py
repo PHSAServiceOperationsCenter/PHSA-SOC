@@ -31,7 +31,6 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 @shared_task
 def go_node(node_id, node_address):
     """Celery worker for each orion node"""
-    return True
     xml_data = ""
     count = 0
     while count < 5:

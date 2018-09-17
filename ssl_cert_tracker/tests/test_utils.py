@@ -23,7 +23,8 @@ except ImportError:
 
 import xml.dom.minidom
 from lxml import etree
-from ssl_cert_tracker.utils import validate, init_record, check_tag
+from ssl_cert_tracker.utils import validate, init_record, \
+     process_xml_cert, check_tag
 
 class TestSslCertTrackerTestUtils(object):
     """TestSslCertTrackerTestUtils injects different sets of values
@@ -150,3 +151,17 @@ class TestSslCertTrackerTestUtils(object):
     def test_init_record():
         """test_init_record checks if instance is a dict"""
         assert isinstance(init_record(), dict)
+
+        
+    @staticmethod
+    def test_process_xml_cert():
+        """test_process_xml_cert reads a valid xml file
+        from data folder and checks the tags"""
+
+
+        doc = xml.dom.minidom.parse(os.getcwd() + "/ssl_cert_tracker/tests/data/good.xml")
+        record = process_xml_cert(12345, doc)
+        for key in record:
+            assert record[key] is not None
+
+

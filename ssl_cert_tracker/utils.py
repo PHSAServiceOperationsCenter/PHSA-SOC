@@ -22,7 +22,7 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 def validate(date_text):
     """check if date_text is a valid date  """
     try:
-        parser.parse(date_text[0:10])
+        parser.parse(date_text)
         return True
     except TypeError:
         return False

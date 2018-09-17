@@ -371,7 +371,7 @@ class OrionNode(OrionBaseModel, models.Model):
     node_name = models.TextField(
         _('Node Name'), blank=False, null=False)
     node_dns = models.CharField(
-        _('DNS'), db_index=True, blank=False, null=False, max_length=254)
+        _('DNS'), db_index=True, blank=True, null=True, max_length=254)
     node_description = models.TextField(_('Orion Node Description'))
     vendor = models.CharField(
         _('Vendor'), db_index=True, blank=True, null=True, max_length=254)
@@ -415,6 +415,9 @@ class OrionNode(OrionBaseModel, models.Model):
 
         return ret
 
+    def __str__(self):
+        return self.node_caption
+
     class Meta:
         app_label = 'orion_integration'
         verbose_name = 'Orion Node'
@@ -451,6 +454,12 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
         _('Orion Node Category'), db_index=True, unique=True, null=False,
         blank=False, max_length=254, help_text=_(
             'Orion Node Category Help'))
+
+    def __str__(self):
+        """
+        return something meaningful
+        """
+        return self.category
 
     class Meta:
         app_label = 'orion_integration'

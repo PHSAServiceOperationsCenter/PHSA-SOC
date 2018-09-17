@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
+    'grappelli',
+    'rangefilter',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',

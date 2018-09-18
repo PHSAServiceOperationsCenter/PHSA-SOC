@@ -110,17 +110,13 @@ class OrionBaseModel(BaseModel, models.Model):
         if data:
             self.not_seen_since = None
             self.save()
-            return ('exists',
-                    list(self._meta.model.objects.
-                         filter(pk=self.pk).values_list()))
+            return True
 
         if not self.not_seen_since:
             self.not_seen_since = timezone.now()
             self.save()
 
-        return ('not seen since: %s' % self.not_seen_since,
-                list(self._meta.model.objects.
-                     filter(pk=self.pk).values_list()))
+        return True
 
     # pylint:disable=R0914
     @classmethod
@@ -196,15 +192,21 @@ class OrionBaseModel(BaseModel, models.Model):
                 if qs.exists():
                     orion_mapping.pop('orion_id')
                     orion_mapping.pop('created_by', None)
+                    return_dict['updated_records'] += 1
+                    # qs.update(**orion_mapping)
 
-                    qs.update(**orion_mapping)
                 else:
-                    _, created = cls.objects.update_or_create(
-                        **orion_mapping)
-                    if created:
-                        return_dict['created_records'] += 1
-                    else:
-                        return_dict['updated_records'] += 1
+                    return_dict['created_records'] += 1
+                    # _, created = cls.objects.update_or_create(
+                    #    **orion_mapping)
+                    # if created:
+                    #    return_dict['created_records'] += 1
+                    # else:
+                    #    return_dict['updated_records'] += 1
+
+                instance = cls(**orion_mapping)
+                instance.save()
+
             except Exception as err:    # pylint:disable=W0703
                 return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %

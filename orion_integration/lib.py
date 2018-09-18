@@ -81,10 +81,10 @@ class OrionSslNode():
         """
         # pylint:enable=C0301
 
-        queryset = OrionNode.objects.all()
+        queryset = OrionNode.objects.filter(enabled=True)
 
         if cerner_cst:
-            queryset = OrionCernerCSTNode.objects.all()
+            queryset = OrionCernerCSTNode.objects.filter(enabled=True)
 
         if orion_ssl:
             return queryset.filter(**cls.ssl_filters).all()

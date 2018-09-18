@@ -175,3 +175,6 @@ CELERY_QUEUES = (
 CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
 CELERY_DEFAULT_ROUTING_KEY = 'shared'
+
+# service users
+RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'

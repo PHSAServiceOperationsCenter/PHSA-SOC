@@ -16,7 +16,7 @@ __updated__ = '2018_08_08'
 
 
 from django.contrib import admin
-from .models import NmapCertsData
+from .models import NmapCertsData, NmapHistory
 
 
 @admin.register(NmapCertsData)
@@ -29,4 +29,3 @@ class NmapCertsDataAdmin(admin.ModelAdmin):
 class NmapHistoryAdmin(admin.ModelAdmin):
     """NmapHistoryAdmin to be displayed on admin page  """
     pass
-

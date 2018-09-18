@@ -14,8 +14,8 @@ django models for the ssl_certificates app
 
 """
 import logging
-import xml.dom.minidom
 from dateutil import parser
+import xml.dom.minidom
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
@@ -60,7 +60,8 @@ def check_tag(elem, record, k, tag):
         record[k] = None
         logging.info("nMap Record does not have commonName tag:%s", str(ex))
     except xml.parsers.expat.ExpatError as ex:
-        logging.info("nMap Record does not have commonName tag:%s", ex.msg)
+       # logging.info("nMap Record does not have commonName tag:%s", ex.msg)
+        print("nMap Record does not have commonName tag:%s" + ex.msg)
 
 def process_xml_cert(node_id, doc):
     """process xml from dom object"""

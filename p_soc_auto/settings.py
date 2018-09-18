@@ -24,6 +24,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
+from kombu import Queue, Exchange
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -57,6 +59,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.admindocs.middleware.XViewMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -158,3 +161,15 @@ CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_QUEUES = (
+    Queue('rules', Exchange('rules'), routing_key='rules'),
+    Queue('orion', Exchange('orion'), routing_key='orion'),
+    Queue('nmap', Exchange('nmap'), routing_key='nmap'),
+    Queue('ssl', Exchange('ssl'), routing_key='ssl'),
+    Queue('shared', Exchange('shared'), routing_key='shared')
+)
+
+CELERY_DEFAULT_QUEUE = 'shared'
+CELERY_DEFAULT_EXCHANGE = 'shared'
+CELERY_DEFAULT_ROUTING_KEY = 'shared'

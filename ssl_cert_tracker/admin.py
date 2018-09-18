@@ -14,9 +14,9 @@ django admin for the orion_integration app
 """
 __updated__ = '2018_08_08'
 
-from django.contrib import admin
 
-from .models import NmapCertsData, NmapHistory
+from django.contrib import admin
+from .models import NmapCertsData
 
 
 @admin.register(NmapCertsData)
@@ -30,5 +30,3 @@ class NmapHistoryAdmin(admin.ModelAdmin):
     """NmapHistoryAdmin to be displayed on admin page  """
     pass
 
-
-# Register your models here.

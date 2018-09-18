@@ -95,7 +95,8 @@ class Rule(BaseModel, models.Model):
         blank=False, null=False,
         help_text=_('mother of inventions'))
     applies = models.ManyToManyField(
-        ContentType, through='RuleApplies', name='This Rule Applies To')
+        ContentType, through='RuleApplies',
+        verbose_name=_('This Rule Applies to'))
 
     def raise_notification(
             self, notification_type=None, notification_notes=None, **kwargs):
@@ -320,7 +321,9 @@ class RuleApplies(BaseModel, models.Model):
         Rule, on_delete=models.CASCADE, blank=False, null=False,
         verbose_name=_('Rule'))
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE)
+        ContentType, on_delete=models.CASCADE, blank=False, null=False,
+        verbose_name=_('Content Type'),
+        help_text=_('Links a rule to a model to which the rule applies to'))
     field_name = models.CharField('field', max_length=64)
 
     def get_fact_for_field(self, obj):
@@ -333,3 +336,8 @@ class RuleApplies(BaseModel, models.Model):
         return getattr(
             self.content_type.get_object_for_this_type(pk=obj.id),
             self.field_name)
+
+    class Meta:
+        verbose_name = _('Content to which a Rule Applies')
+        verbose_name_plural = _('Content to which a Rule Applies')
+        unique_together = (('rule', 'content_type', 'field_name'))

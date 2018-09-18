@@ -12,14 +12,18 @@ celery tasks for the rules_engine app
 
 :contact:    serban.teodorescu@phsa.ca
 
+:updated:    Sep. 5, 2018
+
 """
-from celery import shared_task, group, signature
 from django.utils import timezone
+from celery import shared_task, group
 
 from .models import RegexRule, IntervalRule, ExpirationRule
 
 
-@shared_task(task_serializer='pickle', result_serializer='pickle')
+@shared_task(
+    task_serializer='pickle', result_serializer='pickle', rate_limit='30/s',
+    queue='rules')
 def apply_rule(rule):
     """
     celery task wrapper for the overloaded
@@ -39,7 +43,7 @@ def apply_rule(rule):
 
 
 @shared_task
-def apply_intervals():
+def apply_intervals(queue='shared'):
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.IntervalRule`
@@ -55,7 +59,7 @@ def apply_intervals():
 
 
 @shared_task
-def apply_expiration():
+def apply_expiration(queue='shared'):
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.ExpirationRule`
@@ -67,7 +71,7 @@ def apply_expiration():
 
 
 @shared_task
-def apply_regex_rules():
+def apply_regex_rules(queue='shared'):
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.ExpirationRule`

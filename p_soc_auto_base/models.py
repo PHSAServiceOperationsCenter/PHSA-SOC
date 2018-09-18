@@ -48,6 +48,15 @@ class BaseModel(models.Model):
 
     @classmethod
     def get_or_create_user(cls, username):
+        """
+        get or create a user if you need one
+
+        it's a class method because we have defined it on an abstract model
+        and because we may have to call it from places where
+        we don't have access to a model instance
+
+        :arg str username: the username to get or create
+        """
         user = get_user_model().objects.filter(username__iexact=username)
         if not user.exists():
             get_user_model().objects.create_user(username)

@@ -22,7 +22,7 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 def validate(date_text):
     """check if date_text is a valid date  """
     try:
-        parser.parse(date_text[0:10])
+        parser.parse(date_text)
         return True
     except TypeError:
         return False
@@ -58,14 +58,13 @@ def check_tag(elem, record, k, tag):
                 record[k] = elem.childNodes[0].nodeValue
     except IndexError as ex:
         record[k] = None
-        print("IndexError nMap Record does not have commonName tag:%s" + str(ex))
+        logging.info("nMap Record does not have commonName tag:%s", str(ex))
     except xml.parsers.expat.ExpatError as ex:
        # logging.info("nMap Record does not have commonName tag:%s", ex.msg)
         print("nMap Record does not have commonName tag:%s" + ex.msg)
 
 def process_xml_cert(node_id, doc):
     """process xml from dom object"""
-
     for host in doc.getElementsByTagName("host"):
         scripts = host.getElementsByTagName("script")
         record = init_record()
@@ -73,7 +72,7 @@ def process_xml_cert(node_id, doc):
         record["addresses"] = host.getElementsByTagName("address")
         record["orion_id"] = node_id
         for script in scripts:
-            for elem in script.getElementsByTagName("elem"): # Get cert details for each target
+            for elem in script.getElementsByTagName("elem"):
                 check_tag(elem, record, "common_name", "commonName")
                 check_tag(elem, record, "organization_name", "organizationName")
                 check_tag(elem, record, "organization_name", "organizationName")

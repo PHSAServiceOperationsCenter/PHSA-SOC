@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
+    'dal',
+    'dal_select2',
     'grappelli',
     'rangefilter',
     'django.contrib.admin',
@@ -178,3 +180,6 @@ CELERY_DEFAULT_ROUTING_KEY = 'shared'
 
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
+
+AJAX_LOOKUP_CHANNELS = {
+    'fields': ('rules_engine.lookups', 'FieldNamesLookup')}

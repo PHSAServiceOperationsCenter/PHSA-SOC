@@ -16,12 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.conf.urls import url, include
-#from ajax_select import urls as ajax_select_urls
 
 urlpatterns = [
     path('admin/doc/', include('django.contrib.admindocs.urls')),
     path('grappelli/', include('grappelli.urls')),
-    path('admin/lookups/', include('ajax_select.urls')),
     path('admin/', admin.site.urls),
     path('autocomplete/', include('rules_engine.urls'))
 ]

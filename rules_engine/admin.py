@@ -15,10 +15,13 @@ django admin for the rules_engine app
 :updated:    sep. 18, 2018
 """
 from django.contrib import admin
+from ajax_select import make_ajax_form
+from ajax_select.admin import AjaxSelectAdmin
 
 from .models import (
     TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,
     NotificationEventForRuleDemo, RegexRule)
+from .forms import RuleAppliesForm
 
 
 @admin.register(TinDataForRuleDemos)
@@ -58,10 +61,17 @@ class RuleAppliesAdmin(admin.ModelAdmin):
     """
     admin class fro linking rules to objects
     """
+    form = RuleAppliesForm
+
+    readonly_fields = ('get_current_field_name',)
     list_display_links = ('id',)
     list_display = ('id', 'rule', 'content_type', 'field_name', 'created_by',
                     'created_on', 'updated_by', 'updated_on')
-    list_editable = ('rule', 'content_type', 'field_name')
+    list_editable = ('rule', 'content_type',)
+
+    def get_current_field_name(self, obj):
+        return obj.field_name
+    get_current_field_name.short_description = 'current value for field name'
 
 
 @admin.register(NotificationEventForRuleDemo)

@@ -324,7 +324,9 @@ class RuleApplies(BaseModel, models.Model):
         ContentType, on_delete=models.CASCADE, blank=False, null=False,
         verbose_name=_('Content Type'),
         help_text=_('Links a rule to a model to which the rule applies to'))
-    field_name = models.CharField('field', max_length=64)
+    field_name = models.CharField(
+        _('field name'), max_length=64, db_index=True, blank=False, null=False,
+        help_text=_('the name of the field where the rule fact resides'))
 
     def get_fact_for_field(self, obj):
         """

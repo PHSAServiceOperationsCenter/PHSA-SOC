@@ -15,8 +15,6 @@ django admin for the rules_engine app
 :updated:    sep. 18, 2018
 """
 from django.contrib import admin
-from ajax_select import make_ajax_form
-from ajax_select.admin import AjaxSelectAdmin
 
 from .models import (
     TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,

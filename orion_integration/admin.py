@@ -15,6 +15,7 @@ django admin for the orion_integration app
 :updated:    aug. 8, 2018
 """
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 from rangefilter.filter import DateRangeFilter
 
 from .models import (
@@ -27,6 +28,38 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
     admin methods that only apply to this application
     """
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """
+        overload to populate updated_by from the request object
+        """
+        data = request.GET.copy()
+        data['updated_by'] = request.user
+        request.GET = data
+
+        return super().change_view(
+            request, object_id, form_url=form_url, extra_context=extra_context)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        overload
+        admin.ModelAdmin.formfield_for_foreignkey(
+            self, db_field, request, **kwargs)
+        """
+        if db_field.name in ['updated_by', ]:
+            kwargs['queryset'] = get_user_model().objects.\
+                filter(username=request.user.username)
+            kwargs['initial'] = kwargs['queryset'].get()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def has_add_permission(self, request, obj=None):
+        """
+        all these things are populated from orion
+
+        do not allow any tom, dick, and harriet to add stuff on their own
+        """
+        return False
 
     def get_readonly_fields(self, request, obj=None):
         """
@@ -42,6 +75,7 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
         if request.user.is_superuser:
             readonly_fields.remove('enabled')
+            readonly_fields.remove('updated_by')
 
         return readonly_fields
 

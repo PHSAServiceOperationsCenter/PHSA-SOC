@@ -70,6 +70,9 @@ class NmapCertsData(BaseModel, models.Model):
         pk_val = self.pk
         self.update_cert_history(pk_val)
 
+    def __str__(self):
+        return 'O: %s, CN: %s' % (self.organization_name, self.common_name)
+
     @staticmethod
     def get_cert_handle(o_id):
         """get_cert_handle """
@@ -88,6 +91,10 @@ class NmapCertsData(BaseModel, models.Model):
                 retreived=timezone.now())
             return_code = 0
         return return_code
+
+    class Meta:
+        verbose_name = 'SSL Certificate Data'
+        verbose_name_plural = 'SSL Certificate Data'
 
 
 class NmapHistory(models.Model):

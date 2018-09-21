@@ -35,12 +35,14 @@ class RuleAppliesAutocomplete(autocomplete.Select2ListView):
             :attr:`rules_engine.models.RuleApplies.content_type`
 
         """
-        pk = int(self.request.META.get('HTTP_REFERER').split('/')[6])
-        model_for_pk = RuleApplies.objects.get(pk=pk).content_type.model
-        content = ContentType.objects.get(model=model_for_pk)
+        pk = self.forwarded.get('content_type', None)
+        if pk is None:
+            return ['search failed']
+
+        content = ContentType.objects.get(pk=int(pk))
 
         return [field.name for field in content.
                 get_all_objects_for_this_type().first()._meta.get_fields()
-                if not field.primary_key and not field.is_relation]
-
-# Create your views here.
+                if not (field.many_to_one and field.related_model)
+                or field.is_relation
+                or field.primary_key]

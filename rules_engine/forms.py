@@ -10,5 +10,6 @@ class RuleAppliesForm(ModelForm):
         exclude = []
         widgets = {
             'field_name':
-            autocomplete.ListSelect2(url='autocomplete-field-name')
+            autocomplete.ListSelect2(
+                url='autocomplete-field-name', forward=['content_type', ])
         }

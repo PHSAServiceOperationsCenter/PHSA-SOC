@@ -73,9 +73,6 @@ class Notification(BaseModel, models.Model):
     rule_applies = models.ForeignKey(
         'rules_engine.RuleApplies', on_delete=models.PROTECT, db_index=True,
         blank=False, null=False, verbose_name=_('raised by'))
-    msg = models.CharField(
-        'notification', max_length=253, db_index=True, unique=True,
-        blank=False, null=False)
     notification_type = models.ForeignKey(
         'NotificationType', on_delete=models.PROTECT, db_index=True,
         blank=False, null=False, verbose_name=_('Notification Type'))
@@ -91,10 +88,12 @@ class Notification(BaseModel, models.Model):
     notification_id = models.UUIDField(db_index=True, blank=True, null=True)
     instance_pk = models.BigIntegerField(pk = True)
 
-    def _get_msg(self):
+    @property
+    def message(self):
         "Returns the msg."
-        return '%s' % (self.msg)
-    message = property(_get_msg)
+        "use rule_applies field to constract the message"
+        return '%s' % ("Hello World!")
+
 
 
 class NotificationResponse(BaseModel, models.Model):

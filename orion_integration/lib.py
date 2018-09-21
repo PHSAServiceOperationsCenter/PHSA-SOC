@@ -105,7 +105,8 @@ class OrionSslNode():
         see :method:`<nodes>` for argument details
         """
         return cls.nodes(
-            cerner_cst=cerner_cst, orion_ssl=orion_ssl, servers_only).count()
+            cerner_cst=cerner_cst,
+            orion_ssl=orion_ssl, servers_only=servers_only).count()
 
     @classmethod
     def ip_addresses(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
@@ -117,6 +118,7 @@ class OrionSslNode():
         """
         return list(
             cls.nodes(
-                cerner_cst=cerner_cst, orion_ssl=orion_ssl, servers_only
+                cerner_cst=cerner_cst,
+                orion_ssl=orion_ssl, servers_only=servers_only
             ).values_list('ip_address', flat=True)
         )

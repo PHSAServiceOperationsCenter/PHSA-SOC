@@ -87,7 +87,14 @@ class Notification(BaseModel, models.Model):
     esc_ack_on = models.DateTimeField(
         _('escalation acknowledged at'), db_index=True, blank=True, null=True)
     expired_on = models.DateTimeField(
-        _('expired at'), db_index=True, blank=True, null=True)
+        _('expired at'), db_index=True, blank=True, null=True),
+    notification_id = models.UUIDField(db_index=True, blank=True, null=True)
+    instance_pk = models.BigIntegerField(pk = True)
+
+    def _get_msg(self):
+        "Returns the msg."
+        return '%s' % (self.msg)
+    message = property(_get_msg)
 
 
 class NotificationResponse(BaseModel, models.Model):

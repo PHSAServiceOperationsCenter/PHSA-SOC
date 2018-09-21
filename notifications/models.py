@@ -85,7 +85,7 @@ class Notification(BaseModel, models.Model):
         _('escalation acknowledged at'), db_index=True, blank=True, null=True)
     expired_on = models.DateTimeField(
         _('expired at'), db_index=True, blank=True, null=True),
-    notification_id = models.UUIDField(db_index=True, blank=True, null=True)
+    notification_uuid = models.UUIDField(db_index=True, blank=True, null=True)
     instance_pk = models.BigIntegerField(pk = True)
 
     @property

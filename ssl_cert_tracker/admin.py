@@ -1,7 +1,7 @@
 """
 .. _admin:
 
-django admin for the orion_integration app
+django admin for the ssl_cert_tracker app
 
 :module:    p_soc_auto.ssl_cert_tracker.admin
 
@@ -11,21 +11,53 @@ django admin for the orion_integration app
     of British Columbia
 
 :contact:    ali.rahmat@phsa.ca
+
+:updated:    sep. 21, 2018
 """
-__updated__ = '2018_08_08'
-
-
 from django.contrib import admin
-from .models import NmapCertsData, NmapHistory
+from django.contrib.auth import get_user_model
+from rangefilter.filter import DateRangeFilter
+
+from .models import NmapCertsData
+from p_soc_auto_base.admin import BaseAdmin
+
+
+class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
+    """
+    base class for admin classes in this application
+    """
+
+    def has_add_permission(self, request, obj=None):
+        """
+        all these things are populated from orion
+
+        do not allow any tom, dick, and harriet to add stuff on their own
+        """
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        overload get_readonly_fields
+
+        for superusers we want enabled as a regular field and everything
+        else readonly
+
+        for everybody else we want everything to be readonly
+        """
+        readonly_fields = list(self.readonly_fields)
+        readonly_fields += [field.name for field in self.model._meta.fields]
+
+        return readonly_fields
 
 
 @admin.register(NmapCertsData)
 class NmapCertsDataAdmin(admin.ModelAdmin):
-    """NmapCertsDataAdmin to be displayed on admin page  """
-    pass
-
-
-@admin.register(NmapHistory)
-class NmapHistoryAdmin(admin.ModelAdmin):
-    """NmapHistoryAdmin to be displayed on admin page  """
-    pass
+    """
+    SSL certificate data admin pages  
+    """
+    list_display = ['common_name', 'organization_name', 'not_before',
+                    'not_after', 'bits', 'md5', 'sha1', 'updated_on']
+    list_filter = [('not_after', DateRangeFilter),
+                   ('not_before', DateRangeFilter),
+                   ('updated_on', DateRangeFilter)]
+    search_fields = ['common_name', 'organization_name']

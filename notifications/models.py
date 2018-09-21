@@ -85,6 +85,8 @@ class Notification(BaseModel, models.Model):
         _('escalation acknowledged at'), db_index=True, blank=True, null=True)
     expired_on = models.DateTimeField(
         _('expired at'), db_index=True, blank=True, null=True),
+    broadcast_on = models.DateTimeField(
+        _('expired at'), db_index=True, blank=True, null=True),
     notification_uuid = models.UUIDField(db_index=True, blank=True, null=True)
     instance_pk = models.BigIntegerField(pk = True)
 
@@ -93,6 +95,9 @@ class Notification(BaseModel, models.Model):
         "Returns the msg."
         "use rule_applies field to constract the message"
         return '%s' % ("Hello World!")
+
+    def get_next_notification():
+        return "Hello"
 
 
 

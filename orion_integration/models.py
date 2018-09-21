@@ -193,18 +193,19 @@ class OrionBaseModel(BaseModel, models.Model):
                     orion_mapping.pop('orion_id')
                     orion_mapping.pop('created_by', None)
                     return_dict['updated_records'] += 1
-                    # qs.update(**orion_mapping)
+
+                    # we do not want to use qs.update(88orion_mapping) because
+                    # it bypasses the pre- and post-save signals
+                    # thus, setattr in a loop
+                    instance = qs.get()
+                    for attr, value in orion_mapping.items():
+                        setattr(instance, attr, value)
 
                 else:
+                    # it is a new instance
                     return_dict['created_records'] += 1
-                    # _, created = cls.objects.update_or_create(
-                    #    **orion_mapping)
-                    # if created:
-                    #    return_dict['created_records'] += 1
-                    # else:
-                    #    return_dict['updated_records'] += 1
+                    instance = cls(**orion_mapping)
 
-                instance = cls(**orion_mapping)
                 instance.save()
 
             except Exception as err:    # pylint:disable=W0703

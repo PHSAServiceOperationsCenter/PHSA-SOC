@@ -181,6 +181,7 @@ CELERY_DEFAULT_ROUTING_KEY = 'shared'
 
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
+NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 
 AJAX_LOOKUP_CHANNELS = {
     'fields': ('rules_engine.lookups', 'FieldNamesLookup')}

@@ -22,6 +22,7 @@ from decimal import Decimal
 from dateutil import parser as datetime_parser
 
 from django.db import models
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -54,6 +55,10 @@ class TinDataForRuleDemos(BaseModel, models.Model):
     def __str__(self):
         return self.data_name
 
+    class Meta:
+        verbose_name = 'Sample data for demonstrating rules'
+        verbose_name_plural = 'Sample data for demonstrating rules'
+
 
 class NotificationEventForRuleDemo(BaseModel, models.Model):
     """
@@ -76,6 +81,10 @@ class NotificationEventForRuleDemo(BaseModel, models.Model):
     def __str__(self):
         return self.notification
 
+    class Meta:
+        verbose_name = 'Place holder for notifications'
+        verbose_name_plural = 'Place holder for notifications'
+
 
 class Rule(BaseModel, models.Model):
     """
@@ -86,7 +95,8 @@ class Rule(BaseModel, models.Model):
         blank=False, null=False,
         help_text=_('mother of inventions'))
     applies = models.ManyToManyField(
-        ContentType, through='RuleApplies')
+        ContentType, through='RuleApplies',
+        verbose_name=_('This Rule Applies to'))
 
     def raise_notification(
             self, notification_type=None, notification_notes=None, **kwargs):
@@ -102,12 +112,17 @@ class Rule(BaseModel, models.Model):
             notification='%s: notify from %s' % (timezone.now(), self.rule),
             notification_type=notification_type, notes=notification_notes)
         notification.notification_args = dict(**kwargs)
-        notification.created_by_id = 1
-        notification.updated_by_id = 1
+        notification.created_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.updated_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
         notification.save()
 
     def apply_rule(self):
-        pass
+        """
+        just a place holder. this method needs to exist in child classes
+        """
+        raise NotImplementedError('must be implemented in the subclass')
 
     def __str__(self):
         return self.rule
@@ -306,8 +321,12 @@ class RuleApplies(BaseModel, models.Model):
         Rule, on_delete=models.CASCADE, blank=False, null=False,
         verbose_name=_('Rule'))
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE)
-    field_name = models.CharField('field', max_length=64)
+        ContentType, on_delete=models.CASCADE, blank=False, null=False,
+        verbose_name=_('Content Type'),
+        help_text=_('Links a rule to a model to which the rule applies to'))
+    field_name = models.CharField(
+        _('field name'), max_length=64, db_index=True, blank=False, null=False,
+        help_text=_('the name of the field where the rule fact resides'))
 
     def get_fact_for_field(self, obj):
         """
@@ -319,3 +338,8 @@ class RuleApplies(BaseModel, models.Model):
         return getattr(
             self.content_type.get_object_for_this_type(pk=obj.id),
             self.field_name)
+
+    class Meta:
+        verbose_name = _('Content to which a Rule Applies')
+        verbose_name_plural = _('Content to which a Rule Applies')
+        unique_together = (('rule', 'content_type', 'field_name'))

@@ -110,17 +110,13 @@ class OrionBaseModel(BaseModel, models.Model):
         if data:
             self.not_seen_since = None
             self.save()
-            return ('exists',
-                    list(self._meta.model.objects.
-                         filter(pk=self.pk).values_list()))
+            return True
 
         if not self.not_seen_since:
             self.not_seen_since = timezone.now()
             self.save()
 
-        return ('not seen since: %s' % self.not_seen_since,
-                list(self._meta.model.objects.
-                     filter(pk=self.pk).values_list()))
+        return True
 
     # pylint:disable=R0914
     @classmethod
@@ -196,15 +192,22 @@ class OrionBaseModel(BaseModel, models.Model):
                 if qs.exists():
                     orion_mapping.pop('orion_id')
                     orion_mapping.pop('created_by', None)
+                    return_dict['updated_records'] += 1
 
-                    qs.update(**orion_mapping)
+                    # we do not want to use qs.update(88orion_mapping) because
+                    # it bypasses the pre- and post-save signals
+                    # thus, setattr in a loop
+                    instance = qs.get()
+                    for attr, value in orion_mapping.items():
+                        setattr(instance, attr, value)
+
                 else:
-                    _, created = cls.objects.update_or_create(
-                        **orion_mapping)
-                    if created:
-                        return_dict['created_records'] += 1
-                    else:
-                        return_dict['updated_records'] += 1
+                    # it is a new instance
+                    return_dict['created_records'] += 1
+                    instance = cls(**orion_mapping)
+
+                instance.save()
+
             except Exception as err:    # pylint:disable=W0703
                 return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %
@@ -371,7 +374,7 @@ class OrionNode(OrionBaseModel, models.Model):
     node_name = models.TextField(
         _('Node Name'), blank=False, null=False)
     node_dns = models.CharField(
-        _('DNS'), db_index=True, blank=False, null=False, max_length=254)
+        _('DNS'), db_index=True, blank=True, null=True, max_length=254)
     node_description = models.TextField(_('Orion Node Description'))
     vendor = models.CharField(
         _('Vendor'), db_index=True, blank=True, null=True, max_length=254)
@@ -415,6 +418,9 @@ class OrionNode(OrionBaseModel, models.Model):
 
         return ret
 
+    def __str__(self):
+        return self.node_caption
+
     class Meta:
         app_label = 'orion_integration'
         verbose_name = 'Orion Node'
@@ -451,6 +457,12 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
         _('Orion Node Category'), db_index=True, unique=True, null=False,
         blank=False, max_length=254, help_text=_(
             'Orion Node Category Help'))
+
+    def __str__(self):
+        """
+        return something meaningful
+        """
+        return self.category
 
     class Meta:
         app_label = 'orion_integration'

@@ -45,6 +45,10 @@ INSTALLED_APPS = [
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
+    'dal',
+    'dal_select2',
+    'grappelli',
+    'rangefilter',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -52,7 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_results',
+    # 'django_celery_results',
     'django_celery_beat',
 ]
 
@@ -173,3 +177,9 @@ CELERY_QUEUES = (
 CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
 CELERY_DEFAULT_ROUTING_KEY = 'shared'
+
+# service users
+RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
+
+AJAX_LOOKUP_CHANNELS = {
+    'fields': ('rules_engine.lookups', 'FieldNamesLookup')}

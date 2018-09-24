@@ -41,7 +41,7 @@ class OrionSslNode():
     ssl_filters = dict(orionapmapplication__application_name__icontains='ssl')
 
     @classmethod
-    def nodes(cls, cerner_cst=True, orion_ssl=False):
+    def nodes(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
         # pylint:disable=C0301
         """
         get the orion nodes cached in
@@ -57,6 +57,8 @@ class OrionSslNode():
                              SSL application
 
                              default: `False`
+
+        :arg bool servers_only: only return orion nodes that are known servers
 
         :returns: a django queryset of orion node instances
 
@@ -81,10 +83,13 @@ class OrionSslNode():
         """
         # pylint:enable=C0301
 
-        queryset = OrionNode.objects.all()
+        queryset = OrionNode.objects.filter(enabled=True)
 
         if cerner_cst:
-            queryset = OrionCernerCSTNode.objects.all()
+            queryset = OrionCernerCSTNode.objects.filter(enabled=True)
+
+        if servers_only:
+            queryset = queryset.filter(category__category__icontains='server')
 
         if orion_ssl:
             return queryset.filter(**cls.ssl_filters).all()
@@ -92,17 +97,19 @@ class OrionSslNode():
         return queryset
 
     @classmethod
-    def count(cls, cerner_cst=True, orion_ssl=False):
+    def count(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
         """
         :returns: the number of SSL nodes
         :rtype: int
 
         see :method:`<nodes>` for argument details
         """
-        return cls.nodes(cerner_cst=cerner_cst, orion_ssl=orion_ssl).count()
+        return cls.nodes(
+            cerner_cst=cerner_cst,
+            orion_ssl=orion_ssl, servers_only=servers_only).count()
 
     @classmethod
-    def ip_addresses(cls, cerner_cst=True, orion_ssl=False):
+    def ip_addresses(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
         """
         :returns: the list of ip addresses for orion ssl nodes
         :rtype: list
@@ -110,5 +117,8 @@ class OrionSslNode():
         see :method:`<nodes>` for argument details
         """
         return list(
-            cls.nodes(cerner_cst=cerner_cst, orion_ssl=orion_ssl).
-            values_list('ip_address', flat=True))
+            cls.nodes(
+                cerner_cst=cerner_cst,
+                orion_ssl=orion_ssl, servers_only=servers_only
+            ).values_list('ip_address', flat=True)
+        )

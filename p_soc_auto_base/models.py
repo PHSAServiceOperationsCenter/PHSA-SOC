@@ -43,7 +43,9 @@ class BaseModel(models.Model):
         _('updated on'), db_index=True, auto_now=True,
         help_text=_('object update time stamp'))
     enabled = models.BooleanField(
-        _('enabled'), db_index=True, default=True, null=False, blank=False)
+        _('enabled'), db_index=True, default=True, null=False, blank=False,
+        help_text=_('if this field is checked out, the row will always be'
+                    ' excluded from any active operation'))
     notes = models.TextField(_('notes'), null=True, blank=True)
 
     @classmethod

@@ -53,7 +53,7 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 @admin.register(NmapCertsData)
 class NmapCertsDataAdmin(admin.ModelAdmin):
     """
-    SSL certificate data admin pages  
+    SSL certificate data admin pages
     """
     list_display = ['common_name', 'organization_name', 'not_before',
                     'not_after', 'bits', 'md5', 'sha1', 'updated_on']

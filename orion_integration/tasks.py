@@ -47,7 +47,7 @@ def populate_from_orion(queue='shared'):
 
 @shared_task(
     task_serializer='pickle',
-    result_serializer='pickle', rate_limit='5/s', queue='orion')
+    result_serializer='pickle', rate_limit='0.5/s', queue='orion')
 def orion_entity_exists(model_name, primary_key):
     """
     task that answers the question "does this thing still exist in orion?"

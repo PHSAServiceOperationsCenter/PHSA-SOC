@@ -97,6 +97,14 @@ class Rule(BaseModel, models.Model):
     applies = models.ManyToManyField(
         ContentType, through='RuleApplies',
         verbose_name=_('This Rule Applies to'))
+    notification_type = models.ForeignKey(
+        'notifications.NotificationType', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        'notifications.NotificationLevel', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Level'))
     subscribers = models.TextField(
         _('rule subscribers'), blank=True, null=True,
         help_text=_('send notifications raised by this rule to these users.'

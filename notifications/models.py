@@ -49,7 +49,8 @@ class NotificationType(BaseModel, models.Model):
         verbose_name=_('Send Notifications of this Type Via'))
     is_default = models.BooleanField(
         _('is the default'), db_index=True, blank=False, null=False,
-        default=False, help_text=_('use this notification type as the default'))
+        default=False,
+        help_text=_('use this notification type as the default'))
     subscribers = models.TextField(
         _('rule subscribers'), blank=True, null=True,
         help_text=_('send notifications of this type to these users.'

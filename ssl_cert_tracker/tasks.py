@@ -28,7 +28,8 @@ from .utils import process_xml_cert
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
-@shared_task
+
+@shared_task(rate_limit='0.5/s', queue='nmap')
 def go_node(node_id, node_address):
     """Celery worker for each orion node"""
     xml_data = ""
@@ -40,8 +41,7 @@ def go_node(node_id, node_address):
             nmap_task.run()
             xml_data = nmap_task.stdout
             break
-        except EnvironmentError as ex:
-            #msg = "Attempt No.: " + str(count) + " Error Scanning host:" +  node_address
+        except Exception as ex:
             logging.error("Error proceesing xml_cert message:%s", ex)
 
     if count < 5:
@@ -52,8 +52,10 @@ def go_node(node_id, node_address):
             logging.error("Error proceesing xml_cert message:%s", msg)
         else:
             insert_into_certs_data(json)
+
+
 @shared_task
-def getnmapdata():
+def getnmapdata(queue='ssl'):
     """Celery worker to capture all nodes then it delegate each node to different worker"""
     node_obj = OrionSslNode.nodes()
     for node in node_obj:

@@ -6,7 +6,8 @@ from django.contrib.auth.models import User
 
 
 def populate_levels(apps, schema_editor):
-    levels = ['INFO', 'WARNING', 'ERROR', 'CRITICAL', 'ADMINISTRATIVE']
+    levels = ['INFO', 'WARNING', 'ERROR', 'CRITICAL',
+              'ADMINISTRATIVE', 'INVALID_RULE', ]
     default_level = 'INFO'
     model = apps.get_model('notifications', 'NotificationLevel')
 

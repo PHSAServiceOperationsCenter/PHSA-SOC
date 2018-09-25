@@ -22,6 +22,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
+from jsonfield import JSONField
+
 from p_soc_auto_base.models import BaseModel
 
 
@@ -125,7 +127,7 @@ class NotificationLevel(BaseModel, models.Model):
         help_text=_('use this notification level as the default'))
 
     def __str__(self):
-        return _(self.notification_level)
+        return self.notification_level
 
     class Meta:
         verbose_name = _('Notification Level')
@@ -154,6 +156,13 @@ class Notification(BaseModel, models.Model):
     instance_pk = models.BigIntegerField(
         _('notification object row identifier'), db_index=True, blank=True,
         null=True)
+    notification_type = models.ForeignKey(
+        NotificationType, db_index=True, blank=False, null=False,
+        on_delete=models.PROTECT, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        NotificationLevel, on_delete=models.PROTECT,
+        db_index=True,
+        blank=False, null=False, verbose_name=_('Notification Level'))
 
     @property
     def message(self):

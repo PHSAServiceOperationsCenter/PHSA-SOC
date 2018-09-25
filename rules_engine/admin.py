@@ -154,9 +154,9 @@ class ExpirationRuleAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     """
     admin class for creating expiration based rules
     """
-    list_display = ('rule', 'valid_after', 'grace_period', 'created_by',
+    list_display = ('rule', 'grace_period', 'created_by',
                     'updated_by', 'created_on', 'updated_on')
-    list_editable = ('valid_after', 'grace_period')
+    list_editable = ('grace_period',)
     search_fields = ['rule', ]
 
     inlines = [RuleAppliesInlineAdmin, ]

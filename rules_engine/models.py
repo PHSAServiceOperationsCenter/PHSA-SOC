@@ -366,20 +366,21 @@ class ExpirationRule(Rule, models.Model):
 
             for obj in queryset:
                 try:
-                    facts = rule_applies.get_facts_for_field(obj)
+                    facts = rule_applies.get_facts_for_fields(obj)
                     if not isinstance(facts, list):
                         rule_msg = dict(fact=facts,
                                         relationship='not enough facts')
                         self.raise_bad_rule_notification(
                             rule_applies=rule_applies,
                             rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        continue
                     for fact in facts:
                         if not isinstance(fact, datetime.datetime):
                             fact = datetime_parser.parse(fact)
                 except Exception as err:
                     rule_msg = dict(fact=facts,
                                     relationship='throws',
-                                    exception_type=type(err),
+                                    # exception_type=type(err),
                                     exception_msg=str(err))
                     self.raise_bad_rule_notification(
                         rule_applies=rule_applies,
@@ -387,12 +388,13 @@ class ExpirationRule(Rule, models.Model):
 
                 now = timezone.now()
                 rule_msg = dict(facts=facts, now=now,
-                                grace_period=grace_period)
+                                grace_period=self.grace_period)
 
                 if now < facts[0]:
                     rule_msg['relationship'] = 'not yet valid'
                 elif facts[1] - self.grace_period <= now <= facts[1]:
-                    rule_msg['relationship'] = 'will expire inless thab %s' % self.grace_period
+                    rule_msg['relationship'] = (
+                        'will expire in less than %s' % self.grace_period)
                 elif facts[1] < now:
                     rule_msg['relationship'] = 'has expired'
 
@@ -431,7 +433,8 @@ class RuleApplies(BaseModel, models.Model):
     second_field_name = models.CharField(
         _('second field name'), max_length=64, db_index=True, blank=True,
         null=True,
-        help_text=_('the name of the field where the second rule fact resides'))
+        help_text=_(
+            'the name of the field where the second rule fact resides'))
     subscribers = models.TextField(
         _('model-field subscribers'), blank=True, null=True,
         help_text=_('send notifications raised when applying this rule to'
@@ -454,6 +457,16 @@ class RuleApplies(BaseModel, models.Model):
         db_index=True,
         blank=True, null=True, verbose_name=_('Notification Level'))
 
+    def __str__(self):
+        if self.second_field_name is None:
+            fields = 'field %s' % self.field_name
+        else:
+            fields = 'fields %s' % ', '.join(
+                [self.field_name, self.second_field_name])
+
+        return ('apply rule %s against %s of model %s' %
+                (self.rule.rule, fields, self.content_type.model))
+
     def get_fact_for_field(self, obj):
         """
         :returns:
@@ -466,6 +479,9 @@ class RuleApplies(BaseModel, models.Model):
             self.field_name)
 
     def get_facts_for_fields(self, obj):
+        """
+        support getting facts from two fields
+        """
         if self.second_field_name is None:
             return self.get_fact_for_field(obj)
 

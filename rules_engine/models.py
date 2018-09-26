@@ -18,6 +18,7 @@ import datetime
 import re
 import uuid
 import json
+import traceback
 
 from decimal import Decimal
 
@@ -34,6 +35,7 @@ from p_soc_auto_base.models import BaseModel
 from notifications.models import (
     Notification, NotificationLevel, NotificationType,
 )
+from orion_integration.orion import serialize_custom_json
 
 
 class NotificationError(Exception):
@@ -168,7 +170,8 @@ class Rule(BaseModel, models.Model):
         notification.rule_applies = rule_applies
         notification.notification_type = rule_applies.notification_type
         notification.notification_level = rule_applies.notification_level
-        notification.rule_msg = rule_msg
+        notification.rule_msg = json.dumps(
+            rule_msg, default=serialize_custom_json)
         notification.instance_pk = instance_pk
 
         notification.save()
@@ -195,7 +198,8 @@ class Rule(BaseModel, models.Model):
         notification.rule_msg = json.dumps(
             dict(rule=rule_applies.rule.rule,
                  relationship='is missing',
-                 data=rule_applies.content_type.name)
+                 data=rule_applies.content_type.name),
+            default=serialize_custom_json
         )
 
         notification.save()
@@ -217,7 +221,8 @@ class Rule(BaseModel, models.Model):
             get(notification_type='internal')
         notification.notification_level = NotificationLevel.objects.\
             get(notification_level='INVALID_RULE')
-        notification.rule_msg = rule_msg
+        notification.rule_msg = json.dumps(
+            rule_msg, default=serialize_custom_json)
         notification.instance_pk = instance_pk
 
         notification.save()
@@ -266,18 +271,19 @@ class RegexRule(Rule, models.Model):
                 except Exception as err:
                     rule_msg = dict(fact='undefined',
                                     relationship='throws',
-                                    exception_type=type(err),
+                                    exception=traceback.format_exc(),
                                     exception_msg=str(err))
                     self.raise_bad_rule_notification(
                         rule_applies=rule_applies,
-                        rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
 
                 if re_find.search(fact):
                     rule_msg = dict(fact=fact, relationship='contains',
                                     match_string=self.match_string)
                     self.raise_rule_notification(
                         rule_applies=rule_applies,
-                        rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'
@@ -322,15 +328,18 @@ class IntervalRule(Rule, models.Model):
                                         max_val=self.min_val + self.interval)
                         self.raise_bad_rule_notification(
                             rule_applies=rule_applies,
-                            rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                            rule_msg=rule_msg, instance_pk=obj.pk)
+                        continue
+
                 except Exception as err:
                     rule_msg = dict(fact='undefined',
                                     relationship='throws',
-                                    exception_type=type(err),
+                                    exception=traceback.format_exc(),
                                     exception_msg=str(err))
                     self.raise_bad_rule_notification(
                         rule_applies=rule_applies,
-                        rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
 
                 if not self.min_val <= fact <= self.min_val + self.interval:
                     rule_msg = dict(fact=fact,
@@ -339,7 +348,7 @@ class IntervalRule(Rule, models.Model):
                                     max_val=self.min_val + self.interval)
                     self.raise_rule_notification(
                         rule_applies=rule_applies,
-                        rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'
@@ -372,19 +381,21 @@ class ExpirationRule(Rule, models.Model):
                                         relationship='not enough facts')
                         self.raise_bad_rule_notification(
                             rule_applies=rule_applies,
-                            rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                            rule_msg=rule_msg, instance_pk=obj.pk)
                         continue
+
                     for fact in facts:
                         if not isinstance(fact, datetime.datetime):
                             fact = datetime_parser.parse(fact)
                 except Exception as err:
                     rule_msg = dict(fact=facts,
                                     relationship='throws',
-                                    # exception_type=type(err),
+                                    exception=traceback.format_exc(),
                                     exception_msg=str(err))
                     self.raise_bad_rule_notification(
                         rule_applies=rule_applies,
-                        rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
 
                 now = timezone.now()
                 rule_msg = dict(facts=facts, now=now,
@@ -400,7 +411,7 @@ class ExpirationRule(Rule, models.Model):
 
                 self.raise_notification(
                     rule_applies=rule_applies,
-                    rule_msg=json.dumps(rule_msg), instance_pk=obj.pk)
+                    rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'

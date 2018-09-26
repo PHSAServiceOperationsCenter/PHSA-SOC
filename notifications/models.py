@@ -145,12 +145,14 @@ class Notification(BaseModel, models.Model):
         _('rule message'), blank=False, null=False)
     ack_on = models.DateTimeField(
         _('acknowledged at'), db_index=True, blank=True, null=True)
+    esc_on = models.DateTimeField(
+        _('escalated at'), db_index=True, blank=True, null=True)
     esc_ack_on = models.DateTimeField(
         _('escalation acknowledged at'), db_index=True, blank=True, null=True)
     expired_on = models.DateTimeField(
-        _('expired at'), db_index=True, blank=True, null=True),
+        _('expired at'), db_index=True, blank=True, null=True)
     broadcast_on = models.DateTimeField(
-        _('broadcast at'), db_index=True, blank=True, null=True),
+        _('broadcast at'), db_index=True, blank=True, null=True)
     notification_uuid = models.UUIDField(
         _('UUID'), db_index=True, unique=True, blank=False, null=False)
     instance_pk = models.BigIntegerField(

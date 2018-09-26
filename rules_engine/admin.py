@@ -91,8 +91,11 @@ class RuleAppliesInlineAdmin(admin.TabularInline):
     form = RuleAppliesForm
     model = RuleApplies
     fields = ('enabled', 'content_type',
-              'field_name', 'get_current_field_name', 'updated_by',)
-    readonly_fields = ('get_current_field_name', )
+              'field_name', 'get_current_field_name',
+              'second_field_name', 'get_current_second_field_name',
+              'updated_by',)
+    readonly_fields = ('get_current_field_name',
+                       'get_current_second_field_name',)
     extra = 0
     max_num = 0
     show_change_link = True
@@ -100,6 +103,11 @@ class RuleAppliesInlineAdmin(admin.TabularInline):
     def get_current_field_name(self, obj):
         return obj.field_name
     get_current_field_name.short_description = 'current value for field name'
+
+    def get_current_second_field_name(self, obj):
+        return obj.second_field_name
+    get_current_second_field_name.short_description = \
+        'current value for second field name'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -169,15 +177,23 @@ class RuleAppliesAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     """
     form = RuleAppliesForm
 
-    readonly_fields = ('get_current_field_name', 'created_on', 'updated_on')
+    readonly_fields = ('get_current_field_name',
+                       'get_current_second_field_name',
+                       'created_on', 'updated_on')
     list_display_links = ('id',)
-    list_display = ('id', 'rule', 'content_type', 'field_name', 'created_by',
+    list_display = ('id', 'rule', 'content_type', 'field_name',
+                    'second_field_name', 'created_by',
                     'created_on', 'updated_by', 'updated_on')
     list_editable = ('rule', 'content_type',)
 
     def get_current_field_name(self, obj):
         return obj.field_name
     get_current_field_name.short_description = 'current value for field name'
+
+    def get_current_second_field_name(self, obj):
+        return obj.second_field_name
+    get_current_second_field_name.short_description = \
+        'current value for second field name'
 
 
 @admin.register(NotificationEventForRuleDemo)

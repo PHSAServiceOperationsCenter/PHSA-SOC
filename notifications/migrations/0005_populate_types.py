@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 def populate_notification_type(apps, schema_editor):
     notification_types = [
         dict(notification_type='internal', is_default=False),
-        dict(notificaton_type='basic_rule', is_default=True),
+        dict(notification_type='basic_rule', is_default=True),
         dict(notification_type='ssl_rule', is_default=False)]
 
     model = apps.get_model('notifications', 'NotificationType')

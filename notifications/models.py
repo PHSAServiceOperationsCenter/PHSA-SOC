@@ -18,6 +18,8 @@ django models for the notifications app
 #TODO: write a validator that makes sure that in models with is_default,
 there can be one and only one record with is_default set to True
 """
+import json
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -25,6 +27,7 @@ from django.utils import timezone
 from jsonfield import JSONField
 
 from p_soc_auto_base.models import BaseModel
+from p_soc_auto_base.utils import remove_duplicates
 
 
 class NotificationType(BaseModel, models.Model):
@@ -43,6 +46,9 @@ class NotificationType(BaseModel, models.Model):
     expire_within = models.DurationField(
         _('expires after'), db_index=True, blank=True,
         null=True, default=timezone.timedelta(hours=144))
+    expires_automatically = models.BooleanField(
+        _('expires automatically'), db_index=True, blank=False, null=False,
+        default=False)
     delete_if_expired = models.BooleanField(
         _('delete if expired'), db_index=True, blank=False, null=False,
         default=False)
@@ -85,7 +91,7 @@ class Broadcast(BaseModel, models.Model):
         default=False, help_text=_('use this broadcast method as the default'))
 
     def __str__(self):
-        return _(self.broadcast)
+        return self.broadcast
 
     class Meta:
         verbose_name = _('Broadcast Method')
@@ -178,11 +184,36 @@ class Notification(BaseModel, models.Model):
         ret = dict(notification_uuid=self.notification_uuid,
                    created_on=self.created_on,
                    rule=self.rule_applies.rule.rule,
+                   rule_msg=json.loads(self.rule_msg),
                    object_type=self.rule_applies.content_type.model,
                    object_field=self.rule_applies.field_name,
-                   etc='other things to add here...')
+                   etc='other things to add here...',
+                   second_object_field=self.rule_applies.second_field_name,
+                   )
 
         return ret
+
+    @property
+    def subscribers(self):
+        """
+        send this notification to these people
+        """
+        return remove_duplicates(
+            self.rule_applies.subscribers
+            + self.rule_applies.rule.subscribers
+            + self.notification_type.subscribers
+        )
+
+    @property
+    def escalation_subscribers(self):
+        """
+        escalate this notification to these people
+        """
+        return remove_duplicates(
+            self.rule_applies.escalation_subscribers
+            + self.rule_applies.rule.escalation_subscribers
+            + self.notification_type.escalation_subscribers
+        )
 
     def __str__(self):
         return '%s raised on %s' % (self.notification_uuid, self.created_on)
@@ -192,3 +223,13 @@ class NotificationResponse(BaseModel, models.Model):
     notification = models.ForeignKey(
         'Notification', db_index=True, blank=False, null=False,
         on_delete=models.CASCADE)
+    is_ack_message = models.BooleanField(
+        _('this is the acknowledgement message'), db_index=True, blank=False,
+        null=False, default=False)
+
+    def __str__(self):
+        return self.notes
+
+    class Meta:
+        verbose_name = _('Notification Response')
+        verbose_name_plural = _('Notification Responses')

@@ -27,7 +27,6 @@ import os
 from kombu import Queue, Exchange
 
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -186,7 +185,7 @@ CELERY_DEFAULT_ROUTING_KEY = 'shared'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
-EMAIL_PORT = 587 # 465 for SSL, 587 for TLS
+EMAIL_PORT = 587  # 465 for SSL, 587 for TLS
 EMAIL_HOST_USER = 'phsadev@gmail.com'
 EMAIL_HOST_PASSWORD = 'phsadev001'
 
@@ -196,3 +195,12 @@ NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 
 AJAX_LOOKUP_CHANNELS = {
     'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
+
+# email settings for gmaail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'phsadev@gmail.com'
+EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'

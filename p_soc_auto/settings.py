@@ -180,14 +180,6 @@ CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
 CELERY_DEFAULT_ROUTING_KEY = 'shared'
 
-# email settings
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587  # 465 for SSL, 587 for TLS
-EMAIL_HOST_USER = 'phsadev@gmail.com'
-EMAIL_HOST_PASSWORD = 'phsadev001'
 
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
@@ -196,11 +188,25 @@ NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 AJAX_LOOKUP_CHANNELS = {
     'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
 
-# email settings for gmaail
+# common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'phsadev@gmail.com'
-EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
+
+
+#=========================================================================
+# # email settings for gmail
+# # these will not work from 10.1.80.0
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_HOST_USER = 'phsadev@gmail.com'
+# EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
+#=========================================================================
+
+#=========================================================================
+# # temporary email settings with the smtp relay
+# # these will only work from IP addresses that have been white-listed
+# EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
+# EMAIL_HOST_USER = 'ali.rahmat@phsa.ca'
+# EMAIL_HOST_PASSWORD = '*********'
+#=========================================================================

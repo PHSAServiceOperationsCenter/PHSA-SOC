@@ -15,11 +15,10 @@ django models for the notifications app
 
 :update:    sep. 24, 2018
 
-#TODO: write a validator that makes sure that in models with is_default,
-there can be one and only one record with is_default set to True
 """
 import json
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
@@ -28,6 +27,21 @@ from jsonfield import JSONField
 
 from p_soc_auto_base.models import BaseModel
 from p_soc_auto_base.utils import remove_duplicates
+
+
+def _validate_is_default(obj):
+    """
+    in some models there can be one and only one row marked as default
+    """
+    if obj.is_default \
+            and obj._meta.model.objects.filter(is_default=True).count() >= 1:
+        default_obj = obj._meta.model.objects.filter(is_default=True).first()
+        raise ValidationError(
+            {'is_default':
+             _('there already is a default entry in %s: %s' %
+               (obj._meta.verbose_name_plural, default_obj))
+             }
+        )
 
 
 class NotificationType(BaseModel, models.Model):
@@ -74,9 +88,22 @@ class NotificationType(BaseModel, models.Model):
     def __str__(self):
         return self.notification_type
 
+    def clean(self):
+        """
+        override to provide custom validation
+        """
+        _validate_is_default(obj=self)
+
+    def save(self, *args, **kwargs):
+        """
+        override the save() method to make sure model validation is performed
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     class Meta:
-        verbose_name = _('Notification Type')
-        verbose_name_plural = _('Notification Types')
+        verbose_name = _('Notification Level')
+        verbose_name_plural = _('Notification Levels')
 
 
 class Broadcast(BaseModel, models.Model):
@@ -93,9 +120,22 @@ class Broadcast(BaseModel, models.Model):
     def __str__(self):
         return self.broadcast
 
+    def clean(self):
+        """
+        override to provide custom validation
+        """
+        _validate_is_default(obj=self)
+
+    def save(self, *args, **kwargs):
+        """
+        override the save() method to make sure model validation is performed
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     class Meta:
-        verbose_name = _('Broadcast Method')
-        verbose_name_plural = _('Broadcast Methods')
+        verbose_name = _('Notification Level')
+        verbose_name_plural = _('Notification Levels')
 
 
 class NotificationTypeBroadcast(BaseModel, models.Model):
@@ -134,6 +174,19 @@ class NotificationLevel(BaseModel, models.Model):
 
     def __str__(self):
         return self.notification_level
+
+    def clean(self):
+        """
+        override to provide custom validation
+        """
+        _validate_is_default(obj=self)
+
+    def save(self, *args, **kwargs):
+        """
+        override the save() method to make sure model validation is performed
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _('Notification Level')

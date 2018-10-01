@@ -15,6 +15,7 @@ utility  functions for the notification tasks
 :update:    Oct. 01 2018
 
 """
+from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.core.mail import send_mail, BadHeaderError
 import smtplib

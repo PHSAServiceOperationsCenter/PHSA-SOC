@@ -408,8 +408,10 @@ class ExpirationRule(Rule, models.Model):
                         'will expire in less than %s' % self.grace_period)
                 elif facts[1] < now:
                     rule_msg['relationship'] = 'has expired'
+                else:
+                    continue
 
-                self.raise_notification(
+                self.raise_rule_notification(
                     rule_applies=rule_applies,
                     rule_msg=rule_msg, instance_pk=obj.pk)
 
@@ -499,7 +501,7 @@ class RuleApplies(BaseModel, models.Model):
         return [getattr(self.content_type.get_object_for_this_type(pk=obj.id),
                         self.field_name),
                 getattr(self.content_type.get_object_for_this_type(pk=obj.id),
-                        self.field_name)]
+                        self.second_field_name)]
 
     class Meta:
         verbose_name = _('Content to which a Rule Applies')

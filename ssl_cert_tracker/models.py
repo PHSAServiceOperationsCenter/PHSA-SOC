@@ -110,7 +110,7 @@ class NmapHistory(models.Model):
         obj = NmapHistory.objects.filter(md5 = self.md5)
         obj = NmapHistory(retreived=timezone.now())
         obj.save()
-        
+
     def __str__(self):
         return str(self.cert_id)
 

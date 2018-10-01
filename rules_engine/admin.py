@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 
 from p_soc_auto_base.admin import BaseAdmin
-
+from notifications.models import NotificationType, NotificationLevel
 from .models import (
     TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,
     NotificationEventForRuleDemo, RegexRule)
@@ -47,6 +47,18 @@ class RulesEngineBaseAdmin(BaseAdmin, admin.ModelAdmin):
                 filter(app_label__in=[
                     'orion_integration', 'rules_engine', 'ssl_cert_tracker',
                     'notifications'])
+
+        if db_field.name in ['notification_type', ]:
+            kwargs['queryset'] = NotificationType.objects.\
+                filter(enabled=True)
+            kwargs['initial'] = kwargs['queryset'].filter(is_default=True).\
+                first()
+
+        if db_field.name in ['notification_level', ]:
+            kwargs['queryset'] = NotificationLevel.objects.\
+                filter(enabled=True)
+            kwargs['initial'] = kwargs['queryset'].filter(is_default=True).\
+                first()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

@@ -15,25 +15,38 @@ utility  functions for the notification tasks
 :update:    Oct. 01 2018
 
 """
+from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, BadHeaderError
+import smtplib
 from .models import Notification
 
-def email(pk):
-    """
-    send email
-    """
-    ack_on = Notification.objects.filter(instance_pk=pk).values('ack_on')
-    nType = Notification.objects.filter(instance_pk=pk).values('notification_type')
-    nLevel = Notification.objects.filter(instance_pk=pk).values('notification_level')
-    if ack_on is None:
-        broadcast = NotificationTypeBroadcast.objects.filter(notification_type=nType).values('broadcast')
-        nMessage = Notification.objects.filter(instance_pk=pk).message
-        nSubscribers = Notification.objects.filter(instance_pk=pk).subscribers
+class BroadCastUtil:
+    def __init__(self, broadCastMethod = "email"):
+        self.broadCastMethod = broadCastMethod
 
-        email_subject = "?"
-        email_message = nMessage["rule"]
-        email_from = settings.EMAIL_HOST_USER
-        recipient_list = nSubscribers #['phsadev@gmail.com',]
-        send_mail( subject, message, email_from, recipient_list )
+    @staticmethod
+    def email(pk):
+        """
+        Checks Notificatio ...
+        """
+        ack_on, nType, nLevel = \
+            Notification.objects.filter \
+            (instance_pk=pk).values\
+            ('ack_on', 'notification_type', 'notification_level')
+        if ack_on is None:
+            broadcast = NotificationTypeBroadcast.objects.filter(notification_type=nType).values('broadcast')
+            nMessage = Notification.objects.filter(instance_pk=pk).message
+            nSubscribers = Notification.objects.filter(instance_pk=pk).subscribers
+
+            email_subject = "?"
+            email_message = nMessage
+            email_from = settings.EMAIL_HOST_USER
+            recipient_list = nSubscribers #['phsadev@gmail.com',]
+            try:
+                send_mail( subject, message, email_from, recipient_list )
+            except BadHeaderError as ex:
+                print('send_email: %s' % (ex.message))
+                return HttpResponse('Invalid header found.')
+            return HttpResponseRedirect('/')
 

@@ -5,10 +5,7 @@ from .models import Notification
 from .tasks import send_email_task, send_sms_task
 
 
-
-
 @receiver(post_save, sender=Notification)
 def dispatch(sender, instance, created, **kwargs):
-    send_email_task.delay(Notification.pk)
-
-
+    pass
+    # send_email_task.delay(Notification.pk)

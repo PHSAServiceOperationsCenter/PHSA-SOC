@@ -16,7 +16,7 @@ django models for the ssl_certificates app
 import logging
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
-from ssl_cert_tracker.models import NmapCertsData
+from ssl_cert_tracker.models import NmapCertsData, NmapHistory
 from .utils import validate
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
@@ -31,18 +31,21 @@ def insert_into_certs_data(json_data):
         logging.error("Error accessing django model NmapCertsData get_cert_state:%s", msg)
         return
     if cert_status == 0: #  un-changed, update retreived column in cert hist
+        db_certsHist = NmapHistory()
+        db_certsHist.updateRetreivedCertHist(json_data["md5"])
         msg = "un-changed, update retrieved column in cert hist!"
-        logging.info("Cert data update:.... %s", msg)
+        logging.info("certsHist data update:.... %s", msg)
+        return
 
     elif cert_status == 1:# new reord
         db_certs = NmapCertsData()
         msg = "Unchanged!"
         logging.info("Cert data info:.... %s", msg)
+
     else: # cert changed cert_status == 2
         db_certs = NmapCertsData.get_cert_handle(json_data["orion_id"])
         msg = "Changed!"
         logging.info("Cert data info:.... %s", msg)
-
     
     db_certs.orion_id = json_data["orion_id"]
     db_certs.addresses = json_data["addresses"]

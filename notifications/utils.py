@@ -30,16 +30,15 @@ class BroadCastUtil:
         """
         Checks Notificatio ...
         """
-        ack_on, nType, nLevel = \
-            Notification.objects.filter \
-            (instance_pk=pk).values\
-            ('ack_on', 'notification_type', 'notification_level')
+        nObj = Notification.pk
+        ack_on, nType, nLevel = nObj.values('ack_on', 'notification_type', 'notification_level')
+            
         if ack_on is None:
             broadcast = NotificationTypeBroadcast.objects.filter(notification_type=nType).values('broadcast')
             nMessage = Notification.objects.filter(instance_pk=pk).message
             nSubscribers = Notification.objects.filter(instance_pk=pk).subscribers
 
-            email_subject = "?"
+            email_subject = nMessage.rule_msg
             email_message = nMessage
             email_from = settings.EMAIL_HOST_USER
             recipient_list = nSubscribers #['phsadev@gmail.com',]
@@ -49,4 +48,3 @@ class BroadCastUtil:
                 print('send_email: %s' % (ex.message))
                 return HttpResponse('Invalid header found.')
             return HttpResponseRedirect('/')
-

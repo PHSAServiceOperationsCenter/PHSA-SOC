@@ -30,6 +30,7 @@ def insert_into_certs_data(json_data):
         msg = "failure"
         logging.error("Error accessing django model NmapCertsData get_cert_state:%s", msg)
         return
+        
     if cert_status == 0: #  un-changed, update retreived column in cert hist
         db_certsHist = NmapHistory()
         db_certsHist.updateRetreivedCertHist(json_data["md5"])

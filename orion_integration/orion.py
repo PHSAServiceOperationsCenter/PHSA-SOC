@@ -18,7 +18,7 @@ orion classes for the orion_integration app
 import json
 import decimal
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from requests import Session, urllib3
@@ -52,6 +52,11 @@ def serialize_custom_json(obj):
 
     if isinstance(obj, decimal.Decimal):
         _ = str(obj)
+
+    if isinstance(obj, timedelta):
+        return {'days': obj.days,
+                'seconds': obj.seconds,
+                'microseconds': obj.microseconds}
 
     return _
 

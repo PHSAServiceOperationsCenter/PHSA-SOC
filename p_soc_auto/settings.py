@@ -191,9 +191,12 @@ AJAX_LOOKUP_CHANNELS = {
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
+EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587
+EMAIL_HOST_USER = 'ali.rahmat@phsa.ca'
+EMAIL_HOST_PASSWORD = 'XXXXXXXX'
 
 
 #=========================================================================

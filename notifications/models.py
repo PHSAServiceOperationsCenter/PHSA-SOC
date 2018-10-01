@@ -102,8 +102,8 @@ class NotificationType(BaseModel, models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        verbose_name = _('Notification Level')
-        verbose_name_plural = _('Notification Levels')
+        verbose_name = _('Notification Type')
+        verbose_name_plural = _('Notification Types')
 
 
 class Broadcast(BaseModel, models.Model):
@@ -134,8 +134,8 @@ class Broadcast(BaseModel, models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        verbose_name = _('Notification Level')
-        verbose_name_plural = _('Notification Levels')
+        verbose_name = _('Broadcast Method')
+        verbose_name_plural = _('Broadcast Methods')
 
 
 class NotificationTypeBroadcast(BaseModel, models.Model):

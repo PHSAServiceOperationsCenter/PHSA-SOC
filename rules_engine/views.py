@@ -41,8 +41,10 @@ class RuleAppliesAutocomplete(autocomplete.Select2ListView):
 
         content = ContentType.objects.get(pk=int(pk))
 
-        return [field.name for field in content.
-                get_all_objects_for_this_type().first()._meta.get_fields()
-                if not (field.many_to_one and field.related_model)
-                or field.is_relation
-                or field.primary_key]
+        return [field.name for field in
+                [
+                    field for field in
+                    content.get_all_objects_for_this_type().
+                    first()._meta.get_fields() if field.concrete
+                ]
+                if not (field.is_relation or field.primary_key)]

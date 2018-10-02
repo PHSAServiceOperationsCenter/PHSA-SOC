@@ -141,10 +141,10 @@ USE_L10N = True
 USE_TZ = True
 
 
-STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/media/'
+MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins
@@ -191,7 +191,7 @@ AJAX_LOOKUP_CHANNELS = {
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
-EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
+EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587

@@ -192,7 +192,7 @@ AJAX_LOOKUP_CHANNELS = {
 #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
-EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
+EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_PORT = 587
@@ -214,3 +214,6 @@ EMAIL_HOST_PASSWORD = 'XXXXXXXX'
 # EMAIL_HOST_USER = 'serban.teodorescu@phsa.ca'
 # EMAIL_HOST_PASSWORD = ''
 #=========================================================================
+
+# broadcast only notifications of these levels
+NOTIFICATION_BROADCAST_LEVELS = []

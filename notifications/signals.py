@@ -1,11 +1,10 @@
-
-
 """
-.. _utils:
+.. _signals:
 
-utility  functions for the notification tasks
+signals module: contains functions that need be invoked from
+django signals raised by the notification application
 
-:module:    p_soc_auto.notification.utils
+:module:    p_soc_auto.notification.signals
 
 :copyright:
 
@@ -17,50 +16,52 @@ utility  functions for the notification tasks
 :update:    Oct. 03 2018
 
 """
-
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .tasks import send_email_task, send_sms_task
+from .tasks import send_email
 
-from django.http import HttpResponse, HttpResponseRedirect
-from .models import Notification, \
-                    Broadcast, \
-                    NotificationTypeBroadcast, \
-                    NotificationType
-
-from .utils import EmailBroadCast
-#from .task import send_email_task
+from .models import Notification, NotificationLevel
 
 
 @receiver(post_save, sender=Notification)
-def dispatchNotification(sender, instance, created, *args,**kwargs):
-    #import ipdb;ipdb.set_trace()
-    if created:
-        print(instance.pk)
-        dispatch_Signals(instance.pk)
+def broadcast_notification(sender, instance, *args, **kwargs):
+    """
+    invoke tasks required by a broadcast action
 
-    
-def dispatch_Signals(pk):
-    nObj = Notification(pk=pk)
-    noti_type = nObj.notification_type
+    these tasks need to be invoked when a notification does not have
+    a broadcast_on attribute or, to be more procise, when the broadcast_on
+    value is set to None. which suggests that if one wants to rebroadcast
+    every damn notification, one can just clear the value fo that field
 
-    ntObj = NotificationType(notification_type = noti_type)
+    we broadcast selectively based on the value of the
+    settings.NOTIFICATION_BROADCAST_LEVELS variable.
+    if it has not been defined, we broadcast for all levels, otherwise we
+    only broadcast for those levels specified therein
+    """
+    if instance.broadcast_on is not None:
+        # has been broadcast already, bail
+        return
 
-    subscribers = getSubscribers (noti_type)
+    if hasattr(settings, 'NOTIFICATION_BROADCAST_LEVELS'):
+        # we have predefined levels
+        # is this a level that we notify for
+        if instance.notification_level not in \
+                NotificationLevel.objects.\
+                filter(notification_level__in=settings.
+                       NOTIFICATION_BROADCAST_LEVELS):
+            return
 
-    ntBroadcast_obj = NotificationTypeBroadcast(notification_type = ntObj.notification_type)
-    broadcast_id =  ntBroadcast_obj.broadcast
+    broadcast_methods = list(
+        instance.notification_type.notification_broadcast.
+        all().values_list('broadcast', flat=True)
+    )
 
-    broadcast_methods = Broadcast(id = broadcast_id)
-    for method in broadcast_methods:
-        if method == "email" and subscribers:
-            eb = EmailBroadCast(pk, subscribers)
-            eb.go()
-        else:
-            pass
-            #PerformOtherwise
-
-def getSubscribers(nType):
-    nObj = NotificationType(notification_type = nType)
-    print (nObj.subscribers)
-    return nObj.subscribers
+    if 'log' in broadcast_methods:
+        print('it has already been logged')
+    if 'email' in broadcast_methods:
+        send_email(instance.pk, 'broadcast_on')
+    if 'sms' in broadcast_methods:
+        print('not yet implemented')
+    if 'orion_alert' in broadcast_methods:
+        print('not yet implemented')

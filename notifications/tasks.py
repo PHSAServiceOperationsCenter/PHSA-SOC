@@ -17,16 +17,16 @@ celery tasks for the notification app
 """
 from django.utils import timezone
 from celery import shared_task
-from .utils import BroadCastUtil
+from .utils import EmailBroadCast
 
 
 @shared_task(rate_limit='0.5/s', queue='email')
-def send_email_task(pk):
+def send_email_task(pk, recipients):
     """
     task executing all email broadcast
     """
-    obj = BroadCastUtil()
-    obj.email(pk)
+    print ("Mark I")
+    #obj = EmailBroadCast(pk, recipients)
 
 @shared_task(rate_limit='0.5/s', queue='sms')
 def send_sms_task(pk):

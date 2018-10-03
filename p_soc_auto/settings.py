@@ -189,6 +189,7 @@ AJAX_LOOKUP_CHANNELS = {
     'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
 
 # common email settings
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
 EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
@@ -197,7 +198,6 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'ali.rahmat@phsa.ca'
 EMAIL_HOST_PASSWORD = 'XXXXXXXX'
-
 
 #=========================================================================
 # # email settings for gmail
@@ -210,7 +210,7 @@ EMAIL_HOST_PASSWORD = 'XXXXXXXX'
 #=========================================================================
 # # temporary email settings with the smtp relay
 # # these will only work from IP addresses that have been white-listed
-EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
-EMAIL_HOST_USER = 'serban.teodorescu@phsa.ca'
-EMAIL_HOST_PASSWORD = ''
+# EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
+# EMAIL_HOST_USER = 'serban.teodorescu@phsa.ca'
+# EMAIL_HOST_PASSWORD = ''
 #=========================================================================

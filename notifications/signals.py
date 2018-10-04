@@ -60,7 +60,7 @@ def broadcast_notification(sender, instance, *args, **kwargs):
     if 'log' in broadcast_methods:
         print('it has already been logged')
     if 'email' in broadcast_methods:
-        send_email(instance.pk, 'broadcast_on')
+        send_email.apply_async(args=[instance.pk, 'broadcast_on'])
     if 'sms' in broadcast_methods:
         print('not yet implemented')
     if 'orion_alert' in broadcast_methods:

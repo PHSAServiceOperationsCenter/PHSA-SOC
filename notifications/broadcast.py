@@ -35,8 +35,10 @@ class EmailBroadCast(EmailMessage):
         '''
         1.pk Notification pk
         2. Fields... fields need to be updated after email send
-        we need to distinguish this parameter for both successfull on unsuccessfull email sent
-        3. con this is smtp connection object assigned from setting.py if passed as None
+        we need to distinguish this parameter for both
+        successfull on unsuccessfull email sent
+        3. con this is smtp connection object assigned
+        from setting.py if passed as None
         '''
         self.pk = pk
         self.fields = fields
@@ -61,7 +63,8 @@ class EmailBroadCast(EmailMessage):
             if self.send(EmailMessage):
                 self.post_send_mail_update()
         except BadHeaderError as ex:
-            print('send_email: Invalid header found. %s' % str(ex))
+            print('send_email: Invalid header found. %s'\
+                  % str(ex))
             return HttpResponse('Invalid header found.')
         return HttpResponseRedirect('/')
 
@@ -79,7 +82,8 @@ class EmailBroadCast(EmailMessage):
         '''
         creating  creating the email message
         '''
-        receivers = list(self.obj.notification_type.all().values_list('subscribers', flat=True))
+        receivers = list(self.obj.notification_type.all(). \
+                         values_list('subscribers', flat=True))
 
         return {"receivers": receivers,
                 "sender": settings.EMAIL_HOST_USER,
@@ -93,9 +97,11 @@ class EmailBroadCast(EmailMessage):
         :return:
         '''
         try:
-            self.obj.save(broadcast_on=timezone.now(), escalated_on =timezone.now())
+            self.obj.save(broadcast_on=timezone.now(), \
+                          escalated_on =timezone.now())
         except Exception as ex:
-            logging.info("Failed Updating Notification model... %s", str(ex))
+            logging.info("Failed Updating Notification model... %s", \
+                         str(ex))
 
     def send(self, *args, **kwargs):
         '''

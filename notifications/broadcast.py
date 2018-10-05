@@ -30,9 +30,8 @@ class EmailBroadCast(EmailMessage):
         EmailBroadCast class to Broadcast Email
     '''
 
-    def __init__(self, pk, \
-                 fields = {'broadcast_on':timezone.now(), 'escalated_onNone':timezone.now()}, \
-                 con = None):
+    def __init__(self, pk=None, con = None, **kwargs):
+
         '''
         1.pk Notification pk
         2. Fields... fields need to be updated after email send
@@ -41,26 +40,29 @@ class EmailBroadCast(EmailMessage):
         3. con this is smtp connection object assigned
         from setting.py if passed as None
         '''
-        self.pk = pk
-        self.fields = fields
-        self.connection = con
-        try:
-            self.obj = Notification(pk=self.pk)
-        except:
-            self.obj = None
+        self.fields = {}
+        self.fields['broadcast_on']= timezone.now()
+        self.fields['escalated_onNone'] = timezone.now()
+        for key, value in kwargs.items():
+            self.fields[key] = value
 
-    def prepare_email_from_notification(self):
-        """
-        prepares notification email ...
-        """
-        if self.obj is not None:
+        self.connection = con
+        if pk is not None:
+            email = self.get_email_parameters()
             try:
-                email = self.get_email_parameters()
-                super().__init__(email["message"], email["from"], email["to"], None, email["con"])
+                self.obj = Notification(pk=self.pk)
             except Notification.DoesNotExist as ex:
                 self.obj = None
-                logging.info("Notification object does not exist %s", str(ex))
-            except BadHeaderError as ex
+                logging.info("Notification object does not exist %s", \
+                             str(ex))
+            try:
+                super().__init__(email["message"], \
+                                 email["from"], \
+                                 email["to"], \
+                                 None, \
+                                 email["con"] \
+                                 )
+            except BadHeaderError as ex:
                 self.obj = None
                 logging.info("Invalid header found. %s", str(ex))
 

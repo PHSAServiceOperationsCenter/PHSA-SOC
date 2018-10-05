@@ -22,7 +22,6 @@ from django.core.mail.message import EmailMessage
 from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.core.mail import send_mail, BadHeaderError
-import smtplib
 from .models import Notification
 
 
@@ -31,7 +30,9 @@ class EmailBroadCast(EmailMessage):
         EmailBroadCast class to Broadcast Email
     '''
 
-    def __init__(self, pk, fields, con = None):
+    def __init__(self, pk, \
+                 fields = {'broadcast_on':timezone.now(), 'escalated_onNone':timezone.now()}, \
+                 con = None):
         '''
         1.pk Notification pk
         2. Fields... fields need to be updated after email send
@@ -40,9 +41,9 @@ class EmailBroadCast(EmailMessage):
         3. con this is smtp connection object assigned
         from setting.py if passed as None
         '''
+        self.obj = None
         self.pk = pk
         self.fields = fields
-        self.obj = Notification(pk=pk)
         if con is None:
             self.connection = self.get_connection()
         else:
@@ -52,6 +53,14 @@ class EmailBroadCast(EmailMessage):
         """
         prepares notification email ...
         """
+
+        try:
+            self.obj = Notification(pk=self.pk)
+        except Notification.DoesNotExist as ex:
+            self.obj = None
+            logging.info("Notification object does not exist %s", str(ex))
+            return
+
         email_parameters = self.prepare_email_message()
         try:
             email = EmailMessage(email_parameters["subject"], \
@@ -60,7 +69,7 @@ class EmailBroadCast(EmailMessage):
                                  from_email=email_parameters["sender"], \
                                  connection=self.connection)
 
-            if self.send(EmailMessage):
+            if self.send(email):
                 self.post_send_mail_update()
         except BadHeaderError as ex:
             print('send_email: Invalid header found. %s'\
@@ -82,8 +91,7 @@ class EmailBroadCast(EmailMessage):
         '''
         creating  creating the email message
         '''
-        receivers = list(self.obj.notification_type.all(). \
-                         values_list('subscribers', flat=True))
+        receivers = self.obj.subcribers
 
         return {"receivers": receivers,
                 "sender": settings.EMAIL_HOST_USER,
@@ -94,11 +102,13 @@ class EmailBroadCast(EmailMessage):
     def post_send_mail_update(self):
         '''
         update notification columns upon successful email sent
-        :return:
         '''
         try:
-            self.obj.save(broadcast_on=timezone.now(), \
-                          escalated_on =timezone.now())
+            for attr, value in self.fields.items():
+                setattr(self.obj, attr, value)
+            self.obj.save()
+            # self.obj.save(broadcast_on=timezone.now(), \
+            #               escalated_on=timezone.now())
         except Exception as ex:
             logging.info("Failed Updating Notification model... %s", \
                          str(ex))

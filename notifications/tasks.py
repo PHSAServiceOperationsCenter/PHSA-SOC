@@ -31,3 +31,12 @@ def send_email(pk, fields_to_update):
     task executing all email broadcast
     """
     pass
+
+@shared_task(
+    rate_limit='0.5/s', queue='email', retry_backoff=True,
+    autoretry_for=(SMTPServerDisconnected, SMTPDataError, SMTPConnectError))
+def check_email_ack(pk):
+    """
+    task executing check_email_ack
+    """
+    pass

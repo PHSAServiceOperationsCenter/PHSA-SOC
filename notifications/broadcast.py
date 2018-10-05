@@ -41,63 +41,40 @@ class EmailBroadCast(EmailMessage):
         3. con this is smtp connection object assigned
         from setting.py if passed as None
         '''
-        self.obj = None
         self.pk = pk
         self.fields = fields
-        if con is None:
-            self.connection = self.get_connection()
-        else:
-            self.connection = con
+        self.connection = con
+        try:
+            self.obj = Notification(pk=self.pk)
+        except:
+            self.obj = None
 
     def prepare_email_from_notification(self):
         """
         prepares notification email ...
         """
+        if self.obj is not None:
+            try:
+                email = self.get_email_parameters()
+                super().__init__(email["message"], email["from"], email["to"], None, email["con"])
+            except Notification.DoesNotExist as ex:
+                self.obj = None
+                logging.info("Notification object does not exist %s", str(ex))
+            except BadHeaderError as ex
+                self.obj = None
+                logging.info("Invalid header found. %s", str(ex))
 
-        try:
-            self.obj = Notification(pk=self.pk)
-        except Notification.DoesNotExist as ex:
-            self.obj = None
-            logging.info("Notification object does not exist %s", str(ex))
-            return
-
-        email_parameters = self.prepare_email_message()
-        try:
-            email = EmailMessage(email_parameters["subject"], \
-                                 email_parameters["message"], \
-                                 to=email_parameters["receivers"], \
-                                 from_email=email_parameters["sender"], \
-                                 connection=self.connection)
-
-            if self.send(email):
-                self.post_send_mail_update()
-        except BadHeaderError as ex:
-            print('send_email: Invalid header found. %s'\
-                  % str(ex))
-            return HttpResponse('Invalid header found.')
-        return HttpResponseRedirect('/')
-
-    def get_connection(self):
-        """
-            build connection from settings.py
-        """
-        return get_connection(use_tls=True, \
-                              host=settings.EMAIL_HOST, \
-                              port=settings.EMAIL_PORT, \
-                              username=settings.EMAIL_HOST_PASSWORD, \
-                              password=settings.EMAIL_HOST_USER)
-
-    def prepare_email_message(self):
+    def get_email_parameters(self):
         '''
         creating  creating the email message
         '''
         receivers = self.obj.subcribers
-
-        return {"receivers": receivers,
-                "sender": settings.EMAIL_HOST_USER,
-                "message": self.obj.message,
-                "subject": self.obj.message["rule_msg"],
-               }
+        return {"subject":self.obj.message["rule_msg"], \
+                "message":self.obj.message, \
+                "from":settings.EMAIL_HOST_USER, \
+                "to":receivers, \
+                "con":self.connection
+        }
 
     def post_send_mail_update(self):
         '''
@@ -107,8 +84,6 @@ class EmailBroadCast(EmailMessage):
             for attr, value in self.fields.items():
                 setattr(self.obj, attr, value)
             self.obj.save()
-            # self.obj.save(broadcast_on=timezone.now(), \
-            #               escalated_on=timezone.now())
         except Exception as ex:
             logging.info("Failed Updating Notification model... %s", \
                          str(ex))
@@ -119,7 +94,5 @@ class EmailBroadCast(EmailMessage):
         '''
         try:
             super().send(*args, **kwargs)
-            return True
         except Exception as ex:
             logging.info("Failed Sending Email:.... %s", str(ex))
-            return False

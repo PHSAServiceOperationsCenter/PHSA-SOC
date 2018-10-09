@@ -3,9 +3,28 @@ Created on Oct 5, 2018
 
 @author: serban
 '''
+"""
+.. _factories:
+
+data factories for the p_soc_auto applications models
+
+:module:    p_soc_auto.testlib.factories
+
+:copyright:
+
+    Copyright 2018 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Oct. 9, 2018
+
+"""
 import factory
 
 from django.contrib.auth import get_user_model
+
+from rules_engine.models import RuleDemoData
 
 
 class UserFactory(factory.DjangoModelFactory):

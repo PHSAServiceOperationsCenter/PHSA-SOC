@@ -1,8 +1,3 @@
-'''
-Created on Oct 5, 2018
-
-@author: serban
-'''
 """
 .. _factories:
 
@@ -21,10 +16,15 @@ data factories for the p_soc_auto applications models
 
 """
 import factory
+import names
+import random
+import string
 
+from datetime import timedelta
+
+from dateutil import parser as datetime_parser
 from django.contrib.auth import get_user_model
-
-from rules_engine.models import RuleDemoData
+from django.utils import timezone
 
 
 class UserFactory(factory.DjangoModelFactory):
@@ -54,3 +54,71 @@ class UserFactory(factory.DjangoModelFactory):
         build email from username
         """
         return '{}@phsa.ca'.format(self.username)
+
+
+class RuleDemoDataFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = 'rules_engine.RuleDemoData'
+
+    data_name = factory.Sequence(lambda n: 'data_demo_entry_%03d' % n)
+    data_datetime_1 = timezone.make_aware(datetime_parser.parse('1970'))
+    data_datetime_2 = timezone.make_aware(datetime_parser.parse('2030'))
+    data_number_1 = random.randint(1, 100)
+    data_number_2 = random.randint(1, 100)
+    data_string_1 = ''.join(
+        random.choice(string.ascii_lowercase) for x in range(16))
+    data_string_2 = ''.join(
+        random.choice(string.ascii_lowercase) for x in range(16))
+    created_by = factory.SubFactory(UserFactory)
+    updated_by = factory.SubFactory(UserFactory)
+
+
+class RuleFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = 'rules_engine.Rule'
+
+    created_by = factory.SubFactory(UserFactory)
+    updated_by = factory.SubFactory(UserFactory)
+
+    rule = factory.Sequence(lambda n: 'rule_%03d' % n)
+
+    @factory.lazy_attribute
+    def subscribers(self):
+        subscribers = []
+        for _ in range(random.randint(1, 4)):
+            subscribers.append(
+                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
+                                       names.get_last_name().lower()))
+
+        return ','.join(subscribers)
+
+    @factory.lazy_attribute
+    def escalation_subscribers(self):
+        escalation_subscribers = []
+        for _ in range(random.randint(1, 4)):
+            escalation_subscribers.append(
+                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
+                                       names.get_last_name().lower()))
+
+        return ','.join(escalation_subscribers)
+
+
+class RegexRuleFactory(RuleFactory):
+    class Meta:
+        model = 'rules_engine.RegexRule'
+
+    match_string = 'match me'
+
+
+class IntervalRuleFactory(RuleFactory):
+    class Meta:
+        model = 'rules_engine.IntervalRule'
+
+    pass
+
+
+class ExpirationRuleFactory(RuleFactory):
+    class Meta:
+        model = 'rules_engine.ExpirationRule'
+
+    grace_period = timedelta(days=666, hours=666, minutes=666, seconds=666)

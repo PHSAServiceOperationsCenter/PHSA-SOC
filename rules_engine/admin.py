@@ -21,8 +21,8 @@ from django.contrib.contenttypes.models import ContentType
 from p_soc_auto_base.admin import BaseAdmin
 from notifications.models import NotificationType, NotificationLevel
 from .models import (
-    TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,
-    NotificationEventForRuleDemo, RegexRule)
+    RuleDemoData, IntervalRule, RuleApplies, ExpirationRule, RegexRule,
+)
 from .forms import RuleAppliesForm
 
 
@@ -141,8 +141,8 @@ class RuleAppliesInlineAdmin(admin.TabularInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-@admin.register(TinDataForRuleDemos)
-class TinDataAdmin(admin.ModelAdmin):
+@admin.register(RuleDemoData)
+class RuleDemoDataAdmin(admin.ModelAdmin):
     """
     admin class for the demo data model
     """
@@ -206,12 +206,6 @@ class RuleAppliesAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
         return obj.second_field_name
     get_current_second_field_name.short_description = \
         'current value for second field name'
-
-
-@admin.register(NotificationEventForRuleDemo)
-class NotificationEventForRuleDemoAdmin(admin.ModelAdmin):
-    list_display = ('notification', 'notification_level', 'notification_type',
-                    'notification_args')
 
 
 @admin.register(RegexRule)

@@ -45,7 +45,7 @@ class NotificationError(Exception):
     pass
 
 
-class TinDataForRuleDemos(BaseModel, models.Model):
+class RuleDemoData(BaseModel, models.Model):
     """
     just a test class to screw around; will go away soon
     """
@@ -65,32 +65,6 @@ class TinDataForRuleDemos(BaseModel, models.Model):
     class Meta:
         verbose_name = 'Sample data for demonstrating rules'
         verbose_name_plural = 'Sample data for demonstrating rules'
-
-
-class NotificationEventForRuleDemo(BaseModel, models.Model):
-    """
-    fake notification class
-    will create something more sophisticated when implementing
-    notifications
-    """
-    notification = models.CharField(
-        'notification', max_length=253, db_index=True, unique=True,
-        blank=False, null=False)
-    notification_level = models.CharField(
-        'log, info, warn, error, critical, kill me now', max_length=64,
-        default='info')
-    notification_type = models.CharField(
-        'log, notify, notify and escalate, etc', max_length=64,
-        default='notify')
-    notification_args = JSONField(
-        load_kwargs={'object_pairs_hook': collections.OrderedDict})
-
-    def __str__(self):
-        return self.notification
-
-    class Meta:
-        verbose_name = 'Place holder for notifications'
-        verbose_name_plural = 'Place holder for notifications'
 
 
 class Rule(BaseModel, models.Model):

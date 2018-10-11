@@ -15,15 +15,17 @@ data factories for the p_soc_auto applications models
 :updated:    Oct. 9, 2018
 
 """
-import factory
-import names
 import random
 import string
 
 from datetime import timedelta
 
+import factory
+import names
+
 from dateutil import parser as datetime_parser
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 
@@ -114,11 +116,40 @@ class IntervalRuleFactory(RuleFactory):
     class Meta:
         model = 'rules_engine.IntervalRule'
 
-    pass
-
 
 class ExpirationRuleFactory(RuleFactory):
     class Meta:
         model = 'rules_engine.ExpirationRule'
 
     grace_period = timedelta(days=666, hours=666, minutes=666, seconds=666)
+
+
+class RuleAppliesFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = 'rules_engine.RuleApplies'
+
+    rule = factory.SubFactory(RuleFactory)
+    content_type = factory.iterator(
+        ContentType.objects.filter(model='ruledemodata'))
+    field_name = 'data_datetime_1'
+    second_field_name = 'data_datetime_2'
+
+    @factory.lazy_attribute
+    def subscribers(self):
+        subscribers = []
+        for _ in range(random.randint(1, 4)):
+            subscribers.append(
+                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
+                                       names.get_last_name().lower()))
+
+        return ','.join(subscribers)
+
+    @factory.lazy_attribute
+    def escalation_subscribers(self):
+        escalation_subscribers = []
+        for _ in range(random.randint(1, 4)):
+            escalation_subscribers.append(
+                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
+                                       names.get_last_name().lower()))
+
+        return ','.join(escalation_subscribers)

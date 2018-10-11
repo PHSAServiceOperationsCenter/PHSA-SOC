@@ -40,33 +40,21 @@ class EmailBroadCast(EmailMessage):
         3. con this is smtp connection object assigned
         from setting.py if passed as None
         '''
-        self.fields = {}
-        for key, value in kwargs.items():
-            self.fields[key] = value
-
-        self.connection = con
         if pk is not None:
+            self.connection = con
             self.obj = Notification.objects.get(pk=pk)
             email = self.get_defined_email_parameters()
-            super().__init__(email["message"],
-                                email["from"],
-                                email["to"],
-                                None,
-                                email["con"]
-                                )
-        else: #pk is None
-            super().__init__(EmailMessage.message,
-                            EmailMessage.subject=,
-                            EmailMessage.from_email=,
-                            EmailMessage.to=,
-                            None,
-                            EmailMessage.connection
-                            )
-            self.send()
+        else:
+            email = self.get_default_email_parameters()     
+
+        self.send(email)
+
+        if pk is not None:
+            self.post_send_mail_update()
 
     def get_defined_email_parameters(self):
         '''
-        creating  creating the email message
+        creating  defined the email message
         '''
         receivers = self.obj.subcribers
         return {"subject":self.obj.message["rule_msg"],
@@ -76,20 +64,36 @@ class EmailBroadCast(EmailMessage):
                 "con":self.connection
         }
 
+    def get_default_email_parameters(self):
+        '''
+        creating  default email message
+        '''
+        return {"subject":EmailMessage.subject,
+                "message":EmailMessage.message,
+                "from":EmailMessage.from_email,
+                "to":EmailMessage.to,
+                "con":EmailMessage.connection
+        }
+
+
     def post_send_mail_update(self):
         '''
         update notification columns upon successful email sent
         '''
-        try:
-            for attr, value in self.fields.items():
-                setattr(self.obj, attr, value)
-            self.obj.save()
-        except Exception as ex:
-            logging.info("Failed Updating Notification model... %s",
-                         str(ex))
+        self.obj.objects.update(broadcast_on=timezone.now(), escalated_on=timezone.now() + timezone.timedelta(days=7))
+        
 
-    def send(self, *args, **kwargs):
+
+    @classmethod
+    def send(cls, email):
         '''
         override parent class send method
         '''
+        super().__init__(email["message"],
+                        email["from"],
+                        email["to"],
+                        None,
+                        email["con"]
+                        )
         super().send(*args, **kwargs)
+

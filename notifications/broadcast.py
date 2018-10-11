@@ -95,5 +95,5 @@ class EmailBroadCast(EmailMessage):
                         None,
                         email["con"]
                         )
-        super().send(*args, **kwargs)
+        super().send()
 

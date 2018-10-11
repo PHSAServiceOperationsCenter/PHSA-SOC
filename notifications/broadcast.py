@@ -41,40 +41,38 @@ class EmailBroadCast(EmailMessage):
         from setting.py if passed as None
         '''
         self.fields = {}
-        self.fields['broadcast_on']= timezone.now()
-        self.fields['escalated_onNone'] = timezone.now()
         for key, value in kwargs.items():
             self.fields[key] = value
 
         self.connection = con
         if pk is not None:
-            email = self.get_email_parameters()
-            try:
-                self.obj = Notification(pk=self.pk)
-            except Notification.DoesNotExist as ex:
-                self.obj = None
-                logging.info("Notification object does not exist %s", \
-                             str(ex))
-            try:
-                super().__init__(email["message"], \
-                                 email["from"], \
-                                 email["to"], \
-                                 None, \
-                                 email["con"] \
-                                 )
-            except BadHeaderError as ex:
-                self.obj = None
-                logging.info("Invalid header found. %s", str(ex))
+            self.obj = Notification.objects.get(pk=pk)
+            email = self.get_defined_email_parameters()
+            super().__init__(email["message"],
+                                email["from"],
+                                email["to"],
+                                None,
+                                email["con"]
+                                )
+        else: #pk is None
+            super().__init__(EmailMessage.message,
+                            EmailMessage.subject=,
+                            EmailMessage.from_email=,
+                            EmailMessage.to=,
+                            None,
+                            EmailMessage.connection
+                            )
+            self.send()
 
-    def get_email_parameters(self):
+    def get_defined_email_parameters(self):
         '''
         creating  creating the email message
         '''
         receivers = self.obj.subcribers
-        return {"subject":self.obj.message["rule_msg"], \
-                "message":self.obj.message, \
-                "from":settings.EMAIL_HOST_USER, \
-                "to":receivers, \
+        return {"subject":self.obj.message["rule_msg"],
+                "message":self.obj.message,
+                "from":settings.EMAIL_HOST_USER,
+                "to":receivers,
                 "con":self.connection
         }
 
@@ -87,14 +85,11 @@ class EmailBroadCast(EmailMessage):
                 setattr(self.obj, attr, value)
             self.obj.save()
         except Exception as ex:
-            logging.info("Failed Updating Notification model... %s", \
+            logging.info("Failed Updating Notification model... %s",
                          str(ex))
 
     def send(self, *args, **kwargs):
         '''
         override parent class send method
         '''
-        try:
-            super().send(*args, **kwargs)
-        except Exception as ex:
-            logging.info("Failed Sending Email:.... %s", str(ex))
+        super().send(*args, **kwargs)

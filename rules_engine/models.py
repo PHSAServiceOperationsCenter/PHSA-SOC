@@ -13,7 +13,6 @@ django models for the rules_engine app
 :contact:    serban.teodorescu@phsa.ca
 
 """
-import collections
 import datetime
 import re
 import uuid
@@ -29,7 +28,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from jsonfield import JSONField
 
 from p_soc_auto_base.models import BaseModel
 from notifications.models import (

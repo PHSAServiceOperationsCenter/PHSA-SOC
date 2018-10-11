@@ -29,6 +29,26 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 
+def get_random_emails(max_range=4, email_domain='phsa.ca'):
+    """
+    :returns: a string of comma separated random email addresses in the
+              first_name.last_name@email.domain. the number of entries is
+              random between 1 and the :arg:`<max_range.~ value
+    :rtype: ``str``
+
+    :arg int max_range: the maximuim number of email addresses
+    :arg str email_domain: the email address domain component
+    """
+    emails = []
+    for _ in range(random.randint(1, max_range)):
+        emails.append('{}.{}@{}'.format(names.get_first_name().lower(),
+                                        names.get_last_name().lower(),
+                                        email_domain)
+                      )
+
+    return ','.join(emails)
+
+
 class UserFactory(factory.DjangoModelFactory):
     """
     factory for the User model
@@ -45,7 +65,7 @@ class UserFactory(factory.DjangoModelFactory):
     @factory.lazy_attribute
     def username(self):
         """
-        build username from firt and last name
+        build username from first and last name
         """
         return '{}{}'.format(
             str(self.first_name)[0].lower(), str(self.last_name).lower())
@@ -59,6 +79,9 @@ class UserFactory(factory.DjangoModelFactory):
 
 
 class RuleDemoDataFactory(factory.DjangoModelFactory):
+    """
+    data factory for the :class:`<rules_enigne.models.RuleDemoData>`
+    """
     class Meta:
         model = 'rules_engine.RuleDemoData'
 
@@ -76,6 +99,9 @@ class RuleDemoDataFactory(factory.DjangoModelFactory):
 
 
 class RuleFactory(factory.DjangoModelFactory):
+    """
+    data factory for the :class:`<rules_engine.models.Rule>`
+    """
     class Meta:
         model = 'rules_engine.Rule'
 
@@ -86,23 +112,11 @@ class RuleFactory(factory.DjangoModelFactory):
 
     @factory.lazy_attribute
     def subscribers(self):
-        subscribers = []
-        for _ in range(random.randint(1, 4)):
-            subscribers.append(
-                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
-                                       names.get_last_name().lower()))
-
-        return ','.join(subscribers)
+        return get_random_emails()
 
     @factory.lazy_attribute
     def escalation_subscribers(self):
-        escalation_subscribers = []
-        for _ in range(random.randint(1, 4)):
-            escalation_subscribers.append(
-                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
-                                       names.get_last_name().lower()))
-
-        return ','.join(escalation_subscribers)
+        return get_random_emails()
 
 
 class RegexRuleFactory(RuleFactory):
@@ -129,27 +143,16 @@ class RuleAppliesFactory(factory.DjangoModelFactory):
         model = 'rules_engine.RuleApplies'
 
     rule = factory.SubFactory(RuleFactory)
-    content_type = factory.iterator(
-        ContentType.objects.filter(model='ruledemodata'))
+    content_type = ContentType.objects.filter(model='ruledemodata').first()
     field_name = 'data_datetime_1'
     second_field_name = 'data_datetime_2'
+    created_by = factory.SubFactory(UserFactory)
+    updated_by = factory.SubFactory(UserFactory)
 
     @factory.lazy_attribute
     def subscribers(self):
-        subscribers = []
-        for _ in range(random.randint(1, 4)):
-            subscribers.append(
-                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
-                                       names.get_last_name().lower()))
-
-        return ','.join(subscribers)
+        return get_random_emails()
 
     @factory.lazy_attribute
     def escalation_subscribers(self):
-        escalation_subscribers = []
-        for _ in range(random.randint(1, 4)):
-            escalation_subscribers.append(
-                '{}.{}@phsa.ca'.format(names.get_first_name().lower(),
-                                       names.get_last_name().lower()))
-
-        return ','.join(escalation_subscribers)
+        return get_random_emails()

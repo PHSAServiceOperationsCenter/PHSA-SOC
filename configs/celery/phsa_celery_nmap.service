@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=forking
-User=phsa
-Group=phsa
+User=root
+Group=root
 EnvironmentFile=/opt/phsa/p_soc_auto/configs/celery/phsa_celery_nmap.conf
 WorkingDirectory=/opt/phsa/p_soc_auto/
 

@@ -18,8 +18,6 @@ data factories for the p_soc_auto applications models
 import random
 import string
 
-from datetime import timedelta
-
 import factory
 import names
 
@@ -135,7 +133,8 @@ class ExpirationRuleFactory(RuleFactory):
     class Meta:
         model = 'rules_engine.ExpirationRule'
 
-    grace_period = timedelta(days=666, hours=666, minutes=666, seconds=666)
+    grace_period = timezone.timedelta(
+        days=666, hours=666, minutes=666, seconds=666)
 
 
 class RuleAppliesFactory(factory.DjangoModelFactory):

@@ -55,8 +55,12 @@ class EmailBroadCast(EmailMessage):
         '''
         if connection is not None:
             self.connection = connection
+        else:
+            self.connection = self.get_connection
+
         if notification_pk is not None:
-            self.obj = Notification.objects.get(pk=pk)
+            self.notification_pk = notification_pk
+            self.obj = Notification.objects.get(pk=self.notification_pk)
             email = self.get_defined_email_parameters()
         else:
             self.subject = subject
@@ -69,7 +73,6 @@ class EmailBroadCast(EmailMessage):
 
         self.send()
 
-        
         if notification_pk is not None:
             self.post_send_mail_update()
 
@@ -80,7 +83,7 @@ class EmailBroadCast(EmailMessage):
         receivers = self.obj.subcribers
         return {"subject":self.obj.message["rule_msg"],
                 "message":self.obj.message,
-                "from":settings.EMAIL_HOST_USER,
+                "from":self.email_from,
                 "to":receivers,
                 "con":self.connection
         }
@@ -93,19 +96,15 @@ class EmailBroadCast(EmailMessage):
                 "message":self.message,
                 "from":self.email_from,
                 "to":self.email_to
+                #"get_connection":self.connection
         }
 
     def post_send_mail_update(self):
         '''
         update notification columns upon successful email sent
         '''
-        self.obj.objects.update(broadcast_on=timezone.now(), escalated_on=timezone.now() + timezone.timedelta(days=7))
-        
-
-    def send(self):
-        '''
-        override parent class send method
-        '''
-        super(EmailMessage, self).send()
+        Notification.objects.filter(pk=self.notification_pk).update(
+            broadcast_on=timezone.now(),
+            escalated_on=timezone.now() + timezone.timedelta(days=7))
 
 

@@ -37,6 +37,7 @@ class EmailBroadCast(EmailMessage):
                  message='default_message', 
                  email_from='ali.rahmat@phsa.ca',
                  email_to='ali.rahmat@phsa.ca', 
+                 *args,
                  **kwargs
                 ):
 
@@ -100,9 +101,9 @@ class EmailBroadCast(EmailMessage):
         self.obj.objects.update(broadcast_on=timezone.now(), escalated_on=timezone.now() + timezone.timedelta(days=7))
         
 
-    def send(self, email):
+    def send(self, *args, **kwargs):
         '''
         override parent class send method
         '''
-        super().send(*args, **kwarg)
+        super().send(*args, **kwargs)
 

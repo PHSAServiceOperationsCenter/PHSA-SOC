@@ -65,10 +65,11 @@ class EmailBroadCast(EmailMessage):
             self.email_to = email_to
             email = self.get_default_email_parameters()  
 
-        super().__init__(*args, **kwargs)   
+        super(EmailBroadCast, self).__init__(email)
 
-        self.send(email)
+        self.send()
 
+        
         if notification_pk is not None:
             self.post_send_mail_update()
 
@@ -101,9 +102,10 @@ class EmailBroadCast(EmailMessage):
         self.obj.objects.update(broadcast_on=timezone.now(), escalated_on=timezone.now() + timezone.timedelta(days=7))
         
 
-    def send(self, *args, **kwargs):
+    def send(self):
         '''
         override parent class send method
         '''
-        super().send(*args, **kwargs)
+        super(EmailMessage, self).send()
+
 

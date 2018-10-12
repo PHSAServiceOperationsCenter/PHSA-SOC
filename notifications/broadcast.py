@@ -31,12 +31,17 @@ class EmailBroadCast(EmailMessage):
     '''
 
     def __init__(self,
-                 notification_pk=None,
-                 connection=None,
-                 subject='default subject',
-                 message='default_message', 
+                 subject='default subject_new',
+                 message='default_message_new', 
                  email_from='ali.rahmat@phsa.ca',
-                 email_to='ali.rahmat@phsa.ca', 
+                 email_to=['ali.rahmat@phsa.ca',],
+                 cc=[],
+                 bcc=[],
+                 connection=None,
+                 attachments=[],
+                 reply_to=['ali.rahmat@phsa.ca',], 
+                 headers=None,
+                 notification_pk=None,
                  *args,
                  **kwargs
                 ):
@@ -54,53 +59,29 @@ class EmailBroadCast(EmailMessage):
         
         '''
         if connection is not None:
-            self.connection = connection
-        else:
-            self.connection = self.get_connection
-
-        if notification_pk is not None:
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=self.notification_pk)
-            email = self.get_defined_email_parameters()
-        else:
-            self.subject = subject
-            self.message = message
-            self.email_from = email_from
-            self.email_to = email_to
-            email = self.get_default_email_parameters()  
-
-        super(EmailBroadCast, self).__init__(email)
-
+            #email = self.get_defined_email_parameters()
+            subject=self.obj.rule_msg
+            body=self.obj.message
+            # and all the other things from get_defined_email_parameters
+        super().__init__(subject,
+                         message,
+                         email_from,
+                         email_to,
+                         bcc,
+                         connection,
+                         attachments,
+                         cc,
+                         reply_to,
+                         headers,
+                         *args, **kwargs)
         self.send()
-
-        if notification_pk is not None:
-            self.post_send_mail_update()
-
-    def get_defined_email_parameters(self):
-        '''
-        creating  defined the email message
-        '''
-        receivers = self.obj.subcribers
-        return {"subject":self.obj.message["rule_msg"],
-                "message":self.obj.message,
-                "from":self.email_from,
-                "to":receivers,
-                "con":self.connection
-        }
-
-    def get_default_email_parameters(self):
-        '''
-        creating  default email message
-        '''
-        return {"subject":self.subject,
-                "message":self.message,
-                "from":self.email_from,
-                "to":self.email_to
-                #"get_connection":self.connection
-        }
 
     def post_send_mail_update(self):
         '''
+        extend this to include the whole send and update logic
+        
         update notification columns upon successful email sent
         '''
         Notification.objects.filter(pk=self.notification_pk).update(

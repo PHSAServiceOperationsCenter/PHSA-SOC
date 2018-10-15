@@ -20,17 +20,24 @@ from smtplib import SMTPServerDisconnected, SMTPDataError, SMTPConnectError
 
 from django.core.mail import get_connection
 
+from .broadcast import EmailBroadCast
+
 SMTP_CONNECTION = get_connection()
 
 
-@shared_task(
-    rate_limit='0.5/s', queue='email', retry_backoff=True,
-    autoretry_for=(SMTPServerDisconnected, SMTPDataError, SMTPConnectError))
+# @shared_task(
+#     rate_limit='0.5/s', queue='email', retry_backoff=True,
+#     autoretry_for=(SMTPServerDisconnected, SMTPDataError, SMTPConnectError))
+# Serban please restore above commented code once we figure out the issue
+#issue for some reasons decorator with parameters cause celery worker
+#not to pick up the task
+
+@shared_task
 def send_email(pk, fields_to_update):
     """
     task executing all email broadcast
     """
-    pass
+    email = EmailBroadCast(pk, fields_to_update)
 
 @shared_task(
     rate_limit='0.5/s', queue='email', retry_backoff=True,

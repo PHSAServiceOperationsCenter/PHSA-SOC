@@ -58,6 +58,7 @@ class EmailBroadCast(EmailMessage):
         successfull on unsuccessfull email sent
         
         '''
+        
         if connection is not None:
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=self.notification_pk)
@@ -65,6 +66,7 @@ class EmailBroadCast(EmailMessage):
             subject=self.obj.rule_msg
             body=self.obj.message
             # and all the other things from get_defined_email_parameters
+
         super().__init__(subject,
                          message,
                          email_from,
@@ -77,6 +79,8 @@ class EmailBroadCast(EmailMessage):
                          headers,
                          *args, **kwargs)
         self.send()
+        if notification_pk:
+            post_send_mail_update
 
     def post_send_mail_update(self):
         '''

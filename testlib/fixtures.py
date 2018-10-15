@@ -19,14 +19,42 @@ import pytest
 
 from django.utils import timezone
 
-from .factories import RuleDemoDataFactory
+from .factories import RuleAppliesFactory, ExpirationRuleFactory, RuleDemoDataFactory
 
 
-@pytest.fixture(params=['not_yet_valid', 'expired', 'warning', 'healthy'])
-def demo_data_for_exp_rule(request, db):
-    if request.param in ['not_yet_valid']:
-        data_datetime_1 = timezone.now() + timezone.timedelta(days=365)
-        data_datetime_2 = timezone.now() + timezone.timedelta(days=366)
+unexpired_fixtures = []
+healthy_fixtures = []
+warning_fxtures = []
 
-    return RuleDemoDataFactory.create(
-        data_datetime_1=data_datetime_1, data_datetime_2=data_datetime_2)
+not_yet_valid = [
+    dict(data_name='not yet valid 1 year',
+         data_datetime_1=timezone.now() + timezone.timedelta(days=365),
+         data_datetime_2=timezone.now() + timezone.timedelta(days=366)),
+    dict(data_name='not yet valid 1 day',
+         data_datetime_1=timezone.now() + timezone.timedelta(days=1),
+         data_datetime_2=timezone.now() + timezone.timedelta(days=366)),
+    dict(data_name='not yet valid less than 1 day',
+         data_datetime_1=timezone.now() + timezone.timedelta(hours=23),
+         data_datetime_2=timezone.now() + timezone.timedelta(days=366)),
+    dict(data_name='not yet valid 1 hour',
+         data_datetime_1=timezone.now() + timezone.timedelta(hours=1),
+         data_datetime_2=timezone.now() + timezone.timedelta(days=366)),
+    dict(data_name='not yet valid less than 1 hour',
+         data_datetime_1=timezone.now() + timezone.timedelta(minutes=41),
+         data_datetime_2=timezone.now() + timezone.timedelta(days=366)), ]
+
+
+@pytest.fixture(params=not_yet_valid)
+def not_yet_valid_rule_and_demo_data(request, db):
+    """
+    pytest fixture that creates an expiration rule and rule demo data
+    to trigger "not yet valid" alerts
+    """
+    import ipdb
+    ipdb.set_trace()
+    RuleAppliesFactory.create(
+        rule=ExpirationRuleFactory.create(rule='not yet valid'))
+
+    RuleDemoDataFactory.create(**request.param)
+
+    return request.param.get('data_name')

@@ -142,7 +142,8 @@ class RuleAppliesFactory(factory.DjangoModelFactory):
         model = 'rules_engine.RuleApplies'
 
     rule = factory.SubFactory(RuleFactory)
-    content_type = ContentType.objects.filter(model='ruledemodata').first()
+    content_type = factory.Iterator(
+        ContentType.objects.filter(model='ruledemodata'))
     field_name = 'data_datetime_1'
     second_field_name = 'data_datetime_2'
     created_by = factory.SubFactory(UserFactory)
@@ -155,3 +156,13 @@ class RuleAppliesFactory(factory.DjangoModelFactory):
     @factory.lazy_attribute
     def escalation_subscribers(self):
         return get_random_emails()
+
+
+class NotificationTypeFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = 'notifications.NotificationType'
+
+
+class NotificationLevelFactory(factory.DjangoModelFactory):
+    class Meta:
+        model = 'notifications.NotificationLevel'

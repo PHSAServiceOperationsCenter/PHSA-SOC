@@ -78,7 +78,7 @@ class EmailBroadCast(EmailMessage):
                          headers,
                          *args, **kwargs)
         self.send()
-        if notification_pk:
+        if self.obj:
             post_send_mail_update
 
     def post_send_mail_update(self):

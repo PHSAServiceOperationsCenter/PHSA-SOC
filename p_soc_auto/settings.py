@@ -200,7 +200,6 @@ EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 
-
 #=========================================================================
 # # email settings for gmail
 # # these will not work from 10.1.80.0
@@ -208,3 +207,4 @@ EMAIL_HOST_PASSWORD = ''
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
+

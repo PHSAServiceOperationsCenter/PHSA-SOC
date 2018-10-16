@@ -21,30 +21,29 @@ from django.core.mail import send_mail, BadHeaderError
 import smtplib
 from .models import Notification
 
-class BroadCastUtil:
-    def __init__(self, broadCastMethod = "email"):
-        self.broadCastMethod = broadCastMethod
+class EmailBroadCast:
+    def __init__(self, pk, subscribers):
+        self.pk = pk
+        self.recipient_list = subscribers
 
-    @staticmethod
-    def email(pk):
+    def go(self):
         """
-        Checks Notificatio ...
+        sends notification email ...
         """
-        nObj = Notification.pk
-        ack_on, nType, nLevel = nObj.values('ack_on', 'notification_type', 'notification_level')
-            
-        if ack_on is None:
-            broadcast = NotificationTypeBroadcast.objects.filter(notification_type=nType).values('broadcast')
-            nMessage = Notification.objects.filter(instance_pk=pk).message
-            nSubscribers = Notification.objects.filter(instance_pk=pk).subscribers
+        nObj = Notification(pk=pk)
 
-            email_subject = nMessage.rule_msg
+        if nObj.ack_on is None:
+            nType = nObj.notification_type
+            nMessage = nObj.message
+            email_subject = nMessage["rule_msg"]
             email_message = nMessage
             email_from = settings.EMAIL_HOST_USER
-            recipient_list = nSubscribers #['phsadev@gmail.com',]
             try:
-                send_mail( subject, message, email_from, recipient_list )
+                send_mail( email_subject, email_message, email_from, self.recipient_list )#['phsadev@gmail.com',]
             except BadHeaderError as ex:
-                print('send_email: %s' % (ex.message))
+                print('send_email: Invalid header found. %s' % str(ex))
                 return HttpResponse('Invalid header found.')
             return HttpResponseRedirect('/')
+    
+
+

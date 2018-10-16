@@ -58,6 +58,7 @@ class EmailBroadCast(EmailMessage):
         successfull on unsuccessfull email sent
         
         '''
+        self.obj = None
         if connection is not None:
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=self.notification_pk)

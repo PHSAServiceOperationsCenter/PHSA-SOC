@@ -97,6 +97,25 @@ class Rule(BaseModel, models.Model):
     applies = models.ManyToManyField(
         ContentType, through='RuleApplies',
         verbose_name=_('This Rule Applies to'))
+    notification_type = models.ForeignKey(
+        'notifications.NotificationType', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        'notifications.NotificationLevel', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Level'))
+    subscribers = models.TextField(
+        _('rule subscribers'), blank=True, null=True,
+        help_text=_('send notifications raised by this rule to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    escalation_subscribers = models.TextField(
+        _('rule escalation subscribers'), blank=True, null=True,
+        help_text=_('send escalation notifications raised by this rule to'
+                    ' these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
 
     def raise_notification(
             self, notification_type=None, notification_notes=None, **kwargs):
@@ -327,6 +346,19 @@ class RuleApplies(BaseModel, models.Model):
     field_name = models.CharField(
         _('field name'), max_length=64, db_index=True, blank=False, null=False,
         help_text=_('the name of the field where the rule fact resides'))
+    subscribers = models.TextField(
+        _('model-field subscribers'), blank=True, null=True,
+        help_text=_('send notifications raised when applying this rule to'
+                    ' this particular model-field combination to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    escalation_subscribers = models.TextField(
+        _('model-field escalation subscribers'), blank=True, null=True,
+        help_text=_('send escalated notifications raised when applying this'
+                    ' rule to'
+                    ' this particular model-field combination to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
 
     def get_fact_for_field(self, obj):
         """

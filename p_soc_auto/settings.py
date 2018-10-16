@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
+    'notifications.apps.NotificationsConfig',
     'dal',
     'dal_select2',
     'grappelli',

@@ -106,6 +106,11 @@ class NmapHistory(models.Model):
     retreived = models.DateTimeField(null=True, blank=True)
     xml_data = models.TextField()
 
+    def updateRetreivedCertHist(self, md5):
+        obj = NmapHistory.objects.filter(md5 = self.md5)
+        obj = NmapHistory(retreived=timezone.now())
+        obj.save()
+
     def __str__(self):
         return str(self.cert_id)
 

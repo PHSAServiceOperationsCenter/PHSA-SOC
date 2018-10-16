@@ -42,8 +42,8 @@ def apply_rule(rule):
         rule._meta.verbose_name_plural, rule.rule)
 
 
-@shared_task
-def apply_intervals(queue='shared'):
+@shared_task(queue='shared')
+def apply_intervals():
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.IntervalRule`
@@ -58,8 +58,8 @@ def apply_intervals(queue='shared'):
     return '{}: bootstrapped interval rules'.format(timezone.now())
 
 
-@shared_task
-def apply_expiration(queue='shared'):
+@shared_task(queue='shared')
+def apply_expiration():
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.ExpirationRule`
@@ -70,8 +70,8 @@ def apply_expiration(queue='shared'):
     return '{}: bootstrapped expiration rules'.format(timezone.now())
 
 
-@shared_task
-def apply_regex_rules(queue='shared'):
+@shared_task(queue='shared')
+def apply_regex_rules():
     """
     task wrapper for executing all the tasks in the group associated with
     :class:`rules_engine.models.ExpirationRule`

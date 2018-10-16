@@ -34,7 +34,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -132,7 +132,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Vancouver'
 
 USE_I18N = True
 
@@ -141,10 +141,10 @@ USE_L10N = True
 USE_TZ = True
 
 
-STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/media/'
+MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins
@@ -166,6 +166,7 @@ CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_RESULT_PERSISTENT = True
 CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_QUEUES = (
@@ -189,15 +190,15 @@ AJAX_LOOKUP_CHANNELS = {
     'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
 
 # common email settings
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
-EMAIL_HOST = "smtp.healthbc.org"  #'smtp.gmail.com'
-EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.healthbc.org'
+EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'ali.rahmat@phsa.ca'
-EMAIL_HOST_PASSWORD = 'XXXXXXXX'
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
 
 #=========================================================================
 # # email settings for gmail
@@ -207,10 +208,3 @@ EMAIL_HOST_PASSWORD = 'XXXXXXXX'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
 
-#=========================================================================
-# # temporary email settings with the smtp relay
-# # these will only work from IP addresses that have been white-listed
-# EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
-# EMAIL_HOST_USER = 'serban.teodorescu@phsa.ca'
-# EMAIL_HOST_PASSWORD = ''
-#=========================================================================

@@ -79,7 +79,7 @@ class EmailBroadCast(EmailMessage):
                          headers,
                          *args, **kwargs)
         self.send()
-        if self.obj:
+        if self.obj is not None:
             post_send_mail_update()
 
     def post_send_mail_update(self):

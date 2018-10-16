@@ -171,6 +171,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_QUEUES = (
     Queue('rules', Exchange('rules'), routing_key='rules'),
+    Queue('email', Exchange('email'), routing_key='email'),
     Queue('orion', Exchange('orion'), routing_key='orion'),
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),

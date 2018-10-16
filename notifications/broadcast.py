@@ -79,7 +79,7 @@ class EmailBroadCast(EmailMessage):
                          *args, **kwargs)
         self.send()
         if self.obj:
-            post_send_mail_update
+            post_send_mail_update()
 
     def post_send_mail_update(self):
         '''

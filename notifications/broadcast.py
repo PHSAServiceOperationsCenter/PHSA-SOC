@@ -159,15 +159,15 @@ class EmailBroadCast(EmailMessage):
         validates if argument are email format
         """
         if not isinstance(email, (list, )):
-                logging.error('Not a list instance %s', email)
-                self.error_flag = True
-            elif len(email_to) == 0:
-                logging.error('Invalid Email %s', email)
-                self.error_flag = True
-            else:
-                for email in email_to:
-                    try:
-                        validate_email(email)
-                    except ValidationError:
-                        logging.error('Invalid Email %s', email)
-                        self.error_flag = True
+            logging.error('Not a list instance %s', email)
+            self.error_flag = True
+        elif len(email_to) == 0:
+            logging.error('Invalid Email %s', email)
+            self.error_flag = True
+        else:
+            for email in email_to:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    logging.error('Invalid Email %s', email)
+                    self.error_flag = True

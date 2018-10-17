@@ -20,7 +20,6 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
-
 """
 
 import os

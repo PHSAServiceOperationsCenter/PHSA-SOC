@@ -61,15 +61,14 @@ class EmailBroadCast(EmailMessage):
                 if email_type == 0:
                     email_to = self.obj.subscribers
                 elif email_type == 1: # escalation
-                    #email_to = self.obj.escalation
-                    pass
+                    email_to = self.obj.escalation_subscribers
                 elif email_type == 2: # both esc, and broadcast
-                    #email_to.
-                    #        extend(self.obj.subscribers).
-                    #        extend(self.obj.escalation)
-                    pass
+                    email_to.extend(
+                        self.obj.subscribers).extend(
+                            self.obj.escalation)
                 else: # error
-                    pass
+                    logging.error('Invalid  data %s', 'email_type')
+                    return
             else:
                 logging.error('Invalid  object %s', 'Notification')
                 return

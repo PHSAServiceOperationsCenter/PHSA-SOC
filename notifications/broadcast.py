@@ -87,27 +87,27 @@ class EmailBroadCast(EmailMessage):
             if subject is None or message is None:
                 raise InputError("Email Subject/Message")
 
-            try:
-                validate_email(email_from)
-            except ValidationError:
-                raise InputError("Invalid Email From")
+        try:
+            validate_email(email_from)
+        except ValidationError:
+            raise InputError("Invalid Email From")
 
-            self.validate_email_types(email_to)
-            self.validate_list_types([cc, bcc])
-            self.validate_email_types(reply_to)
-            if attachments is not None:
-                self.validate_list_types(attachments)
+        self.validate_email_types(email_to)
+        self.validate_list_types([cc, bcc])
+        self.validate_email_types(reply_to)
+        if attachments is not None:
+            self.validate_list_types(attachments)
 
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
-            self.obj = Notification.objects.get(pk=self.notification_pk)
+            self.obj = Notification.objects.get(pk=notification_pk)
             subject = self.obj.rule_msg
             message = self.obj.message
-            if email_type == SUB_EMAIL_TYPE:
+            if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
-            elif email_type == ESC_EMAIL_TYPE: # escalation
+            elif email_type == settings.ESC_EMAIL_TYPE: # escalation
                 email_to = self.obj.escalation_subscribers
-            elif email_type == SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
+            elif email_type == settings.SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
                 email_to.extend(
                     self.obj.subscribers).extend(
                         self.obj.escalation)

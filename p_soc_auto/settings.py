@@ -203,19 +203,22 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 
 
-DEFAULT_EMAIL_SUBJECT = None
-DEFAULT_EMAIL_MESSAGE = None
+# DEFAULT_EMAIL_SUBJECT = None
+# DEFAULT_EMAIL_MESSAGE = None
 # DEFAULT_EMAIL_FROM = 'bill.stephen@phsa.ca'
 # DEFAULT_EMAIL_TO = ['ali.rahmat@phsa.ca', 'serban.teodorescu@phsa.ca',]
 DEFAULT_EMAIL_CC = []
 DEFAULT_EMAIL_BCC = []
-DEFAULT_EMAIL_CONNECTION = None
+#DEFAULT_EMAIL_CONNECTION = None
 DEFAULT_EMAIL_ATTACHMENTS = []
 DEFAULT_EMAIL_BCC = []
 DEFAULT_EMAIL_REPLY_TO = ['bill.stephen@phsa.ca',]
 DEFAULT_EMAIL_HEADERS = None
 DEFAULT_NOTIFICATION_PK = None
-DEFAULT_EMAIL_TYPE = 0
+SUB_EMAIL_TYPE = 0
+ESC_EMAIL_TYPE = 1
+SUB_ESC_EMAIL_TYPE = 2
+
 
 
 #=========================================================================

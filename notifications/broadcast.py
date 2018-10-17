@@ -161,7 +161,7 @@ class EmailBroadCast(EmailMessage):
         if not isinstance(email, (list, )):
                 logging.error('Not a list instance %s', email)
                 self.error_flag = True
-            elif email_to is []:
+            elif len(email_to) == 0:
                 logging.error('Invalid Email %s', email)
                 self.error_flag = True
             else:

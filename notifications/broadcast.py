@@ -87,11 +87,9 @@ class EmailBroadCast(EmailMessage):
         #         return
 
         if notification_pk is None:
-            if subject is None:
-                logging.error('Invalid None parameter %s', 'Email Subject')
-                self.error_flag = True
-            if message is None:
-                logging.error('Invalid None parameter %s', 'Email Message')
+            if subject is None or message is None:
+                logging.error('Invalid None parameter %s',
+                'Email Subject/Message')
                 self.error_flag = True
 
             try:
@@ -100,45 +98,10 @@ class EmailBroadCast(EmailMessage):
                 logging.error('Invalid Email %s', 'Email From')
                 self.error_flag = True
 
-            if not isinstance(email_to, (list, )):
-                logging.error('Not a list instance %s', 'Email To')
-                self.error_flag = True
-            elif email_to is []:
-                logging.error('Invalid Email %s', 'Email To')
-                self.error_flag = True
-            else:
-                for email in email_to:
-                    try:
-                        validate_email(email)
-                    except ValidationError:
-                        logging.error('Invalid Email %s', 'Email To')
-                        self.error_flag = True
+            self.validate_email_types(email_to)
+            self.check_list_types(cc, bcc,attachments)
+            self.validate_email_types(reply_to)
 
-            if not isinstance(cc, (list, )):
-                logging.error('Not a list instance %s', 'cc')
-                self.error_flag = True
-
-            if not isinstance(bcc, (list, )):
-                logging.error('Not a list instance %s', 'cc')
-                self.error_flag = True
-
-            if not isinstance(attachments, (list, )):
-                logging.error('Not a list instance %s', 'attachments')
-                self.error_flag = True
-
-            if not isinstance(reply_to, (list, )):
-                logging.error('Not a list instance %s', 'Reply To')
-                self.error_flag = True
-            elif reply_to is []:
-                logging.error('Invalid Email %s', 'Reply To')
-                self.error_flag = True
-            else:
-                for email in reply_to:
-                    try:
-                        validate_email(email)
-                    except ValidationError:
-                        logging.error('Invalid Email %s', 'Reply To')
-                        self.error_flag = True
         if self.error_flag:
             return
 
@@ -155,7 +118,7 @@ class EmailBroadCast(EmailMessage):
                          *args, **kwargs)
 
     def post_send_mail_update(self):
-        '''
+        """
         extend this to include the whole send and update logic
         update notification columns upon successful email sent
         days, seconds = duration.days, duration.seconds
@@ -163,7 +126,7 @@ class EmailBroadCast(EmailMessage):
         minutes = (seconds % 3600) // 60
         seconds = (seconds % 60)
         return days, hours, minutes, seconds
-        '''
+        """
         Notification.objects.filter(pk=self.notification_pk).update(
             broadcast_on=timezone.now())
         # we need to update escalated_on if no one paid
@@ -174,3 +137,37 @@ class EmailBroadCast(EmailMessage):
         # Notification.objects.filter(pk=self.notification_pk).update(
         #     escalated_on=timezone.now() +
         #     timezone.timedelta(instance.notification_type.escalate_within))
+    def validate_list_types(self, cc, bcc, attachments):
+        """
+        validates if arguments are list instance
+        """
+        if not isinstance(cc, (list, )):
+            logging.error('Not a list instance %s', 'cc')
+            self.error_flag = True
+
+        if self.error_flag == False:
+            if not isinstance(bcc, (list, )):
+                logging.error('Not a list instance %s', 'bcc')
+                self.error_flag = True
+
+        if not isinstance(attachments, (list, )):
+            logging.error('Not a list instance %s', 'attachments')
+            self.error_flag = True
+
+    def validate_email_types(self, email):
+        """
+        validates if argument are email format
+        """
+        if not isinstance(email, (list, )):
+                logging.error('Not a list instance %s', email)
+                self.error_flag = True
+            elif email_to is []:
+                logging.error('Invalid Email %s', email)
+                self.error_flag = True
+            else:
+                for email in email_to:
+                    try:
+                        validate_email(email)
+                    except ValidationError:
+                        logging.error('Invalid Email %s', email)
+                        self.error_flag = True

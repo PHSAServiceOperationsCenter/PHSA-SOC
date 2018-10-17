@@ -22,67 +22,75 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from .models import Notification
 
+
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class InputError(Error):
+   """Raised when parameter is not valid"""
+   pass
+
 class EmailBroadCast(EmailMessage):
-    """
-    EmailBroadCast class to Broadcast Email
-    This class instanciated either by a third party or
-    from signals.py through celery tasks worker
+    """Class to send email notification.
+
+    Attributes:
+        subject (str): email subject.
+        message (str): email message.
+        email_from (str): email_from.
+        email_to (list/tuple): email recepients.
+        cc (list/tuple): email cc.
+        bcc (list/tuple): email bcc.
+        connection (obj): email connection.
+        attachments (list/tuple): email attachments.
+        reply_to (list/tuple): email recepients.
+        subject (dict): Extra headers to put on the message.
+        notification_pk (int): valid pk if not None.
+        email_type (int):
+                    0:subscribers
+                    1:esc.
+                    2: sub & esc.
+                    otherwise:subscribers
+    Guid:
+    if it is a non-trivial default value that requires explanations and
+    can be reasonably guessed, it comes from the settings;
+
     """
 
+
     def __init__(self,
-                 subject=settings.DEFAULT_EMAIL_SUBJECT,
-                 message=settings.DEFAULT_EMAIL_MESSAGE,
+                 subject=None,
+                 message=None,
                  email_from=settings.ADMINS[0][1],
                  email_to=None,
                  cc=settings.DEFAULT_EMAIL_CC,
                  bcc=settings.DEFAULT_EMAIL_BCC,
-                 connection=settings.DEFAULT_EMAIL_CONNECTION,
+                 connection=None,
                  attachments=None,
                  reply_to=settings.DEFAULT_EMAIL_REPLY_TO,
                  headers=settings.DEFAULT_EMAIL_HEADERS,
                  notification_pk=settings.DEFAULT_NOTIFICATION_PK,
-                 email_type=settings.DEFAULT_EMAIL_TYPE,
+                 email_type=settings.SUB_EMAIL_TYPE,
                  *args,
                  **kwargs
                 ):
 
         """
-        Parameters:
-        subject  (str) if None raise Exception
-        message  (str)  if None raise Exception
-        email_from (str) if None or invalid format raise Exception
-        email_to  (list) if None or empty list or
-                         invalid format raise Exception
-        cc (list) if None ok
-                  if list not empty and invalid format
-                  raise Exception
-        bcc if None ok
-                  if list not empty and invalid format
-                  raise Exception
-        connection if None ok
-        attachments if list not empty and invalid format
-                     raise Exception
-        reply_to (list) if None or empty list or
-                         invalid format raise Exception
-        headers None ok
-        notification_pk None ok else must be a valid pk
-        email_type= 0:subscribers
-                    1:esc.
-                    2: sub & esc.
-                    otherwise:subscribers
-        *args    TBD,
-        **kwargs TBD
+        Initialize class parameters and invalid format
         """
         self.obj = None
 
+        if email_to is None:
+            email_to = [name for name, address in settings.ADMINS]
+
         if notification_pk is None:
             if subject is None or message is None:
-                raise Exception("Email Subject/Message")
+                raise InputError("Email Subject/Message")
 
             try:
                 validate_email(email_from)
             except ValidationError:
-                raise Exception("Invalid Email From")
+                raise InputError("Invalid Email From")
 
             self.validate_email_types(email_to)
             self.validate_list_types([cc, bcc])
@@ -90,26 +98,26 @@ class EmailBroadCast(EmailMessage):
             if attachments is not None:
                 self.validate_list_types(attachments)
 
-        if email_to is None:
-            email_to = [name for name, address in settings.ADMINS]
-
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=self.notification_pk)
             subject = self.obj.rule_msg
             message = self.obj.message
-            if email_type == 0:
+            if email_type == SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
-            elif email_type == 1: # escalation
+            elif email_type == ESC_EMAIL_TYPE: # escalation
                 email_to = self.obj.escalation_subscribers
-            elif email_type == 2: # both esc, and broadcast
+            elif email_type == SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
                 email_to.extend(
                     self.obj.subscribers).extend(
                         self.obj.escalation)
             else: # error
-                raise Exception('Invalid  data %s', 'email_type')
+                raise InputError('Invalid  data %s', 'email_type')
         else:
-            raise Exception('Invalid  data %s', 'email_type')
+            raise InputError('Invalid  data %s', 'email_type')
+
+
+        
 
         super().__init__(subject,
                          message,
@@ -149,19 +157,19 @@ class EmailBroadCast(EmailMessage):
         """
         for item in items:
             if not isinstance(item, (list, tuple)):
-                raise Exception(str(item) + ": Not a list instance")
+                raise InputError(str(item) + ": Not a list instance")
 
     def validate_email_types(self, email_to):
         """
         validates if argument are email format
         """
         if not isinstance(email_to, (list, tuple)):
-            raise Exception(str(email_to) + ": Not a list instance")
+            raise InputError(str(email_to) + ": Not a list instance")
         elif len(email_to) == 0:
-            raise Exception(str(email_to) + ": Invalid Email")
+            raise InputError(str(email_to) + ": Invalid Email")
         else:
             for email in email_to:
                 try:
                     validate_email(email)
                 except ValidationError:
-                    raise Exception(str(email) + ": Invalid Email")
+                    raise InputError(str(email) + ": Invalid Email")

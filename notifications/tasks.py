@@ -15,11 +15,9 @@ celery tasks for the notification app
 :updated:    Sep. 25, 2018
 
 """
-from celery import shared_task
 from smtplib import SMTPServerDisconnected, SMTPDataError, SMTPConnectError
-
+from celery import shared_task
 from django.core.mail import get_connection
-
 from .broadcast import EmailBroadCast
 
 SMTP_CONNECTION = get_connection()
@@ -33,16 +31,16 @@ SMTP_CONNECTION = get_connection()
 #not to pick up the task
 
 @shared_task
-def send_email(pk, fields_to_update):
+def send_email(notification_pk, fields_to_update):
     """
     task executing all email broadcast
     """
-    email = EmailBroadCast(pk, fields_to_update)
+    EmailBroadCast(notification_pk, fields_to_update)
 
 @shared_task(
     rate_limit='0.5/s', queue='email', retry_backoff=True,
     autoretry_for=(SMTPServerDisconnected, SMTPDataError, SMTPConnectError))
-def check_email_ack(pk):
+def check_email_ack(notification_pk):
     """
     task executing check_email_ack
     """

@@ -17,7 +17,6 @@ utility  functions for the notification tasks
 """
 import logging
 from django.utils import timezone
-from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -40,7 +39,7 @@ class EmailBroadCast(EmailMessage):
                  bcc=settings.DEFAULT_EMAIL_BCC,
                  connection=settings.DEFAULT_EMAIL_CONNECTION,
                  attachments=settings.DEFAULT_EMAIL_ATTACHMENTS,
-                 reply_to=settings.DEFAULT_EMAIL_REPLY_TO, 
+                 reply_to=settings.DEFAULT_EMAIL_REPLY_TO,
                  headers=settings.DEFAULT_EMAIL_HEADERS,
                  notification_pk=settings.DEFAULT_NOTIFICATION_PK,
                  email_type=settings.DEFAULT_EMAIL_TYPE,
@@ -51,14 +50,15 @@ class EmailBroadCast(EmailMessage):
         """
         All default parameters are comming from settings.py        
         """
+        self.error_flag = False
         self.obj = None
         if connection is not None:              
             if Notification.objects.filter(pk=notification_pk).exists():
                 self.notification_pk = notification_pk
-                self.obj = Notification.objects.get(pk=self.notification_pk)
-                subject=self.obj.rule_msg
-                message=self.obj.message
-                if email_type == 0
+                self.obj = Notification.objects.get(pk = self.notification_pk)
+                subject = self.obj.rule_msg
+                message = self.obj.message
+                if email_type == 0:
                     email_to = self.obj.subscribers
                 elif email_type == 1: # escalation
                     #email_to = self.obj.escalation
@@ -71,7 +71,7 @@ class EmailBroadCast(EmailMessage):
                 else: # error
                     pass
             else:
-                logger.debug('Invalid  object %s', 'Notification')
+                logging.error('Invalid  object %s', 'Notification')
                 return
 
 
@@ -88,58 +88,59 @@ class EmailBroadCast(EmailMessage):
 
         if notification_pk is None:
             if subject is None:
-                logger.debug('Invalid None parameter %s', 'Email Subject')
-                return
+                logging.error('Invalid None parameter %s', 'Email Subject')
+                self.error_flag = True
             if message is None:
-                logger.debug('Invalid None parameter %s', 'Email Message')
-                return
+                logging.error('Invalid None parameter %s', 'Email Message')
+                self.error_flag = True
 
             try:
                 validate_email( email_from )
             except ValidationError:
-                logger.debug('Invalid Email %s', 'Email From')
-                return
+                logging.error('Invalid Email %s', 'Email From')
+                self.error_flag = True
 
-            if not isinstance(email_to,(list,)):  
-                logger.debug('Not a list instance %s', 'Email To')
-                return
+            if not isinstance(email_to, (list, )):
+                logging.error('Not a list instance %s', 'Email To')
+                self.error_flag = True
             elif email_to is []:
-                logger.debug('Invalid Email %s', 'Email To')
-                return
+                logging.error('Invalid Email %s', 'Email To')
+                self.error_flag = True
             else:
-                for em in email_to:
+                for email in email_to:
                     try:
-                        validate_email( em )
+                        validate_email(email)
                     except ValidationError:
-                        logger.debug('Invalid Email %s', 'Email To')
-                        return
+                        logging.error('Invalid Email %s', 'Email To')
+                        self.error_flag = True
 
-            if not isinstance(cc,(list,)):  
-                logger.debug('Not a list instance %s', 'cc')
-                return
+            if not isinstance(cc, (list, )):
+                logging.error('Not a list instance %s', 'cc')
+                self.error_flag = True
 
-            if not isinstance(bcc,(list,)):  
-                logger.debug('Not a list instance %s', 'cc')
-                return
-            
-            if not isinstance(attachments,(list,)):  
-                logger.debug('Not a list instance %s', 'attachments')
-                return
+            if not isinstance(bcc, (list, )):
+                logging.error('Not a list instance %s', 'cc')
+                self.error_flag = True
 
-            if not isinstance(reply_to,(list,)):  
-                logger.debug('Not a list instance %s', 'Reply To')
-                return
+            if not isinstance(attachments, (list, )):
+                logging.error('Not a list instance %s', 'attachments')
+                self.error_flag = True
+
+            if not isinstance(reply_to, (list, )):
+                logging.error('Not a list instance %s', 'Reply To')
+                self.error_flag = True
             elif reply_to is []:
-                logger.debug('Invalid Email %s', 'Reply To')
-                return
+                logging.error('Invalid Email %s', 'Reply To')
+                self.error_flag = True
             else:
-                for em in reply_to:
+                for email in reply_to:
                     try:
-                        validate_email( em )
+                        validate_email(email)
                     except ValidationError:
-                        logger.debug('Invalid Email %s', 'Reply To')
-                        return
-
+                        logging.error('Invalid Email %s', 'Reply To')
+                        self.error_flag = True
+        if self.error_flag:
+            return
 
         super().__init__(subject,
                          message,
@@ -156,7 +157,6 @@ class EmailBroadCast(EmailMessage):
     def post_send_mail_update(self):
         '''
         extend this to include the whole send and update logic
-        
         update notification columns upon successful email sent
         days, seconds = duration.days, duration.seconds
         hours = seconds // 3600
@@ -164,7 +164,6 @@ class EmailBroadCast(EmailMessage):
         seconds = (seconds % 60)
         return days, hours, minutes, seconds
         '''
-
         Notification.objects.filter(pk=self.notification_pk).update(
             broadcast_on=timezone.now())
         # we need to update escalated_on if no one paid
@@ -175,4 +174,3 @@ class EmailBroadCast(EmailMessage):
         # Notification.objects.filter(pk=self.notification_pk).update(
         #     escalated_on=timezone.now() +
         #     timezone.timedelta(instance.notification_type.escalate_within))
-

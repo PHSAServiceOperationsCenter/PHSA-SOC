@@ -20,13 +20,11 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .tasks import send_email
-
 from .models import Notification, NotificationLevel
-
 
 @receiver(post_save, sender= Notification)
 def broadcast_notification(sender, instance, *args, **kwargs):
-    # import ipdb; 
+    # import ipdb;
     # ipdb.set_trace()
     """
     invoke tasks required by a broadcast action
@@ -41,7 +39,6 @@ def broadcast_notification(sender, instance, *args, **kwargs):
     if it has not been defined, we broadcast for all levels, otherwise we
     only broadcast for those levels specified therein
     """
-
     if instance.broadcast_on is not None:
         # has been broadcast already, bail
         return
@@ -60,7 +57,6 @@ def broadcast_notification(sender, instance, *args, **kwargs):
         instance.notification_type.notification_broadcast.
         all().values_list('broadcast', flat=True)
     )
-    
     if 'log' in broadcast_methods:
         print('it has already been logged')
     if 'email' in broadcast_methods:

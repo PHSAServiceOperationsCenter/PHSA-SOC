@@ -148,14 +148,14 @@ class EmailBroadCast(EmailMessage):
         validates if arguments are list instance
         """
         for item in items:
-            if not isinstance(item, (list, )):
+            if not isinstance(item, (list, tuple)):
                 raise Exception(str(item) + ": Not a list instance")
 
     def validate_email_types(self, email_to):
         """
         validates if argument are email format
         """
-        if not isinstance(email, (list, )):
+        if not isinstance(email_to, (list, tuple)):
             raise Exception(str(email_to) + ": Not a list instance")
         elif len(email_to) == 0:
             raise Exception(str(email_to) + ": Invalid Email")

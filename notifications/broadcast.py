@@ -35,8 +35,7 @@ class EmailBroadCast(EmailMessage):
                  subject=settings.DEFAULT_EMAIL_SUBJECT,
                  message=settings.DEFAULT_EMAIL_MESSAGE,
                  email_from=settings.ADMINS[0][1],
-                 email_to=[settings.ADMINS[1][1],
-                           settings.ADMINS[2][1]],
+                 email_to=[settings.ADMINS[1][1], settings.ADMINS[2][1]],
                  cc=settings.DEFAULT_EMAIL_CC,
                  bcc=settings.DEFAULT_EMAIL_BCC,
                  connection=settings.DEFAULT_EMAIL_CONNECTION,
@@ -53,12 +52,10 @@ class EmailBroadCast(EmailMessage):
         All default parameters are comming from settings.py        
         """
         self.obj = None
-        if connection is not None:
-            self.notification_pk = notification_pk              
-            if Notification.objects.filter(
-                pk=self.notification_pk).exists():
-                self.obj = Notification.objects.get(
-                    pk=self.notification_pk)
+        if connection is not None:              
+            if Notification.objects.filter(pk=notification_pk).exists():
+                self.notification_pk = notification_pk
+                self.obj = Notification.objects.get(pk=self.notification_pk)
                 subject=self.obj.rule_msg
                 message=self.obj.message
                 if email_type == 0

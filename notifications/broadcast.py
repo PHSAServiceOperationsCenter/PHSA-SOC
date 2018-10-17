@@ -99,7 +99,7 @@ class EmailBroadCast(EmailMessage):
                 self.error_flag = True
 
             self.validate_email_types(email_to)
-            self.check_list_types(cc, bcc,attachments)
+            self.validate_list_types(cc, bcc,attachments)
             self.validate_email_types(reply_to)
 
         if self.error_flag:

@@ -15,27 +15,25 @@ django models for the rules_engine app
 """
 import collections
 import datetime
-import re
-import uuid
-import json
-import traceback
-
 from decimal import Decimal
+import json
+import re
+import traceback
+import uuid
 
 from dateutil import parser as datetime_parser
-
-from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
-from p_soc_auto_base.models import BaseModel
 from notifications.models import (
     Notification, NotificationLevel, NotificationType,
 )
 from orion_integration.orion import serialize_custom_json
+from p_soc_auto_base.models import BaseModel
 
 
 class NotificationError(Exception):
@@ -115,6 +113,13 @@ class Rule(BaseModel, models.Model):
                     ' these users.'
                     ' this will be replaced by a reference once a'
                     ' subscriptions application becomes available'))
+    notification_type = models.ForeignKey(
+        NotificationType, db_index=True, blank=False, null=False,
+        on_delete=models.PROTECT, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        NotificationLevel, on_delete=models.PROTECT,
+        db_index=True,
+        blank=False, null=False, verbose_name=_('Notification Level'))
 
     def raise_rule_notification(
             self, rule_applies=None, rule_msg=None, instance_pk=None):

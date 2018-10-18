@@ -18,12 +18,13 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 
-from p_soc_auto_base.admin import BaseAdmin
 from notifications.models import NotificationType, NotificationLevel
+from p_soc_auto_base.admin import BaseAdmin
+
+from .forms import RuleAppliesForm
 from .models import (
     TinDataForRuleDemos, IntervalRule, RuleApplies, ExpirationRule,
     NotificationEventForRuleDemo, RegexRule)
-from .forms import RuleAppliesForm
 
 
 class RulesEngineBaseAdmin(BaseAdmin, admin.ModelAdmin):
@@ -161,9 +162,11 @@ class IntervalRuleAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     """
     admin class for creating interval based rules
     """
-    list_display = ('rule', 'min_val', 'interval', 'created_by',
+    list_display = ('rule', 'min_val', 'interval',
+                    'notification_type', 'notification_level', 'created_by',
                     'updated_by', 'created_on', 'updated_on')
-    list_editable = ('min_val', 'interval')
+    list_editable = ('min_val', 'interval'
+                     'notification_type', 'notification_level',)
     search_fields = ['rule', ]
 
     inlines = [RuleAppliesInlineAdmin, ]
@@ -174,9 +177,11 @@ class ExpirationRuleAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     """
     admin class for creating expiration based rules
     """
-    list_display = ('rule', 'grace_period', 'created_by',
+    list_display = ('rule', 'grace_period',
+                    'notification_type', 'notification_level', 'created_by',
                     'updated_by', 'created_on', 'updated_on')
-    list_editable = ('grace_period',)
+    list_editable = ('grace_period',
+                     'notification_type', 'notification_level',)
     search_fields = ['rule', ]
 
     inlines = [RuleAppliesInlineAdmin, ]
@@ -217,8 +222,10 @@ class NotificationEventForRuleDemoAdmin(admin.ModelAdmin):
 @admin.register(RegexRule)
 class RegexRuleAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     list_display = ('rule', 'match_string', 'created_by',
+                    'notification_type', 'notification_level',
                     'updated_by', 'created_on', 'updated_on')
-    list_editable = ('match_string',)
+    list_editable = ('match_string',
+                     'notification_type', 'notification_level',)
     search_fields = ['rule', ]
 
     inlines = [RuleAppliesInlineAdmin, ]

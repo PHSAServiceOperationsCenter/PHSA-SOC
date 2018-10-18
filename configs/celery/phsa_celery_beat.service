@@ -7,10 +7,10 @@ Type=forking
 User=root
 Group=root
 ExecStart=/bin/sh -c '/opt/phsa/.envs/phsa_venv/bin/celery beat \
-	-A p_soc_auto -l info --logfile=/var/log/phsa/celery/beat.log \
+	-A p_soc_auto -l debug --logfile=/var/log/phsa/celery/beat.log \
 	--pidfile=/tmp/celery_beat.pid  \
 	--workdir=/opt/phsa/p_soc_auto \
-	--max-interval=30 \
+	--max-interval=10 \
 	--scheduler=django_celery_beat.schedulers:DatabaseScheduler &'
 ExecStop=/bin/kill -s TERM $MAINPID
 

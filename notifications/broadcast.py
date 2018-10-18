@@ -22,6 +22,8 @@ from django.core.exceptions import ValidationError
 from django.conf import settings
 from .models import Notification
 
+import ipdb
+
 
 class Error(Exception):
     """Base class for other exceptions"""
@@ -57,6 +59,7 @@ class EmailBroadCast(EmailMessage):
 
 
     def __init__(self,
+                 notification_pk=settings.DEFAULT_NOTIFICATION_PK,
                  subject=None,
                  message=None,
                  email_from=settings.ADMINS[0][1],
@@ -67,7 +70,6 @@ class EmailBroadCast(EmailMessage):
                  attachments=None,
                  reply_to=settings.DEFAULT_EMAIL_REPLY_TO,
                  headers=settings.DEFAULT_EMAIL_HEADERS,
-                 notification_pk=settings.DEFAULT_NOTIFICATION_PK,
                  email_type=settings.SUB_EMAIL_TYPE,
                  *args,
                  **kwargs
@@ -76,9 +78,6 @@ class EmailBroadCast(EmailMessage):
         """
         Initialize class parameters and invalid format
         """
-        # import ipdb;
-        # ipdb.set_trace()
-
         self.obj = None
         if email_to is None:
             email_to = [address for name, address in settings.ADMINS]
@@ -99,25 +98,25 @@ class EmailBroadCast(EmailMessage):
         if attachments is not None:
             self.validate_list_types(attachments)
 
+        #ipdb.set_trace()
+        print (notification_pk)
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject = self.obj.message["rule_msg"]#.rule_msg
-            
-            message = self.obj.message["object_field"]
-            #message = self.obj.message
-            if email_type == settings.SUB_EMAIL_TYPE:
-                email_to = self.obj.subscribers
-            elif email_type == settings.ESC_EMAIL_TYPE: # escalation
-                email_to = self.obj.escalation_subscribers
-            elif email_type == settings.SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
-                email_to.extend(
-                    self.obj.subscribers).extend(
-                    self.obj.escalation)
-            else: # error
-                raise InputError('Invalid  data %s', 'email_type')
-        # else:
-        #     raise InputError('Invalid  data %s', 'email_type')       
+            subject = self.obj.rule_msg
+            message = self.obj.message
+            email_to = ['bill.stephen@phsa.ca', 'serban.teodorescu@phsa.ca','ali.rahmat@phsa.ca']
+            # if email_type == settings.SUB_EMAIL_TYPE:
+            #     email_to = self.obj.subscribers
+            # elif email_type == settings.ESC_EMAIL_TYPE: # escalation
+            #     email_to = self.obj.escalation_subscribers
+            # elif email_type == settings.SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
+            #     email_to.extend(
+            #         self.obj.subscribers).extend(
+            #         self.obj.escalation)
+            # else: # error
+            #     raise InputError('Invalid  data %s', 'email_type')
+     
 
         super().__init__(subject,
                          message,

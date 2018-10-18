@@ -20,9 +20,8 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-
+from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
 from p_soc_auto_base.models import BaseModel
@@ -252,9 +251,9 @@ class Notification(BaseModel, models.Model):
         send this notification to these people
         """
         return remove_duplicates(
-            self.rule_applies.subscribers
-            + self.rule_applies.rule.subscribers
-            + self.notification_type.subscribers
+            '{},{},{}'.format(self.rule_applies.subscribers,
+                              self.rule_applies.rule.subscribers,
+                              self.notification_type.subscribers)
         )
 
     @property
@@ -263,9 +262,10 @@ class Notification(BaseModel, models.Model):
         escalate this notification to these people
         """
         return remove_duplicates(
-            self.rule_applies.escalation_subscribers
-            + self.rule_applies.rule.escalation_subscribers
-            + self.notification_type.escalation_subscribers
+            '{},{},{}'.format(
+                self.rule_applies.escalation_subscribers,
+                self.rule_applies.rule.escalation_subscribers,
+                self.notification_type.escalation_subscribers)
         )
 
     def __str__(self):

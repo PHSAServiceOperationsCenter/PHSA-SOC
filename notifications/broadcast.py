@@ -32,29 +32,27 @@ class InputError(Error):
    pass
 
 class EmailBroadCast(EmailMessage):
-    """Class to send email notification.
+    """
+    Send an email to a recipient
 
-    Attributes:
-        subject (str): email subject.
-        message (str): email message.
-        email_from (str): email_from.
-        email_to (list/tuple): email recepients.
-        cc (list/tuple): email cc.
-        bcc (list/tuple): email bcc.
-        connection (obj): email connection.
-        attachments (list/tuple): email attachments.
-        reply_to (list/tuple): email recepients.
-        subject (dict): Extra headers to put on the message.
-        notification_pk (int): valid pk if not None.
-        email_type (int):
-                    0:subscribers
-                    1:esc.
-                    2: sub & esc.
-                    otherwise:subscribers
-    Guid:
-    if it is a non-trivial default value that requires explanations and
-    can be reasonably guessed, it comes from the settings;
-
+    :param str subject: email subject
+    :param str message: The body of the message
+    :param str email_from: email_from
+    :param str message: The body of the message
+    :param list/tuple email_to: email recepients
+    :param list/tuple cc:  email cc
+    :param list/tuple bcc: email bcc
+    :param obj connection: email connection
+    :param list/tuple attachments: email attachments
+    :param list/tuple reply_to: email response recepients
+    :param dict headers:Extra headers to put on the message
+    :param int notification_pk: valid pk if not None.
+    :param int email_type: 0:subscribers, 
+                           1:esc., 
+                           2: sub & esc., 
+                           otherwise:subscribers
+    :param list/tuple args: TBD
+    :param dict kwargs: TBD
     """
 
 

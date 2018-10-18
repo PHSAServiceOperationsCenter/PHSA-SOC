@@ -76,10 +76,13 @@ class EmailBroadCast(EmailMessage):
         """
         Initialize class parameters and invalid format
         """
-        self.obj = None
+        # import ipdb;
+        # ipdb.set_trace()
 
+        self.obj = None
         if email_to is None:
-            email_to = [name for name, address in settings.ADMINS]
+            email_to = [address for name, address in settings.ADMINS]
+        
 
         if notification_pk is None:
             if subject is None or message is None:
@@ -99,8 +102,10 @@ class EmailBroadCast(EmailMessage):
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject = self.obj.rule_msg
-            message = self.obj.message
+            subject = self.obj.message["rule_msg"]#.rule_msg
+            
+            message = self.obj.message["object_field"]
+            #message = self.obj.message
             if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
             elif email_type == settings.ESC_EMAIL_TYPE: # escalation
@@ -108,14 +113,11 @@ class EmailBroadCast(EmailMessage):
             elif email_type == settings.SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
                 email_to.extend(
                     self.obj.subscribers).extend(
-                        self.obj.escalation)
+                    self.obj.escalation)
             else: # error
                 raise InputError('Invalid  data %s', 'email_type')
-        else:
-            raise InputError('Invalid  data %s', 'email_type')
-
-
-        
+        # else:
+        #     raise InputError('Invalid  data %s', 'email_type')       
 
         super().__init__(subject,
                          message,
@@ -128,7 +130,7 @@ class EmailBroadCast(EmailMessage):
                          reply_to,
                          headers,
                          *args, **kwargs)
-
+       
     def update_notification_timestamps(self):
         """
         extend this to include the whole send and update logic

@@ -35,7 +35,8 @@ def send_email(notification_pk, fields_to_update):
     """
     task executing all email broadcast
     """
-    EmailBroadCast(notification_pk, fields_to_update)
+    email = EmailBroadCast(notification_pk, fields_to_update)
+    email.send()
 
 @shared_task(
     rate_limit='0.5/s', queue='email', retry_backoff=True,

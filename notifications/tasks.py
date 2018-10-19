@@ -35,7 +35,8 @@ def send_email(notification_pk, email_type):
     """
     task executing all email broadcast
     """
-    email = EmailBroadCast(notification_pk=notification_pk, email_type=1)
+    email = EmailBroadCast(
+        notification_pk=notification_pk, email_type=email_type)
     email.send()
     email.update_notification_timestamps()
 

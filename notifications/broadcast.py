@@ -29,59 +29,47 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass
 
+
 class InputError(Error):
-   """Raised when parameter is not valid"""
-   pass
+    """Raised when parameter is not valid"""
+    pass
+
 
 class EmailBroadCast(EmailMessage):
     """
-    Send an email to a recipient
+    email broadcast class
 
-    :param str subject: email subject
-    :param str message: The body of the message
-    :param str email_from: email_from
-    :param str message: The body of the message
-    :param list/tuple email_to: email recepients
-    :param list/tuple cc:  email cc
-    :param list/tuple bcc: email bcc
-    :param obj connection: email connection
-    :param list/tuple attachments: email attachments
-    :param list/tuple reply_to: email response recepients
-    :param dict headers:Extra headers to put on the message
-    :param int notification_pk: valid pk if not None.
-    :param int email_type: 0:subscribers, 
-                           1:esc., 
-                           2: sub & esc., 
-                           otherwise:subscribers
-    :param list/tuple args: TBD
-    :param dict kwargs: TBD
+    drop in replacement for `djang.core.mail.EmailMessage' that also can
+    take a notification obkect and create an email message out of it
     """
 
-
-    def __init__(self,
-                 notification_pk=settings.DEFAULT_NOTIFICATION_PK,
-                 subject=None,
-                 message=None,
-                 email_from=settings.ADMINS[0][1],
-                 email_to=None,
-                 cc=settings.DEFAULT_EMAIL_CC,
-                 bcc=settings.DEFAULT_EMAIL_BCC,
-                 connection=None,
-                 attachments=None,
-                 reply_to=settings.DEFAULT_EMAIL_REPLY_TO,
-                 headers=settings.DEFAULT_EMAIL_HEADERS,
-                 email_type=settings.SUB_EMAIL_TYPE,
-                 *args,
-                 **kwargs
-                ):
-
+    def __init__(
+            self, notification_pk=None, subject=None, message=None,
+            email_from=settings.ADMINS[0][1], email_to=None, cc=None, bcc=None,
+            connection=None, attachments=None,
+            reply_to=settings.DEFAULT_EMAIL_REPLY_TO, headers=None,
+            email_type=settings.SUB_EMAIL_TYPE, *args, **kwargs):
         """
-        Initialize class parameters and invalid format
+        :param str subject: email subject
+        :param str message: The body of the message
+        :param str email_from: email_from
+        :param str message: The body of the message
+        :param list/tuple email_to: email recepients
+        :param list/tuple cc:  email cc
+        :param list/tuple bcc: email bcc
+        :param obj connection: email connection
+        :param list/tuple attachments: email attachments
+        :param list/tuple reply_to: email response recepients
+        :param dict headers:Extra headers to put on the message
+        :param int notification_pk: valid pk if not None.
+        :param int email_type: 0:subscribers,
+                               1:esc.,
+                               2: sub & esc.,
+                               otherwise:subscribers
         """
         self.obj = None
         if email_to is None:
             email_to = [address for name, address in settings.ADMINS]
-        
 
         if notification_pk is None:
             if subject is None or message is None:
@@ -93,30 +81,27 @@ class EmailBroadCast(EmailMessage):
             raise InputError("Invalid Email From")
 
         self.validate_email_types(email_to)
-        self.validate_list_types([cc, bcc])
         self.validate_email_types(reply_to)
         if attachments is not None:
             self.validate_list_types(attachments)
 
-        #ipdb.set_trace()
-        print (notification_pk)
+        # ipdb.set_trace()
+        print(notification_pk)
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject = self.obj.rule_msg
-            message = self.obj.message
-            email_to = ['bill.stephen@phsa.ca', 'serban.teodorescu@phsa.ca','ali.rahmat@phsa.ca']
-            # if email_type == settings.SUB_EMAIL_TYPE:
-            #     email_to = self.obj.subscribers
-            # elif email_type == settings.ESC_EMAIL_TYPE: # escalation
-            #     email_to = self.obj.escalation_subscribers
-            # elif email_type == settings.SUB_ESC_EMAIL_TYPE: # both esc, and broadcast
-            #     email_to.extend(
-            #         self.obj.subscribers).extend(
-            #         self.obj.escalation)
-            # else: # error
-            #     raise InputError('Invalid  data %s', 'email_type')
-     
+            subject = self.obj.rule_applies
+            message = str(self.obj.message)
+            if email_type == settings.SUB_EMAIL_TYPE:
+                email_to = self.obj.subscribers
+            elif email_type == settings.ESC_EMAIL_TYPE:
+                email_to = self.obj.escalation_subscribers
+            elif email_type == settings.SUB_ESC_EMAIL_TYPE:
+                email_to.extend(
+                    self.obj.subscribers).extend(
+                    self.obj.escalation)
+            else:  # error
+                raise InputError('Invalid  data %s', 'email_type')
 
         super().__init__(subject,
                          message,
@@ -129,7 +114,7 @@ class EmailBroadCast(EmailMessage):
                          reply_to,
                          headers,
                          *args, **kwargs)
-       
+
     def update_notification_timestamps(self):
         """
         extend this to include the whole send and update logic
@@ -143,9 +128,8 @@ class EmailBroadCast(EmailMessage):
         Notification.objects.filter(pk=self.notification_pk).update(
             broadcast_on=timezone.now())
         # we need to update escalated_on if no one paid
-        #attension to email within
+        # attension to email within
         # timezone.timedelta(instance.notification_type.escalate_within)
-
 
         # Notification.objects.filter(pk=self.notification_pk).update(
         #     escalated_on=timezone.now() +

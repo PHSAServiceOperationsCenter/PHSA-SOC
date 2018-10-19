@@ -27,16 +27,18 @@ SMTP_CONNECTION = get_connection()
 #     rate_limit='0.5/s', queue='email', retry_backoff=True,
 #     autoretry_for=(SMTPServerDisconnected, SMTPDataError, SMTPConnectError))
 # Serban please restore above commented code once we figure out the issue
-#issue for some reasons decorator with parameters cause celery worker
-#not to pick up the task
+# issue for some reasons decorator with parameters cause celery worker
+# not to pick up the task
 
-@shared_task
-def send_email(notification_pk, fields_to_update):
+@shared_task(rate_limit='0.5/s', queue='shared')
+def send_email(notification_pk, email_type):
     """
     task executing all email broadcast
     """
-    email = EmailBroadCast(notification_pk, fields_to_update)
+    email = EmailBroadCast(notification_pk=notification_pk, email_type=1)
     email.send()
+    email.update_notification_timestamps()
+
 
 @shared_task(
     rate_limit='0.5/s', queue='email', retry_backoff=True,

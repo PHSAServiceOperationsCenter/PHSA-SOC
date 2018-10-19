@@ -165,7 +165,7 @@ class IntervalRuleAdmin(RulesEngineBaseAdmin, admin.ModelAdmin):
     list_display = ('rule', 'min_val', 'interval',
                     'notification_type', 'notification_level', 'created_by',
                     'updated_by', 'created_on', 'updated_on')
-    list_editable = ('min_val', 'interval'
+    list_editable = ('min_val', 'interval',
                      'notification_type', 'notification_level',)
     search_fields = ['rule', ]
 

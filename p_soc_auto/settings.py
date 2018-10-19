@@ -33,7 +33,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -134,7 +134,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Vancouver'
 
 USE_I18N = True
 
@@ -143,10 +143,10 @@ USE_L10N = True
 USE_TZ = True
 
 
-STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
+STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/media/'
+MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins
@@ -168,10 +168,12 @@ CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_RESULT_PERSISTENT = True
 CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_QUEUES = (
     Queue('rules', Exchange('rules'), routing_key='rules'),
+    Queue('email', Exchange('email'), routing_key='email'),
     Queue('orion', Exchange('orion'), routing_key='orion'),
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),
@@ -187,8 +189,6 @@ CELERY_DEFAULT_ROUTING_KEY = 'shared'
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
 NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 
-AJAX_LOOKUP_CHANNELS = {
-    'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -200,13 +200,10 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-
-DEFAULT_EMAIL_BCC = []
 DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2
-
 
 #=========================================================================
 # # email settings for gmail
@@ -215,7 +212,6 @@ SUB_ESC_EMAIL_TYPE = 2
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
-
 
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []

@@ -1,0 +1,5 @@
+check process celery-beat with pidfile /tmp/celery_beat.pid
+	start program = "/bin/systemctl start phsa_celery_beat"
+	stop program = "/bin/systemctl stop phsa_celery_beat"
+	if total cpu > 70% for 5 cycles then restart
+

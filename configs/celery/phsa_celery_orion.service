@@ -6,8 +6,8 @@ After=network.target
 Type=forking
 User=root
 Group=root
-EnvironmentFile=/etc/celery.d/phsa_celery_orion.conf
-WorkingDirectory=/home/steodore/phsa/sbin/p_soc_auto/
+EnvironmentFile=/opt/phsa/p_soc_auto/configs/celery/phsa_celery_orion.conf
+WorkingDirectory=/opt/phsa/p_soc_auto/
 
 ExecStart=/bin/sh -c '"${CELERY_BIN}" multi start "${CELERYD_NODES}" -A "${CELERY_APP}" --logfile="${CELERYD_LOG_FILE}" --pidfile="${CELERYD_PID_FILE}" --loglevel="${CELERYD_LOG_LEVEL}" "${CELERYD_OPTS}"'
 

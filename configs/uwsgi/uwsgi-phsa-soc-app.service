@@ -3,9 +3,9 @@ Description=PHSA Service Operations Center uWSGI app
 After=syslog.target
 
 [Service]
-ExecStart=/usr/bin/uwsgi --ini /home/steodore/phsa/sbin/p_soc_auto/configs/uwsgi/uwsgi.ini
-User=root
-Group=root
+ExecStart=/usr/bin/uwsgi --ini /opt/phsa/p_soc_auto/configs/uwsgi/uwsgi.ini
+User=phsa
+Group=phsa
 Restart=on-failure
 KillSignal=SIGQUIT
 RuntimeDirectory=uwsgi

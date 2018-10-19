@@ -37,10 +37,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*', ]
 
-ADMINS =[('Bill', 'bill.stephen@phsa.ca'),
-         ('Serban', 'serban.teodorescu@phsa.ca'),
-         ('Ali', 'ali.rahmat@phsa.ca')
-        ]
+ADMINS = [
+    ('Serban', 'serban.teodorescu@phsa.ca'), ('Ali', 'ali.rahmat@phsa.ca')
+]
 
 # Application definition
 
@@ -193,7 +192,7 @@ AJAX_LOOKUP_CHANNELS = {
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-#EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
 EMAIL_HOST = 'smtp.healthbc.org'
 EMAIL_USE_TLS = False
@@ -202,23 +201,11 @@ EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 
-
-# DEFAULT_EMAIL_SUBJECT = None
-# DEFAULT_EMAIL_MESSAGE = None
-# DEFAULT_EMAIL_FROM = 'bill.stephen@phsa.ca'
-# DEFAULT_EMAIL_TO = ['ali.rahmat@phsa.ca', 'serban.teodorescu@phsa.ca',]
-DEFAULT_EMAIL_CC = []
 DEFAULT_EMAIL_BCC = []
-#DEFAULT_EMAIL_CONNECTION = None
-DEFAULT_EMAIL_ATTACHMENTS = []
-DEFAULT_EMAIL_BCC = []
-DEFAULT_EMAIL_REPLY_TO = ['bill.stephen@phsa.ca',]
-DEFAULT_EMAIL_HEADERS = None
-DEFAULT_NOTIFICATION_PK = None
+DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2
-
 
 
 #=========================================================================

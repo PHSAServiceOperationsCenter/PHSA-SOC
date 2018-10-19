@@ -252,9 +252,9 @@ class Notification(BaseModel, models.Model):
         send this notification to these people
         """
         return remove_duplicates(
-            self.rule_applies.subscribers
-            + self.rule_applies.rule.subscribers
-            + self.notification_type.subscribers
+            '{},{},{}'.format(self.rule_applies.subscribers,
+                              self.rule_applies.rule.subscribers,
+                              self.notification_type.subscribers)
         )
 
     @property
@@ -263,9 +263,10 @@ class Notification(BaseModel, models.Model):
         escalate this notification to these people
         """
         return remove_duplicates(
-            self.rule_applies.escalation_subscribers
-            + self.rule_applies.rule.escalation_subscribers
-            + self.notification_type.escalation_subscribers
+            '{},{},{}'.format(
+                self.rule_applies.escalation_subscribers,
+                self.rule_applies.rule.escalation_subscribers,
+                self.notification_type.escalation_subscribers)
         )
 
     def __str__(self):

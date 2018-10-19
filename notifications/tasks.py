@@ -30,7 +30,7 @@ SMTP_CONNECTION = get_connection()
 # issue for some reasons decorator with parameters cause celery worker
 # not to pick up the task
 
-@shared_task(rate_limit='0.5/s', queue='shared')
+@shared_task(rate_limit='0.5/s', queue='email')
 def send_email(notification_pk, email_type):
     """
     task executing all email broadcast

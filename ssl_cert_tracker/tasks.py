@@ -54,8 +54,8 @@ def go_node(node_id, node_address):
             insert_into_certs_data(json)
 
 
-@shared_task
-def getnmapdata(queue='ssl'):
+@shared_task(queue='ssl')
+def getnmapdata():
     """Celery worker to capture all nodes then it delegate each node to different worker"""
     node_obj = OrionSslNode.nodes()
     for node in node_obj:

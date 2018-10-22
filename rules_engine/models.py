@@ -15,19 +15,24 @@ django models for the rules_engine app
 """
 import collections
 import datetime
-import re
-
 from decimal import Decimal
+import json
+import re
+import traceback
+import uuid
 
 from dateutil import parser as datetime_parser
-
-from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from jsonfield import JSONField
 
+from notifications.models import (
+    Notification, NotificationLevel, NotificationType,
+)
+from orion_integration.orion import serialize_custom_json
 from p_soc_auto_base.models import BaseModel
 
 
@@ -97,25 +102,134 @@ class Rule(BaseModel, models.Model):
     applies = models.ManyToManyField(
         ContentType, through='RuleApplies',
         verbose_name=_('This Rule Applies to'))
+    subscribers = models.TextField(
+        _('rule subscribers'), blank=True, null=True,
+        help_text=_('send notifications raised by this rule to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    escalation_subscribers = models.TextField(
+        _('rule escalation subscribers'), blank=True, null=True,
+        help_text=_('send escalation notifications raised by this rule to'
+                    ' these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    notification_type = models.ForeignKey(
+        NotificationType, db_index=True, blank=False, null=False,
+        on_delete=models.PROTECT, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        NotificationLevel, on_delete=models.PROTECT,
+        db_index=True,
+        blank=False, null=False, verbose_name=_('Notification Level'))
 
-    def raise_notification(
-            self, notification_type=None, notification_notes=None, **kwargs):
+    def raise_rule_notification(
+            self, rule_applies=None, rule_msg=None, instance_pk=None):
         """
-        raise a notification
+        raise a notification based on a rule triggered event
 
-        currently this just creates a record in the notification table
+        :arg rule_applies: the instance of the of the :class:`RuleApplies`
+
+            this object will give access to all the pertinent information
+            for the rule that was triggered:
+
+            * the rule itself
+            * the content_type to which the rule is applied (via
+              :class:`django.contrib.contenttypes.models.ContentType`
+            * the field to which the rule is applied
+
+        :arg rule_msg: a `json` representation of the fact used to trigger
+                       the rule
+
+            this data structure needs to include the (value of the) fact, the
+            rule data points, and the relationship between the fact and the
+            data points.
+
+            for example, an interval rule will be represented as
+            {'fact': fact_value, 'relationship': 'between',
+             'initial_value': value, 'interval': interval}
+
+        :arg int instance_pk: the instance pk for the object that caused the
+                              rule event
         """
-        if notification_type is None:
-            raise NotificationError('must specify a notification type')
+        if rule_applies is None:
+            raise NotificationError(
+                'cannot raise notification without a causing rule')
+        if not isinstance(rule_applies, RuleApplies):
+            raise NotificationError(
+                'trying to raise notification without a rule if not allowed')
 
-        notification = NotificationEventForRuleDemo(
-            notification='%s: notify from %s' % (timezone.now(), self.rule),
-            notification_type=notification_type, notes=notification_notes)
-        notification.notification_args = dict(**kwargs)
+        if rule_msg is None:
+            raise NotificationError(
+                'cannot raise notification without providing an explanation')
+
+        if instance_pk is None:
+            raise NotificationError(
+                'cannot raise notification without an object to which the'
+                ' notification applies')
+
+        notification = Notification(notification_uuid=uuid.uuid4())
+
         notification.created_by = self.get_or_create_user(
             username=settings.RULES_ENGINE_SERVICE_USER)
         notification.updated_by = self.get_or_create_user(
             username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.rule_applies = rule_applies
+        notification.notification_type = rule_applies.notification_type
+        notification.notification_level = rule_applies.notification_level
+        notification.rule_msg = json.dumps(
+            rule_msg, default=serialize_custom_json)
+        notification.instance_pk = instance_pk
+
+        notification.save()
+
+    def raise_admin_notification(self, rule_applies):
+        """
+        raise a notification when a rule apply operation fails because there
+        is not qualifying content
+
+        this happens if the rule_applies object was defined against a data
+        model that doesn't exist anymore
+        """
+        notification = Notification(notification_uuid=uuid.uuid4())
+
+        notification.created_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.updated_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.rule_applies = rule_applies
+        notification.notification_type = NotificationType.objects.\
+            get(notification_type='internal')
+        notification.notification_level = NotificationLevel.objects.\
+            get(notification_level='ADMINISTRATIVE')
+        notification.rule_msg = json.dumps(
+            dict(rule=rule_applies.rule.rule,
+                 relationship='is missing',
+                 data=rule_applies.content_type.name),
+            default=serialize_custom_json
+        )
+
+        notification.save()
+
+    def raise_bad_rule_notification(self, rule_applies, rule_msg, instance_pk):
+        """
+        raise a notification if the rule evaluation raises some sort of
+        exception. for example, the fact is of a type different than the data
+
+        """
+        notification = Notification(notification_uuid=uuid.uuid4())
+
+        notification.created_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.updated_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.rule_applies = rule_applies
+        notification.notification_type = NotificationType.objects.\
+            get(notification_type='internal')
+        notification.notification_level = NotificationLevel.objects.\
+            get(notification_level='INVALID_RULE')
+        notification.rule_msg = json.dumps(
+            rule_msg, default=serialize_custom_json)
+        notification.instance_pk = instance_pk
+
         notification.save()
 
     def apply_rule(self):
@@ -153,29 +267,28 @@ class RegexRule(Rule, models.Model):
                 queryset = rule_applies.\
                     content_type.get_all_objects_for_this_type()
             except Exception as err:
-                self.raise_notification(
-                    notification_type='administrative',
-                    notification_note='%s does not exist. error: %s'
-                    % (rule_applies.content_type.name, str(err)))
+                self.raise_admin_notification(rule_applies)
                 continue
 
             for obj in queryset:
                 try:
                     fact = str(rule_applies.get_fact_for_field(obj))
                 except Exception as err:
-                    self.raise_notification(
-                        notification_type='invalid rule',
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        expected=self.match_string,
-                        value=fact, notification_note=str(err))
+                    rule_msg = dict(fact='undefined',
+                                    relationship='throws',
+                                    exception=traceback.format_exc(),
+                                    exception_msg=str(err))
+                    self.raise_bad_rule_notification(
+                        rule_applies=rule_applies,
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
 
                 if re_find.search(fact):
-                    self.raise_notification(
-                        notification_type=self._meta.verbose_name,
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        value=fact, match=self.match_string)
+                    rule_msg = dict(fact=fact, relationship='contains',
+                                    match_string=self.match_string)
+                    self.raise_rule_notification(
+                        rule_applies=rule_applies,
+                        rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'
@@ -207,44 +320,40 @@ class IntervalRule(Rule, models.Model):
                 queryset = rule_applies.\
                     content_type.get_all_objects_for_this_type()
             except Exception as err:
-                self.raise_notification(
-                    notification_type='administrative',
-                    notification_note='%s does not exist. error: %s'
-                    % (rule_applies.content_type.name, str(err)))
+                self.raise_admin_notification(rule_applies)
                 continue
 
             for obj in queryset:
                 try:
                     fact = Decimal(rule_applies.get_fact_for_field(obj))
                     if not fact.is_finite():
-                        self.raise_notification(
-                            notification_type='invalid rule',
-                            notification_note=(
-                                'was looking for something between %s and %s'
-                                % (str(self.min_val),
-                                   str(self.min_val + self.interval))),
-                            model=rule_applies.content_type.name,
-                            field=rule_applies.field_name,
-                            value=fact, critical='not a number')
+                        rule_msg = dict(fact=fact,
+                                        relationship='outside domain',
+                                        min_val=self.min_val,
+                                        max_val=self.min_val + self.interval)
+                        self.raise_bad_rule_notification(
+                            rule_applies=rule_applies,
+                            rule_msg=rule_msg, instance_pk=obj.pk)
+                        continue
+
                 except Exception as err:
-                    self.raise_notification(
-                        notification_type='invalid rule',
-                        notification_note=(
-                            'was looking for something between %s and %s'
-                            % (str(self.min_val),
-                               str(self.min_val + self.interval))),
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        value=fact, critical=str(err))
+                    rule_msg = dict(fact='undefined',
+                                    relationship='throws',
+                                    exception=traceback.format_exc(),
+                                    exception_msg=str(err))
+                    self.raise_bad_rule_notification(
+                        rule_applies=rule_applies,
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
 
                 if not self.min_val <= fact <= self.min_val + self.interval:
-                    self.raise_notification(
-                        notification_type=self._meta.verbose_name,
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        value=fact,
-                        min_val=self.min_val,
-                        max_val=self.min_val + self.interval)
+                    rule_msg = dict(fact=fact,
+                                    relationship='not between',
+                                    min_val=self.min_val,
+                                    max_val=self.min_val + self.interval)
+                    self.raise_rule_notification(
+                        rule_applies=rule_applies,
+                        rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'
@@ -258,7 +367,6 @@ class ExpirationRule(Rule, models.Model):
 
     fact is not between valid_after and now() + grace_period
     """
-    valid_after = models.DateTimeField('valid_after')
     grace_period = models.DurationField('grace_period')
 
     def apply_rule(self):
@@ -267,37 +375,50 @@ class ExpirationRule(Rule, models.Model):
                 queryset = rule_applies.\
                     content_type.get_all_objects_for_this_type()
             except Exception as err:
-                self.raise_notification(
-                    notification_type='administrative',
-                    notification_note='%s does not exist. error: %s'
-                    % (rule_applies.content_type.name, str(err)))
+                self.raise_admin_notification(rule_applies)
                 continue
 
             for obj in queryset:
                 try:
-                    fact = rule_applies.get_fact_for_field(obj)
-                    if not isinstance(fact, datetime.datetime):
-                        fact = datetime_parser.parse(fact)
-                except Exception as err:
-                    self.raise_notification(
-                        notification_type='invalid rule',
-                        notification_note=(
-                            'was looking for something between %s and %s'
-                            % (str(self.valid_after),
-                               str(timezone.now() + self.grace_period))),
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        value=fact, critical=str(err))
+                    facts = rule_applies.get_facts_for_fields(obj)
+                    if not isinstance(facts, list):
+                        rule_msg = dict(fact=facts,
+                                        relationship='not enough facts')
+                        self.raise_bad_rule_notification(
+                            rule_applies=rule_applies,
+                            rule_msg=rule_msg, instance_pk=obj.pk)
+                        continue
 
-                if not self.valid_after <= fact <= timezone.now() \
-                        + self.grace_period:
-                    self.raise_notification(
-                        notification_type=self._meta.verbose_name,
-                        model=rule_applies.content_type.name,
-                        field=rule_applies.field_name,
-                        value=fact,
-                        valid_after=self.valid_after,
-                        expire_in_less_than=self.grace_period)
+                    for fact in facts:
+                        if not isinstance(fact, datetime.datetime):
+                            fact = datetime_parser.parse(fact)
+                except Exception as err:
+                    rule_msg = dict(fact=facts,
+                                    relationship='throws',
+                                    exception=traceback.format_exc(),
+                                    exception_msg=str(err))
+                    self.raise_bad_rule_notification(
+                        rule_applies=rule_applies,
+                        rule_msg=rule_msg, instance_pk=obj.pk)
+                    continue
+
+                now = timezone.now()
+                rule_msg = dict(facts=facts, now=now,
+                                grace_period=self.grace_period)
+
+                if now < facts[0]:
+                    rule_msg['relationship'] = 'not yet valid'
+                elif facts[1] - self.grace_period <= now <= facts[1]:
+                    rule_msg['relationship'] = (
+                        'will expire in less than %s' % self.grace_period)
+                elif facts[1] < now:
+                    rule_msg['relationship'] = 'has expired'
+                else:
+                    continue
+
+                self.raise_rule_notification(
+                    rule_applies=rule_applies,
+                    rule_msg=rule_msg, instance_pk=obj.pk)
 
     class Meta:
         app_label = 'rules_engine'
@@ -327,6 +448,42 @@ class RuleApplies(BaseModel, models.Model):
     field_name = models.CharField(
         _('field name'), max_length=64, db_index=True, blank=False, null=False,
         help_text=_('the name of the field where the rule fact resides'))
+    second_field_name = models.CharField(
+        _('second field name'), max_length=64, db_index=True, blank=True,
+        null=True,
+        help_text=_(
+            'the name of the field where the second rule fact resides'))
+    subscribers = models.TextField(
+        _('model-field subscribers'), blank=True, null=True,
+        help_text=_('send notifications raised when applying this rule to'
+                    ' this particular model-field combination to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    escalation_subscribers = models.TextField(
+        _('model-field escalation subscribers'), blank=True, null=True,
+        help_text=_('send escalated notifications raised when applying this'
+                    ' rule to'
+                    ' this particular model-field combination to these users.'
+                    ' this will be replaced by a reference once a'
+                    ' subscriptions application becomes available'))
+    notification_type = models.ForeignKey(
+        'notifications.NotificationType', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Type'))
+    notification_level = models.ForeignKey(
+        'notifications.NotificationLevel', on_delete=models.PROTECT,
+        db_index=True,
+        blank=True, null=True, verbose_name=_('Notification Level'))
+
+    def __str__(self):
+        if self.second_field_name is None:
+            fields = 'field %s' % self.field_name
+        else:
+            fields = 'fields %s' % ', '.join(
+                [self.field_name, self.second_field_name])
+
+        return ('apply rule %s against %s of model %s' %
+                (self.rule.rule, fields, self.content_type.model))
 
     def get_fact_for_field(self, obj):
         """
@@ -338,6 +495,18 @@ class RuleApplies(BaseModel, models.Model):
         return getattr(
             self.content_type.get_object_for_this_type(pk=obj.id),
             self.field_name)
+
+    def get_facts_for_fields(self, obj):
+        """
+        support getting facts from two fields
+        """
+        if self.second_field_name is None:
+            return self.get_fact_for_field(obj)
+
+        return [getattr(self.content_type.get_object_for_this_type(pk=obj.id),
+                        self.field_name),
+                getattr(self.content_type.get_object_for_this_type(pk=obj.id),
+                        self.second_field_name)]
 
     class Meta:
         verbose_name = _('Content to which a Rule Applies')

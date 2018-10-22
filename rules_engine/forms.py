@@ -11,5 +11,8 @@ class RuleAppliesForm(ModelForm):
         widgets = {
             'field_name':
             autocomplete.ListSelect2(
+                url='autocomplete-field-name', forward=['content_type', ]),
+            'second_field_name':
+            autocomplete.ListSelect2(
                 url='autocomplete-field-name', forward=['content_type', ])
         }

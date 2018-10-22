@@ -22,8 +22,8 @@ from orion_integration.models import (
 )
 
 
-@shared_task
-def populate_from_orion(queue='shared'):
+@shared_task(queue='shared')
+def populate_from_orion():
     """
     update the models in orion_integration from the orion server
 
@@ -68,8 +68,8 @@ def orion_entity_exists(model_name, primary_key):
         get(pk=primary_key).exists_in_orion()
 
 
-@shared_task
-def verify_known_orion_data(queue='shared'):
+@shared_task(queue='shared')
+def verify_known_orion_data():
     """
     group task that is responsible for launching the
     :function:`<orion_entity_exists>`

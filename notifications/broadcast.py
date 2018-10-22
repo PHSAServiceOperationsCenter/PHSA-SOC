@@ -15,84 +15,144 @@ utility  functions for the notification tasks
 :update:    Oct. 04 2018
 
 """
-import logging
 from django.utils import timezone
-from django.core.mail import get_connection
 from django.core.mail.message import EmailMessage
-from django.http import HttpResponse, HttpResponseRedirect
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from django.conf import settings
-from django.core.mail import send_mail, BadHeaderError
 from .models import Notification
+
+import ipdb
+
+
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+
+class InputError(Error):
+    """Raised when parameter is not valid"""
+    pass
 
 
 class EmailBroadCast(EmailMessage):
-    '''
-        EmailBroadCast class to Broadcast Email
-    '''
+    """
+    email broadcast class
 
-    def __init__(self, pk, \
-                 fields = {'broadcast_on':timezone.now(), 'escalated_onNone':timezone.now()}, \
-                 con = None):
-        '''
-        1.pk Notification pk
-        2. Fields... fields need to be updated after email send
-        we need to distinguish this parameter for both
-        successfull on unsuccessfull email sent
-        3. con this is smtp connection object assigned
-        from setting.py if passed as None
-        '''
-        self.pk = pk
-        self.fields = fields
-        self.connection = con
+    drop in replacement for `djang.core.mail.EmailMessage' that also can
+    take a notification obkect and create an email message out of it
+    """
+
+    def __init__(
+            self, notification_pk=None, subject=None, message=None,
+            email_from=settings.ADMINS[0][1], email_to=None, cc=None, bcc=None,
+            connection=None, attachments=None,
+            reply_to=settings.DEFAULT_EMAIL_REPLY_TO, headers=None,
+            email_type=settings.SUB_EMAIL_TYPE, *args, **kwargs):
+        """
+        :param str subject: email subject
+        :param str message: The body of the message
+        :param str email_from: email_from
+        :param str message: The body of the message
+        :param list/tuple email_to: email recepients
+        :param list/tuple cc:  email cc
+        :param list/tuple bcc: email bcc
+        :param obj connection: email connection
+        :param list/tuple attachments: email attachments
+        :param list/tuple reply_to: email response recepients
+        :param dict headers:Extra headers to put on the message
+        :param int notification_pk: valid pk if not None.
+        :param int email_type: 0:subscribers,
+                               1:esc.,
+                               2: sub & esc.,
+                               otherwise:subscribers
+        """
+        self.obj = None
+        if email_to is None:
+            email_to = [address for name, address in settings.ADMINS]
+
+        if notification_pk is None:
+            if subject is None or message is None:
+                raise InputError("Email Subject/Message")
+
         try:
-            self.obj = Notification(pk=self.pk)
-        except:
-            self.obj = None
+            validate_email(email_from)
+        except ValidationError:
+            raise InputError("Invalid Email From")
 
-    def prepare_email_from_notification(self):
+        self.validate_email_types(email_to)
+        self.validate_email_types(reply_to)
+        if attachments is not None:
+            self.validate_list_types(attachments)
+
+        # ipdb.set_trace()
+        print(notification_pk)
+        if Notification.objects.filter(pk=notification_pk).exists():
+            self.notification_pk = notification_pk
+            self.obj = Notification.objects.get(pk=notification_pk)
+            subject = self.obj.rule_applies
+            message = str(self.obj.message)
+            if email_type == settings.SUB_EMAIL_TYPE:
+                email_to = self.obj.subscribers
+            elif email_type == settings.ESC_EMAIL_TYPE:
+                email_to = self.obj.escalation_subscribers
+            elif email_type == settings.SUB_ESC_EMAIL_TYPE:
+                email_to.extend(
+                    self.obj.subscribers).extend(
+                    self.obj.escalation)
+            else:  # error
+                raise InputError('Invalid  data %s', 'email_type')
+
+        super().__init__(subject,
+                         message,
+                         email_from,
+                         email_to,
+                         bcc,
+                         connection,
+                         attachments,
+                         cc,
+                         reply_to,
+                         headers,
+                         *args, **kwargs)
+
+    def update_notification_timestamps(self):
         """
-        prepares notification email ...
-        """
-        if self.obj is not None:
-            try:
-                email = self.get_email_parameters()
-                super().__init__(email["message"], email["from"], email["to"], None, email["con"])
-            except Notification.DoesNotExist as ex:
-                self.obj = None
-                logging.info("Notification object does not exist %s", str(ex))
-            except BadHeaderError as ex
-                self.obj = None
-                logging.info("Invalid header found. %s", str(ex))
-
-    def get_email_parameters(self):
-        '''
-        creating  creating the email message
-        '''
-        receivers = self.obj.subcribers
-        return {"subject":self.obj.message["rule_msg"], \
-                "message":self.obj.message, \
-                "from":settings.EMAIL_HOST_USER, \
-                "to":receivers, \
-                "con":self.connection
-        }
-
-    def post_send_mail_update(self):
-        '''
+        extend this to include the whole send and update logic
         update notification columns upon successful email sent
-        '''
-        try:
-            for attr, value in self.fields.items():
-                setattr(self.obj, attr, value)
-            self.obj.save()
-        except Exception as ex:
-            logging.info("Failed Updating Notification model... %s", \
-                         str(ex))
+        days, seconds = duration.days, duration.seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = (seconds % 60)
+        return days, hours, minutes, seconds
+        """
+        Notification.objects.filter(pk=self.notification_pk).update(
+            broadcast_on=timezone.now())
+        # we need to update escalated_on if no one paid
+        # attension to email within
+        # timezone.timedelta(instance.notification_type.escalate_within)
 
-    def send(self, *args, **kwargs):
-        '''
-        override parent class send method
-        '''
-        try:
-            super().send(*args, **kwargs)
-        except Exception as ex:
-            logging.info("Failed Sending Email:.... %s", str(ex))
+        # Notification.objects.filter(pk=self.notification_pk).update(
+        #     escalated_on=timezone.now() +
+        #     timezone.timedelta(instance.notification_type.escalate_within))
+    def validate_list_types(self, items):
+        """
+        validates if arguments are list instance
+        """
+        for item in items:
+            if not isinstance(item, (list, tuple)):
+                raise InputError(str(item) + ": Not a list instance")
+
+    def validate_email_types(self, email_to):
+        """
+        validates if argument are email format
+        """
+        if not isinstance(email_to, (list, tuple)):
+            raise InputError(str(email_to) + ": Not a list instance")
+        elif len(email_to) == 0:
+            raise InputError(str(email_to) + ": Invalid Email")
+        else:
+            for email in email_to:
+                try:
+                    validate_email(email)
+                except ValidationError:
+                    raise InputError(str(email) + ": Invalid Email")

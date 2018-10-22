@@ -16,9 +16,10 @@ django admin for the notifications app
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from rangefilter.filter import DateRangeFilter
 
 from p_soc_auto_base.admin import BaseAdmin
+from rangefilter.filter import DateRangeFilter
+
 from .models import (
     Notification, NotificationType, NotificationLevel, Broadcast,
     NotificationResponse, NotificationTypeBroadcast,
@@ -136,6 +137,7 @@ class NotificationAdmin(NotificationsBaseAdmin, admin.ModelAdmin):
                     'notification_type',
                     'notification_level', 'created_on', 'broadcast_on',
                     'ack_on', 'esc_on', 'esc_ack_on')
+    list_select_related = ('notification_type', 'notification_level')
     list_editable = ('enabled', 'notification_type', 'notification_level',)
     readonly_fields = ('message', 'broadcast_on', 'rule_applies',
                        'ack_on', 'esc_on', 'esc_ack_on')

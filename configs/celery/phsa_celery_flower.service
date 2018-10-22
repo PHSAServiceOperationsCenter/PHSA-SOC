@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=forking
-User=root
-Group=root
+User=phsa
+Group=phsa
 WorkingDirectory=/opt/phsa/p_soc_auto
 ExecStart=/bin/sh -c '/opt/phsa/.envs/phsa_venv/bin/celery flower \
     -A p_soc_auto --inspect --persistent \

@@ -19,9 +19,9 @@ django signals raised by the notification application
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .tasks import send_email
 
 from .models import Notification, NotificationLevel
+from .tasks import send_email
 
 
 @receiver(post_save, sender=Notification)
@@ -45,8 +45,8 @@ def broadcast_notification(sender, instance, *args, **kwargs):
 
     if hasattr(settings, 'NOTIFICATION_BROADCAST_LEVELS'):
         # we have predefined levels
-        # is this a level that we notify for
-        if instance.notification_level not in \
+        # is this a level that we notify for"
+        if instance.notification_level in \
                 NotificationLevel.objects.\
                 filter(notification_level__in=settings.
                        NOTIFICATION_BROADCAST_LEVELS):
@@ -56,11 +56,10 @@ def broadcast_notification(sender, instance, *args, **kwargs):
         instance.notification_type.notification_broadcast.
         all().values_list('broadcast', flat=True)
     )
-
     if 'log' in broadcast_methods:
         print('it has already been logged')
     if 'email' in broadcast_methods:
-        send_email.apply_async(args=[instance.pk, 'broadcast_on'])
+        send_email.apply_async(args=[instance.pk, 0])
     if 'sms' in broadcast_methods:
         print('not yet implemented')
     if 'orion_alert' in broadcast_methods:

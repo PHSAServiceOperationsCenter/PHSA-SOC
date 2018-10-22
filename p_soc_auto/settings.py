@@ -20,7 +20,6 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
-
 """
 
 import os
@@ -38,6 +37,9 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*', ]
 
+ADMINS = [
+    ('Serban', 'serban.teodorescu@phsa.ca'), ('Ali', 'ali.rahmat@phsa.ca')
+]
 
 # Application definition
 
@@ -187,8 +189,6 @@ CELERY_DEFAULT_ROUTING_KEY = 'shared'
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
 NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 
-AJAX_LOOKUP_CHANNELS = {
-    'fields': ('rules_engine.lookups', 'FieldNamesLookup')}
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -200,6 +200,10 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
+DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
+SUB_EMAIL_TYPE = 0
+ESC_EMAIL_TYPE = 1
+SUB_ESC_EMAIL_TYPE = 2
 
 #=========================================================================
 # # email settings for gmail
@@ -207,14 +211,6 @@ EMAIL_HOST_PASSWORD = ''
 # EMAIL_HOST = 'smtp.gmail.com'
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
-#=========================================================================
-
-#=========================================================================
-# # temporary email settings with the smtp relay
-# # these will only work from IP addresses that have been white-listed
-# EMAIL_HOST = "smtp.healthbc.org"  # 'smtp.gmail.com'
-# EMAIL_HOST_USER = 'serban.teodorescu@phsa.ca'
-# EMAIL_HOST_PASSWORD = ''
 #=========================================================================
 
 # broadcast only notifications of these levels

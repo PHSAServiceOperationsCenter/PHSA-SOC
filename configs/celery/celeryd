@@ -1,10 +1,14 @@
 /var/log/phsa/celery/*.log {
-        weekly
+        su phsa phsa
+        daily
         missingok
         rotate 5
-	size 1M
+	    size 1M
         compress
         delaycompress
         notifempty
         copytruncate
+        create 644 phsa phsa
 }
+# need to fix the users and permissions again
+# see if the tasks will execute with phsa:phsa instead of root:root

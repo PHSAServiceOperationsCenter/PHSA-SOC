@@ -22,6 +22,7 @@ from decimal import Decimal
 from dateutil import parser as datetime_parser
 
 from django.db import models
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -30,12 +31,19 @@ from jsonfield import JSONField
 from p_soc_auto_base.models import BaseModel
 
 
+class NotificationError(Exception):
+    """
+    raise if there is an error in creating the notification record
+    """
+    pass
+
+
 class TinDataForRuleDemos(BaseModel, models.Model):
     """
     just a test class to screw around; will go away soon
     """
     data_name = models.CharField(
-        'something', max_length=64, db_index=True, unique=True, blank=False,
+        'data_name', max_length=64, db_index=True, unique=True, blank=False,
         null=False)
     data_datetime_1 = models.DateTimeField('data_datetime_1')
     data_number_1 = models.IntegerField('data_number_1')
@@ -46,6 +54,10 @@ class TinDataForRuleDemos(BaseModel, models.Model):
 
     def __str__(self):
         return self.data_name
+
+    class Meta:
+        verbose_name = 'Sample data for demonstrating rules'
+        verbose_name_plural = 'Sample data for demonstrating rules'
 
 
 class NotificationEventForRuleDemo(BaseModel, models.Model):
@@ -69,6 +81,10 @@ class NotificationEventForRuleDemo(BaseModel, models.Model):
     def __str__(self):
         return self.notification
 
+    class Meta:
+        verbose_name = 'Place holder for notifications'
+        verbose_name_plural = 'Place holder for notifications'
+
 
 class Rule(BaseModel, models.Model):
     """
@@ -79,18 +95,34 @@ class Rule(BaseModel, models.Model):
         blank=False, null=False,
         help_text=_('mother of inventions'))
     applies = models.ManyToManyField(
-        ContentType, through='RuleApplies')
+        ContentType, through='RuleApplies',
+        verbose_name=_('This Rule Applies to'))
 
-    def raise_notification(self, **kwargs):
+    def raise_notification(
+            self, notification_type=None, notification_notes=None, **kwargs):
+        """
+        raise a notification
+
+        currently this just creates a record in the notification table
+        """
+        if notification_type is None:
+            raise NotificationError('must specify a notification type')
+
         notification = NotificationEventForRuleDemo(
-            notification='%s: notify from %s' % (timezone.now(), self.rule))
+            notification='%s: notify from %s' % (timezone.now(), self.rule),
+            notification_type=notification_type, notes=notification_notes)
         notification.notification_args = dict(**kwargs)
-        notification.created_by_id = 1
-        notification.updated_by_id = 1
+        notification.created_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
+        notification.updated_by = self.get_or_create_user(
+            username=settings.RULES_ENGINE_SERVICE_USER)
         notification.save()
 
     def apply_rule(self):
-        pass
+        """
+        just a place holder. this method needs to exist in child classes
+        """
+        raise NotImplementedError('must be implemented in the subclass')
 
     def __str__(self):
         return self.rule
@@ -105,7 +137,7 @@ class RegexRule(Rule, models.Model):
     """
     rules of type 'is string in fact'
 
-    useful for looking for speific messages in log files
+    useful for looking for specific messages in log files
     """
     match_string = models.CharField(
         _('raise when matching'), max_length=253, db_index=True, blank=False,
@@ -117,19 +149,30 @@ class RegexRule(Rule, models.Model):
         """
         re_find = re.compile(self.match_string, flags=re.I | re.M)
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = str(rule_applies.get_fact_for_field(obj))
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
-                        value=fact, critical=str(err))
+                        expected=self.match_string,
+                        value=fact, notification_note=str(err))
 
                 if re_find.search(fact):
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, match=self.match_string)
@@ -148,10 +191,10 @@ class IntervalRule(Rule, models.Model):
     interval defined by :var:`min_val` and :var:`interval`
     """
     interval = models.DecimalField(
-        _('minimum acceptable value'), max_digits=5, decimal_places=2,
+        _('interval'), max_digits=5, decimal_places=2,
         default=Decimal('000.00'))
     min_val = models.DecimalField(
-        _('maximum acceptable value'), max_digits=5, decimal_places=2,
+        _('minimum acceptable value'), max_digits=5, decimal_places=2,
         default=Decimal('100.00'))
 
     def apply_rule(self):
@@ -160,24 +203,43 @@ class IntervalRule(Rule, models.Model):
         associated with it
         """
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = Decimal(rule_applies.get_fact_for_field(obj))
                     if not fact.is_finite():
                         self.raise_notification(
+                            notification_type='invalid rule',
+                            notification_note=(
+                                'was looking for something between %s and %s'
+                                % (str(self.min_val),
+                                   str(self.min_val + self.interval))),
                             model=rule_applies.content_type.name,
                             field=rule_applies.field_name,
                             value=fact, critical='not a number')
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
+                        notification_note=(
+                            'was looking for something between %s and %s'
+                            % (str(self.min_val),
+                               str(self.min_val + self.interval))),
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, critical=str(err))
 
                 if not self.min_val <= fact <= self.min_val + self.interval:
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact,
@@ -201,8 +263,16 @@ class ExpirationRule(Rule, models.Model):
 
     def apply_rule(self):
         for rule_applies in RuleApplies.objects.filter(rule=self):
-            queryset = rule_applies.\
-                content_type.get_all_objects_for_this_type()
+            try:
+                queryset = rule_applies.\
+                    content_type.get_all_objects_for_this_type()
+            except Exception as err:
+                self.raise_notification(
+                    notification_type='administrative',
+                    notification_note='%s does not exist. error: %s'
+                    % (rule_applies.content_type.name, str(err)))
+                continue
+
             for obj in queryset:
                 try:
                     fact = rule_applies.get_fact_for_field(obj)
@@ -210,6 +280,11 @@ class ExpirationRule(Rule, models.Model):
                         fact = datetime_parser.parse(fact)
                 except Exception as err:
                     self.raise_notification(
+                        notification_type='invalid rule',
+                        notification_note=(
+                            'was looking for something between %s and %s'
+                            % (str(self.valid_after),
+                               str(timezone.now() + self.grace_period))),
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact, critical=str(err))
@@ -217,6 +292,7 @@ class ExpirationRule(Rule, models.Model):
                 if not self.valid_after <= fact <= timezone.now() \
                         + self.grace_period:
                     self.raise_notification(
+                        notification_type=self._meta.verbose_name,
                         model=rule_applies.content_type.name,
                         field=rule_applies.field_name,
                         value=fact,
@@ -245,8 +321,12 @@ class RuleApplies(BaseModel, models.Model):
         Rule, on_delete=models.CASCADE, blank=False, null=False,
         verbose_name=_('Rule'))
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE)
-    field_name = models.CharField('field', max_length=64)
+        ContentType, on_delete=models.CASCADE, blank=False, null=False,
+        verbose_name=_('Content Type'),
+        help_text=_('Links a rule to a model to which the rule applies to'))
+    field_name = models.CharField(
+        _('field name'), max_length=64, db_index=True, blank=False, null=False,
+        help_text=_('the name of the field where the rule fact resides'))
 
     def get_fact_for_field(self, obj):
         """
@@ -258,3 +338,8 @@ class RuleApplies(BaseModel, models.Model):
         return getattr(
             self.content_type.get_object_for_this_type(pk=obj.id),
             self.field_name)
+
+    class Meta:
+        verbose_name = _('Content to which a Rule Applies')
+        verbose_name_plural = _('Content to which a Rule Applies')
+        unique_together = (('rule', 'content_type', 'field_name'))

@@ -43,11 +43,22 @@ class BaseModel(models.Model):
         _('updated on'), db_index=True, auto_now=True,
         help_text=_('object update time stamp'))
     enabled = models.BooleanField(
-        _('enabled'), db_index=True, default=True, null=False, blank=False)
+        _('enabled'), db_index=True, default=True, null=False, blank=False,
+        help_text=_('if this field is checked out, the row will always be'
+                    ' excluded from any active operation'))
     notes = models.TextField(_('notes'), null=True, blank=True)
 
     @classmethod
     def get_or_create_user(cls, username):
+        """
+        get or create a user if you need one
+
+        it's a class method because we have defined it on an abstract model
+        and because we may have to call it from places where
+        we don't have access to a model instance
+
+        :arg str username: the username to get or create
+        """
         user = get_user_model().objects.filter(username__iexact=username)
         if not user.exists():
             get_user_model().objects.create_user(username)

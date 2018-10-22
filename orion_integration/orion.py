@@ -11,16 +11,15 @@ orion classes for the orion_integration app
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+
+:updated:    Aug. 8, 2018
+
 """
 import json
 from datetime import datetime
 
 from django.conf import settings
 from requests import Session, urllib3
-
-#from models import OrionNodeCategory
-
-__updated__ = '2018_08_08'
 
 
 SESSION = Session()
@@ -43,13 +42,15 @@ if not SESSION.verify:
 def serialize_custom_json(obj):
     """
     datetime objects need to be in ISO format before the json module can
-    serialize
+    serialize them
     """
     _ = None
     if isinstance(obj, datetime):
         _ = obj.isoformat()
 
     return _
+
+# pylint:disable=R0903
 
 
 class OrionClient():
@@ -58,21 +59,21 @@ class OrionClient():
     """
 
     @classmethod
-    def populate_from_query(cls, model, **params):
+    def query(cls, orion_query, **params):
         """
         query the Orion server
 
         :arg str query: the query string
         :arg dict params: the query params
 
-        :returns: a dict ?
+        :returns: a `dict`
 
-        :raises: a exception
+        :raises:
         """
         response = SESSION.post(
             '{}/Query'.format(settings.ORION_URL),
             data=json.dumps(
-                dict(query=model.orion_query, params=params),
+                dict(query=orion_query, params=params),
                 default=serialize_custom_json),
             timeout=settings.ORION_TIMEOUT
         )
@@ -80,31 +81,3 @@ class OrionClient():
         response.raise_for_status()
 
         return response.json()['results']
-
-
-class MyClass(object):
-    '''
-    classdocs
-
-         45     def _req(self, method, frag, data=None):
----> 46         resp = requests.request(method, self.url + frag,
-     47                                 data=json.dumps(data, default=_json_serial),
-
-ipdb> method
-'POST'
-ipdb> self.url
-'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json/'
-ipdb> frag
-'Query'
-ipdb> data
-{'query': 'SELECT TOP 3 NodeID, DisplayName FROM Orion.Nodes', 'parameters': {}}
-ipdb> json.dumps(data)
-'{"query": "SELECT TOP 3 NodeID, DisplayName FROM Orion.Nodes", "parameters": {}}'
-ipdb>
-    '''
-
-    def __init__(self, params):
-        '''
-        Constructor
-        '''
-        pass

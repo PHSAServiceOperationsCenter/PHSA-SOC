@@ -13,9 +13,10 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
-from datetime import datetime
+from django.utils import timezone
 from django.db import models
 from p_soc_auto_base.models import BaseModel
+
 
 class NmapCertsData(BaseModel, models.Model):
     """NmapCertsData. Model struture for NMap result response. """
@@ -24,11 +25,11 @@ class NmapCertsData(BaseModel, models.Model):
     not_before = models.DateTimeField(null=True, blank=True)
     not_after = models.DateTimeField(null=True, blank=True)
     xml_data = models.TextField()
-    common_name = models.CharField(max_length=100, blank=True, null=True, \
-    help_text="A unique title for common_name")
-    organization_name = models.CharField(max_length=100, \
-    blank=True, null=True, \
-    help_text="A unique title for organization_name")
+    common_name = models.CharField(max_length=100, blank=True, null=True,
+                                   help_text="A unique title for common_name")
+    organization_name = models.CharField(max_length=100,
+                                         blank=True, null=True,
+                                         help_text="A unique title for organization_name")
     country_name = models.CharField(max_length=100, blank=True, null=True)
     sig_algo = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -39,33 +40,39 @@ class NmapCertsData(BaseModel, models.Model):
     def update_cert_history(self, pk_val=False):
         """update_cert_history. """
         if pk_val:
-            orion_id_count = NmapHistory.objects.filter(orion_id=self.orion_id).count()
-            if orion_id_count == 0: #this is insert
-                obj = NmapHistory(cert_id=int(pk_val), \
-                orion_id=self.orion_id, \
-                md5=self.md5, \
-                status="new", \
-                retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
-                xml_data=self.xml_data)
+            orion_id_count = NmapHistory.objects.filter(
+                orion_id=self.orion_id).count()
+            if orion_id_count == 0:  # this is insert
+                obj = NmapHistory(cert_id=int(pk_val),
+                                  orion_id=self.orion_id,
+                                  md5=self.md5,
+                                  status="new",
+                                  retreived=timezone.now(),
+                                  xml_data=self.xml_data)
                 obj.save()
-            else: # this is either update/insert
-                md5_count = NmapHistory.objects.filter(orion_id=self.orion_id, md5=self.md5).count()
+            else:  # this is either update/insert
+                md5_count = NmapHistory.objects.filter(
+                    orion_id=self.orion_id, md5=self.md5).count()
                 if md5_count == 0:
-                    obj = NmapHistory(cert_id=int(pk_val), \
-                                      orion_id=self.orion_id, \
-                                      md5=self.md5, \
-                                      status="changed", \
-                                      retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"), \
+                    obj = NmapHistory(cert_id=int(pk_val),
+                                      orion_id=self.orion_id,
+                                      md5=self.md5,
+                                      status="changed",
+                                      retreived=timezone.now(),
                                       xml_data=self.xml_data)
                     obj.save()
                 else:
-                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found", \
-                    retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
+                    NmapHistory.objects.filter(orion_id=self.orion_id).update(status="found",
+                                                                              retreived=timezone.now())
 
     def save(self, *args, **kwargs):
         super(NmapCertsData, self).save(*args, **kwargs)
         pk_val = self.pk
         self.update_cert_history(pk_val)
+
+    def __str__(self):
+        return 'O: %s, CN: %s' % (self.organization_name, self.common_name)
+
     @staticmethod
     def get_cert_handle(o_id):
         """get_cert_handle """
@@ -75,15 +82,20 @@ class NmapCertsData(BaseModel, models.Model):
     def get_cert_state(o_id, hash_md5):
         """orion_id_exist """
         if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
-            return_code = 1 # new reord
+            return_code = 1  # new reord
         elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
-            return_code = 2 # cert changed
-        else: # cert has not changed
-            NmapHistory.objects.filter(orion_id=o_id, \
-                                       md5=hash_md5).update( \
-                                       retreived=datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"))
+            return_code = 2  # cert changed
+        else:  # cert has not changed
+            NmapHistory.objects.filter(orion_id=o_id,
+                                       md5=hash_md5).update(
+                retreived=timezone.now())
             return_code = 0
         return return_code
+
+    class Meta:
+        verbose_name = 'SSL Certificate Data'
+        verbose_name_plural = 'SSL Certificate Data'
+
 
 class NmapHistory(models.Model):
     """NmapHistory. Model struture for NMap result diff response. """
@@ -95,7 +107,8 @@ class NmapHistory(models.Model):
     xml_data = models.TextField()
 
     def __str__(self):
-        return self.cert_id
+        return str(self.cert_id)
+
 
 class NmapCertsScript(BaseModel, models.Model):
     """NmapCertsScript. Model struture for NMap scripts. https://nmap.org/nsedoc/"""

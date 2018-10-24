@@ -19,6 +19,7 @@ import xml.dom.minidom
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
+
 def validate(date_text):
     """check if date_text is a valid date  """
     try:
@@ -31,24 +32,26 @@ def validate(date_text):
     except ValueError:
         return False
 
+
 def init_record():
     """Initialize json object"""
     record = {
-        "xml_data":None,
-        "addresses":None,
-        "orion_id" : None,
-        "common_name" : None,
-        "country_name" : None,
-        "organization_name" : None,
-        "sig_algo" : None,
-        "name" : None,
-        "bits" : None,
-        "md5" : None,
-        "sha1" : None,
-        "not_before" : None,
-        "not_after" : None
+        "xml_data": None,
+        "addresses": None,
+        "node_id": None,
+        "common_name": None,
+        "country_name": None,
+        "organization_name": None,
+        "sig_algo": None,
+        "name": None,
+        "bits": None,
+        "md5": None,
+        "sha1": None,
+        "not_before": None,
+        "not_after": None
     }
     return record
+
 
 def check_tag(elem, record, k, tag):
     """populate json object from xml tags"""
@@ -63,6 +66,7 @@ def check_tag(elem, record, k, tag):
        # logging.info("nMap Record does not have commonName tag:%s", ex.msg)
         print("nMap Record does not have commonName tag:%s" + ex.msg)
 
+
 def process_xml_cert(node_id, doc):
     """process xml from dom object"""
     for host in doc.getElementsByTagName("host"):
@@ -70,12 +74,14 @@ def process_xml_cert(node_id, doc):
         record = init_record()
         record["xml_data"] = doc
         record["addresses"] = host.getElementsByTagName("address")
-        record["orion_id"] = node_id
+        record["node_id"] = node_id
         for script in scripts:
             for elem in script.getElementsByTagName("elem"):
                 check_tag(elem, record, "common_name", "commonName")
-                check_tag(elem, record, "organization_name", "organizationName")
-                check_tag(elem, record, "organization_name", "organizationName")
+                check_tag(elem, record, "organization_name",
+                          "organizationName")
+                check_tag(elem, record, "organization_name",
+                          "organizationName")
                 check_tag(elem, record, "country_name", "countryName")
                 check_tag(elem, record, "sig_algo", "sig_algo")
                 check_tag(elem, record, "name", "name")
@@ -84,4 +90,4 @@ def process_xml_cert(node_id, doc):
                 check_tag(elem, record, "not_after", "notAfter")
                 check_tag(elem, record, "md5", "md5")
                 check_tag(elem, record, "sha1", "sha1")
-        return  record
+        return record

@@ -90,7 +90,6 @@ class NmapCertsData(BaseModel, models.Model):
             if json["md5"] is not None:
                 # insert_into_certs_data check if record
                 # already exist then update otherwise insert
-                print (json)
                 NmapCertsData.created_by = \
                 NmapCertsData.get_or_create_user(username='PHSA_User')
                 cert_status = NmapCertsData.get_cert_state(json["orion_id"],

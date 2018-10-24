@@ -25,11 +25,9 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
 @shared_task(rate_limit='0.5/s', queue='nmap')
 def go_node(node_id, node_address):
-    """Serban, This method no longer needed
-    If I remove it then go_node tasks still appears
-    in celery worker tasks list
+    """Celery worker go_node
     """
-    pass
+    NmapCertsData.retreive_cert_data(node_id, node_address)
 
 @shared_task(queue='ssl')
 def getnmapdata():
@@ -39,7 +37,7 @@ def getnmapdata():
     node_obj = OrionSslNode.nodes()
     for node in node_obj:
         try:
-            NmapCertsData.retreive_cert_data(node.id, node.ip_address)
+            go_node.delay(node.id, node.ip_address)
             logging.info("Success proceesing :%s", node.ip_address)
         except ObjectDoesNotExist as ex:
             logging.error("Error proceesing node ip message:%s", ex)

@@ -27,7 +27,7 @@ from .utils import process_xml_cert
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
-@shared_task#(rate_limit='0.5/s', queue='nmap')
+@shared_task(rate_limit='0.5/s', queue='nmap')
 def go_node(node_id, node_address):
     """Celery worker go_node
     """
@@ -43,7 +43,7 @@ def go_node(node_id, node_address):
     except Exception as ex:
         logging.error("Error proceesing xml_cert message:%s", ex)
 
-@shared_task#(queue='ssl')
+@shared_task(queue='ssl')
 def getnmapdata():
     """Celery worker to capture all nodes then
      it delegate each node to different worker

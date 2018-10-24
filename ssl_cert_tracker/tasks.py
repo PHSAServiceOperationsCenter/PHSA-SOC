@@ -15,21 +15,35 @@ django models for the ssl_certificates app
 """
 
 import logging
-
+import xml.dom.minidom
 from django.core.exceptions import ObjectDoesNotExist
 from celery import shared_task
+from libnmap.process import NmapProcess
 from orion_integration.lib import OrionSslNode
-from .models import NmapCertsData
+from .db_helper import insert_into_certs_data
+from .utils import process_xml_cert
+
+
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
-@shared_task(rate_limit='0.5/s', queue='nmap')
+@shared_task#(rate_limit='0.5/s', queue='nmap')
 def go_node(node_id, node_address):
     """Celery worker go_node
     """
-    NmapCertsData.retreive_cert_data(node_id, node_address)
+    xml_data = ""
+    try:
+        nmap_task = NmapProcess(node_address, options='--script ssl-cert')
+        nmap_task.run()
+        xml_data = nmap_task.stdout
+        doc = xml.dom.minidom.parseString(xml_data)
+        json = process_xml_cert(node_id, doc)
+        if json["md5"] is not None:
+            insert_into_certs_data(json)
+    except Exception as ex:
+        logging.error("Error proceesing xml_cert message:%s", ex)
 
-@shared_task(queue='ssl')
+@shared_task#(queue='ssl')
 def getnmapdata():
     """Celery worker to capture all nodes then
      it delegate each node to different worker

@@ -33,7 +33,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
+    'simple_history',
     'dal',
     'dal_select2',
     'grappelli',
@@ -73,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'p_soc_auto.urls'
@@ -143,6 +145,7 @@ USE_L10N = True
 USE_TZ = True
 
 
+# STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
 STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
 STATIC_URL = '/static/'
 

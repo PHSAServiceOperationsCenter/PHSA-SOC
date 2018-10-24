@@ -96,18 +96,19 @@ def go_node(node_id, node_address):
             % (node_address, str(error)))
 
     if json["md5"] is None:
-        raise NoSSLCertOnNodeError(
+        logger.error(
+            'could not retrieve SSL certificate from node address %s'
+            % node_address)
+        return (
             'could not retrieve SSL certificate from node address %s'
             % node_address)
 
-    import ipdb
-    ipdb.set_trace()
     try:
         insert_into_certs_data(json)
     except Exception as error:
         raise SSLDatabaseError(
             'cannot insert/update SSL information collected from node'
-            ' address %s' % node_address)
+            ' address %s: %s' % (node_address, str(error)))
 
     return 'successful SSL nmap probe on node address %s' % node_address
 

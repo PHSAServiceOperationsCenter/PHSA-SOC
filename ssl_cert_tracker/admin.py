@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from rangefilter.filter import DateRangeFilter
 
+from simple_history.admin import SimpleHistoryAdmin
+
 from .models import NmapCertsData
 from p_soc_auto_base.admin import BaseAdmin
 
@@ -51,12 +53,13 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 
 @admin.register(NmapCertsData)
-class NmapCertsDataAdmin(admin.ModelAdmin):
+class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
     """
     SSL certificate data admin pages
     """
     list_display = ['common_name', 'organization_name', 'not_before',
                     'not_after', 'bits', 'md5', 'sha1', 'updated_on']
+    history_list_display = ['updated_on', ]
     list_filter = [('not_after', DateRangeFilter),
                    ('not_before', DateRangeFilter),
                    ('updated_on', DateRangeFilter)]

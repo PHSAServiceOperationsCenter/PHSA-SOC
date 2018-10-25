@@ -23,7 +23,9 @@ logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
 
 def insert_into_certs_data(json_data):
-    """insert_into_certs_data check if record already exist then update otherwise insert """
+    """
+    create or update instances of :class:`<models.NmapCertsData>`
+     """
 
     NmapCertsData.created_by = NmapCertsData.get_or_create_user(
         username='PHSA_User')
@@ -41,11 +43,9 @@ def insert_into_certs_data(json_data):
     db_certs.created_by_id = NmapCertsData.created_by.id
     db_certs.updated_by_id = NmapCertsData.created_by.id
 
-    if validate(json_data["not_before"]):
-        db_certs.not_before = parse_datetime(json_data["not_before"])
+    db_certs.not_before = _make_aware(parse_datetime(json_data["not_before"]))
 
-    if validate(json_data["not_after"]):
-        db_certs.not_after = parse_datetime(json_data["not_after"])
+    db_certs.not_after = _make_aware(parse_datetime(json_data["not_after"]))
 
     db_certs.common_name = json_data["common_name"]
     db_certs.organization_name = json_data["organization_name"]
@@ -59,3 +59,15 @@ def insert_into_certs_data(json_data):
     db_certs.save()
 
     return
+
+
+def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
+    """
+    make datetime objects to timezone aware if needed
+    """
+    if timezone.is_aware(datetime_input):
+        return datetime_input
+
+    return timezone.make_aware(
+        datetime_input, timezone=use_timezone, is_dst=is_dst)
+

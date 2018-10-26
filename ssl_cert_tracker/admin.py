@@ -15,7 +15,6 @@ django admin for the ssl_cert_tracker app
 :updated:    sep. 21, 2018
 """
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from rangefilter.filter import DateRangeFilter
 
 from simple_history.admin import SimpleHistoryAdmin
@@ -58,9 +57,11 @@ class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
     SSL certificate data admin pages
     """
     list_display = ['common_name', 'organization_name', 'not_before',
-                    'not_after', 'bits', 'md5', 'sha1', 'updated_on']
+                    'not_after', 'node_admin_url', 'orion_node_url', 'bits',
+                    'md5', 'sha1', 'updated_on']
     history_list_display = ['updated_on', ]
     list_filter = [('not_after', DateRangeFilter),
                    ('not_before', DateRangeFilter),
                    ('updated_on', DateRangeFilter)]
     search_fields = ['common_name', 'organization_name']
+    readonly_fields = ('node_admin_url', 'orion_node_url',)

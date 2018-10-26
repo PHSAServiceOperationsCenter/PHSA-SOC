@@ -153,6 +153,7 @@ MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins
+ORION_SHORT_URL = 'https://orion.vch.ca:17778'
 ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
 ORION_PASSWORD = 'phsa123'

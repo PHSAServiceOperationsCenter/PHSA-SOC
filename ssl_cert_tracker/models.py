@@ -19,8 +19,46 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
+#from .lib import expires_in
 from p_soc_auto_base.models import BaseModel
 from orion_integration.models import OrionNode
+from .lib import expires_in, has_expired, is_not_yet_valid
+
+
+class ExpiresIn(models.Manager):
+    """
+    custom manager class
+    """
+
+    def get_queryset(self):
+        """
+        return only valid certificates sorted by expiration date ascending
+        """
+        return expires_in()
+
+
+class ExpiredSince(models.Manager):
+    """
+    show expired SSL certificates
+    """
+
+    def get_queryset(self):
+        """
+        only expired certificates
+        """
+        return has_expired()
+
+
+class NotYetValid(models.Manager):
+    """
+    custom manager class to show certificates that are not yet valid
+    """
+
+    def get_queryset(self):
+        """
+        need to override this method to return our stuff
+        """
+        return is_not_yet_valid()
 
 
 class NmapCertsData(BaseModel, models.Model):
@@ -94,3 +132,39 @@ class NmapCertsData(BaseModel, models.Model):
     class Meta:
         verbose_name = 'SSL Certificate'
         verbose_name_plural = 'SSL Certificates'
+
+
+class SslExpiresIn(NmapCertsData):
+    """
+    proxy model for valid SSL certificates sorted by expiration date
+    """
+    objects = ExpiresIn()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Valid SSL Certificate'
+        verbose_name_plural = 'Valid SSL Certificates by expiration date'
+
+
+class SslHasExpired(NmapCertsData):
+    """
+    proxy model for valid SSL certificates sorted by expiration date
+    """
+    objects = ExpiredSince()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'SSL Certificate: expired'
+        verbose_name_plural = 'SSL Certificates: expired'
+
+
+class SslNotYetValid(NmapCertsData):
+    """
+    proxy model for not yet valid SSL certificates
+   """
+    objects = NotYetValid()
+
+    class Meta:
+        proxy = True
+        verbose_name = 'SSL Certificate: not yet valid'
+        verbose_name_plural = 'SSL Certificates: not yet valid'

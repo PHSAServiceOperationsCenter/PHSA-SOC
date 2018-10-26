@@ -13,10 +13,14 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
+from django.conf import settings
 from django.db import models
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
 from p_soc_auto_base.models import BaseModel
+from orion_integration.models import OrionNode
 
 
 class NmapCertsData(BaseModel, models.Model):
@@ -54,6 +58,35 @@ class NmapCertsData(BaseModel, models.Model):
         'sha1', unique=True, db_index=True, max_length=100, blank=False,
         null=False)
     history = HistoricalRecords()
+
+    @property
+    @mark_safe
+    def node_admin_url(self):
+        """
+        admin link to the Orion node where the certificate resides
+        """
+        orion_node = OrionNode.objects.filter(pk=self.node_id)
+        if orion_node.exists():
+            orion_node = orion_node.get()
+            return '<a href="%s">m%s</>' % (
+                reverse('admin:orion_integration_orionnodecategory_change',
+                        args=(orion_node.id, )),
+                orion_node.node_caption)
+
+        return 'acquired outside the Orion infrastructure'
+
+    @property
+    @mark_safe
+    def orion_node_url(self):
+        """
+        link to the Orion Node object on the Orion server
+        """
+        orion_node = OrionNode.objects.filter(pk=self.node_id)
+        if orion_node.exists():
+            orion_node = orion_node.get().details_url
+            return '<a href="%s/%s' % (settings.ORION_SHORT_URL, orion_node)
+
+        return 'acquired outside the Orion infrastructure'
 
     def __str__(self):
         return 'O: %s, CN: %s' % (self.organization_name, self.common_name)

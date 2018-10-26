@@ -19,7 +19,7 @@ from rangefilter.filter import DateRangeFilter
 
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import NmapCertsData
+from .models import NmapCertsData, SslExpiresIn, SslHasExpired, SslNotYetValid
 from p_soc_auto_base.admin import BaseAdmin
 
 
@@ -65,3 +65,27 @@ class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
                    ('updated_on', DateRangeFilter)]
     search_fields = ['common_name', 'organization_name']
     readonly_fields = ('node_admin_url', 'orion_node_url',)
+
+
+@admin.register(SslExpiresIn)
+class SslExpiresInAdmin(NmapCertsDataAdmin):
+    """
+    only valid SSL certificates sorted by expiration date ascending
+    """
+    pass
+
+
+@admin.register(SslHasExpired)
+class SslHasExpiredAdmin(NmapCertsDataAdmin):
+    """
+    only expired SSL certificates sorted by expiration date ascending
+    """
+    pass
+
+
+@admin.register(SslNotYetValid)
+class SslNotYetValiddAdmin(NmapCertsDataAdmin):
+    """
+    only not yet valid SSL certificates sorted by expiration date ascending
+    """
+    pass

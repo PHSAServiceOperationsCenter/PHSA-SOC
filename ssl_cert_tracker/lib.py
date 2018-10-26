@@ -3,8 +3,8 @@ Created on Oct 25, 2018
 
 @author: serban
 '''
-from django.db.models import (
-    Case, When, CharField, Value, F, Func, CharField, Now)
+from django.db.models import Case, When, CharField, Value, F, Func
+from django.db.models.functions import Now
 from django.utils import timezone
 
 from .models import NmapCertsData

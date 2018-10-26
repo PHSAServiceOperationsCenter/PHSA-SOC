@@ -7,9 +7,6 @@ from django.db.models import Case, When, CharField, Value, F, Func
 from django.db.models.functions import Now
 from django.utils import timezone
 
-from .models import NmapCertsData
-
-base_queryset = NmapCertsData.objects.filter(enabled=True)
 
 expired = When(not_after__lt=timezone.now(), then=Value('expired'))
 
@@ -37,16 +34,22 @@ class DateDiff(Func):
 
 
 def expires_in():
+    from .models import NmapCertsData
+    base_queryset = NmapCertsData.objects.filter(enabled=True)
+
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='valid').\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
-        order_by('-expires_in')
+        order_by('expires_in')
 
     return queryset
 
 
 def has_expired():
+    from .models import NmapCertsData
+    base_queryset = NmapCertsData.objects.filter(enabled=True)
+
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='expired').\
         annotate(mysql_now=Now()).\
@@ -57,6 +60,9 @@ def has_expired():
 
 
 def is_not_yet_valid():
+    from .models import NmapCertsData
+    base_queryset = NmapCertsData.objects.filter(enabled=True)
+
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='not yet valid').\
         annotate(mysql_now=Now()).\

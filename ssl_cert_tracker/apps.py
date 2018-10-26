@@ -34,3 +34,4 @@ class SslCertificatesConfig(AppConfig):
         guarantees that imports will only happen after all the applications
         have been loaded
         """
+        pass

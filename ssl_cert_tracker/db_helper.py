@@ -17,7 +17,6 @@ import logging
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from ssl_cert_tracker.models import NmapCertsData
-from .utils import validate
 
 logging.basicConfig(filename='p_soc_auto.log', level=logging.DEBUG)
 
@@ -70,4 +69,3 @@ def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
 
     return timezone.make_aware(
         datetime_input, timezone=use_timezone, is_dst=is_dst)
-

@@ -106,8 +106,8 @@ class NmapCertsData(BaseModel, models.Model):
         orion_node = OrionNode.objects.filter(pk=self.node_id)
         if orion_node.exists():
             orion_node = orion_node.get()
-            return '<a href="%s">m%s</>' % (
-                reverse('admin:orion_integration_orionnodecategory_change',
+            return '<a href="%s">%s on django</>' % (
+                reverse('admin:orion_integration_orionnode_change',
                         args=(orion_node.id, )),
                 orion_node.node_caption)
 
@@ -121,8 +121,11 @@ class NmapCertsData(BaseModel, models.Model):
         """
         orion_node = OrionNode.objects.filter(pk=self.node_id)
         if orion_node.exists():
-            orion_node = orion_node.get().details_url
-            return '<a href="%s/%s' % (settings.ORION_SHORT_URL, orion_node)
+            orion_node = orion_node.values('node_caption', 'details_url')[0]
+            return '<a href="%s%s">%s on Orion</>' % (
+                settings.ORION_ENTITY_URL, orion_node.get('details_url'),
+                orion_node.get('node_caption')
+            )
 
         return 'acquired outside the Orion infrastructure'
 

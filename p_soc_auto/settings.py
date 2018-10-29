@@ -205,6 +205,7 @@ EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
+DEFAULT_FROM_EMAIL = ['donotreply@phsa_soc_automation.ca']
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2

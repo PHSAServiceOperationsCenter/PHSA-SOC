@@ -1,0 +1,20 @@
+{% block subject %}
+{{report_type}} SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+{% endblock %}
+
+{% block html %}
+<table>
+<tr>
+{% for header in headers %}
+<th>{{header}}</th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr>
+{% for value in item.values %}
+<td>{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

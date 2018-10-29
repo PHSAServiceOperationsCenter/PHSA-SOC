@@ -3,9 +3,13 @@ Created on Oct 25, 2018
 
 @author: serban
 '''
+import collections
+
 from django.db.models import Case, When, CharField, Value, F, Func
 from django.db.models.functions import Now
 from django.utils import timezone
+
+from templated_email import get_templated_mail
 
 
 expired = When(not_after__lt=timezone.now(), then=Value('expired'))
@@ -70,3 +74,54 @@ def is_not_yet_valid():
         order_by('-not_yet_valid')
 
     return queryset
+
+
+def send_email():
+    import ipdb
+    ipdb.set_trace()
+    headers = ['common_name', 'expires_in', 'not_before', 'not_after']
+    data = collections.OrderedDict()
+    context = {'report_date_time': timezone.now()}
+    context.update(headers=headers)
+    context.update(data=list(expires_in().values(*headers)))
+    email = get_templated_mail(
+        template_name='ssl_cert_valid_email', template_prefix='email/',
+        from_email='serban.teodorescu@phsa.ca',
+        to=['serban.teodorescu@phsa.ca'], context=context)
+    return email
+
+
+class Email():
+    def __init__(self, data=None, subscription_obj=None):
+        pass
+
+
+"""
+In [8]: [collections.OrderedDict(value) for value in expires_in().values('common_name','expires_in')]
+Out[8]:
+[OrderedDict([('common_name', 'spmgmtadm02.phsabc.ehcnet.ca'),
+              ('expires_in', 91)]),
+ OrderedDict([('common_name', 'spapplsts001.healthbc.org'),
+              ('expires_in', 143)]),
+ OrderedDict([('common_name', 'spcrnprj001.HealthBC.org'),
+              ('expires_in', 194)]),
+ OrderedDict([('common_name', 'dev.bcpsls.ca'), ('expires_in', 194)]),
+ OrderedDict([('common_name', 'cmsintranet.phsa.ca'), ('expires_in', 194)]),
+ OrderedDict([('common_name', 'spappcare010.vch.ca'), ('expires_in', 284)]),
+ OrderedDict([('common_name', 'jira.phsa.ca'), ('expires_in', 326)]),
+ OrderedDict([('common_name', 'web.bcpsls.ca'), ('expires_in', 432)]),
+ OrderedDict([('common_name', 'safets.phsa.ca'), ('expires_in', 538)]),
+ OrderedDict([('common_name', 'citrix.phsa.ca'), ('expires_in', 648)]),
+ OrderedDict([('common_name', 'internalapps.healthbc.org'),
+              ('expires_in', 651)]),
+ OrderedDict([('common_name', 'sftp.phsa.ca'), ('expires_in', 687)]),
+ OrderedDict([('common_name', 'AH_SPAPPMAV01'), ('expires_in', 10361)])]
+
+In [9]: coco=[collections.OrderedDict(value) for value in expires_in().values('common_name','expires_in')]
+
+In [10]: coco[0].keys()
+Out[10]: odict_keys(['common_name', 'expires_in'])
+
+In [11]:
+
+"""

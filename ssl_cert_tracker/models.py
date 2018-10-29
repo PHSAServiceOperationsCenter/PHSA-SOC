@@ -171,3 +171,22 @@ class SslNotYetValid(NmapCertsData):
         proxy = True
         verbose_name = 'SSL Certificate: not yet valid'
         verbose_name_plural = 'SSL Certificates: not yet valid'
+
+
+class Subscription(BaseModel):
+    subscription = models.CharField(
+        'subscription', max_length=64, unique=True, db_index=True, blank=False,
+        null=False)
+    emails_list = models.TextField('subscribers', blank=False, null=False)
+    from_email = models.CharField(
+        'from', max_length=255, blank=True, null=True)
+    template_dir = models.CharField(
+        'email templates directory', max_length=255, blank=False, null=False)
+    template_name = models.CharField(
+        'email template name', max_length=64, blank=False, null=False)
+    template_prefix = models.CharField(
+        'email template prefix', max_length=64, blank=False, null=False,
+        default='email/')
+
+    class Meta:
+        app_label = 'ssl_cert_tracker'

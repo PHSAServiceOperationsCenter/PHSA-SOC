@@ -64,7 +64,7 @@ class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
                    ('not_before', DateRangeFilter),
                    ('updated_on', DateRangeFilter)]
     search_fields = ['common_name', 'organization_name']
-    readonly_fields = ('node_admin_url', 'orion_node_url',)
+    readonly_fields = ['node_admin_url', 'orion_node_url', ]
 
 
 @admin.register(SslExpiresIn)
@@ -72,7 +72,14 @@ class SslExpiresInAdmin(NmapCertsDataAdmin):
     """
     only valid SSL certificates sorted by expiration date ascending
     """
-    pass
+    readonly_fields = ('expires_in_days',)
+    list_display = ['common_name', 'organization_name', 'expires_in_days',
+                    'not_before', 'not_after', 'node_admin_url',
+                    'orion_node_url', 'bits', 'md5', 'sha1', 'updated_on']
+
+    def expires_in_days(self, obj):
+        return 'expires in %s days' % obj.expires_in
+    expires_in_days.short_description = 'expires in'
 
 
 @admin.register(SslHasExpired)
@@ -80,7 +87,10 @@ class SslHasExpiredAdmin(NmapCertsDataAdmin):
     """
     only expired SSL certificates sorted by expiration date ascending
     """
-    pass
+
+    def has_expired_days_ago(self, obj):
+        return 'has expired %s days ago' % obj.expired
+    has_expired_days_ago.short_description = 'has expired'
 
 
 @admin.register(SslNotYetValid)

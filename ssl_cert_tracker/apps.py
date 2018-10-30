@@ -25,7 +25,8 @@ class SslCertificatesConfig(AppConfig):
     App class for the SSL Certificates Tracker application
     """
     name = 'ssl_cert_tracker'
-    verbose_name = _('SSL Certificates Tracker')
+    verbose_name = _(
+        'PHSA Service Operations Center SSL Certificates Tracker')
 
     def ready(self):
         """

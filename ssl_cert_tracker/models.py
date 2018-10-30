@@ -27,6 +27,7 @@ class NmapCertsData(BaseModel, models.Model):
     xml_data = models.TextField()
     common_name = models.CharField(max_length=100, blank=True, null=True,
                                    help_text="A unique title for common_name")
+    # TO DO
     # organizational_unit_name = models.CharField(max_length=100, blank=True, null=True,
     #                                help_text="A unique title for organizational_unit_name")
     organization_name = models.CharField(max_length=100,
@@ -94,25 +95,19 @@ class NmapCertsData(BaseModel, models.Model):
             return_code = 0
         return return_code
 
-    @property
-    def display_fields(self):
-        """
-        ssl_cert_display_fields message
-        """
-
-        ret = {"port_id":443,
-               "issuer_info":{"common_name": self.common_name,
-                              "O. U. N": "Place Holder",
-                              "organization_name": self.organization_name,
-                              "country_name": self.country_name
-                             },
-               "server_name":"server_name Place Holder",
-               "host_name":"Host Name Place Holder",
-               "not_valid_before":self.not_before,
-               "not_valid_after":self.not_after,
-               "subject":"Alert - An SSL Cert  on <Server Name> Port 443 will Expire in <#days> days"
-              }
-        return ret
+    @staticmethod
+    def get_display_fields(o_id, hash_md5):
+        """orion_id_exist """
+        if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
+            return_code = 1  # new reord
+        elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
+            return_code = 2  # cert changed
+        else:  # cert has not changed
+            NmapHistory.objects.filter(orion_id=o_id,
+                                       md5=hash_md5).update(
+                retreived=timezone.now())
+            return_code = 0
+        return return_code
 
     class Meta:
         verbose_name = 'SSL Certificate Data'

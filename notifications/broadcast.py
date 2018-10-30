@@ -168,22 +168,34 @@ class EmailBroadCast(EmailMessage):
         ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
         ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
 
-        subject = ssl_cert_obj.display_fields["subject"]
-
-        host_name = ssl_cert_obj.display_fields["host_name"]
-        not_valid_before = ssl_cert_obj.display_fields["not_valid_before"]
-        not_valid_after = ssl_cert_obj.display_fields["not_valid_after"]
-        issuer_info = ssl_cert_obj.display_fields["issuer_info"] 
-
-        body = "Host Name: " +  host_name + "\n" + \
-        "not_valid_before: " +  not_valid_before + "\n" + \
-        "not_valid_after: " +  not_valid_after + "\n" + \
-        "issuer_info: " +  issuer_info + "\n" + \
-        "issuer_info: " +  issuer_info + "\n" + \
-        "notification_date: " + self.obj["rule_msg"]["now"] + "\n" + \
-        "notification_cause:" + self.obj["rule_msg"]["relationship"] + "\n" + \
-        "grace_period:" + self.obj["rule_msg"]["grace_period"] + "\n+\n\n\n" + \
-        ssl_cert_obj.display_fields
+        subject, message_text = display_fields(ssl_cert_obj, self.obj)
 
         return subject, body
+
+def display_fields(cert_instance, noti_instance):
+    """
+    ssl_cert_display_fields message
+    """
+
+    subject = "Alert = An SSL Cert on <server Name> \
+              port 443 will Expire in <#days>."
+    
+    host_name = cert_instance.host_name
+    not_valid_before = cert_instance.not_valid_before
+    not_valid_after = cert_instance.not_valid_before
+    issuer_info = {"common_name":cert_instance.common_name,
+                   "orginization_unit_name": "Place Holder",
+                   "orginization_unit_nam": cert_instance.organization_name,
+                   "country_name":cert_instance.country_name
+    }
+
+    message_text = "Host Name: " +  host_name + "\n" + \
+    "not_valid_before: " +  not_valid_before + "\n" + \
+    "not_valid_after: " +  not_valid_after + "\n" + \
+    "issuer_info: " +  issuer_info + "\n" + \
+    "notification_date: " + noti_instance["rule_msg"]["now"] + "\n" + \
+    "notification_cause:" + noti_instance["rule_msg"]["relationship"] + "\n" + \
+    "grace_period:" + noti_instance["rule_msg"]["grace_period"] 
+
+    return subject, message_text
 

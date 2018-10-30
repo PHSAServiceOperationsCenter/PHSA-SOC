@@ -76,6 +76,7 @@ def process_xml_cert(node_id, doc):
             for elem in script.getElementsByTagName("elem"):
                 check_tag(elem, record, "common_name", "commonName")
                 check_tag(elem, record, "organization_name", "organizationName")
+                # TO DO
                 #check_tag(elem, record, "organization_unit_name", "organizationalUnitName")
                 check_tag(elem, record, "country_name", "countryName")
                 check_tag(elem, record, "sig_algo", "sig_algo")

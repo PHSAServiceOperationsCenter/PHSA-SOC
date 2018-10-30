@@ -5,21 +5,38 @@ from django.contrib.auth.models import User
 
 
 def populate_subscribtions(apps, schema_editor):
+    emails = (
+        'serban.teodorescu@phsa.ca,james.reilly@phsa.ca,ali.rahmat@phsa.ca')
+    template_dir = 'ssl_cert_tracker/template/'
+    template_prefix = 'email/'
+
+    subscriptions = [
+        ('SSL Report', 'ssl_cert_email',
+         'common_name,expires_in_x_days,not_before,not_after'),
+        ('Expired SSL Report', 'ssl_cert_expired_email',
+         'common_name,has_expired_x_days_ago,not_before,not_after'),
+        ('Invalid SSL Report', 'ssl_cert_invalid_email',
+         'common_name,will_become_valid_in_x_days,not_before,not_after')]
+
     subscription = apps.get_model('ssl_cert_tracker', 'Subscription')
 
     user = User.objects.filter(is_superuser=True).first()
 
-    _subscription = subscription.objects.filter(subscription='SSL Reports')
-    if _subscription.exists():
-        return
+    try:
+        subscription.objects.all().delete()
+    except:
+        pass
 
-    _subscription = subscription(subscription='SSL Reports',
-                                 template_dir='ssl_cert_tracker/template/',
-                                 template_prefix='email/',
-                                 template_name='ssl_cert_email')
-    _subscription.created_by_id = user.id
-    _subscription.updated_by_id = user.id
-    _subscription.save()
+    for _ in subscriptions:
+        _subscription = subscription(subscription=_[0],
+                                     emails_list=emails,
+                                     template_dir=template_dir,
+                                     template_prefix=template_prefix,
+                                     template_name=_[1],
+                                     headers=_[2])
+        _subscription.created_by_id = user.id
+        _subscription.updated_by_id = user.id
+        _subscription.save()
 
 
 def truncate(apps, schema_editor):

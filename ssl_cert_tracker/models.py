@@ -19,7 +19,6 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-#from .lib import expires_in
 from p_soc_auto_base.models import BaseModel
 from orion_integration.models import OrionNode
 from .lib import expires_in, has_expired, is_not_yet_valid
@@ -187,6 +186,12 @@ class Subscription(BaseModel):
     template_prefix = models.CharField(
         'email template prefix', max_length=64, blank=False, null=False,
         default='email/')
+    headers = models.TextField(
+        'data headers', blank=False, null=False,
+        default='common_name,expires_in,not_before,not_after')
+
+    def __str__(self):
+        return self.subscription
 
     class Meta:
         app_label = 'ssl_cert_tracker'

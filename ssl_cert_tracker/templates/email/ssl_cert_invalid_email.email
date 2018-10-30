@@ -1,5 +1,5 @@
 {% block subject %}
-SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 {% endblock %}
 
 {% block html %}

@@ -159,11 +159,8 @@ class EmailBroadCast(EmailMessage):
                     raise InputError(str(email) + ": Invalid Email")
     
     def format_email_subject_message(self):
-        ssl_noti = self.obj.objects.filter(rule_applies__content_type__model__iexact='nmapcertsdata', instance_pk__in=list(NmapCertsData.objects.values_list('id', flat=True)))[0]
-
-        ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
+        ssl_noti = Notification.objects.filter(rule_applies__content_type__model__iexact='nmapcertsdata',instance_pk__in=list(NmapCertsData.objects.values_list('id', flat=True)))[0]
         ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
-
         subject, message_text = display_fields(ssl_cert_obj, self.obj)
 
         return subject, message_text
@@ -172,26 +169,22 @@ def display_fields(cert_instance, noti_instance):
     """
     ssl_cert_display_fields message
     """
-
-    subject = "Alert = An SSL Cert on <server Name> \
-              port 443 will Expire in <#days>."
+    message_text = []
+    subject = "Alert = An SSL Cert on <server Name> port 443 will Expire in <#days>"
     
-    host_name = cert_instance.host_name
-    not_valid_before = cert_instance.not_valid_before
-    not_valid_after = cert_instance.not_valid_before
-    issuer_info = {"common_name":cert_instance.common_name,
-                   "orginization_unit_name": "Place Holder",
-                   "orginization_unit_nam": cert_instance.organization_name,
-                   "country_name":cert_instance.country_name
-    }
+    host_name = "Place Hoder" # str(cert_instance.name)
+    not_valid_before = str(cert_instance.not_before)
+    not_valid_after = str(cert_instance.not_after)
+    message_text.append("\nHost Name: " +  host_name)
+    message_text.append("\nNot_valid_before: " +  not_valid_before)
+    message_text.append("\nNot_valid_after: " +  not_valid_after)
+    message_text.append("\n\nIssuer Info")
+    message_text.append("\nOrginization_unit_name: " + "Place Holder")
+    message_text.append("\nOrginization_name: " + cert_instance.organization_name)
+    message_text.append("\nCountry_name: " + cert_instance.country_name)
+    message_text.append("\nCommon_name: " + cert_instance.common_name)
+    message_text.append("\n\nNotification_data: " + str(noti_instance.rule_msg))
 
-    message_text = "Host Name: " +  host_name + "\n" + \
-    "not_valid_before: " +  not_valid_before + "\n" + \
-    "not_valid_after: " +  not_valid_after + "\n" + \
-    "issuer_info: " +  issuer_info + "\n" + \
-    "notification_date: " + noti_instance["rule_msg"]["now"] + "\n" + \
-    "notification_cause:" + noti_instance["rule_msg"]["relationship"] + "\n" + \
-    "grace_period:" + noti_instance["rule_msg"]["grace_period"] 
-
-    return subject, message_text
+    message = " ".join(map(str, message_text))
+    return subject, message
 

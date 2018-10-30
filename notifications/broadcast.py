@@ -20,9 +20,10 @@ from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.conf import settings
+from ssl_cert_tracker.models import NmapCertsData
 from .models import Notification
 
-import ipdb
+
 
 
 class Error(Exception):
@@ -158,19 +159,14 @@ class EmailBroadCast(EmailMessage):
                     raise InputError(str(email) + ": Invalid Email")
     
     def format_email_subject_message(self):
-        rule_message = self.obj.message
-        
-        ssl_noti=self.obj.objects.filter(
-            rule_applies__content_type__model__iexact='nmapcertsdata',
-            instance_pk__in=list(NmapCertsData.objects.values_list('id',
-            flat=True)))[0]
+        ssl_noti = self.obj.objects.filter(rule_applies__content_type__model__iexact='nmapcertsdata', instance_pk__in=list(NmapCertsData.objects.values_list('id', flat=True)))[0]
 
         ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
         ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
 
         subject, message_text = display_fields(ssl_cert_obj, self.obj)
 
-        return subject, body
+        return subject, message_text
 
 def display_fields(cert_instance, noti_instance):
     """

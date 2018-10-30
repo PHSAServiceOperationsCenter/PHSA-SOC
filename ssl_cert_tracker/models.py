@@ -27,6 +27,8 @@ class NmapCertsData(BaseModel, models.Model):
     xml_data = models.TextField()
     common_name = models.CharField(max_length=100, blank=True, null=True,
                                    help_text="A unique title for common_name")
+    # organizational_unit_name = models.CharField(max_length=100, blank=True, null=True,
+    #                                help_text="A unique title for organizational_unit_name")
     organization_name = models.CharField(max_length=100,
                                          blank=True, null=True,
                                          help_text="A unique title for organization_name")
@@ -35,7 +37,7 @@ class NmapCertsData(BaseModel, models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     bits = models.CharField(max_length=100, blank=True, null=True)
     md5 = models.CharField(max_length=100, blank=True, null=True)
-    sha1 = models.CharField(max_length=100, blank=True, null=True)
+    sha1 = models.CharField(max_length=100, blank=True, null=True)   
 
     def update_cert_history(self, pk_val=False):
         """update_cert_history. """
@@ -91,6 +93,26 @@ class NmapCertsData(BaseModel, models.Model):
                 retreived=timezone.now())
             return_code = 0
         return return_code
+
+    @property
+    def display_fields(self):
+        """
+        ssl_cert_display_fields message
+        """
+
+        ret = {"port_id":443,
+               "issuer_info":{"common_name": self.common_name,
+                              "O. U. N": "Place Holder",
+                              "organization_name": self.organization_name,
+                              "country_name": self.country_name
+                             },
+               "server_name":"server_name Place Holder",
+               "host_name":"Host Name Place Holder",
+               "not_valid_before":self.not_before,
+               "not_valid_after":self.not_after,
+               "subject":"Alert - An SSL Cert  on <Server Name> Port 443 will Expire in <#days> days"
+              }
+        return ret
 
     class Meta:
         verbose_name = 'SSL Certificate Data'

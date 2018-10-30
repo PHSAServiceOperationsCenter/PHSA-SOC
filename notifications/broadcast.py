@@ -90,8 +90,8 @@ class EmailBroadCast(EmailMessage):
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject = self.obj.rule_applies
-            message = str(self.obj.message)
+            subject, message = self.format_email_subject_message()
+
             if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
             elif email_type == settings.ESC_EMAIL_TYPE:
@@ -103,6 +103,8 @@ class EmailBroadCast(EmailMessage):
             else:  # error
                 raise InputError('Invalid  data %s', 'email_type')
 
+        email_from = "ali.rahmat@phsa.ca"
+        email_to = ["ali.rahmat@phsa.ca",]
         super().__init__(subject,
                          message,
                          email_from,
@@ -156,3 +158,36 @@ class EmailBroadCast(EmailMessage):
                     validate_email(email)
                 except ValidationError:
                     raise InputError(str(email) + ": Invalid Email")
+    
+    def format_email_subject_message(self):
+        rule_message = self.obj.message
+        
+        ssl_noti=self.obj.objects.
+                 filter(rule_applies__content_type__model__iexact
+                 ='nmapcertsdata',
+                 instance_pk__in=list(
+                 NmapCertsData.objects.values_list(
+                 'id',
+                 flat=True)))[0]
+
+        ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
+        ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
+
+        subject = ssl_cert_obj.display_fields["subject"]
+
+        host_name = ssl_cert_obj.display_fields["host_name"]
+        not_valid_before = ssl_cert_obj.display_fields["not_valid_before"]
+        not_valid_after = ssl_cert_obj.display_fields["not_valid_after"]
+        issuer_info = ssl_cert_obj.display_fields["issuer_info"] 
+
+        body = "Host Name: " +  host_name + "\n" + "not_valid_before: " +  not_valid_before + "\n" +
+        "not_valid_after: " +  not_valid_after + "\n" +
+        "issuer_info: " +  issuer_info + "\n" + 
+        "issuer_info: " +  issuer_info + "\n" + 
+        "notification_date: " + self.obj["rule_msg"]["now"] + "\n" + 
+        "notification_cause:" + self.obj["rule_msg"]["relationship"] + "\n" + 
+        "grace_period:" + self.obj["rule_msg"]["grace_period"] + "\n+\n\n\n"" + 
+        ssl_cert_obj.display_fields
+
+        return subject, body
+

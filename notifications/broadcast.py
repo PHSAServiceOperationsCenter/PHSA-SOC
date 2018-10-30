@@ -103,8 +103,6 @@ class EmailBroadCast(EmailMessage):
             else:  # error
                 raise InputError('Invalid  data %s', 'email_type')
 
-        email_from = "ali.rahmat@phsa.ca"
-        email_to = ["ali.rahmat@phsa.ca",]
         super().__init__(subject,
                          message,
                          email_from,

@@ -162,13 +162,10 @@ class EmailBroadCast(EmailMessage):
     def format_email_subject_message(self):
         rule_message = self.obj.message
         
-        ssl_noti=self.obj.objects.
-                 filter(rule_applies__content_type__model__iexact
-                 ='nmapcertsdata',
-                 instance_pk__in=list(
-                 NmapCertsData.objects.values_list(
-                 'id',
-                 flat=True)))[0]
+        ssl_noti=self.obj.objects.filter(
+            rule_applies__content_type__model__iexact='nmapcertsdata',
+            instance_pk__in=list(NmapCertsData.objects.values_list('id',
+            flat=True)))[0]
 
         ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
         ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
@@ -180,13 +177,14 @@ class EmailBroadCast(EmailMessage):
         not_valid_after = ssl_cert_obj.display_fields["not_valid_after"]
         issuer_info = ssl_cert_obj.display_fields["issuer_info"] 
 
-        body = "Host Name: " +  host_name + "\n" + "not_valid_before: " +  not_valid_before + "\n" +
-        "not_valid_after: " +  not_valid_after + "\n" +
-        "issuer_info: " +  issuer_info + "\n" + 
-        "issuer_info: " +  issuer_info + "\n" + 
-        "notification_date: " + self.obj["rule_msg"]["now"] + "\n" + 
-        "notification_cause:" + self.obj["rule_msg"]["relationship"] + "\n" + 
-        "grace_period:" + self.obj["rule_msg"]["grace_period"] + "\n+\n\n\n"" + 
+        body = "Host Name: " +  host_name + "\n" + \
+        "not_valid_before: " +  not_valid_before + "\n" + \
+        "not_valid_after: " +  not_valid_after + "\n" + \
+        "issuer_info: " +  issuer_info + "\n" + \
+        "issuer_info: " +  issuer_info + "\n" + \
+        "notification_date: " + self.obj["rule_msg"]["now"] + "\n" + \
+        "notification_cause:" + self.obj["rule_msg"]["relationship"] + "\n" + \
+        "grace_period:" + self.obj["rule_msg"]["grace_period"] + "\n+\n\n\n" + \
         ssl_cert_obj.display_fields
 
         return subject, body

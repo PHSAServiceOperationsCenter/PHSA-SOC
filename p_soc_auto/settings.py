@@ -41,8 +41,68 @@ ADMINS = [
     ('Serban', 'serban.teodorescu@phsa.ca'), ('Ali', 'ali.rahmat@phsa.ca')
 ]
 
-# Application definition
+# logging
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format':
+            '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'django_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'django.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'ssl_cert_tracker_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['django_log'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ssl_cert_tracker': {
+            'handlers': ['ssl_cert_tracker_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
+# Application definition
 INSTALLED_APPS = [
     'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
@@ -54,6 +114,7 @@ INSTALLED_APPS = [
     'dal_select2',
     'grappelli',
     'rangefilter',
+    'templated_email',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -61,7 +122,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django_celery_results',
     'django_celery_beat',
 ]
 
@@ -204,8 +264,8 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
 DEFAULT_FROM_EMAIL = ['donotreply@phsa_soc_automation.ca']
+DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2

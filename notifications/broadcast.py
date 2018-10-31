@@ -178,18 +178,18 @@ def display_fields(cert_instance, noti_instance):
     day, hous, minutes, sec = convert_seconds_days_hours_minutes(seconds)
     days = int(noti_rule_msg["grace_period"]["days"]) + int(day)
 
-    subject = "Alert = An SSL Cert on <server Name> port 443 \
+    subject = "Alert - An SSL Cert on <server Name> port 443 \
                will Expire in " + str(days) + " days"
 
-    host_name = "Place Hoder" # str(cert_instance.name)
+    host_name = "Place Holder" # str(cert_instance.name)
     msg_list.append("\nHost Name: " +  host_name)
     msg_list.append("\nNot_valid_before: " + str(cert_instance.not_before))
     msg_list.append("\nNot_valid_after: " +  str(cert_instance.not_after))
     msg_list.append("\n\nIssuer Info")
-    msg_list.append("\nOrginization_unit_name: " + "Place Holder")
-    msg_list.append("\nOrginization_name: " + cert_instance.organization_name)
-    msg_list.append("\nCountry_name: " + cert_instance.country_name)
-    msg_list.append("\nCommon_name: " + cert_instance.common_name)
+    msg_list.append("\n\tOrginization_unit_name: " + "Place Holder")
+    msg_list.append("\n\tOrginization_name: " + cert_instance.organization_name)
+    msg_list.append("\n\tCountry_name: " + cert_instance.country_name)
+    msg_list.append("\n\tCommon_name: " + cert_instance.common_name)
     msg_list.append("\n\nNotification Date: " + noti_rule_msg["now"])
     msg_list.append("\n\nNotification Cause: " + noti_rule_msg["relationship"])
     msg_list.append("\n\nGrace Period:")
@@ -199,6 +199,7 @@ def display_fields(cert_instance, noti_instance):
     msg_list.append("\n\tSeconds:" + str(sec))
     
     message = " ".join(map(str, msg_list))
+
     return subject, message
 
 def convert_seconds_days_hours_minutes(sec):

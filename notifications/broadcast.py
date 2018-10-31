@@ -166,12 +166,12 @@ def format_email_subject_message(notification_obj):
         """
 
         try:
-            ssl_notifications = Notification.objects.filter(
+            ssl_notifications = notification_obj.objects.filter(
                 rule_applies__content_type__model__iexact='nmapcertsdata')     
-            ssl_object = NmapCertsData.objects.get(id=notification_obj.instance_pk)
+            ssl_object = NmapCertsData.objects.get(id=ssl_notifications.instance_pk)
             subject, message_text = display_fields(ssl_object, notification_obj)
         except Exception as ex:
-            raise InputError(str(ex) + ": in  format_email_subject_message")
+            raise InputError(str(ex))
         return subject, message_text
 
 def display_fields(cert_instance, noti_instance):

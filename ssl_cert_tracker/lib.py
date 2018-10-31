@@ -15,12 +15,17 @@ library module for the ssl_certificates app
 :updated:    Oct. 30, 2018
 
 """
+import socket
+
+from logging import getLogger
+
 from django.db.models import Case, When, CharField, Value, F, Func
 from django.db.models.functions import Now
 from django.utils import timezone
 
 from templated_email import get_templated_mail
 
+log = getLogger('ssl_cert_tracker')
 
 expired = When(not_after__lt=timezone.now(), then=Value('expired'))
 """
@@ -157,7 +162,7 @@ class Email():
     instances of this class are multi-part (test and html) email messages
     """
 
-    def __init__(self, data=None, subscription_obj=None):
+    def __init__(self, data=None, subscription_obj=None, logger=None):
         """
         :arg data: a django queryset
                    the constructor will prepare the template context and pass
@@ -171,38 +176,59 @@ class Email():
                                build and send an email message. this includes
                                template information and pure SMTP data (like
                                email addresses and stuff)
+
         """
+        if logger is None:
+            self.logger = log
+
         if data is None:
+            self.logger.error('no data was provided for the email')
             raise NoDataEmailError('no data was provided for the email')
 
         if subscription_obj is None:
+            self.logger.error('no subscription was provided for the email')
             raise NoSubscriptionEmailError(
                 'no subscription was provided for the email')
 
-        headers = {
+        self.headers = {
             key: key.replace('_', ' ').title() for key in
             subscription_obj.headers.split(',')
         }
 
-        prepared_data = []
-        for data_item in data.values(*headers.keys()):
-            prepared_data.append(
-                {key: data_item[key] for key in headers.keys()})
+        self.prepared_data = []
+        for data_item in data.values(*self.headers.keys()):
+            self.prepared_data.append(
+                {key: data_item[key] for key in self.headers.keys()})
 
-        context = dict(report_date_time=timezone.now(),
-                       headers=headers,
-                       data=prepared_data)
-        self.email = get_templated_mail(
-            template_name=subscription_obj.template_name,
-            template_dir=subscription_obj.template_dir,
-            template_prefix=subscription_obj.template_prefix,
-            from_email='serbant@gmail.com',
-            to=subscription_obj.emails_list.split(','),
-            context=context)
+        self.context = dict(
+            report_date_time=timezone.now(),
+            headers=self.headers, data=self.prepared_data,
+            host_name='http://%s:%s' % (socket.getfqdn(), '8091'))
+
+        try:
+            self.email = get_templated_mail(
+                template_name=subscription_obj.template_name,
+                template_dir=subscription_obj.template_dir,
+                template_prefix=subscription_obj.template_prefix,
+                from_email=subscription_obj.from_email,
+                to=subscription_obj.emails_list.split(','),
+                context=self.context, create_link=True)
+        except Exception as err:
+            self.logger.error(str(err))
+            raise err
 
     def send(self):
         """
         wrapper around the
         :method:`<django.core.mail.EmailMultiAlternatives.send>`
         """
-        return self.email.send()
+        try:
+            sent = self.email.send()
+        except Exception as err:
+            self.logger.error(str(err))
+            raise err
+
+        self.logger.debug(
+            'sent email with subject %s and body %s' % (self.email.subject,
+                                                        self.email.body))
+        return sent

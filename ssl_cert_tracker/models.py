@@ -178,7 +178,8 @@ class Subscription(BaseModel):
         null=False)
     emails_list = models.TextField('subscribers', blank=False, null=False)
     from_email = models.CharField(
-        'from', max_length=255, blank=True, null=True)
+        'from', max_length=255, blank=True, null=True,
+        default=settings.DEFAULT_FROM_EMAIL)
     template_dir = models.CharField(
         'email templates directory', max_length=255, blank=False, null=False)
     template_name = models.CharField(

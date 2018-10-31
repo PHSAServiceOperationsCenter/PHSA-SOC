@@ -93,7 +93,7 @@ class EmailBroadCast(EmailMessage):
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject, message = self.format_email_subject_message()
+            subject, message = format_email_subject_message(self.obj)
 
             if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
@@ -159,28 +159,19 @@ class EmailBroadCast(EmailMessage):
                     validate_email(email)
                 except ValidationError:
                     raise InputError(str(email) + ": Invalid Email")
-    
-    def format_email_subject_message(self):
+
+def format_email_subject_message(notification_obj):
         """
         Get ssl_cert object from notification object
         """
-        ssl_cert_obj = None
 
-        ssl_noti_objects = Notification.objects.filter(
-            rule_applies__content_type__model__iexact='nmapcertsdata',
-            instance_pk__in=[NmapCertsData.objects.values_list(
-                'id',
-                flat=True)])
         try:
-            ssl_noti_object = ssl_noti_objects.first()
-            ssl_cert_obj = \
-            ssl_noti_object.rule_applies.content_type.model_class().objects.get(
-                pk=ssl_noti_object.instance_pk)
+            ssl_notifications = Notification.objects.filter(
+                rule_applies__content_type__model__iexact='nmapcertsdata')     
+            ssl_object = NmapCertsData.objects.get(id=notification_obj.instance_pk)
+            subject, message_text = display_fields(ssl_object, notification_obj)
         except Exception as ex:
             raise InputError(str(ex) + ": in  format_email_subject_message")
-
-        subject, message_text = display_fields(ssl_cert_obj, self.obj)
-
         return subject, message_text
 
 def display_fields(cert_instance, noti_instance):
@@ -194,8 +185,9 @@ def display_fields(cert_instance, noti_instance):
     day, hous, minutes, sec = convert_seconds_days_hours_minutes(seconds)
     days = int(noti_rule_msg["grace_period"]["days"]) + int(day)
 
-    subject = "Alert - An SSL Cert on <server Name> port 443 \
-               will Expire in " + str(days) + " days"
+    subject = "Alert - An SSL Cert on " + \
+              str(cert_instance.country_name) + \
+              "  port 443 will Expire in " + str(days) + " days"
 
     host_name = "Place Holder" # str(cert_instance.name)
     msg_list.append("\nHost Name: " +  host_name)
@@ -203,16 +195,18 @@ def display_fields(cert_instance, noti_instance):
     msg_list.append("\nNot_valid_after: " +  str(cert_instance.not_after))
     msg_list.append("\n\nIssuer Info")
     msg_list.append("\n\tOrginization_unit_name: " + "Place Holder")
-    msg_list.append("\n\tOrginization_name: " + cert_instance.organization_name)
-    msg_list.append("\n\tCountry_name: " + cert_instance.country_name)
-    msg_list.append("\n\tCommon_name: " + cert_instance.common_name)
-    msg_list.append("\n\nNotification Date: " + noti_rule_msg["now"])
-    msg_list.append("\n\nNotification Cause: " + noti_rule_msg["relationship"])
+    msg_list.append("\n\tOrginization_name: " + str(cert_instance.organization_name))
+    msg_list.append("\n\tCountry_name: " + str(cert_instance.country_name))
+    msg_list.append("\n\tCommon_name: " + str(cert_instance.common_name))
+    msg_list.append("\n\nCert Alert Threshold: " + str(noti_rule_msg["now"]))
+    msg_list.append("\n\nNotification Cause: " + str(noti_rule_msg["relationship"]))
     msg_list.append("\n\nGrace Period:")
     msg_list.append("\n\tDays:" + str(days))
     msg_list.append("\n\tHours:" + str(hous))
     msg_list.append("\n\tMinutes:" + str(minutes))
     msg_list.append("\n\tSeconds:" + str(sec))
+    msg_list.append("\n\nDiagnostics:")
+    msg_list.append("\n\t" + str(noti_rule_msg))
     
     message = " ".join(map(str, msg_list))
 

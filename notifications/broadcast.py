@@ -15,6 +15,8 @@ utility  functions for the notification tasks
 :update:    Oct. 04 2018
 
 """
+import json
+from datetime import datetime, timedelta
 from django.utils import timezone
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
@@ -169,22 +171,39 @@ def display_fields(cert_instance, noti_instance):
     """
     ssl_cert_display_fields message
     """
-    message_text = []
-    subject = "Alert = An SSL Cert on <server Name> port 443 will Expire in <#days>"
-    
-    host_name = "Place Hoder" # str(cert_instance.name)
-    not_valid_before = str(cert_instance.not_before)
-    not_valid_after = str(cert_instance.not_after)
-    message_text.append("\nHost Name: " +  host_name)
-    message_text.append("\nNot_valid_before: " +  not_valid_before)
-    message_text.append("\nNot_valid_after: " +  not_valid_after)
-    message_text.append("\n\nIssuer Info")
-    message_text.append("\nOrginization_unit_name: " + "Place Holder")
-    message_text.append("\nOrginization_name: " + cert_instance.organization_name)
-    message_text.append("\nCountry_name: " + cert_instance.country_name)
-    message_text.append("\nCommon_name: " + cert_instance.common_name)
-    message_text.append("\n\nNotification_data: " + str(noti_instance.rule_msg))
 
-    message = " ".join(map(str, message_text))
+    msg_list = []
+    noti_rule_msg = json.loads(noti_instance.rule_msg)
+    seconds = int(noti_rule_msg["grace_period"]["seconds"])
+    day, hous, minutes, sec = convert_seconds_days_hours_minutes(seconds)
+    days = int(noti_rule_msg["grace_period"]["days"]) + int(day)
+
+    subject = "Alert = An SSL Cert on <server Name> port 443 will Expire in <#days>"
+
+    host_name = "Place Hoder" # str(cert_instance.name)
+    msg_list.append("\nHost Name: " +  host_name)
+    msg_list.append("\nNot_valid_before: " + str(cert_instance.not_before))
+    msg_list.append("\nNot_valid_after: " +  str(cert_instance.not_after))
+    msg_list.append("\n\nIssuer Info")
+    msg_list.append("\nOrginization_unit_name: " + "Place Holder")
+    msg_list.append("\nOrginization_name: " + cert_instance.organization_name)
+    msg_list.append("\nCountry_name: " + cert_instance.country_name)
+    msg_list.append("\nCommon_name: " + cert_instance.common_name)
+    msg_list.append("\n\nNotification Date: " + noti_rule_msg["now"])
+    msg_list.append("\n\nNotification Cause: " + noti_rule_msg["relationship"])
+    msg_list.append("\n\nGrace Period:")
+    msg_list.append("\n\tDays:" + str(days))
+    msg_list.append("\n\tHours:" + str(hous))
+    msg_list.append("\n\tMinutes:" + str(minutes))
+    msg_list.append("\n\tSeconds:" + str(sec))
+    
+    message = " ".join(map(str, msg_list))
     return subject, message
+
+def convert_seconds_days_hours_minutes(sec):
+    """
+    Convert number of seconds into days/hours/min/sec
+    """
+    dt = datetime(1,1,1) + timedelta(sec)
+    return dt.day-1, dt.hour, dt.minute, dt.second
 

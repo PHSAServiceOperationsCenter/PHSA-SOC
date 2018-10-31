@@ -164,15 +164,21 @@ class EmailBroadCast(EmailMessage):
         """
         Get ssl_cert object from notification object
         """
+        ssl_cert_obj = None
+
         ssl_noti_objects = Notification.objects.filter(
             rule_applies__content_type__model__iexact='nmapcertsdata',
             instance_pk__in=[NmapCertsData.objects.values_list(
                 'id',
                 flat=True)])
-        ssl_noti_object = ssl_noti_objects.first()
-        ssl_cert_obj = \
-        ssl_noti_object.rule_applies.content_type.model_class().objects.get(
-            pk=ssl_noti_object.instance_pk)
+        try:
+            ssl_noti_object = ssl_noti_objects.first()
+            ssl_cert_obj = \
+            ssl_noti_object.rule_applies.content_type.model_class().objects.get(
+                pk=ssl_noti_object.instance_pk)
+        except Exception as ex:
+            raise InputError(str(ex) + ": in  format_email_subject_message")
+
         subject, message_text = display_fields(ssl_cert_obj, self.obj)
 
         return subject, message_text
@@ -216,6 +222,10 @@ def convert_seconds_days_hours_minutes(sec):
     """
     Convert number of seconds into days/hours/min/sec
     """
-    dt = datetime(1, 1, 1) + timedelta(sec)
-    return dt.day-1, dt.hour, dt.minute, dt.second
+    try:
+        sec_date = datetime(1, 1, 1) + timedelta(sec)
+    except Exception as ex:
+        raise InputError(str(ex) + ": invalid argument")
+
+    return sec_date.day-1, sec_date.hour, sec_date.minute, sec_date.second
 

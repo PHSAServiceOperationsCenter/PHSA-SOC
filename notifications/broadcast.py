@@ -161,8 +161,18 @@ class EmailBroadCast(EmailMessage):
                     raise InputError(str(email) + ": Invalid Email")
     
     def format_email_subject_message(self):
-        ssl_noti = Notification.objects.filter(rule_applies__content_type__model__iexact='nmapcertsdata',instance_pk__in=list(NmapCertsData.objects.values_list('id', flat=True)))[0]
-        ssl_cert_obj = ssl_noti.rule_applies.content_type.model_class().objects.get(pk=ssl_noti.instance_pk)
+        """
+        Get ssl_cert object from notification object
+        """
+        ssl_noti_objects = Notification.objects.filter(
+            rule_applies__content_type__model__iexact='nmapcertsdata',
+            instance_pk__in=[NmapCertsData.objects.values_list(
+                'id',
+                flat=True)])
+        ssl_noti_object = ssl_noti_objects.first()
+        ssl_cert_obj = \
+        ssl_noti_object.rule_applies.content_type.model_class().objects.get(
+            pk=ssl_noti_object.instance_pk)
         subject, message_text = display_fields(ssl_cert_obj, self.obj)
 
         return subject, message_text

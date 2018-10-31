@@ -95,25 +95,6 @@ class NmapCertsData(BaseModel, models.Model):
             return_code = 0
         return return_code
 
-    @staticmethod
-    def get_display_fields(o_id, hash_md5):
-        """orion_id_exist """
-        if NmapCertsData.objects.filter(orion_id=o_id).count() == 0:
-            return_code = 1  # new reord
-        elif NmapCertsData.objects.filter(orion_id=o_id, md5=hash_md5).count() == 0:
-            return_code = 2  # cert changed
-        else:  # cert has not changed
-            NmapHistory.objects.filter(orion_id=o_id,
-                                       md5=hash_md5).update(
-                retreived=timezone.now())
-            return_code = 0
-        return return_code
-
-    class Meta:
-        verbose_name = 'SSL Certificate Data'
-        verbose_name_plural = 'SSL Certificate Data'
-
-
 class NmapHistory(models.Model):
     """NmapHistory. Model struture for NMap result diff response. """
     cert_id = models.IntegerField()

@@ -178,7 +178,8 @@ def display_fields(cert_instance, noti_instance):
     day, hous, minutes, sec = convert_seconds_days_hours_minutes(seconds)
     days = int(noti_rule_msg["grace_period"]["days"]) + int(day)
 
-    subject = "Alert = An SSL Cert on <server Name> port 443 will Expire in <#days>"
+    subject = "Alert = An SSL Cert on <server Name> port 443 \
+               will Expire in " + str(days) + " days"
 
     host_name = "Place Hoder" # str(cert_instance.name)
     msg_list.append("\nHost Name: " +  host_name)
@@ -204,6 +205,6 @@ def convert_seconds_days_hours_minutes(sec):
     """
     Convert number of seconds into days/hours/min/sec
     """
-    dt = datetime(1,1,1) + timedelta(sec)
+    dt = datetime(1, 1, 1) + timedelta(sec)
     return dt.day-1, dt.hour, dt.minute, dt.second
 

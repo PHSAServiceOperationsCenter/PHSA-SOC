@@ -13,10 +13,9 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
-
-import logging
-
 import xml.dom.minidom
+
+from smtplib import SMTPConnectError
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery.exceptions import MaxRetriesExceededError
@@ -24,8 +23,9 @@ from libnmap.process import NmapProcess
 from orion_integration.lib import OrionSslNode
 
 from .db_helper import insert_into_certs_data
-
+from .lib import Email, expires_in, has_expired, is_not_yet_valid
 from .utils import process_xml_cert
+from .models import Subscription
 
 logger = get_task_logger(__name__)
 
@@ -69,6 +69,76 @@ class OrionDataError(Exception):
 
 
 @shared_task(
+    queue='ssl', rate_limit='1/s', max_retries=3,
+    retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_ssl_report():
+    """
+    task to send ssl reports via email
+
+    we could make this a more abstract email_report task but then we would
+    have to deal with passing querysets to celery tasks
+    i.e. pickle serialization. and we would also have to train the users on
+    how to configure django celery beat periodic tasks that require arguments.
+    thus... let's have separate tasks for each type of report and worry
+    about this later
+    """
+    try:
+        return _email_report(
+            data=expires_in(),
+            subscription_obj=Subscription.objects.get(
+                subscription='SSl Report'), logger=logger)
+    except Exception as err:
+        raise err
+
+
+@shared_task(
+    queue='ssl', rate_limit='1/s', max_retries=3,
+    retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_expired_ssl_report():
+    """
+    task to send expired ssl reports via email
+
+    """
+    try:
+        return _email_report(
+            data=has_expired(),
+            subscription_obj=Subscription.objects.get(
+                subscription='Expired SSl Report'), logger=logger)
+    except Exception as err:
+        raise err
+
+
+@shared_task(
+    queue='ssl', rate_limit='1/s', max_retries=3,
+    retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_invalid_ssl_report():
+    """
+    task to send expired ssl reports via email
+
+    """
+    try:
+        return _email_report(
+            data=is_not_yet_valid(),
+            subscription_obj=Subscription.objects.get(
+                subscription='Invalid SSl Report'), logger=logger)
+    except Exception as err:
+        raise err
+
+
+def _email_report(data=None, subscription_obj=None, logger=None):
+    try:
+        email_report = Email(
+            data=data, subscription_obj=subscription_obj, logger=logger)
+    except Exception as err:
+        raise err
+
+    try:
+        return email_report.send()
+    except Exception as err:
+        raise err
+
+
+@shared_task(
     rate_limit='0.5/s', queue='nmap', autoretry_for=(NmapError,),
     max_retries=3, retry_backoff=True)
 def go_node(node_id, node_address):
@@ -91,7 +161,7 @@ def go_node(node_id, node_address):
         json = process_xml_cert(
             node_id, xml.dom.minidom.parseString(nmap_task.stdout))
     except Exception as error:
-        logging.error(
+        logger.error(
             'cannot process nmap XML report for node address %s: %s'
             % (node_address, str(error)))
 

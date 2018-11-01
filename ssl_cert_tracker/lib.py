@@ -20,8 +20,10 @@ import socket
 from logging import getLogger
 from smtplib import SMTPConnectError
 
-from django.db.models import Case, When, CharField, Value, F, Func
-from django.db.models.functions import Now
+from django.db.models import (
+    Case, When, CharField, BigIntegerField, Value, F, Func,
+)
+from django.db.models.functions import Now, Cast
 from django.utils import timezone
 
 from templated_email import get_templated_mail
@@ -73,7 +75,7 @@ class DateDiff(Func):
     output_field = CharField()
 
 
-def expires_in():
+def expires_in(lt_days=None, logger=None):
     """
     annotation function that prepares a query with calculated values
 
@@ -88,11 +90,25 @@ def expires_in():
     from .models import NmapCertsData
     base_queryset = NmapCertsData.objects.filter(enabled=True)
 
+    if logger is None:
+        logger = log
+
+    if lt_days and lt_days < 2:
+        log.warning(
+            'expiring in less than 2 days is not supported.'
+            '; resetting lt_days=%s to 2' % lt_days)
+        lt_days = 2
+
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='valid').\
         annotate(mysql_now=Now()).\
-        annotate(expires_in_x_days=DateDiff(F('not_after'), F('mysql_now'))).\
-        order_by('expires_in_x_days')
+        annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
+        annotate(expires_in_x_days=Cast('expires_in', BigIntegerField()))
+
+    if lt_days:
+        queryset = queryset.filter(expires_in_x_days__lt=lt_days)
+
+    queryset = queryset.order_by('expires_in_x_days')
 
     return queryset
 

@@ -16,7 +16,6 @@ utility  functions for the notification tasks
 
 """
 import json
-from datetime import datetime, timedelta
 from django.utils import timezone
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
@@ -25,18 +24,13 @@ from django.conf import settings
 from ssl_cert_tracker.models import NmapCertsData
 from .models import Notification
 
-
-
-
 class Error(Exception):
     """Base class for other exceptions"""
     pass
 
-
 class InputError(Error):
     """Raised when parameter is not valid"""
     pass
-
 
 class EmailBroadCast(EmailMessage):
     """
@@ -45,7 +39,6 @@ class EmailBroadCast(EmailMessage):
     drop in replacement for `djang.core.mail.EmailMessage' that also can
     take a notification obkect and create an email message out of it
     """
-
     def __init__(
             self, notification_pk=None, subject=None, message=None,
             email_from=settings.ADMINS[0][1], email_to=None, cc=None, bcc=None,
@@ -101,10 +94,9 @@ class EmailBroadCast(EmailMessage):
                 email_to = self.obj.escalation_subscribers
             elif email_type == settings.SUB_ESC_EMAIL_TYPE:
                 email_to.extend(
-                    self.obj.subscribers).extend(
-                    self.obj.escalation)
+                    self.obj.subscribers).extend(self.obj.escalation)
             else:  # error
-                raise InputError('Invalid  data %s', 'email_type')
+                raise InputError('Invalid  data %s' % 'email_type')
 
         super().__init__(subject,
                          message,
@@ -143,83 +135,75 @@ class EmailBroadCast(EmailMessage):
         """
         for item in items:
             if not isinstance(item, (list, tuple)):
-                raise InputError(str(item) + ": Not a list instance")
+                raise InputError(str(item) % (": Not a list instance"))
 
     def validate_email_types(self, email_to):
         """
         validates if argument are email format
         """
         if not isinstance(email_to, (list, tuple)):
-            raise InputError(str(email_to) + ": Not a list instance")
-        elif len(email_to) == 0:
-            raise InputError(str(email_to) + ": Invalid Email")
+            raise InputError(str(email_to) % (": Not a list instance"))
+        elif not email_to:
+            raise InputError(str(email_to) % (": Invalid Email"))
         else:
             for email in email_to:
                 try:
                     validate_email(email)
                 except ValidationError:
-                    raise InputError(str(email) + ": Invalid Email")
+                    raise InputError(str(email) % (": Invalid Email"))
 
 def format_email_subject_message(notification_obj):
-        """
-        Get ssl_cert object from notification object
-        """
-
+    """
+    Get ssl_cert object from notification object
+    """
+    if notification_obj.rule_applies.content_type.model in ['nmapcertsdata']:
         try:
             ssl_notifications = notification_obj.objects.filter(
-                rule_applies__content_type__model__iexact='nmapcertsdata')     
+                rule_applies__content_type__model__iexact='nmapcertsdata')
             ssl_object = NmapCertsData.objects.get(id=ssl_notifications.instance_pk)
             subject, message_text = display_fields(ssl_object, notification_obj)
         except Exception as ex:
-            raise InputError(str(ex))
-        return subject, message_text
+            raise InputError("%s, %s" %(str(ex), "more than one object found"))
+    else:
+        print('not yet implemented')
+
+    return subject, message_text
 
 def display_fields(cert_instance, noti_instance):
     """
     ssl_cert_display_fields message
     """
-
+    alert_header = "Alert - An SSL Cert on" 
+    country_name = str(cert_instance.country_name)
+    alert_port = "port 443 will Expire in"
+    alert_days = "days"
     msg_list = []
     noti_rule_msg = json.loads(noti_instance.rule_msg)
-    seconds = int(noti_rule_msg["grace_period"]["seconds"])
-    day, hous, minutes, sec = convert_seconds_days_hours_minutes(seconds)
-    days = int(noti_rule_msg["grace_period"]["days"]) + int(day)
+    days = int(noti_rule_msg["grace_period"]["days"])
 
-    subject = "Alert - An SSL Cert on " + \
-              str(cert_instance.country_name) + \
-              "  port 443 will Expire in " + str(days) + " days"
+    subject = "%s %s %s %s %s" % (alert_header,
+                                  country_name,
+                                  alert_port,
+                                  str(days),
+                                  alert_days
+                                 )
 
     host_name = "Place Holder" # str(cert_instance.name)
-    msg_list.append("\nHost Name: " +  host_name)
-    msg_list.append("\nNot_valid_before: " + str(cert_instance.not_before))
-    msg_list.append("\nNot_valid_after: " +  str(cert_instance.not_after))
+    msg_list.append("\nHost Name: %s" % (host_name))
+    msg_list.append("\nNot_valid_before: %s" %(str(cert_instance.not_before)))
+    msg_list.append("\nNot_valid_after: %s" % (str(cert_instance.not_after)))
     msg_list.append("\n\nIssuer Info")
-    msg_list.append("\n\tOrginization_unit_name: " + "Place Holder")
-    msg_list.append("\n\tOrginization_name: " + str(cert_instance.organization_name))
-    msg_list.append("\n\tCountry_name: " + str(cert_instance.country_name))
-    msg_list.append("\n\tCommon_name: " + str(cert_instance.common_name))
-    msg_list.append("\n\nCert Alert Threshold: " + str(noti_rule_msg["now"]))
-    msg_list.append("\n\nNotification Cause: " + str(noti_rule_msg["relationship"]))
+    msg_list.append("\n\tOrginization_unit_name: %s" % ("Place Holder"))
+    msg_list.append("\n\tOrginization_name: %s" % (str(cert_instance.organization_name)))
+    msg_list.append("\n\tCountry_name: %s" % (str(cert_instance.country_name)))
+    msg_list.append("\n\tCommon_name: %s" % (str(cert_instance.common_name)))
+    msg_list.append("\n\nCert Alert Threshold: %s" % (str(noti_rule_msg["now"])))
+    msg_list.append("\n\nNotification Cause: %s" % (str(noti_rule_msg["relationship"])))
     msg_list.append("\n\nGrace Period:")
-    msg_list.append("\n\tDays:" + str(days))
-    msg_list.append("\n\tHours:" + str(hous))
-    msg_list.append("\n\tMinutes:" + str(minutes))
-    msg_list.append("\n\tSeconds:" + str(sec))
+    msg_list.append("\n\tDays: %s" % (str(days)))
     msg_list.append("\n\nDiagnostics:")
-    msg_list.append("\n\t" + str(noti_rule_msg))
-    
+    msg_list.append("\n\t %s" % (str(noti_rule_msg)))
+
     message = " ".join(map(str, msg_list))
 
     return subject, message
-
-def convert_seconds_days_hours_minutes(sec):
-    """
-    Convert number of seconds into days/hours/min/sec
-    """
-    try:
-        sec_date = datetime(1, 1, 1) + timedelta(sec)
-    except Exception as ex:
-        raise InputError(str(ex) + ": invalid argument")
-
-    return sec_date.day-1, sec_date.hour, sec_date.minute, sec_date.second
-

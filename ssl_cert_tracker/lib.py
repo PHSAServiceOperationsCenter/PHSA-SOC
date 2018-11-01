@@ -18,6 +18,7 @@ library module for the ssl_certificates app
 import socket
 
 from logging import getLogger
+from smtplib import SMTPConnectError
 
 from django.db.models import Case, When, CharField, Value, F, Func
 from django.db.models.functions import Now
@@ -41,7 +42,7 @@ not_yet_valid = When(not_before__gt=timezone.now(),
 """
 :var not_yet_valid: a representation of an SQL WHEN snippet looking for
                     certificates that are not yet valid
-                    
+
 :vartype: :class:`<django.db.models.When>`
 """
 
@@ -51,7 +52,7 @@ state_field = Case(
 :var state_field: a representation of an SQL CASE snipped that used the
                   WHEN snippetys from above to categorize SSL certificates by
                   their validity state
-                  
+
 :vartype: :class:`<django.db.models.Case>`
 """
 
@@ -180,6 +181,8 @@ class Email():
         """
         if logger is None:
             self.logger = log
+        else:
+            self.logger = logger
 
         if data is None:
             self.logger.error('no data was provided for the email')
@@ -224,6 +227,9 @@ class Email():
         """
         try:
             sent = self.email.send()
+        except SMTPConnectError as err:
+            self.logger.error(str(err))
+            raise err
         except Exception as err:
             self.logger.error(str(err))
             raise err

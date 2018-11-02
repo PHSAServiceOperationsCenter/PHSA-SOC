@@ -165,7 +165,7 @@ def format_email_subject_message(notification_obj):
             subject, message_text = ssl_cert_display_fields(ssl_object,
                                                             notification_obj)
         except MultipleObjectsReturned as ex:
-            #Serban Do we need to grab the firs() here
+            #Serban Do we need to grab the firs() here or
             # raise error as it is now
             raise InputError("more than one object found %s" % (str(ex)))
 
@@ -184,6 +184,7 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
     relationship = str(noti_rule_msg["relationship"])
     subject_type = \
     relationship.replace("\r", "").replace("\n", "").replace("\t", "").lower()
+
     rule_action = {
         "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
         "willexpire": will_expire_in_less_than(cert_instance, noti_rule_msg),
@@ -196,18 +197,71 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
 
 def will_expire_in_less_than(cert_instance, noti_rule_msg):
     """
-    This relationship build message for will exopir3...rule
+    This relationship build message for will exopir...rule
     """
     subject_list = []
+
+    days = str(noti_rule_msg["grace_period"]["days"])
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - %s" % (relationship))
+    subject_list.append("\nAn SSL Cert on %s " % \
+                       (str(cert_instance.common_name)))
+    subject_list.append(" port 443 will Expire in %s days" % (days))
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg)
+    return  subject, message
+
+def not_yet_valid(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for not_yet_valid...rule
+    """
+    subject_list = []
+
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - %s" % (relationship))
+    subject_list.append("\nAn SSL Cert on %s " % \
+                       (str(cert_instance.common_name)))
+    subject_list.append(" port 443 is not valid anymore")
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg)
+    return  subject, message
+
+def has_expired(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for has_expired...rule
+    """
+
+    subject_list = []
+
+    not_after = noti_rule_msg["facts"][1]
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - %s" % (relationship))
+    subject_list.append("\nAn SSL Cert on %s " % \
+                       (str(cert_instance.common_name)))
+    subject_list.append(" port 443 has already expired %s on" % not_after)
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg)
+    return  subject, message
+
+def generate_ssl_cert_message(cert_instance, noti_rule_msg):
+    """
+    Generate message for ssl-cert email
+    """
+
     msg_list = []
     host_name = str(cert_instance.common_name)
 
     days = noti_rule_msg["grace_period"]["days"]
     relationship = str(noti_rule_msg["relationship"])
-
-    subject_list.append("Alert - %s" % (relationship))
-    subject_list.append("\nAn SSL Cert on %s " % (cert_instance.common_name))
-    subject_list.append(" port 443 will Expire in %s days" % days)
 
     msg_list.append("\nHost Name: %s" % (host_name))
     msg_list.append("\nNot_valid_before: %s" % \
@@ -228,24 +282,5 @@ def will_expire_in_less_than(cert_instance, noti_rule_msg):
     msg_list.append("\n\nDiagnostics:")
     msg_list.append("\n\t %s" % (str(noti_rule_msg)))
 
-    subject = " ".join(map(str, subject_list))
     message = " ".join(map(str, msg_list))
-    return  subject, message
-
-def not_yet_valid(cert_instance, noti_rule_msg):
-    """
-    This relationship build message for not_yet_valid...rule
-    """
-
-    subject = "TBD"
-    message = "Your input has not been recognised"
-    return subject, message
-
-def has_expired(cert_instance, noti_rule_msg):
-    """
-    This relationship build message for has_expired...rule
-    """
-
-    subject = "TBD"
-    message = "has_expired been recognised"
-    return subject, message
+    return  message

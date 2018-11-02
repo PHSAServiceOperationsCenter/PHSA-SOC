@@ -179,7 +179,9 @@ class Email():
     instances of this class are multi-part (test and html) email messages
     """
 
-    def __init__(self, data=None, subscription_obj=None, logger=None):
+    def __init__(
+            self,
+            data=None, subscription_obj=None, logger=None, **extra_context):
         """
         :arg data: a django queryset
                    the constructor will prepare the template context and pass
@@ -194,6 +196,9 @@ class Email():
                                template information and pure SMTP data (like
                                email addresses and stuff)
 
+        :arg loggeer: a logging.logger object
+
+        :arg dict extra_context: just in case one needs more data
         """
         if logger is None:
             self.logger = log
@@ -223,6 +228,9 @@ class Email():
             report_date_time=timezone.now(),
             headers=self.headers, data=self.prepared_data,
             host_name='http://%s:%s' % (socket.getfqdn(), '8091'))
+
+        if extra_context:
+            self.context.update(**extra_context)
 
         try:
             self.email = get_templated_mail(

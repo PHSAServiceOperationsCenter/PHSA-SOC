@@ -94,6 +94,24 @@ def email_ssl_report():
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_ssl_expires_in_days_report(lt_days):
+    """
+    task to send ssl reports about certificates that expire soon via email
+
+    """
+    try:
+        return _email_report(
+            data=expires_in(lt_days),
+            subscription_obj=Subscription.objects.get(
+                subscription='SSl Report'), logger=logger,
+            expires_in_less_than=lt_days)
+    except Exception as err:
+        raise err
+
+
+@shared_task(
+    queue='ssl', rate_limit='1/s', max_retries=3,
+    retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_expired_ssl_report():
     """
     task to send expired ssl reports via email
@@ -125,10 +143,12 @@ def email_invalid_ssl_report():
         raise err
 
 
-def _email_report(data=None, subscription_obj=None, logger=None):
+def _email_report(
+        data=None, subscription_obj=None, logger=None, **extra_context):
     try:
         email_report = Email(
-            data=data, subscription_obj=subscription_obj, logger=logger)
+            data=data, subscription_obj=subscription_obj, logger=logger,
+            **extra_context)
     except Exception as err:
         raise err
 

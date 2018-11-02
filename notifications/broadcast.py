@@ -183,7 +183,7 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
     noti_rule_msg = json.loads(noti_instance.rule_msg)
     relationship = str(noti_rule_msg["relationship"])
     subject_type = \
-    relationship.replace("\r","").replace("\n", "").replace("\t", "").lower()
+    relationship.replace("\r", "").replace("\n", "").replace("\t", "").lower()
     rule_action = {
         "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
         "willexpire": will_expire_in_less_than(cert_instance, noti_rule_msg),
@@ -194,7 +194,7 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
                                        "not yet implemented")
     return subject, message
 
-def will_expire_in_less_than (cert_instance, noti_rule_msg):
+def will_expire_in_less_than(cert_instance, noti_rule_msg):
     """
     This relationship build message for will exopir3...rule
     """
@@ -208,7 +208,7 @@ def will_expire_in_less_than (cert_instance, noti_rule_msg):
     subject_list.append("Alert - %s" % (relationship))
     subject_list.append("\nAn SSL Cert on %s " % (cert_instance.common_name))
     subject_list.append(" port 443 will Expire in %s days" % days)
-    
+
     msg_list.append("\nHost Name: %s" % (host_name))
     msg_list.append("\nNot_valid_before: %s" % \
                    (str(cert_instance.not_before)))
@@ -232,18 +232,20 @@ def will_expire_in_less_than (cert_instance, noti_rule_msg):
     message = " ".join(map(str, msg_list))
     return  subject, message
 
-def not_yet_valid (cert_instance, noti_rule_msg):
-   """
-   This relationship build message for not_yet_valid...rule
-   """
-   subject = "TBD"
-   message = "Your input has not been recognised"
-   return subject, message
+def not_yet_valid(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for not_yet_valid...rule
+    """
 
-def has_expired (cert_instance, noti_rule_msg):
-   """
-   This relationship build message for has_expired...rule
-   """
-   subject = "TBD"
-   message = "has_expired been recognised"
-   return subject, message
+    subject = "TBD"
+    message = "Your input has not been recognised"
+    return subject, message
+
+def has_expired(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for has_expired...rule
+    """
+
+    subject = "TBD"
+    message = "has_expired been recognised"
+    return subject, message

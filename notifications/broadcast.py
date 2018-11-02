@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.conf import settings
 from ssl_cert_tracker.models import NmapCertsData
 from .models import Notification
@@ -161,49 +162,88 @@ def format_email_subject_message(notification_obj):
             ssl_notifications = notification_obj.objects.filter(
                 rule_applies__content_type__model__iexact='nmapcertsdata')
             ssl_object = NmapCertsData.objects.get(id=ssl_notifications.instance_pk)
-            subject, message_text = display_fields(ssl_object, notification_obj)
-        except Exception as ex:
-            raise InputError("%s, %s" %(str(ex), "more than one object found"))
+            subject, message_text = ssl_cert_display_fields(ssl_object,
+                                                            notification_obj)
+        except MultipleObjectsReturned as ex:
+            #Serban Do we need to grab the firs() here
+            # raise error as it is now
+            raise InputError("more than one object found %s" % (str(ex)))
+
+        except ObjectDoesNotExist as ex:
+            raise InputError("Object does not exist %s" % (str(ex)))
     else:
         print('not yet implemented')
 
     return subject, message_text
 
-def display_fields(cert_instance, noti_instance):
+def ssl_cert_display_fields(cert_instance, noti_instance):
     """
     ssl_cert_display_fields message
     """
-    alert_header = "Alert - An SSL Cert on" 
-    country_name = str(cert_instance.country_name)
-    alert_port = "port 443 will Expire in"
-    alert_days = "days"
-    msg_list = []
     noti_rule_msg = json.loads(noti_instance.rule_msg)
-    days = int(noti_rule_msg["grace_period"]["days"])
+    relationship = str(noti_rule_msg["relationship"])
+    subject_type = \
+    relationship.replace("\r","").replace("\n", "").replace("\t", "").lower()
+    rule_action = {
+        "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
+        "willexpire": will_expire_in_less_than(cert_instance, noti_rule_msg),
+        "hasexpired": has_expired(cert_instance, noti_rule_msg)
+    }
 
-    subject = "%s %s %s %s %s" % (alert_header,
-                                  country_name,
-                                  alert_port,
-                                  str(days),
-                                  alert_days
-                                 )
+    subject, message = rule_action.get(subject_type[0:10],
+                                       "not yet implemented")
+    return subject, message
 
-    host_name = "Place Holder" # str(cert_instance.name)
+def will_expire_in_less_than (cert_instance, noti_rule_msg):
+    """
+    This relationship build message for will exopir3...rule
+    """
+    subject_list = []
+    msg_list = []
+    host_name = str(cert_instance.common_name)
+
+    days = noti_rule_msg["grace_period"]["days"]
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - %s" % (relationship))
+    subject_list.append("\nAn SSL Cert on %s " % (cert_instance.common_name))
+    subject_list.append(" port 443 will Expire in %s days" % days)
+    
     msg_list.append("\nHost Name: %s" % (host_name))
-    msg_list.append("\nNot_valid_before: %s" %(str(cert_instance.not_before)))
+    msg_list.append("\nNot_valid_before: %s" % \
+                   (str(cert_instance.not_before)))
     msg_list.append("\nNot_valid_after: %s" % (str(cert_instance.not_after)))
     msg_list.append("\n\nIssuer Info")
     msg_list.append("\n\tOrginization_unit_name: %s" % ("Place Holder"))
-    msg_list.append("\n\tOrginization_name: %s" % (str(cert_instance.organization_name)))
-    msg_list.append("\n\tCountry_name: %s" % (str(cert_instance.country_name)))
+    msg_list.append("\n\tOrginization_name: %s" % \
+                   (str(cert_instance.organization_name)))
+    msg_list.append("\n\tCountry_name: %s" % \
+                   (str(cert_instance.country_name)))
     msg_list.append("\n\tCommon_name: %s" % (str(cert_instance.common_name)))
-    msg_list.append("\n\nCert Alert Threshold: %s" % (str(noti_rule_msg["now"])))
-    msg_list.append("\n\nNotification Cause: %s" % (str(noti_rule_msg["relationship"])))
+    msg_list.append("\n\nCert Alert Threshold: %s" % \
+                  (str(noti_rule_msg["now"])))
+    msg_list.append("\n\nNotification Cause: %s" % (relationship))
     msg_list.append("\n\nGrace Period:")
-    msg_list.append("\n\tDays: %s" % (str(days)))
+    msg_list.append("\n\tDays: %s" % (days))
     msg_list.append("\n\nDiagnostics:")
     msg_list.append("\n\t %s" % (str(noti_rule_msg)))
 
+    subject = " ".join(map(str, subject_list))
     message = " ".join(map(str, msg_list))
+    return  subject, message
 
-    return subject, message
+def not_yet_valid (cert_instance, noti_rule_msg):
+   """
+   This relationship build message for not_yet_valid...rule
+   """
+   subject = "TBD"
+   message = "Your input has not been recognised"
+   return subject, message
+
+def has_expired (cert_instance, noti_rule_msg):
+   """
+   This relationship build message for has_expired...rule
+   """
+   subject = "TBD"
+   message = "has_expired been recognised"
+   return subject, message

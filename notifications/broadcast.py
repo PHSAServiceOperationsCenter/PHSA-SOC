@@ -207,7 +207,8 @@ def will_expire_in_less_than(cert_instance, noti_rule_msg):
     
     subject = " ".join(map(str, subject_list))
     message = generate_ssl_cert_message(cert_instance,
-                                        noti_rule_msg)
+                                        noti_rule_msg,
+                                        True)
     return  subject, message
 
 def not_yet_valid(cert_instance, noti_rule_msg):
@@ -225,7 +226,8 @@ def not_yet_valid(cert_instance, noti_rule_msg):
     
     subject = " ".join(map(str, subject_list))
     message = generate_ssl_cert_message(cert_instance,
-                                        noti_rule_msg)
+                                        noti_rule_msg
+                                       )
     return  subject, message
 
 def has_expired(cert_instance, noti_rule_msg):
@@ -248,7 +250,7 @@ def has_expired(cert_instance, noti_rule_msg):
                                         noti_rule_msg)
     return  subject, message
 
-def generate_ssl_cert_message(cert_instance, noti_rule_msg):
+def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period = False):
     """
     Generate message for ssl-cert email
     """
@@ -273,8 +275,10 @@ def generate_ssl_cert_message(cert_instance, noti_rule_msg):
     msg_list.append("\n\nCert Alert Threshold: %s" % \
                   (str(noti_rule_msg["now"])))
     msg_list.append("\n\nNotification Cause: %s" % (relationship))
-    msg_list.append("\n\nGrace Period:")
-    msg_list.append("\n\tDays: %s" % (days))
+    if grace_period:
+        msg_list.append("\n\nGrace Period:")
+        msg_list.append("\n\tDays: %s" % (days))
+
     msg_list.append("\n\nDiagnostics:")
     msg_list.append("\n\t %s" % (str(noti_rule_msg)))
 

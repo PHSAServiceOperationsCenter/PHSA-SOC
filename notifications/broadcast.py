@@ -82,13 +82,10 @@ class EmailBroadCast(EmailMessage):
         if attachments is not None:
             self.validate_list_types(attachments)
 
-        # ipdb.set_trace()
-        print(notification_pk)
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
             subject, message = format_email_subject_message(self.obj)
-
             if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
             elif email_type == settings.ESC_EMAIL_TYPE:
@@ -159,9 +156,9 @@ def format_email_subject_message(notification_obj):
     """
     if notification_obj.rule_applies.content_type.model in ['nmapcertsdata']:
         try:
-            ssl_notifications = notification_obj.objects.filter(
-                rule_applies__content_type__model__iexact='nmapcertsdata')
-            ssl_object = NmapCertsData.objects.get(id=ssl_notifications.instance_pk)
+            #ssl_notifications = notification_obj.objects.filter(
+            #    rule_applies__content_type__model__iexact='nmapcertsdata')
+            ssl_object = NmapCertsData.objects.get(id=notification_obj.instance_pk)
             subject, message_text = ssl_cert_display_fields(ssl_object,
                                                             notification_obj)
         except MultipleObjectsReturned as ex:
@@ -183,14 +180,13 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
     noti_rule_msg = json.loads(noti_instance.rule_msg)
     relationship = str(noti_rule_msg["relationship"])
     subject_type = \
-    relationship.replace("\r", "").replace("\n", "").replace("\t", "").lower()
+    relationship.replace(" ", "").replace("\r", "").replace("\n", "").replace("\t", "").lower()
 
     rule_action = {
         "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
         "willexpire": will_expire_in_less_than(cert_instance, noti_rule_msg),
         "hasexpired": has_expired(cert_instance, noti_rule_msg)
     }
-
     subject, message = rule_action.get(subject_type[0:10],
                                        "not yet implemented")
     return subject, message
@@ -243,7 +239,7 @@ def has_expired(cert_instance, noti_rule_msg):
     relationship = str(noti_rule_msg["relationship"])
 
     subject_list.append("Alert - %s" % (relationship))
-    subject_list.append("\nAn SSL Cert on %s " % \
+    subject_list.append("\tAn SSL Cert on %s " % \
                        (str(cert_instance.common_name)))
     subject_list.append(" port 443 has already expired %s on" % not_after)
     

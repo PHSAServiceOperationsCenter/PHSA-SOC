@@ -169,7 +169,7 @@ def format_email_subject_message(notification_obj):
         except ObjectDoesNotExist as ex:
             raise InputError("Object does not exist %s" % (str(ex)))
     else:
-        print('not yet implemented')
+        raise InputError("not yet implemented")
 
     return subject, message_text
 
@@ -179,8 +179,12 @@ def ssl_cert_display_fields(cert_instance, noti_instance):
     """
     noti_rule_msg = json.loads(noti_instance.rule_msg)
     relationship = str(noti_rule_msg["relationship"])
-    subject_type = \
-    relationship.replace(" ", "").replace("\r", "").replace("\n", "").replace("\t", "").lower()
+    subject_type = relationship. \
+                   replace(" ", ""). \
+                   replace("\r", ""). \
+                   replace("\n", ""). \
+                   replace("\t", ""). \
+                   lower()
 
     rule_action = {
         "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
@@ -201,7 +205,7 @@ def will_expire_in_less_than(cert_instance, noti_rule_msg):
     relationship = str(noti_rule_msg["relationship"])
 
     subject_list.append("Alert - %s" % (relationship))
-    subject_list.append("\nAn SSL Cert on %s " % \
+    subject_list.append("\nAn SSL Certificate on %s " % \
                        (str(cert_instance.common_name)))
     subject_list.append(" port 443 will Expire in %s days" % (days))
     
@@ -220,7 +224,7 @@ def not_yet_valid(cert_instance, noti_rule_msg):
     relationship = str(noti_rule_msg["relationship"])
 
     subject_list.append("Alert - %s" % (relationship))
-    subject_list.append("\nAn SSL Cert on %s " % \
+    subject_list.append("\nAn SSL Certificate on %s " % \
                        (str(cert_instance.common_name)))
     subject_list.append(" port 443 is not valid anymore")
     
@@ -241,7 +245,7 @@ def has_expired(cert_instance, noti_rule_msg):
     relationship = str(noti_rule_msg["relationship"])
 
     subject_list.append("Alert - %s" % (relationship))
-    subject_list.append("\tAn SSL Cert on %s " % \
+    subject_list.append("\tAn SSL Certificate on %s " % \
                        (str(cert_instance.common_name)))
     subject_list.append(" port 443 has already expired %s on" % not_after)
     
@@ -272,7 +276,7 @@ def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period = False
     msg_list.append("\n\tCountry_name: %s" % \
                    (str(cert_instance.country_name)))
     msg_list.append("\n\tCommon_name: %s" % (str(cert_instance.common_name)))
-    msg_list.append("\n\nCert Alert Threshold: %s" % \
+    msg_list.append("\n\Certificate Alert Threshold: %s" % \
                   (str(noti_rule_msg["now"])))
     msg_list.append("\n\nNotification Cause: %s" % (relationship))
     if grace_period:

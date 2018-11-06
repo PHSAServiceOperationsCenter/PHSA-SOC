@@ -33,7 +33,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -41,18 +41,80 @@ ADMINS = [
     ('Serban', 'serban.teodorescu@phsa.ca'), ('Ali', 'ali.rahmat@phsa.ca')
 ]
 
-# Application definition
+# logging
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format':
+            '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {
+        'django_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'django.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'ssl_cert_tracker_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'console': {
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['django_log'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ssl_cert_tracker': {
+            'handlers': ['ssl_cert_tracker_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
+# Application definition
 INSTALLED_APPS = [
     'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
+    'simple_history',
     'dal',
     'dal_select2',
     'grappelli',
     'rangefilter',
+    'templated_email',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -60,7 +122,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'django_celery_results',
     'django_celery_beat',
 ]
 
@@ -73,6 +134,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'p_soc_auto.urls'
@@ -143,6 +205,7 @@ USE_L10N = True
 USE_TZ = True
 
 
+# STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
 STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
 STATIC_URL = '/static/'
 
@@ -150,6 +213,7 @@ MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
 MEDIA_URL = '/media/'
 
 # orion logins
+ORION_ENTITY_URL = 'https://orion.vch.ca'
 ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
 ORION_PASSWORD = 'phsa123'
@@ -200,7 +264,8 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_EMAIL_REPLY_TO = ['ali.rahmat@phsa.ca', ]
+DEFAULT_FROM_EMAIL = ['donotreply@phsa_soc_automation.ca']
+DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2

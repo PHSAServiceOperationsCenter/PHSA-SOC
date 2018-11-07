@@ -15,11 +15,36 @@ django admin for the ssl_cert_tracker app
 :updated:    sep. 21, 2018
 """
 from django.contrib import admin
-from django.contrib.auth import get_user_model
 from rangefilter.filter import DateRangeFilter
 
-from .models import NmapCertsData
+from simple_history.admin import SimpleHistoryAdmin
+
+from .models import (
+    NmapCertsData, SslExpiresIn, SslHasExpired, SslNotYetValid, Subscription,
+)
 from p_soc_auto_base.admin import BaseAdmin
+
+
+@admin.register(Subscription)
+class Subscription(BaseAdmin, admin.ModelAdmin):
+    def has_add_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        if request.user.is_superuser:
+            return True
+
+        return False
+
+    list_display = ['subscription', 'enabled', 'emails_list', 'template_dir',
+                    'template_name', 'template_prefix', 'updated_on',
+                    'updated_by']
+    list_editable = ['enabled', 'emails_list', 'template_dir',
+                     'template_name', 'template_prefix']
+    readonly_fields = ['created_on', 'updated_on', ]
 
 
 class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
@@ -51,13 +76,63 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 
 @admin.register(NmapCertsData)
-class NmapCertsDataAdmin(admin.ModelAdmin):
+class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
     """
     SSL certificate data admin pages
     """
     list_display = ['common_name', 'organization_name', 'not_before',
-                    'not_after', 'bits', 'md5', 'sha1', 'updated_on']
+                    'not_after', 'node_admin_url', 'orion_node_url',
+                    'updated_on']
+    history_list_display = ['updated_on', ]
     list_filter = [('not_after', DateRangeFilter),
                    ('not_before', DateRangeFilter),
                    ('updated_on', DateRangeFilter)]
     search_fields = ['common_name', 'organization_name']
+    readonly_fields = ['node_admin_url', 'orion_node_url', ]
+
+
+@admin.register(SslExpiresIn)
+class SslExpiresInAdmin(NmapCertsDataAdmin):
+    """
+    only valid SSL certificates sorted by expiration date ascending
+    """
+    readonly_fields = ('expires_in_days',)
+    list_display = ['common_name', 'organization_name', 'expires_in_days',
+                    'not_before', 'not_after', 'node_admin_url',
+                    'orion_node_url', 'updated_on']
+
+    def expires_in_days(self, obj):
+        return obj.expires_in_x_days
+    expires_in_days.short_description = 'expires in X days'
+
+
+@admin.register(SslHasExpired)
+class SslHasExpiredAdmin(NmapCertsDataAdmin):
+    """
+    only expired SSL certificates sorted by expiration date ascending
+    """
+    readonly_fields = ('has_expired_days_ago',)
+    list_display = ['common_name', 'organization_name',
+                    'has_expired_days_ago',
+                    'not_before', 'not_after', 'node_admin_url',
+                    'orion_node_url', 'updated_on']
+
+    def has_expired_days_ago(self, obj):
+        return obj.has_expired_x_days_ago
+    has_expired_days_ago.short_description = 'has expired X days ago'
+
+
+@admin.register(SslNotYetValid)
+class SslNotYetValiddAdmin(NmapCertsDataAdmin):
+    """
+    only not yet valid SSL certificates sorted by expiration date ascending
+    """
+    readonly_fields = ('valid_in_days',)
+    list_display = ['common_name', 'organization_name',
+                    'valid_in_days',
+                    'not_before', 'not_after', 'node_admin_url',
+                    'orion_node_url', 'updated_on']
+
+    def valid_in_days(self, obj):
+        return obj.will_become_valid_in_x_days
+    valid_in_days.short_description = 'will become valid in X days'

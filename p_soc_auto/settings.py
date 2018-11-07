@@ -280,3 +280,6 @@ SUB_ESC_EMAIL_TYPE = 2
 
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []
+
+# server port
+SERVER_PORT = '8080'

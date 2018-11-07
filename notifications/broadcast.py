@@ -16,6 +16,8 @@ utility  functions for the notification tasks
 
 """
 import json
+
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
@@ -207,10 +209,6 @@ def will_expire_in_less_than(cert_instance, noti_rule_msg):
     subject_list.append("Alert - An SSL certificate on ")
     subject_list.append(" %s " % (str(cert_instance.common_name)))
     subject_list.append("on port 443 will Expire in %s days" % (days))
-    # subject_list.append("Alert - %s" % (relationship))
-    # subject_list.append("\nAn SSL Certificate on %s " % \
-    #                    (str(cert_instance.common_name)))
-    # subject_list.append(" port 443 will Expire in %s days" % (days))
     
     subject = " ".join(map(str, subject_list))
     message = generate_ssl_cert_message(cert_instance,
@@ -229,10 +227,6 @@ def not_yet_valid(cert_instance, noti_rule_msg):
     subject_list.append("Alert - An SSL certificate on ")
     subject_list.append(" %s " % (str(cert_instance.common_name)))
     subject_list.append("on port 443 invalid due to %s" % (relationship))
-    # subject_list.append("Alert - %s" % (relationship))
-    # subject_list.append("\nAn SSL Certificate on %s " % \
-    #                    (str(cert_instance.common_name)))
-    # subject_list.append(" port 443 is not valid anymore")
     
     subject = " ".join(map(str, subject_list))
     message = generate_ssl_cert_message(cert_instance,
@@ -247,20 +241,17 @@ def has_expired(cert_instance, noti_rule_msg):
 
     subject_list = []
 
-    not_after = noti_rule_msg["facts"][1]
+    not_after = str(parse_datetime(noti_rule_msg["facts"][1])).split()[0]
     relationship = str(noti_rule_msg["relationship"])
 
     subject_list.append("Alert - An SSL certificate on ")
     subject_list.append(" %s " % (str(cert_instance.common_name)))
     subject_list.append("on port 443 has expired on %s" % not_after)
-    # subject_list.append("Alert - %s" % (relationship))
-    # subject_list.append("\tAn SSL Certificate on %s " % \
-    #                    (str(cert_instance.common_name)))
-    # subject_list.append(" port 443 has already expired %s on" % not_after)
     
     subject = " ".join(map(str, subject_list))
     message = generate_ssl_cert_message(cert_instance,
                                         noti_rule_msg)
+
     return  subject, message
 
 def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period=False):
@@ -270,14 +261,18 @@ def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period=False):
 
     msg_list = []
     host_name = str(cert_instance.common_name)
+    not_valid_before = str(parse_datetime(
+        str(cert_instance.not_before))).split()[0]
+
+    not_valid_after = str(parse_datetime(
+        str(cert_instance.not_after))).split()[0]
 
     days = noti_rule_msg["grace_period"]["days"]
     relationship = str(noti_rule_msg["relationship"])
 
     msg_list.append("\nHost Name: %s" % (host_name))
-    msg_list.append("\nNot_valid_before: %s" % \
-                   (str(cert_instance.not_before)))
-    msg_list.append("\nNot_valid_after: %s" % (str(cert_instance.not_after)))
+    msg_list.append("\nNot_valid_before: %s" % (not_valid_before))
+    msg_list.append("\nNot_valid_after: %s" % (not_valid_after))
     msg_list.append("\n\nIssuer Info")
     msg_list.append("\n\tOrginization_unit_name: %s" % ("Place Holder"))
     msg_list.append("\n\tOrginization_name: %s" % \

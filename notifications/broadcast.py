@@ -252,7 +252,7 @@ def has_expired(cert_instance, noti_rule_msg):
 
     subject_list.append("Alert - An SSL certificate on ")
     subject_list.append(" %s " % (str(cert_instance.common_name)))
-    subject_list.append(" on port 443 has already expired %s on" % not_after)
+    subject_list.append("on port 443 has expired on %s" % not_after)
     # subject_list.append("Alert - %s" % (relationship))
     # subject_list.append("\tAn SSL Certificate on %s " % \
     #                    (str(cert_instance.common_name)))
@@ -263,7 +263,7 @@ def has_expired(cert_instance, noti_rule_msg):
                                         noti_rule_msg)
     return  subject, message
 
-def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period = False):
+def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period=False):
     """
     Generate message for ssl-cert email
     """

@@ -17,9 +17,11 @@ from django.contrib import admin
 from django.urls import path
 from django.conf.urls import url, include
 
+
 urlpatterns = [
-    path('admin/doc/', include('django.contrib.admindocs.urls')),
-    path('grappelli/', include('grappelli.urls')),
-    path('admin/', admin.site.urls),
-    path('autocomplete/', include('rules_engine.urls'))
+    path(r'admin/doc/', include('django.contrib.admindocs.urls')),
+    path(r'grappelli/', include('grappelli.urls')),
+    path(r'admin/', admin.site.urls),
+    path(r'autocomplete/', include('rules_engine.urls')),
+    url(r'^', include('templated_email.urls', namespace='templated_email')),
 ]

@@ -80,8 +80,6 @@ def process_xml_cert(node_id, doc):
                 check_tag(elem, record, "common_name", "commonName")
                 check_tag(elem, record, "organization_name",
                           "organizationName")
-                check_tag(elem, record, "organization_name",
-                          "organizationName")
                 check_tag(elem, record, "country_name", "countryName")
                 check_tag(elem, record, "sig_algo", "sig_algo")
                 check_tag(elem, record, "name", "name")

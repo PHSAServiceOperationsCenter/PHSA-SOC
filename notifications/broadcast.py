@@ -15,25 +15,25 @@ utility  functions for the notification tasks
 :update:    Oct. 04 2018
 
 """
+import json
+
+from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.core.mail.message import EmailMessage
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.conf import settings
+from ssl_cert_tracker.models import NmapCertsData
 from .models import Notification
-
-import ipdb
-
 
 class Error(Exception):
     """Base class for other exceptions"""
     pass
 
-
 class InputError(Error):
     """Raised when parameter is not valid"""
     pass
-
 
 class EmailBroadCast(EmailMessage):
     """
@@ -42,7 +42,6 @@ class EmailBroadCast(EmailMessage):
     drop in replacement for `djang.core.mail.EmailMessage' that also can
     take a notification obkect and create an email message out of it
     """
-
     def __init__(
             self, notification_pk=None, subject=None, message=None,
             email_from=settings.ADMINS[0][1], email_to=None, cc=None, bcc=None,
@@ -85,23 +84,19 @@ class EmailBroadCast(EmailMessage):
         if attachments is not None:
             self.validate_list_types(attachments)
 
-        # ipdb.set_trace()
-        print(notification_pk)
         if Notification.objects.filter(pk=notification_pk).exists():
             self.notification_pk = notification_pk
             self.obj = Notification.objects.get(pk=notification_pk)
-            subject = self.obj.rule_applies
-            message = str(self.obj.message)
+            subject, message = format_email_subject_message(self.obj)
             if email_type == settings.SUB_EMAIL_TYPE:
                 email_to = self.obj.subscribers
             elif email_type == settings.ESC_EMAIL_TYPE:
                 email_to = self.obj.escalation_subscribers
             elif email_type == settings.SUB_ESC_EMAIL_TYPE:
                 email_to.extend(
-                    self.obj.subscribers).extend(
-                    self.obj.escalation)
+                    self.obj.subscribers).extend(self.obj.escalation)
             else:  # error
-                raise InputError('Invalid  data %s', 'email_type')
+                raise InputError('Invalid  data %s' % 'email_type')
 
         super().__init__(subject,
                          message,
@@ -140,19 +135,161 @@ class EmailBroadCast(EmailMessage):
         """
         for item in items:
             if not isinstance(item, (list, tuple)):
-                raise InputError(str(item) + ": Not a list instance")
+                raise InputError(str(item) % (": Not a list instance"))
 
     def validate_email_types(self, email_to):
         """
         validates if argument are email format
         """
         if not isinstance(email_to, (list, tuple)):
-            raise InputError(str(email_to) + ": Not a list instance")
-        elif len(email_to) == 0:
-            raise InputError(str(email_to) + ": Invalid Email")
+            raise InputError(str(email_to) % (": Not a list instance"))
+        elif not email_to:
+            raise InputError(str(email_to) % (": Invalid Email"))
         else:
             for email in email_to:
                 try:
                     validate_email(email)
                 except ValidationError:
-                    raise InputError(str(email) + ": Invalid Email")
+                    raise InputError(str(email) % (": Invalid Email"))
+
+def format_email_subject_message(notification_obj):
+    """
+    Get ssl_cert object from notification object
+    """
+    if notification_obj.rule_applies.content_type.model in ['nmapcertsdata']:
+        try:
+            #ssl_notifications = notification_obj.objects.filter(
+            #    rule_applies__content_type__model__iexact='nmapcertsdata')
+            ssl_object = NmapCertsData.objects.get(id=notification_obj.instance_pk)
+            subject, message_text = ssl_cert_display_fields(ssl_object,
+                                                            notification_obj)
+        except MultipleObjectsReturned as ex:
+            #Serban Do we need to grab the firs() here or
+            # raise error as it is now
+            raise InputError("more than one object found %s" % (str(ex)))
+
+        except ObjectDoesNotExist as ex:
+            raise InputError("Object does not exist %s" % (str(ex)))
+    else:
+        raise InputError("not yet implemented")
+
+    return subject, message_text
+
+def ssl_cert_display_fields(cert_instance, noti_instance):
+    """
+    ssl_cert_display_fields message
+    """
+    noti_rule_msg = json.loads(noti_instance.rule_msg)
+    relationship = str(noti_rule_msg["relationship"])
+    subject_type = relationship. \
+                   replace(" ", ""). \
+                   replace("\r", ""). \
+                   replace("\n", ""). \
+                   replace("\t", ""). \
+                   lower()
+
+    rule_action = {
+        "notyetvali": not_yet_valid(cert_instance, noti_rule_msg),
+        "willexpire": will_expire_in_less_than(cert_instance, noti_rule_msg),
+        "hasexpired": has_expired(cert_instance, noti_rule_msg)
+    }
+    subject, message = rule_action.get(subject_type[0:10],
+                                       "not yet implemented")
+    return subject, message
+
+def will_expire_in_less_than(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for will exopir...rule
+    """
+    subject_list = []
+
+    days = str(noti_rule_msg["grace_period"]["days"])
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - An SSL certificate on ")
+    subject_list.append(" %s " % (str(cert_instance.common_name)))
+    subject_list.append("on port 443 will Expire in %s days" % (days))
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg,
+                                        True)
+    return  subject, message
+
+def not_yet_valid(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for not_yet_valid...rule
+    """
+    subject_list = []
+
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - An SSL certificate on ")
+    subject_list.append(" %s " % (str(cert_instance.common_name)))
+    subject_list.append("on port 443 invalid due to %s" % (relationship))
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg
+                                       )
+    return  subject, message
+
+def has_expired(cert_instance, noti_rule_msg):
+    """
+    This relationship build message for has_expired...rule
+    """
+
+    subject_list = []
+
+    not_after = str(parse_datetime(noti_rule_msg["facts"][1])).split()[0]
+    relationship = str(noti_rule_msg["relationship"])
+
+    subject_list.append("Alert - An SSL certificate on ")
+    subject_list.append(" %s " % (str(cert_instance.common_name)))
+    subject_list.append("on port 443 has expired on %s" % not_after)
+    
+    subject = " ".join(map(str, subject_list))
+    message = generate_ssl_cert_message(cert_instance,
+                                        noti_rule_msg)
+
+    return  subject, message
+
+def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period=False):
+    """
+    Generate message for ssl-cert email
+    """
+
+    msg_list = []
+    host_name = str(cert_instance.common_name)
+    not_valid_before = str(parse_datetime(
+        str(cert_instance.not_before))).split()[0]
+
+    not_valid_after = str(parse_datetime(
+        str(cert_instance.not_after))).split()[0]
+
+    days = noti_rule_msg["grace_period"]["days"]
+    relationship = str(noti_rule_msg["relationship"])
+
+    msg_list.append("\nHost Name: %s" % (host_name))
+    msg_list.append("\nNot_valid_before: %s" % (not_valid_before))
+    msg_list.append("\nNot_valid_after: %s" % (not_valid_after))
+    msg_list.append("\n\nIssuer Info")
+    msg_list.append("\n\tOrginization_unit_name: %s" % ("Place Holder"))
+    msg_list.append("\n\tOrginization_name: %s" % \
+                   (str(cert_instance.organization_name)))
+    msg_list.append("\n\tCountry_name: %s" % \
+                   (str(cert_instance.country_name)))
+    msg_list.append("\n\tCommon_name: %s" % (str(cert_instance.common_name)))
+    
+    if grace_period:
+        msg_list.append("\n\Certificate Alert Threshold: %s" % \
+                  (str(noti_rule_msg["now"])))
+        msg_list.append("\n\nNotification Cause: %s" % (relationship))
+        msg_list.append("\n\nGrace Period:")
+        msg_list.append("\n\tDays: %s" % (days))
+
+    msg_list.append("\n\nDiagnostics:")
+    msg_list.append("\n\t %s" % (str(noti_rule_msg)))
+
+    message = " ".join(map(str, msg_list))
+    return  message

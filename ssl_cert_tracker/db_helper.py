@@ -48,6 +48,8 @@ def insert_into_certs_data(json_data):
 
     db_certs.common_name = json_data["common_name"]
     db_certs.organization_name = json_data["organization_name"]
+    # TO DO
+    #db_certs.organizational_unit_name = json_data["organizational_unit_name"]
     db_certs.country_name = json_data["country_name"]
     db_certs.sig_algo = json_data["sig_algo"]
     db_certs.name = json_data["name"]

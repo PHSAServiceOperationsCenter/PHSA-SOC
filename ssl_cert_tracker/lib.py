@@ -15,11 +15,11 @@ library module for the ssl_certificates app
 :updated:    Oct. 30, 2018
 
 """
-import socket
-
 from logging import getLogger
 from smtplib import SMTPConnectError
+import socket
 
+from django.conf import settings
 from django.db.models import (
     Case, When, CharField, BigIntegerField, Value, F, Func,
 )
@@ -27,6 +27,7 @@ from django.db.models.functions import Now, Cast
 from django.utils import timezone
 
 from templated_email import get_templated_mail
+
 
 log = getLogger('ssl_cert_tracker')
 
@@ -227,7 +228,8 @@ class Email():
         self.context = dict(
             report_date_time=timezone.now(),
             headers=self.headers, data=self.prepared_data,
-            host_name='http://%s:%s' % (socket.getfqdn(), '8091'))
+            host_name='http://%s:%s' % (socket.getfqdn(),
+                                        settings.SERVER_PORT))
 
         if extra_context:
             self.context.update(**extra_context)

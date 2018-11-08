@@ -250,23 +250,35 @@ class Notification(BaseModel, models.Model):
         """
         send this notification to these people
         """
-        return remove_duplicates(
-            '{},{},{}'.format(self.rule_applies.subscribers,
-                              self.rule_applies.rule.subscribers,
-                              self.notification_type.subscribers)
-        )
+        subscribers = []
+
+        if self.rule_applies.subscribers:
+            subscribers.append(self.rule_applies.subscribers)
+        if self.rule_applies.rule.subscribers:
+            subscribers.append(self.rule_applies.rule.subscribers)
+        if self.notification_type.subscribers:
+            subscribers.append(self.notification_type.subscribers)
+
+        return remove_duplicates(subscribers)
 
     @property
     def escalation_subscribers(self):
         """
         escalate this notification to these people
         """
-        return remove_duplicates(
-            '{},{},{}'.format(
-                self.rule_applies.escalation_subscribers,
-                self.rule_applies.rule.escalation_subscribers,
+        escalation_subscribers = []
+
+        if self.rule_applies.escalation_subscribers:
+            escalation_subscribers.append(
+                self.rule_applies.escalation_subscribers)
+        if self.rule_applies.rule.escalation_subscribers:
+            escalation_subscribers.append(
+                self.rule_applies.rule.escalation_subscribers)
+        if self.notification_type.escalation_subscribers:
+            escalation_subscribers.append(
                 self.notification_type.escalation_subscribers)
-        )
+
+        return remove_duplicates(escalation_subscribers)
 
     def __str__(self):
         return '%s raised on %s' % (self.notification_uuid, self.created_on)

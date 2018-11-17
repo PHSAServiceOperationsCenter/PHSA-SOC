@@ -12,8 +12,10 @@ django project p_soc_auto
 
 :contact:    serban.teodorescu@phsa.ca
 
-"""
-from .celery import app as celery_app
+:updated:    nov. 16, 2018
 
-__all__ = ('celery_app',)
-__version__ = '0.0.1'
+"""
+from .celery import app as celery_app, consumer_app
+
+__all__ = ('celery_app', 'consumer_app')
+__version__ = '0.5.0-dev'

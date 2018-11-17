@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
+    'citrus_borg.apps.CitrusBorgConfig',
     'simple_history',
     'dal',
     'dal_select2',
@@ -226,7 +227,7 @@ ORION_TIMEOUT = (10.0, 22.0)
 
 """
 
-# celery settings
+# celery settings (use namespace='CELERY')
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']

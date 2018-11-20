@@ -26,8 +26,19 @@ class WinlogbeatHost(BaseModel, models.Model):
     """
     hosts where the winlogbeat daemon is collecting windows events
     """
+    host_name = models.CharField(
+        _('host name'), max_length=63, db_index=True, unique=True,
+        blank=False, null=False)
+    ip_address = models.GenericIPAddressField(
+        _('IP address'), protocol='IPv4', blank=True, null=True)
     history = HistoricalRecords()
-    pass
+
+    def __str__(self):
+        return '%s (%s)' % (self.host_name, self.ip_address)
+
+    class Meta:
+        verbose_name = _('Citrix Bot')
+        verbose_name_plural = _('Citrix Bots')
 
 
 class AllowedEventSource(BaseModel, models.Model):
@@ -57,8 +68,8 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     keep a list of brokers returned by the logon simulator
     """
     broker_name = models.CharField(
-        _('broker name'), max_length=63, unique=True, db_index=True, blank=False,
-        null=False,
+        _('broker name'), max_length=15, unique=True, db_index=True,
+        blank=False, null=False,
         help_text=_('the name of a CST broker that has serviced at least one'
                     ' request'))
     history = HistoricalRecords()

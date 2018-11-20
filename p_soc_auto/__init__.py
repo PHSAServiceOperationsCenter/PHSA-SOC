@@ -15,7 +15,7 @@ django project p_soc_auto
 :updated:    nov. 16, 2018
 
 """
-from .celery import app as celery_app, consumer_app
+from .celery import app as celery_app
 
-__all__ = ('celery_app', 'consumer_app')
+__all__ = ('celery_app', )
 __version__ = '0.5.0-dev'

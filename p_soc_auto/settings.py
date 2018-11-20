@@ -241,12 +241,19 @@ CELERY_QUEUES = (
     Queue('orion', Exchange('orion'), routing_key='orion'),
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),
-    Queue('shared', Exchange('shared'), routing_key='shared')
+    Queue('shared', Exchange('shared'), routing_key='shared'),
+    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg')
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
 CELERY_DEFAULT_ROUTING_KEY = 'shared'
+
+# event consumer settings (use namespace='EVENT_CONSUMER'
+CELERY_USE_DJANGO = True
+CELERY_EXCHANGES = {
+    'default': {'name': 'logstash', 'type': 'topic', },
+}
 
 
 # service users
@@ -283,3 +290,12 @@ NOTIFICATION_BROADCAST_LEVELS = []
 
 # server port
 SERVER_PORT = '8080'
+
+# settings specific to the citrus_borg application
+CITRUS_BORG_SERVICE_USER = 'citrus-borg'
+CITRUS_BORG_EVENTS_EXPIRE_AFTER = '72 hours'
+CITRUS_BORG_DELETE_EXPIRED = True
+CITRUS_BORG_BROKER_LAST_SEEN_ALARM_AFTER = '1 hour'
+CITRUS_BORG_YELLOW_LOGON_ALARM = 'more than X in Y interval'
+CITRUS_BORG_RED_LOGON_ALARM = 'X in a row'
+CITRUS_BORG_EVENT_ANALYSIS_EVERY = 'to be determined'

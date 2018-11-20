@@ -28,4 +28,4 @@ class CitrusBorgConfig(AppConfig):
         """
         place holder for weird imports
         """
-        pass
+        import citrus_borg.consumers

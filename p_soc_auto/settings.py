@@ -37,9 +37,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*', ]
 
-ADMINS = [
-    ('Serban', 'serban.teodorescu@phsa.ca'), ('Ali', 'ali.rahmat@phsa.ca')
-]
+ADMINS = [('Serban Teodorescu', 'serban.teodorescu@phsa.ca'), ]
 
 # logging
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
@@ -264,7 +262,7 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = ['serban.teodorescu@phsa.ca']
+DEFAULT_FROM_EMAIL = ['TSCST-Support@hssbc.ca']
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1

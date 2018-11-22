@@ -23,6 +23,8 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
+
+from django.utils import timezone
 from kombu import Queue, Exchange
 
 
@@ -291,7 +293,7 @@ SERVER_PORT = '8080'
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
-CITRUS_BORG_EVENTS_EXPIRE_AFTER = '72 hours'
+CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_DELETE_EXPIRED = True
 CITRUS_BORG_BROKER_LAST_SEEN_ALARM_AFTER = '1 hour'
 CITRUS_BORG_YELLOW_LOGON_ALARM = 'more than X in Y interval'

@@ -38,12 +38,19 @@ def process_win_event(body):
 
     :returns: to be determined
     """
+    from .models import AllowedEventSource
+    from .tasks import store_borg_data
+
     _logger.debug('resistance is futile... now processing %s' % body)
 
-    dickie = json.loads(body)
-    for key in dickie.keys():
-        print('\n\t', '{}:\t({})\t{}'.format(
-            key, type(dickie[key]), dickie[key]))
+    borg = json.loads(body)
+    if borg.get('sorce_name', None) not in list(
+            AllowedEventSource.objects.values_list('sorce_name', flat=True)):
+        _logger.info('%s is not a monitored event source' %
+                     borg.get('sorce_name', None))
+        return
+
+    store_borg_data.delay(borg)
 
 
 """

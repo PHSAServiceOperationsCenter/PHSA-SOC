@@ -17,7 +17,9 @@ django models for the citrus_borg app
 """
 import uuid
 
+from django.conf import settings
 from django.db import models
+from django.utils.timezone import timedelta
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
@@ -48,6 +50,31 @@ class WinlogbeatHost(BaseModel, models.Model):
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)
+
+    @classmethod
+    def get_or_create_from_borg(cls, borg):
+        """
+        get the host object based on host information in the windows event
+
+        if the host object doesn't exist, create it first
+
+        :arg borg: the namedtuple containing the windows event data
+
+        :returns: a host object
+        """
+        winloghost = cls.objects.filter(
+            host_name__iexact=borg.source_host.hostname)
+
+        if winloghost.exist():
+            return winloghost.get()
+
+        user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+        winloghost = cls(
+            host_name=borg.source_host.hostname,
+            ip_address=borg.source_host.ip_address, created_by=user,
+            updated_by=user)
+        winloghost.save()
+        return winloghost
 
     class Meta:
         verbose_name = _('Citrix Bot')
@@ -105,12 +132,39 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     def __str__(self):
         return self.broker_name
 
+    @classmethod
+    def get_or_create_from_borg(cls, borg):
+        """
+        get the broker object based on host information in the windows event
+
+        if the broker object doesn't exist, create it first
+
+        :arg borg: the namedtuple containing the windows event data
+
+        :returns: a host object
+        """
+        if borg.borg_message.broker is None:
+            return None
+
+        broker = cls.objects.filter(
+            broker_name__iexact=borg.borg_message.broker)
+
+        if broker.exist():
+            return broker.get()
+
+        user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+        broker = cls(
+            broker_name=borg.borg_message.broker, created_by=user,
+            updated_by=user)
+        broker.save()
+        return broker
+
     class Meta:
         verbose_name = _('Citrix XML Broker')
         verbose_name_plural = _('Citrix XML Brokers')
 
 
-class WinlogEvent(models.Model):
+class WinlogEvent(BaseModel, models.Model):
     """
     windows logs events
     """
@@ -153,6 +207,9 @@ class WinlogEvent(models.Model):
         _('Failure Reason'), blank=True, null=True)
     failure_details = models.TextField(
         _('Failure Details'), blank=True, null=True)
+    is_expired = models.BooleanField(
+        _('event has expired'), db_index=True, blank=False, null=False,
+        default=False)
 
     def __str__(self):
-        return ''
+        return self.uuid

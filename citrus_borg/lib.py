@@ -89,6 +89,48 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     return None
 
 
+def process_borg(body=None):
+    """
+    :returns; a ``colections.namedtuple`` object with all the properties of
+    the event log body
+    """
+    if body is None:
+        raise ValueError('body argument is mandatory')
+
+    borg = collections.namedtuple(
+        'Borg', [
+            'source_host', 'record_number', 'opcode', 'level',
+            'event_source', 'windows_log', 'borg_message'
+        ]
+    )
+
+    borg.source_host = process_borg_host(body.get('host', None))
+    borg.record_number = body.get('record_number', 0)
+    borg.opcode = body.get('opcode', None)
+    borg.level = body.get('level', None)
+    borg.event_source = body.get('event_source', None)
+    borg.windows_log = body.get('windows_log', None)
+    borg.borg_message = process_borg_message(body.get('message', None))
+
+    return borg
+
+
+def process_borg_host(host=None):
+    """
+    :returns: a namedtuple with the host properties that we need
+    """
+    if host is None:
+        raise ValueError('host argument is mandatory')
+
+    borg_host = collections.namedtuple(
+        'BorgHost', ['host_name', 'ip_address', ])
+
+    borg_host.hostname = host.name
+    borg_host.ip_address = get_ip_for_host_name(host.name, host.ip)
+
+    return borg_host
+
+
 def process_borg_message(message=None):
     """
     this is the string when success
@@ -135,11 +177,13 @@ def process_borg_message(message=None):
     message = message.split('\n')
 
     borg_message = collections.namedtuple(
-        'BorgMessage',
-        ['state', 'broker', 'test_result', 'storefront_connection_duration',
-         'receiver_startup_duration', 'connection_achieved_duration',
-         'logon_achieved_duration', 'logoff_achieved_duration',
-         'failure_reason', 'failure_details'])
+        'BorgMessage', [
+            'state', 'broker', 'test_result', 'storefront_connection_duration',
+            'receiver_startup_duration', 'connection_achieved_duration',
+            'logon_achieved_duration', 'logoff_achieved_duration',
+            'failure_reason', 'failure_details'
+        ]
+    )
 
     borg_message.state = message[0].split()[0]
     if borg_message.state in ['Successful']:

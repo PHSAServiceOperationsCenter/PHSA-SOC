@@ -1,9 +1,9 @@
 """
-.. _models:
+.. _tasks:
 
-django models for the ssl_certificates app
+celery tasks for the ssl_certificates app
 
-:module:    new_tasks.py
+:module:    ssl_cert_tracker.tasks
 
 :copyright:
 
@@ -11,6 +11,9 @@ django models for the ssl_certificates app
     of British Columbia
 
 :contact:    ali.rahmat@phsa.ca
+:contact:    serban.teodorescu@phsa.ca
+
+:updated: Nov. 22, 2018
 
 """
 import xml.dom.minidom

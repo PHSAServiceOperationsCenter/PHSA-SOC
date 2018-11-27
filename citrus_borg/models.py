@@ -15,11 +15,12 @@ django models for the citrus_borg app
 :updated:    nov. 19, 2018
 
 """
+import socket
 import uuid
 
 from django.conf import settings
 from django.db import models
-from django.utils.timezone import timedelta
+from django.utils.timezone import now, timedelta
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
@@ -37,6 +38,24 @@ def get_uuid():
     return uuid.uuid4()
 
 
+class BorgSite(BaseModel, models.Model):
+    """
+    sites with with citrix bots
+    """
+    site = models.CharField(
+        _('site name'), max_length=64, db_index=True, unique=True,
+        blank=False, null=False)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return self.site
+
+    class Meta:
+        app_label = 'citrus_borg'
+        verbose_name = _('Citrix Bot Site')
+        verbose_name_plural = _('Citrix Bot Sites')
+
+
 class WinlogbeatHost(BaseModel, models.Model):
     """
     hosts where the winlogbeat daemon is collecting windows events
@@ -46,7 +65,16 @@ class WinlogbeatHost(BaseModel, models.Model):
         blank=False, null=False)
     ip_address = models.GenericIPAddressField(
         _('IP address'), protocol='IPv4', blank=True, null=True)
+    last_seen = models.DateTimeField(
+        _('last seen'), db_index=True, blank=False, null=False)
+    site = models.ForeignKey(
+        BorgSite, db_index=True, blank=True, null=True,
+        on_delete=models.SET_NULL)
     history = HistoricalRecords()
+
+    @property
+    def fqdn(self):
+        return socket.getfqdn(self.ip_address) if self.ip_address else None
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)
@@ -63,16 +91,18 @@ class WinlogbeatHost(BaseModel, models.Model):
         :returns: a host object
         """
         winloghost = cls.objects.filter(
-            host_name__iexact=borg.source_host.hostname)
+            host_name__iexact=borg.source_host.host_name)
 
-        if winloghost.exist():
-            return winloghost.get()
+        if winloghost.exists():
+            winloghost = winloghost.get()
+            winloghost.last_seen = now()
+        else:
+            user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+            winloghost = cls(
+                host_name=borg.source_host.host_name, last_seen=now(),
+                ip_address=borg.source_host.ip_address, created_by=user,
+                updated_by=user)
 
-        user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
-        winloghost = cls(
-            host_name=borg.source_host.hostname,
-            ip_address=borg.source_host.ip_address, created_by=user,
-            updated_by=user)
         winloghost.save()
         return winloghost
 
@@ -127,6 +157,8 @@ class KnownBrokeringDevice(BaseModel, models.Model):
         blank=False, null=False, help_text=_(
             'the name of a CST broker that has serviced at least one request')
     )
+    last_seen = models.DateTimeField(
+        _('last seen'), db_index=True, blank=False, null=False)
     history = HistoricalRecords()
 
     def __str__(self):
@@ -149,13 +181,15 @@ class KnownBrokeringDevice(BaseModel, models.Model):
         broker = cls.objects.filter(
             broker_name__iexact=borg.borg_message.broker)
 
-        if broker.exist():
-            return broker.get()
-
-        user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
-        broker = cls(
-            broker_name=borg.borg_message.broker, created_by=user,
-            updated_by=user)
+        if broker.exists():
+            broker = broker.get()
+            broker.last_seen = now()
+        else:
+            user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+            broker = cls(
+                broker_name=borg.borg_message.broker, created_by=user,
+                updated_by=user, last_seen=now())
+        
         broker.save()
         return broker
 
@@ -212,4 +246,4 @@ class WinlogEvent(BaseModel, models.Model):
         default=False)
 
     def __str__(self):
-        return self.uuid
+        return str(self.uuid)

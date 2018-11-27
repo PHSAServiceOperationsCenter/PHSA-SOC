@@ -44,14 +44,14 @@ def process_win_event(body):
     _logger.debug('resistance is futile... now processing %s' % body)
 
     borg = json.loads(body)
-    if borg.get('sorce_name', None) not in list(
-            AllowedEventSource.objects.values_list('sorce_name', flat=True)):
-        _logger.info('%s is not a monitored event source' %
-                     borg.get('sorce_name', None))
+    if borg.get('source_name', None) not in list(
+            AllowedEventSource.objects.values_list('source_name', flat=True)):
+        _logger.info('%s is not a monitored event source' % 
+                     borg.get('source_name', None))
         return
 
+    # store_borg_data(borg)
     store_borg_data.delay(borg)
-
 
 """
 

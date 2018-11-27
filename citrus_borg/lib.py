@@ -108,8 +108,8 @@ def process_borg(body=None):
     borg.record_number = body.get('record_number', 0)
     borg.opcode = body.get('opcode', None)
     borg.level = body.get('level', None)
-    borg.event_source = body.get('event_source', None)
-    borg.windows_log = body.get('windows_log', None)
+    borg.event_source = body.get('source_name', None)
+    borg.windows_log = body.get('log_name', None)
     borg.borg_message = process_borg_message(body.get('message', None))
 
     return borg
@@ -125,8 +125,9 @@ def process_borg_host(host=None):
     borg_host = collections.namedtuple(
         'BorgHost', ['host_name', 'ip_address', ])
 
-    borg_host.hostname = host.name
-    borg_host.ip_address = get_ip_for_host_name(host.name, host.ip)
+    borg_host.host_name = host.get('name', None)
+    borg_host.ip_address = get_ip_for_host_name(host.get('name', None),
+                                                host.get('ip', None))
 
     return borg_host
 
@@ -214,3 +215,40 @@ def process_borg_message(message=None):
         borg_message.logoff_achieved_duration = None
 
     return borg_message
+
+"""
+notes for filtering
+
+WinlogEvent.objects.filter(
+    event_state__iexact='failed',
+    created_on__gt=timezone.now() - timezone.timedelta(minutes=1000)).count()
+    
+group this by host and count for each host
+send one report like this for a fixed period of time
+
+and raise alarm if for given timedelta, count per host is greater than X
+
+
+repeat the same thing but per site instead of per host
+
+
+- other stuff
+
+for the last x minutes get the hosts with pass and see if there is a diff
+with the hosts from the host model
+looks like if item not in list(distinct) and item in host model, append to
+missing and send email for each missing
+
+same thing but for sites
+
+and same thing for brokers 
+    
+    
+    
+    
+    
+    
+    
+
+
+"""

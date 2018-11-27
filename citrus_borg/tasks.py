@@ -31,7 +31,12 @@ def store_borg_data(body):
         WinlogEvent,
     )
 
-    borg = process_borg(body)
+    try:
+        borg = process_borg(body)
+    except Exception as error:
+        msg = 'processing %s raises %s' % (body, str(error))
+        _logger.error(msg)
+        return msg
 
     try:
         event_host = WinlogbeatHost.get_or_create_from_borg(borg)

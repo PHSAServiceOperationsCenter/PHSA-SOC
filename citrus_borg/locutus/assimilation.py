@@ -1,9 +1,9 @@
 """
-.. _lib:
+.. _assimilation:
 
-functions and classes for the citrus_borg app
+functions and classes for uploading windows events to the citrus_borg app
 
-:module:    citrus_borg.lib
+:module:    citrus_borg.locutus.assimilation
 
 :copyright:
 
@@ -12,7 +12,7 @@ functions and classes for the citrus_borg app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    nov. 19, 2018
+:updated:    nov. 128, 2018
 
 """
 import collections
@@ -30,7 +30,7 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     :arg list ip_list: a list of ip addresses for a host as returned from
                        external sources
 
-    :raises: 
+    :raises:
 
         :exception:`<ValueError>` if either argument is missing
 
@@ -216,39 +216,3 @@ def process_borg_message(message=None):
 
     return borg_message
 
-"""
-notes for filtering
-
-WinlogEvent.objects.filter(
-    event_state__iexact='failed',
-    created_on__gt=timezone.now() - timezone.timedelta(minutes=1000)).count()
-    
-group this by host and count for each host
-send one report like this for a fixed period of time
-
-and raise alarm if for given timedelta, count per host is greater than X
-
-
-repeat the same thing but per site instead of per host
-
-
-- other stuff
-
-for the last x minutes get the hosts with pass and see if there is a diff
-with the hosts from the host model
-looks like if item not in list(distinct) and item in host model, append to
-missing and send email for each missing
-
-same thing but for sites
-
-and same thing for brokers 
-    
-    
-    
-    
-    
-    
-    
-
-
-"""

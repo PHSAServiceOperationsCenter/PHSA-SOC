@@ -73,7 +73,7 @@ class WinlogbeatHost(BaseModel, models.Model):
     history = HistoricalRecords()
 
     @property
-    def fqdn(self):
+    def resolved_fqdn(self):
         return socket.getfqdn(self.ip_address) if self.ip_address else None
 
     def __str__(self):

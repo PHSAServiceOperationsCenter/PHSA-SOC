@@ -44,7 +44,7 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
         if db_field.name in ['site', ]:
             kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
-        
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def add_view(self, request, form_url='', extra_context=None):
@@ -81,6 +81,12 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         return self.readonly_fields
 
 
+@admin.register(BorgSite)
+class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    list_display = ('site', 'notes', 'updated_on', 'updated_by')
+    list_editable = ('notes',)
+
+
 @admin.register(KnownBrokeringDevice)
 class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
@@ -96,12 +102,6 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
 @admin.register(WinlogbeatHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
 
     list_display = ('host_name', 'ip_address', 'site', 'fqdn', 'last_seen',
                     'created_on',)
@@ -126,7 +126,7 @@ class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         'event_test_result', 'storefront_connection_duration',
         'receiver_startup_duration', 'connection_achieved_duration',
         'logon_achieved_duration', 'logoff_achieved_duration', 'created_on',
-        )
+    )
     list_editable = ('is_expired',)
     readonly_fields = (
         'uuid', 'event_state', 'source_host', 'xml_broker',
@@ -134,7 +134,7 @@ class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         'failure_details', 'storefront_connection_duration',
         'receiver_startup_duration', 'connection_achieved_duration',
         'logon_achieved_duration', 'logoff_achieved_duration',
-        )
+    )
     list_filter = ('event_state', 'source_host__host_name',
                    'source_host__site__site',
                    'xml_broker__broker_name',

@@ -107,7 +107,7 @@ class NmapCertsData(BaseModel, models.Model):
             orion_node = orion_node.get()
             return '<a href="%s">%s on django</>' % (
                 reverse('admin:orion_integration_orionnode_change',
-                        args=(orion_node.id, )),
+                        args=(orion_node.id,)),
                 orion_node.node_caption)
 
         return 'acquired outside the Orion infrastructure'

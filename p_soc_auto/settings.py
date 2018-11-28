@@ -27,7 +27,6 @@ import os
 from django.utils import timezone
 from kombu import Queue, Exchange
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -158,7 +157,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
@@ -171,7 +169,6 @@ DATABASES = {
         'USER': 'phsa_db_user',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -191,7 +188,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
 
@@ -204,7 +200,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
@@ -255,11 +250,9 @@ CELERY_EXCHANGES = {
     'default': {'name': 'logstash', 'type': 'topic', },
 }
 
-
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
 NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
-
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -293,6 +286,8 @@ SERVER_PORT = '8080'
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
+CITRUS_BORG_DEAD_BOT_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_BROKER_AFTER = timezone.timedelta(hours=24)
 CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_DELETE_EXPIRED = True
 CITRUS_BORG_BROKER_LAST_SEEN_ALARM_AFTER = '1 hour'

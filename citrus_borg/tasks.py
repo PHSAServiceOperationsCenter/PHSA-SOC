@@ -25,7 +25,7 @@ _logger = get_task_logger(__name__)
 
 @shared_task(queue='citrus_borg')
 def store_borg_data(body):
-    from .lib import process_borg
+    from .locutus.assimilation import process_borg
     from .models import (
         WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
         WinlogEvent,
@@ -99,7 +99,7 @@ def expire_events():
 
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        - settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
+        -settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
 
     if settings.CITRUS_BORG_DELETE_EXPIRED:
         WinlogEvent.objects.filter(is_expired=True).all().delete()

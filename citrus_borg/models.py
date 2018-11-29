@@ -38,6 +38,17 @@ def get_uuid():
     return uuid.uuid4()
 
 
+class BorgSiteNotSeenManager(models.Manager):
+    """
+    custom manager for :class:`<BorgSite>`
+    """
+
+    def get_queryset(self):
+        return BorgSite.objects.\
+            exclude(winlogbeathost__last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
 class BorgSite(BaseModel, models.Model):
     """
     sites with with citrix bots
@@ -54,6 +65,24 @@ class BorgSite(BaseModel, models.Model):
         app_label = 'citrus_borg'
         verbose_name = _('Citrix Bot Site')
         verbose_name_plural = _('Citrix Bot Sites')
+
+
+class BorgSiteNotSeen(BorgSite):
+    objects = BorgSiteNotSeenManager()
+
+    class Meta:
+        proxy = True
+        ordering = ('-winlogbeathost__last_seen',)
+        verbose_name = _('Citrix Bot Site')
+        verbose_name_plural = _(
+            'Citrix Bot Sites not seen for at least 72 hours')
+
+
+class WinlogbeatHostNotSeenManager(models.Manager):
+    def get_queryset(self):
+        return WinlogbeatHost.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
 
 class WinlogbeatHost(BaseModel, models.Model):
@@ -111,6 +140,15 @@ class WinlogbeatHost(BaseModel, models.Model):
         verbose_name_plural = _('Citrix Bots')
 
 
+class WinlogbeatHostNotSeen(WinlogbeatHost):
+    objects = WinlogbeatHostNotSeenManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Citrix Bot')
+        verbose_name_plural = _('Citrix Bots not seen for at least 72 hours')
+
+
 class AllowedEventSource(BaseModel, models.Model):
     """
     only save events originating from specific Log_name and source_name
@@ -148,14 +186,22 @@ class WindowsLog(BaseModel, models.Model):
         verbose_name_plural = _('Supported Windows Logs')
 
 
+class KnownBrokeringDeviceNotSeenManager(models.Manager):
+    def get_queryset(self):
+        return KnownBrokeringDevice.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
 class KnownBrokeringDevice(BaseModel, models.Model):
     """
     keep a list of brokers returned by the logon simulator
     """
     broker_name = models.CharField(
-        _('broker name'), max_length=15, unique=True, db_index=True,
+        _('server name'), max_length=15, unique=True, db_index=True,
         blank=False, null=False, help_text=_(
-            'the name of a CST broker that has serviced at least one request')
+            'the name of a Citrix session server that has serviced at least'
+            ' one request')
     )
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
@@ -189,13 +235,23 @@ class KnownBrokeringDevice(BaseModel, models.Model):
             broker = cls(
                 broker_name=borg.borg_message.broker, created_by=user,
                 updated_by=user, last_seen=now())
-        
+
         broker.save()
         return broker
 
     class Meta:
-        verbose_name = _('Citrix XML Broker')
-        verbose_name_plural = _('Citrix XML Brokers')
+        verbose_name = _('Citrix App Server')
+        verbose_name_plural = _('Citrix App Servers')
+
+
+class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
+    objects = KnownBrokeringDeviceNotSeenManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Citrix App Server')
+        verbose_name_plural = _(
+            'Citrix App Servers not seen for at least 24 hours')
 
 
 class WinlogEvent(BaseModel, models.Model):

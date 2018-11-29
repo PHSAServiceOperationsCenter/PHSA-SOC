@@ -39,7 +39,7 @@ missing and send email for each missing
 
 same thing but for sites
 
-and same thing for brokers 
+and same thing for brokers
 
 """
 import datetime
@@ -48,7 +48,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from citrus_borg.models import (
-    WinlogEvent, WinlogbeatHost, KnownBrokeringDevice,
+    WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
 )
 
 
@@ -85,14 +85,14 @@ def get_dead_bots(now=None, time_delta=None):
                      filter(created_on__gt=now - time_delta).distinct().
                      values_list('source_host__host_name', flat=True))
 
-    all_bots = list(WinlogbeatHost.objects.all().
+    all_bots = list(WinlogbeatHost.objects.filter(enabled=True).
                     values_list('host_name', flat=True))
 
     dead_bots = set(all_bots).symmetric_difference(set(live_bots))
 
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
     if dead_bots.exists():
-        return dead_bots
+        return dead_bots.order_by('last_seen')
 
     return None
 
@@ -102,7 +102,7 @@ def get_dead_brokers(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_BOT_AFTER
+        time_delta = settings.CITRUS_BORG_DEAD_BORG_AFTER
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -115,17 +115,43 @@ def get_dead_brokers(now=None, time_delta=None):
                                event_state__iexact='successful').distinct().
                         values_list('xml_broker__broker_name', flat=True))
 
-    all_brokers = list(KnownBrokeringDevice.objects.all().
+    all_brokers = list(KnownBrokeringDevice.objects.filter(enabled=True).
                        values_list('broker_name', flat=True))
 
     dead_brokers = set(all_brokers).symmetric_difference(set(live_brokers))
 
-    dead_brokers = KnownBrokeringDevice.objects.filter(
-        broker_name__in=list(dead_brokers))
+    dead_brokers = KnownBrokeringDevice.objects.\
+        filter(broker_name__in=list(dead_brokers))
     if dead_brokers.exists():
-        return dead_brokers
+        return dead_brokers.order_by('last_seen')
 
     return None
 
 
-def get_dead_site():
+def get_dead_sites(now=None, time_delta=None):
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    live_sites = list(WinlogEvent.objects.
+                      filter(created_on__gt=now - time_delta).distinct().
+                      values_list('source_host__site__site', flat=True))
+
+    all_sites = list(BorgSite.objects.filter(enabled=True).
+                     values_list('site', flat=True))
+
+    dead_sites = set(all_sites).symmetric_difference(set(live_sites))
+
+    dead_sites = BorgSite.objects.filter(site__in=list(dead_sites))
+    if dead_sites.exists():
+        return dead_sites.order_by('winlogbeathost__last_seen')
+
+    return None

@@ -287,7 +287,9 @@ SERVER_PORT = '8080'
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
 CITRUS_BORG_DEAD_BOT_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_SITE_AFTER = timezone.timedelta(minutes=12)
 CITRUS_BORG_DEAD_BROKER_AFTER = timezone.timedelta(hours=24)
+CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_DELETE_EXPIRED = True
 CITRUS_BORG_BROKER_LAST_SEEN_ALARM_AFTER = '1 hour'

@@ -23,6 +23,7 @@ from rangefilter.filter import DateRangeFilter
 
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
+    BorgSiteNotSeen, WinlogbeatHostNotSeen, KnownBrokeringDeviceNotSeen,
 )
 
 
@@ -83,8 +84,18 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 @admin.register(BorgSite)
 class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
-    list_display = ('site', 'notes', 'updated_on', 'updated_by')
+    list_display = ('site', 'notes', 'last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes',)
+    readonly_fields = ('last_seen',)
+
+    def last_seen(self, obj):
+        return obj.winlogbeathost_set.first().last_seen
+    last_seen.short_description = 'last seen'
+
+
+@admin.register(BorgSiteNotSeen)
+class BorgSiteNotSeenAdmin(BorgSiteAdmin):
+    pass
 
 
 @admin.register(KnownBrokeringDevice)
@@ -100,6 +111,11 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('broker_name', 'last_seen', 'created_on',)
 
 
+@admin.register(KnownBrokeringDeviceNotSeen)
+class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
+    pass
+
+
 @admin.register(WinlogbeatHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
@@ -109,6 +125,11 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on',)
     list_filter = ('site__site',)
+
+
+@admin.register(WinlogbeatHostNotSeen)
+class WinlogbeatHostNotSeenAdmin(WinlogbeatHostAdmin):
+    pass
 
 
 @admin.register(WinlogEvent)

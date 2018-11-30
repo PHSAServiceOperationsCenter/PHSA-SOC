@@ -1,12 +1,12 @@
 [Unit]
-Description=PHSA Automation Celery Worker Service for Citrus Borg Assimilation Tasks
+Description=PHSA Automation Celery Worker Service for Citrus Borg Indoctrination Tasks
 After=network.target
 
 [Service]
 Type=forking
 User=phsa
 Group=phsa
-EnvironmentFile=/opt/phsa/p_soc_auto/configs/celery/phsa_celery_citrus_borg.conf
+EnvironmentFile=/opt/phsa/p_soc_auto/configs/celery/phsa_celery_borg_chat.conf
 WorkingDirectory=/opt/phsa/p_soc_auto/
 
 ExecStart=/bin/sh -c '"${CELERY_BIN}" multi start "${CELERYD_NODES}" -A "${CELERY_APP}" --logfile="${CELERYD_LOG_FILE}" --pidfile="${CELERYD_PID_FILE}" --loglevel="${CELERYD_LOG_LEVEL}" "${CELERYD_OPTS}"'

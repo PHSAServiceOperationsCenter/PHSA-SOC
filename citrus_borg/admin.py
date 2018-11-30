@@ -84,8 +84,10 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 @admin.register(BorgSite)
 class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
-    list_display = ('site', 'notes', 'last_seen', 'updated_on', 'updated_by')
-    list_editable = ('notes',)
+    list_display = ('site', 'enabled', 'notes',
+                    'last_seen', 'updated_on', 'updated_by')
+    list_editable = ('notes', 'enabled',)
+    list_filter = ('enabled',)
     readonly_fields = ('last_seen',)
 
     def last_seen(self, obj):
@@ -107,7 +109,9 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    list_display = ('broker_name', 'last_seen', 'created_on',)
+    list_display = ('broker_name',  'enabled', 'last_seen', 'created_on',)
+    list_editable = ('enabled',)
+    list_filter = ('enabled',)
     readonly_fields = ('broker_name', 'last_seen', 'created_on',)
 
 
@@ -119,12 +123,12 @@ class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
 @admin.register(WinlogbeatHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
-    list_display = ('host_name', 'ip_address', 'site', 'resolved_fqdn', 'last_seen',
-                    'created_on',)
-    list_editable = ('site',)
+    list_display = ('host_name', 'ip_address',  'enabled', 'site',
+                    'resolved_fqdn', 'last_seen', 'created_on',)
+    list_editable = ('site', 'enabled',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on',)
-    list_filter = ('site__site',)
+    list_filter = ('site__site', 'enabled',)
 
 
 @admin.register(WinlogbeatHostNotSeen)

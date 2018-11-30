@@ -132,9 +132,9 @@ def expire_events():
         expired, settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER)
 
 
-@shared_task(queue='borg_chat', rate_limit='1/s', max_retries=3,
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_alerts(now=None, **dead_for):
+def email_dead_borgs_alert(now=None, **dead_for):
     """
     send out alerts about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -153,51 +153,23 @@ def email_dead_borgs_alerts(now=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
-    if now is None:
-        now = timezone.now()
-
-    if not isinstance(now, datetime.datetime):
-        msg = (
-            'invalid argument %s type %s, must be datetime.datetime'
-        ) % (now, type(now))
-        _logger.error(msg)
-        return msg
-
     if not dead_for:
-        dead_for = settings.CITRUS_BORG_DEAD_BOT_AFTER
+        time_delta = settings.CITRUS_BORG_DEAD_BOT_AFTER
     else:
-        try:
-            dead_for = timezone.timedelta(**dead_for)
-        except Exception as error:
-            msg = ('invalid argument %s, throws %s') % (dead_for, str(error))
-            _logger.error(msg)
-            return msg
+        time_delta = _get_timedelta(**dead_for)
 
     try:
-        subscription = Subscription.objects.\
-            get(subscription='Dead Citrix monitoring bots')
-    except Exception as error:
-        _logger.error('cannot retrieve subscription info: %s' % str(error))
-        return 'cannot retrieve subscription info: %s' % str(error)
-
-    try:
-        email_alert = Email(
-            data=get_dead_bots(now=now, time_delta=dead_for),
-            subscription_obj=subscription, logger=_logger,
-            time_delta=dead_for)
-    except Exception as error:
-        _logger.error('cannot initialize email object: %s' % str(error))
-        return 'cannot initialize email object: %s' % str(error)
-
-    try:
-        return email_alert.send()
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Dead Citrix monitoring bots'),
+            logger=_logger, time_delta=time_delta)
     except Exception as error:
         raise error
 
 
-@shared_task(queue='borg_chat', rate_limit='1/s', max_retries=3,
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_reports(now=None, **dead_for):
+def email_dead_borgs_report(now=None, **dead_for):
     """
     send out reports about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -216,6 +188,127 @@ def email_dead_borgs_reports(now=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Dead Citrix monitoring bots'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_sites_alert(now=None, **dead_for):
+    """
+    email alerts about dead sites
+
+    all the email foo about citrus_borg entities look the same and could be
+    condensed into a single function but it is easier to configure the
+    task invocation from the django periodic tasks application if one
+    doesn't have to provide a lot of complex arguments
+
+    :arg datetime.datetime now: the reference moment in time, default now()
+
+    :arg **dead_for: dictionary style arguments suitable for
+                     :method:`<django.utils.timezone.timedelta>`. examples:
+
+                     * 10 minutes: minutes=10
+                     * 10 hours: hours=10
+                     * 10 hours and 10 minutes: hours=10, minutes=10
+
+                     valid keys are days, hours, minutes, seconds and
+                     valid values are ``float`` numbers
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Dead Citrix client sites'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_sites_report(now=None, **dead_for):
+    """
+    send reports about dead Ctirix client sites
+
+    see other similar tasks for details
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Dead Citrix client sites'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_servers_report(now=None, **dead_for):
+    """
+    send reports about dead Citrix app hosts
+
+    see other similar tasks for details
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Missing Citrix farm hosts'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_servers_alert(now=None, **dead_for):
+    """
+    send reports about dead Citrix app hosts
+
+    see other similar tasks for details
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_DEAD_BROKER_AFTER
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Missing Citrix farm hosts'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+def _get_now(now=None):
+    """
+    :returns: a valid ``datetime.datetime`` object or ``datetime.dateime.now``
+    """
     if now is None:
         now = timezone.now()
 
@@ -224,30 +317,31 @@ def email_dead_borgs_reports(now=None, **dead_for):
             'invalid argument %s type %s, must be datetime.datetime'
         ) % (now, type(now))
         _logger.error(msg)
-        return msg
+        raise TypeError(msg)
 
-    if not dead_for:
-        dead_for = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
-    else:
-        try:
-            dead_for = timezone.timedelta(**dead_for)
-        except Exception as error:
-            msg = ('invalid argument %s, throws %s') % (dead_for, str(error))
-            _logger.error(msg)
-            return msg
+    return now
 
+
+def _get_timedelta(**time_delta):
+    """
+    :returns: a valid ``datetime.timedelta`` objects
+    """
     try:
-        subscription = Subscription.objects.\
-            get(subscription='Dead Citrix monitoring bots')
+        return timezone.timedelta(**time_delta)
     except Exception as error:
-        _logger.error('cannot retrieve subscription info: %s' % str(error))
-        return 'cannot retrieve subscription info: %s' % str(error)
+        _logger.error(
+            'invalid argument %s, throws %s') % (time_delta, str(error))
+        raise
 
+
+def _borgs_are_hailing(data, subscription, logger, **extra_context):
+    """
+    prepare and send emails from the citrus_borg application
+    """
     try:
         email_alert = Email(
-            data=get_dead_bots(now=now, time_delta=dead_for),
-            subscription_obj=subscription, logger=_logger,
-            time_delta=dead_for)
+            data=data, subscription_obj=subscription, logger=logger,
+            **extra_context)
     except Exception as error:
         _logger.error('cannot initialize email object: %s' % str(error))
         return 'cannot initialize email object: %s' % str(error)
@@ -255,4 +349,17 @@ def email_dead_borgs_reports(now=None, **dead_for):
     try:
         return email_alert.send()
     except Exception as error:
+        _logger.error(str(error))
         raise error
+
+
+def _get_subscription(subscription):
+    """
+    :returns: a :class:`<ssl_cert_tracker.models.Subscription>` instance
+    """
+    try:
+        return Subscription.objects.\
+            get(subscription=subscription)
+    except Exception as error:
+        _logger.error('cannot retrieve subscription info: %s' % str(error))
+        return 'cannot retrieve subscription info: %s' % str(error)

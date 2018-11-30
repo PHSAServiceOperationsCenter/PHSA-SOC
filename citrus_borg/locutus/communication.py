@@ -150,7 +150,7 @@ def get_dead_sites(now=None, time_delta=None):
 
     dead_sites = set(all_sites).symmetric_difference(set(live_sites))
 
-    dead_sites = BorgSite.objects.filter(site__in=list(dead_sites))
+    dead_sites = BorgSite.objects.filter(site__in=list(dead_sites)).distinct()
     if dead_sites.exists():
         return dead_sites.order_by('winlogbeathost__last_seen')
 

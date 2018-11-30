@@ -31,11 +31,6 @@ def populate_subscribtions(apps, schema_editor):
         user.set_password('soc_su_password')
         user.save()
 
-    try:
-        subscription.objects.all().delete()
-    except:
-        pass
-
     for _ in subscriptions:
         _subscription = subscription(subscription=_[0],
                                      emails_list=emails,

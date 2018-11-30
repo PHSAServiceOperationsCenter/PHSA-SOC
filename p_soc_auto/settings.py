@@ -115,6 +115,7 @@ INSTALLED_APPS = [
     'grappelli',
     'rangefilter',
     'templated_email',
+    'timedeltatemplatefilter',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -237,7 +238,8 @@ CELERY_QUEUES = (
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),
     Queue('shared', Exchange('shared'), routing_key='shared'),
-    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg')
+    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
+    Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -264,7 +266,7 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = ['TSCST-Support@hssbc.ca']
+DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
@@ -274,6 +276,9 @@ SUB_ESC_EMAIL_TYPE = 2
 # # email settings for gmail
 # # these will not work from 10.1.80.0
 # EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================

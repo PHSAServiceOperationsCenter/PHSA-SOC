@@ -15,16 +15,38 @@ celery tasks for the citrus_borg application
 :updated: Nov. 22, 2018
 
 """
+import datetime
+
+from smtplib import SMTPConnectError
 from celery import shared_task
 from celery.utils.log import get_task_logger
+from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
 from django.utils import timezone
+
+from citrus_borg.locutus.communication import (
+    get_dead_bots, get_dead_brokers, get_dead_sites,
+)
+from ssl_cert_tracker.models import Subscription
+from ssl_cert_tracker.lib import Email
 
 _logger = get_task_logger(__name__)
 
 
 @shared_task(queue='citrus_borg')
 def store_borg_data(body):
+    """
+    insert data collected from the logstash + rabbitmq combination into the
+    django database. we assume that the :arg:`<body>` is JSON encoded and is
+    castable to a ``dict``
+
+    hosts and citrix session servers identified in the event data are saved to
+    the database if first seen; otherwise the corresponding rows are updated
+    with a last seen time stamp
+
+    generic :exception:`<Exception>` are raised and logged to the celery log
+    if anything goes amiss while processing the event data
+    """
     from .locutus.assimilation import process_borg
     from .models import (
         WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
@@ -99,7 +121,7 @@ def expire_events():
 
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        -settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
+        - settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
 
     if settings.CITRUS_BORG_DELETE_EXPIRED:
         WinlogEvent.objects.filter(is_expired=True).all().delete()
@@ -108,3 +130,129 @@ def expire_events():
 
     return 'expired %s events accumulated over the last %s' % (
         expired, settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER)
+
+
+@shared_task(queue='borg_chat', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_borgs_alerts(now=None, **dead_for):
+    """
+    send out alerts about borgs that have not been seen within the date-time
+    interval defined by :arg:`<now>` - :arg:`<**dead_for>`
+
+    :arg now: the reference moment in time. by default this is the value
+              returned by :method:`<django.utils.timezone.now>` but any
+              valid ``datetime.datetime`` value is acceptable
+
+    :arg **dead_for: dictionary style arguments suitable for
+                     :method:`<django.utils.timezone.timedelta>`. examples:
+
+                     * 10 minutes: minutes=10
+                     * 10 hours: hours=10
+                     * 10 hours and 10 minutes: hours=10, minutes=10
+
+                     valid keys are days, hours, minutes, seconds and
+                     valid values are ``float`` numbers
+    """
+    if now is None:
+        now = timezone.now()
+
+    if not isinstance(now, datetime.datetime):
+        msg = (
+            'invalid argument %s type %s, must be datetime.datetime'
+        ) % (now, type(now))
+        _logger.error(msg)
+        return msg
+
+    if not dead_for:
+        dead_for = settings.CITRUS_BORG_DEAD_BOT_AFTER
+    else:
+        try:
+            dead_for = timezone.timedelta(**dead_for)
+        except Exception as error:
+            msg = ('invalid argument %s, throws %s') % (dead_for, str(error))
+            _logger.error(msg)
+            return msg
+
+    try:
+        subscription = Subscription.objects.\
+            get(subscription='Dead Citrix monitoring bots')
+    except Exception as error:
+        _logger.error('cannot retrieve subscription info: %s' % str(error))
+        return 'cannot retrieve subscription info: %s' % str(error)
+
+    try:
+        email_alert = Email(
+            data=get_dead_bots(now=now, time_delta=dead_for),
+            subscription_obj=subscription, logger=_logger,
+            time_delta=dead_for)
+    except Exception as error:
+        _logger.error('cannot initialize email object: %s' % str(error))
+        return 'cannot initialize email object: %s' % str(error)
+
+    try:
+        return email_alert.send()
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_dead_borgs_reports(now=None, **dead_for):
+    """
+    send out reports about borgs that have not been seen within the date-time
+    interval defined by :arg:`<now>` - :arg:`<**dead_for>`
+
+    :arg now: the reference moment in time. by default this is the value
+              returned by :method:`<django.utils.timezone.now>` but any
+              valid ``datetime.datetime`` value is acceptable
+
+    :arg **dead_for: dictionary style arguments suitable for
+                     :method:`<django.utils.timezone.timedelta>`. examples:
+
+                     * 10 minutes: minutes=10
+                     * 10 hours: hours=10
+                     * 10 hours and 10 minutes: hours=10, minutes=10
+
+                     valid keys are days, hours, minutes, seconds and
+                     valid values are ``float`` numbers
+    """
+    if now is None:
+        now = timezone.now()
+
+    if not isinstance(now, datetime.datetime):
+        msg = (
+            'invalid argument %s type %s, must be datetime.datetime'
+        ) % (now, type(now))
+        _logger.error(msg)
+        return msg
+
+    if not dead_for:
+        dead_for = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    else:
+        try:
+            dead_for = timezone.timedelta(**dead_for)
+        except Exception as error:
+            msg = ('invalid argument %s, throws %s') % (dead_for, str(error))
+            _logger.error(msg)
+            return msg
+
+    try:
+        subscription = Subscription.objects.\
+            get(subscription='Dead Citrix monitoring bots')
+    except Exception as error:
+        _logger.error('cannot retrieve subscription info: %s' % str(error))
+        return 'cannot retrieve subscription info: %s' % str(error)
+
+    try:
+        email_alert = Email(
+            data=get_dead_bots(now=now, time_delta=dead_for),
+            subscription_obj=subscription, logger=_logger,
+            time_delta=dead_for)
+    except Exception as error:
+        _logger.error('cannot initialize email object: %s' % str(error))
+        return 'cannot initialize email object: %s' % str(error)
+
+    try:
+        return email_alert.send()
+    except Exception as error:
+        raise error

@@ -1,0 +1,58 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{hours} hours and {minutes} minutes" }}
+{% else %}
+ControlUp Logon Simulator Hosts that are considered dead
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<p>
+Citrix monitoring bots that have not sent any events in the last 
+{{ time_delta|timedelta:"{hours} hours and {minutes} minutes" }}
+</p>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+<div>
+<p>More details available at:
+<a href="{{host_name}}{% url 'admin:citrus_borg_winlogbeathostnotseen_changelist' %}">
+{{host_name}}{% url 'admin:citrus_borg_winlogbeathostnotseen_changelist' %}</a></p>
+<p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
+the Web interface opened by the link above.</p>
+</div>
+
+<div>
+<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available at:<a href="{{host_name}}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
+{{host_name}}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a></p>
+</div>
+
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><p>All Citrix monitoring bots seem to be functioning.</p></div>
+{% endif %}
+{% endblock %}

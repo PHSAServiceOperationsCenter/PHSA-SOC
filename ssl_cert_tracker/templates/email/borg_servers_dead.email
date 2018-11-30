@@ -2,7 +2,7 @@
 
 {% block subject %}
 {% if time_delta %}
-Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{hours} hours and {minutes} minutes" }}
+Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
 Citrix App Server Hosts that are considered dead
 {% endif %}
@@ -12,7 +12,7 @@ Citrix App Server Hosts that are considered dead
 {% if data %}
 <p>
 Citrix App Server Hosts that have not serviced any logon requests in the last 
-{{ time_delta|timedelta:"{hours} hours and {minutes} minutes" }}
+{{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 </p>
 <div><p>
 <table style="border: 1px solid black;">

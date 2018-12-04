@@ -45,6 +45,8 @@ and same thing for brokers
 import datetime
 
 from django.conf import settings
+from django.db.models import Count, Q
+from django.db.models.functions import TruncHour
 from django.utils import timezone
 
 from citrus_borg.models import (
@@ -155,3 +157,81 @@ def get_dead_sites(now=None, time_delta=None):
         return dead_sites.order_by('winlogbeathost__last_seen')
 
     return None
+
+
+def get_failed_logins_by_borg_hour(now=None, time_delta=None):
+    """
+    return a queryset for rep[orting the number of failures for each bot for
+    a given period of time
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    return WinlogbeatHost.objects.\
+        filter(winlogevent__event_state__iexact='failed',
+               #winlogevent__created_on__gt=now - time_delta
+               ).\
+        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
+        annotate(failed_count=Count('winlogevent__event_state')
+                 )
+    #.values('host_name', 'hour', 'failed_count')
+
+
+def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
+    """
+    data source for the bot reports
+
+    :returns: a queryset with the list of bots ordered by site, grouped by
+              hour, and including counts for failed and successful logon
+              events
+
+    :arg now:
+    :arg time_delta:
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    return WinlogbeatHost.objects.\
+        filter(winlogevent__created_on__gt=now - time_delta).\
+        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
+        annotate(
+            failed_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='failed'))).\
+        annotate(
+            successful_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='successful'))).\
+        order_by('-hour', 'site__site')
+
+
+"""
+WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
+    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','hour','failed_count')
+
+
+or even better
+ WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
+    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','site__site','hour','failed_count')
+ WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
+    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','site__site','hour','failed_count')
+
+"""

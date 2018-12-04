@@ -23,8 +23,9 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
-from kombu import Queue, Exchange
 
+from django.utils import timezone
+from kombu import Queue, Exchange
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -107,12 +108,14 @@ INSTALLED_APPS = [
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
+    'citrus_borg.apps.CitrusBorgConfig',
     'simple_history',
     'dal',
     'dal_select2',
     'grappelli',
     'rangefilter',
     'templated_email',
+    'timedeltatemplatefilter',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -155,7 +158,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
@@ -168,7 +170,6 @@ DATABASES = {
         'USER': 'phsa_db_user',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -188,7 +189,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
 
@@ -202,12 +202,10 @@ USE_L10N = True
 
 USE_TZ = True
 
-
-# STATIC_ROOT = '/home/steodore/phsa/sbin/p_soc_auto/static/'
-STATIC_ROOT = '/opt/phsa/p_soc_auto/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/opt/phsa/p_soc_auto/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
 
 # orion logins
@@ -225,7 +223,7 @@ ORION_TIMEOUT = (10.0, 22.0)
 
 """
 
-# celery settings
+# celery settings (use namespace='CELERY')
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
 
 CELERY_ACCEPT_CONTENT = ['json', 'pickle']
@@ -239,18 +237,24 @@ CELERY_QUEUES = (
     Queue('orion', Exchange('orion'), routing_key='orion'),
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),
-    Queue('shared', Exchange('shared'), routing_key='shared')
+    Queue('shared', Exchange('shared'), routing_key='shared'),
+    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
+    Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
 CELERY_DEFAULT_ROUTING_KEY = 'shared'
 
+# event consumer settings (use namespace='EVENT_CONSUMER'
+CELERY_USE_DJANGO = True
+CELERY_EXCHANGES = {
+    'default': {'name': 'logstash', 'type': 'topic', },
+}
 
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
 NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
-
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -262,7 +266,7 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = ['TSCST-Support@hssbc.ca']
+DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
@@ -272,6 +276,9 @@ SUB_ESC_EMAIL_TYPE = 2
 # # email settings for gmail
 # # these will not work from 10.1.80.0
 # EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
@@ -281,3 +288,15 @@ NOTIFICATION_BROADCAST_LEVELS = []
 
 # server port
 SERVER_PORT = '8080'
+
+# settings specific to the citrus_borg application
+CITRUS_BORG_SERVICE_USER = 'citrus-borg'
+CITRUS_BORG_DEAD_BOT_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_SITE_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_BROKER_AFTER = timezone.timedelta(hours=24)
+CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER = timezone.timedelta(hours=72)
+CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN = timezone.timedelta(hours=72)
+CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
+CITRUS_BORG_DELETE_EXPIRED = True
+CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL = timezone.timedelta(minutes=10)
+CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD = 2

@@ -10,7 +10,9 @@ def prepare_task_schedules(apps, schema_editor):
         ('Dead Citrix client sites alert',
          'citrus_borg.tasks.email_dead_sites_alert', 10, 'minutes',),
         ('Dead Citrix farm hosts alert',
-         'citrus_borg.tasks.email_dead_servers_alert', 12, 'hours',), ]
+         'citrus_borg.tasks.email_dead_servers_alert', 12, 'hours',),
+        ('Citrix failed logon alerts',
+         'citrus_borg.tasks.email_failed_login_alarms', 10, 'minutes',), ]
 
     cron_tasks = [
         ('Purge windows logs events',
@@ -20,7 +22,9 @@ def prepare_task_schedules(apps, schema_editor):
         ('Dead Citrix client sites report',
          'citrus_borg.tasks.email_dead_sites_report', '06', '50', ),
         ('Dead Citrix farm hosts report',
-         'citrus_borg.tasks.email_dead_servers_report', '06', '55', ), ]
+         'citrus_borg.tasks.email_dead_servers_report', '06', '55', ),
+        ('Citrix logon event summary',
+         'citrus_borg.tasks.email_borg_login_summary_report', '06', '40', ), ]
 
     CrontabSchedule = apps.get_model('django_celery_beat', 'CrontabSchedule')
     IntervalSchedule = apps.get_model('django_celery_beat', 'IntervalSchedule')

@@ -26,6 +26,7 @@ from django.utils import timezone
 
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
+    get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
 )
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
@@ -301,6 +302,57 @@ def email_dead_servers_alert(now=None, **dead_for):
             data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
             subscription=_get_subscription('Missing Citrix farm hosts'),
             logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_borg_login_summary_report(now=None, **dead_for):
+    """
+    send reports reports about logon events for each Citrix bot
+
+    see other similar tasks for details
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=get_logins_by_event_state_borg_hour(
+                now=_get_now(now), time_delta=time_delta),
+            subscription=_get_subscription('Citrix logon event summary'),
+            logger=_logger, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
+    """
+    email alerts about failed logins
+
+    see other similar tasks for details
+    """
+    if failed_threshold is None:
+        failed_threshold = settings.FAILED_LOGON_ALERT_THRESHOLD
+
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    try:
+        return _borgs_are_hailing(
+            data=raise_failed_logins_alarm(
+                now=_get_now(now), time_delta=time_delta,
+                failed_threshold=failed_threshold),
+            subscription=_get_subscription('Citrix logon alert'),
+            logger=_logger, time_delta=time_delta,
+            failed_threshold=failed_threshold)
     except Exception as error:
         raise error
 

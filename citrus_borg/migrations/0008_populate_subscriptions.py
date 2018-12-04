@@ -16,7 +16,11 @@ def populate_subscribtions(apps, schema_editor):
         ('Dead Citrix client sites', 'borg_sites_dead_email',
          'site,winlogbeathost__last_seen'),
         ('Missing Citrix farm hosts', 'borg_servers_dead_email',
-         'broker_name,last_seen')]
+         'broker_name,last_seen'),
+        ('Citrix logon event summary', 'borg_logins_by_host_report',
+         'host_name,site__site,hour,failed_events,successful_events'),
+        ('citrix logon alert', 'borg_failed_logins',
+         'host_name,site__site,hour,failed_events'), ]
 
     subscription = apps.get_model('ssl_cert_tracker', 'Subscription')
 

@@ -81,7 +81,8 @@ def get_dead_bots(now=None, time_delta=None):
         raise TypeError('%s type invalid for %s' % (type(now), now))
 
     if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
 
     live_bots = list(WinlogEvent.objects.
                      filter(created_on__gt=now - time_delta).distinct().
@@ -110,7 +111,8 @@ def get_dead_brokers(now=None, time_delta=None):
         raise TypeError('%s type invalid for %s' % (type(now), now))
 
     if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
 
     live_brokers = list(WinlogEvent.objects.
                         filter(created_on__gt=now - time_delta,
@@ -141,7 +143,8 @@ def get_dead_sites(now=None, time_delta=None):
         raise TypeError('%s type invalid for %s' % (type(now), now))
 
     if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
 
     live_sites = list(WinlogEvent.objects.
                       filter(created_on__gt=now - time_delta).distinct().
@@ -159,33 +162,6 @@ def get_dead_sites(now=None, time_delta=None):
     return None
 
 
-def get_failed_logins_by_borg_hour(now=None, time_delta=None):
-    """
-    return a queryset for rep[orting the number of failures for each bot for
-    a given period of time
-    """
-    if now is None:
-        now = timezone.now()
-
-    if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    return WinlogbeatHost.objects.\
-        filter(winlogevent__event_state__iexact='failed',
-               #winlogevent__created_on__gt=now - time_delta
-               ).\
-        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
-        annotate(failed_count=Count('winlogevent__event_state')
-                 )
-    #.values('host_name', 'hour', 'failed_count')
-
-
 def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
     """
     data source for the bot reports
@@ -201,13 +177,14 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
 
     if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
 
     return WinlogbeatHost.objects.\
         filter(winlogevent__created_on__gt=now - time_delta).\
@@ -223,15 +200,45 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
         order_by('-hour', 'site__site')
 
 
-"""
-WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
-    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','hour','failed_count')
+def raise_failed_logins_alarm(
+        now=None, time_delta=None, failed_threshold=None):
+    """
+    return a queryset of Citrix bots for which the number of failed logon
+    events over the specified period of time exceeds the failed threshold
 
+    :arg now: the referencce time moment,
+              by default `django.utils.timezone.now`
 
-or even better
- WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
-    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','site__site','hour','failed_count')
- WinlogbeatHost.objects.filter(winlogevent__event_state__iexact='failed').annotate(hour=TruncHour('winlogevent__created_on')).values('hour').annotat
-    ...: e(failed_count=Count('winlogevent__event_state')).values('host_name','site__site','hour','failed_count')
+    :arg time_delta: the time interval to be considered, by default
+                     `settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL`
 
-"""
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+
+    if failed_threshold is None:
+        failed_threshold = settings.FAILED_LOGON_ALERT_THRESHOLD
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
+
+    if not isinstance(failed_threshold, int):
+        raise TypeError(
+            '%s type invalid for %s' % (type(failed_threshold),
+                                        failed_threshold))
+
+    return WinlogbeatHost.objects.\
+        filter(enabled=True, winlogevent__created_on__gt=now - time_delta).\
+        annotate(
+            failed_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='failed'))).\
+        filter(failed_events__gte=failed_threshold).\
+        order_by('site__site')

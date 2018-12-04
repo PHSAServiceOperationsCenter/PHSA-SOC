@@ -52,7 +52,7 @@ class EmailBroadCast(EmailMessage):
             self, notification_pk=None, subject=None, message=None,
             email_from=settings.ADMINS[0][1], email_to=None, cc=None, bcc=None,
             connection=None, attachments=None,
-            reply_to=settings.DEFAULT_EMAIL_REPLY_TO, headers=None,
+            reply_to=[settings.DEFAULT_EMAIL_REPLY_TO], headers=None,
             email_type=settings.SUB_EMAIL_TYPE, *args, **kwargs):
         """
         :param str subject: email subject
@@ -289,14 +289,14 @@ def generate_ssl_cert_message(cert_instance, noti_rule_msg, grace_period=False):
     msg_list.append("\nNot_valid_after: %s" % (not_valid_after))
     msg_list.append("\n\nIssuer Info")
     msg_list.append("\n\tOrginization_unit_name: %s" % ("Place Holder"))
-    msg_list.append("\n\tOrginization_name: %s" %
+    msg_list.append("\n\tOrginization_name: %s" % 
                     (str(cert_instance.organization_name)))
-    msg_list.append("\n\tCountry_name: %s" %
+    msg_list.append("\n\tCountry_name: %s" % 
                     (str(cert_instance.country_name)))
     msg_list.append("\n\tCommon_name: %s" % (str(cert_instance.common_name)))
 
     if grace_period:
-        msg_list.append("\nCertificate Alert Threshold: %s" %
+        msg_list.append("\nCertificate Alert Threshold: %s" % 
                         (str(noti_rule_msg["now"])))
         msg_list.append("\n\nNotification Cause: %s" % (relationship))
         msg_list.append("\n\nGrace Period:")

@@ -16,11 +16,11 @@ celery tasks for the citrus_borg application
 
 """
 import datetime
-
 from smtplib import SMTPConnectError
+
 from celery import shared_task
-from celery.utils.log import get_task_logger
 from celery.exceptions import MaxRetriesExceededError
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.utils import timezone
 
@@ -28,8 +28,8 @@ from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
 )
-from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
+from ssl_cert_tracker.models import Subscription
 
 _logger = get_task_logger(__name__)
 
@@ -122,7 +122,7 @@ def expire_events():
 
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        - settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
+        -settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
 
     if settings.CITRUS_BORG_DELETE_EXPIRED:
         WinlogEvent.objects.filter(is_expired=True).all().delete()
@@ -161,7 +161,7 @@ def email_dead_borgs_alert(now=None, **dead_for):
 
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=get_dead_bots(now=_get_now(now), time_delta=time_delta),
             subscription=_get_subscription('Dead Citrix monitoring bots'),
             logger=_logger, time_delta=time_delta)
     except Exception as error:
@@ -196,7 +196,7 @@ def email_dead_borgs_report(now=None, **dead_for):
 
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=get_dead_bots(now=_get_now(now), time_delta=time_delta),
             subscription=_get_subscription('Dead Citrix monitoring bots'),
             logger=_logger, time_delta=time_delta)
     except Exception as error:
@@ -277,7 +277,7 @@ def email_dead_servers_report(now=None, **dead_for):
 
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=get_dead_brokers(now=_get_now(now), time_delta=time_delta),
             subscription=_get_subscription('Missing Citrix farm hosts'),
             logger=_logger, time_delta=time_delta)
     except Exception as error:
@@ -299,7 +299,7 @@ def email_dead_servers_alert(now=None, **dead_for):
 
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=get_dead_brokers(now=_get_now(now), time_delta=time_delta),
             subscription=_get_subscription('Missing Citrix farm hosts'),
             logger=_logger, time_delta=time_delta)
     except Exception as error:
@@ -345,12 +345,16 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = raise_failed_logins_alarm(
+                now=_get_now(now), time_delta=time_delta,
+                failed_threshold=failed_threshold)
+    
+    if not data:
+        _logger.debug('found no failed logins')
+        return 'found no failed logins'
     try:
         return _borgs_are_hailing(
-            data=raise_failed_logins_alarm(
-                now=_get_now(now), time_delta=time_delta,
-                failed_threshold=failed_threshold),
-            subscription=_get_subscription('Citrix logon alert'),
+            data=data, subscription=_get_subscription('Citrix logon alert'),
             logger=_logger, time_delta=time_delta,
             failed_threshold=failed_threshold)
     except Exception as error:

@@ -1,0 +1,68 @@
+###################### Winlogbeat Configuration ##############################
+
+# minimal winlogbeat configuration file
+# install according to 
+# https://www.elastic.co/guide/en/beats/winlogbeat/6.5/winlogbeat-installation.html
+# recommended directory is c:\winlogbeats
+# copy this file to that directory and restart the winlogbeat service
+# You can find the full configuration reference here:
+# https://www.elastic.co/guide/en/beats/winlogbeat/index.html
+
+#======================= Winlogbeat specific options ==========================
+
+# event_logs specifies a list of event logs to monitor as well as any
+# accompanying options. The YAML data type of event_logs is a list of
+# dictionaries.
+# see https://go.es.io/WinlogbeatConfig
+winlogbeat.event_logs:
+  - name: Application
+    ignore_older: 12h
+
+#==================== Elasticsearch template setting ==========================
+
+setup.template.settings:
+  index.number_of_shards: 3
+  #index.codec: best_compression
+  #_source.enabled: false
+
+#================================ Outputs =====================================
+
+#-------------------------- Elasticsearch output ------------------------------
+#output.elasticsearch:
+  # Array of hosts to connect to.
+#  hosts: ["localhost:9200"]
+
+  # Optional protocol and basic auth credentials.
+  #protocol: "https"
+  #username: "elastic"
+  #password: "changeme"
+
+#----------------------------- Logstash output --------------------------------
+output.logstash:
+  hosts: ["10.2.50.38:5044"]
+  # hosts: ["10.1.80.68:5044"]
+
+  # Optional SSL. By default is off.
+  # List of root certificates for HTTPS server verifications
+  #ssl.certificate_authorities: ["/etc/pki/root/ca.pem"]
+
+  # Certificate for SSL client authentication
+  #ssl.certificate: "/etc/pki/client/cert.pem"
+
+  # Client Certificate Key
+  #ssl.key: "/etc/pki/client/cert.key"
+
+#================================ Procesors ===================================
+
+# add host meta-data and network info to the event messages
+# this seems to not be working with the ControlUp event provider(s)
+
+processors:
+  - add_host_metadata:
+        netinfo.enabled: true
+
+#================================ Logging =====================================
+
+# Sets log level. The default log level is info.
+# Available log levels are: error, warning, info, debug
+#logging.level: debug

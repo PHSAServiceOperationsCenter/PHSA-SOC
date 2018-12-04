@@ -19,8 +19,9 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-from p_soc_auto_base.models import BaseModel
 from orion_integration.models import OrionNode
+from p_soc_auto_base.models import BaseModel
+
 from .lib import expires_in, has_expired, is_not_yet_valid
 
 

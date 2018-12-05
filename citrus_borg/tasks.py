@@ -338,7 +338,7 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     see other similar tasks for details
     """
     if failed_threshold is None:
-        failed_threshold = settings.FAILED_LOGON_ALERT_THRESHOLD
+        failed_threshold = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
 
     if not dead_for:
         time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
@@ -348,9 +348,8 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     data = raise_failed_logins_alarm(
                 now=_get_now(now), time_delta=time_delta,
                 failed_threshold=failed_threshold)
-    
+
     if not data:
-        _logger.debug('found no failed logins')
         return 'found no failed logins'
     try:
         return _borgs_are_hailing(
@@ -369,11 +368,9 @@ def _get_now(now=None):
         now = timezone.now()
 
     if not isinstance(now, datetime.datetime):
-        msg = (
+        raise TypeError(
             'invalid argument %s type %s, must be datetime.datetime'
         ) % (now, type(now))
-        _logger.error(msg)
-        raise TypeError(msg)
 
     return now
 
@@ -385,9 +382,7 @@ def _get_timedelta(**time_delta):
     try:
         return timezone.timedelta(**time_delta)
     except Exception as error:
-        _logger.error(
-            'invalid argument %s, throws %s') % (time_delta, str(error))
-        raise
+        raise error
 
 
 def _borgs_are_hailing(data, subscription, logger, **extra_context):
@@ -399,7 +394,7 @@ def _borgs_are_hailing(data, subscription, logger, **extra_context):
             data=data, subscription_obj=subscription, logger=logger,
             **extra_context)
     except Exception as error:
-        _logger.error('cannot initialize email object: %s' % str(error))
+        logger.error('cannot initialize email object: %s' % str(error))
         return 'cannot initialize email object: %s' % str(error)
 
     try:
@@ -417,5 +412,4 @@ def _get_subscription(subscription):
         return Subscription.objects.\
             get(subscription=subscription)
     except Exception as error:
-        _logger.error('cannot retrieve subscription info: %s' % str(error))
-        return 'cannot retrieve subscription info: %s' % str(error)
+        raise error

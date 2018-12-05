@@ -95,9 +95,9 @@ def get_dead_bots(now=None, time_delta=None):
 
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
     if dead_bots.exists():
-        return dead_bots.order_by('last_seen')
+        dead_bots = dead_bots.order_by('last_seen')
 
-    return None
+    return dead_bots
 
 
 def get_dead_brokers(now=None, time_delta=None):
@@ -105,7 +105,7 @@ def get_dead_brokers(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_BORG_AFTER
+        time_delta = settings.CITRUS_BORG_DEAD_BROKER_AFTER
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -127,9 +127,9 @@ def get_dead_brokers(now=None, time_delta=None):
     dead_brokers = KnownBrokeringDevice.objects.\
         filter(broker_name__in=list(dead_brokers))
     if dead_brokers.exists():
-        return dead_brokers.order_by('last_seen')
+        dead_brokers = dead_brokers.order_by('last_seen')
 
-    return None
+    return dead_brokers
 
 
 def get_dead_sites(now=None, time_delta=None):
@@ -157,9 +157,9 @@ def get_dead_sites(now=None, time_delta=None):
 
     dead_sites = BorgSite.objects.filter(site__in=list(dead_sites)).distinct()
     if dead_sites.exists():
-        return dead_sites.order_by('winlogbeathost__last_seen')
+        dead_sites = dead_sites.order_by('winlogbeathost__last_seen')
 
-    return None
+    return dead_sites
 
 
 def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
@@ -220,7 +220,7 @@ def raise_failed_logins_alarm(
         time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
 
     if failed_threshold is None:
-        failed_threshold = settings.FAILED_LOGON_ALERT_THRESHOLD
+        failed_threshold = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))

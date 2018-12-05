@@ -73,10 +73,10 @@ class NmapCertsData(BaseModel, models.Model):
         ' defined in the orion_integration application')
     addresses = models.CharField(max_length=100, blank=False, null=False)
     not_before = models.DateTimeField(
-        'not before', db_index=True, null=False, blank=False,
+        'not valid before', db_index=True, null=False, blank=False,
         help_text='certificate not valid before this date')
     not_after = models.DateTimeField(
-        'not after', db_index=True, null=False, blank=False,
+        'not valid after', db_index=True, null=False, blank=False,
         help_text='certificate not valid after this date')
     xml_data = models.TextField()
     common_name = models.CharField(

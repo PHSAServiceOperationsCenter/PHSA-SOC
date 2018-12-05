@@ -54,6 +54,6 @@ the Web interface opened by the link above.</p>
 </p></div>
 {% endif %}
 {% elif not data %}
-<div><p>All known Citrix App Server Hosts have been servvicing logon requests recently.</p></div>
+<div><p>All known Citrix App Server Hosts have been servicing logon requests recently.</p></div>
 {% endif %}
 {% endblock %}

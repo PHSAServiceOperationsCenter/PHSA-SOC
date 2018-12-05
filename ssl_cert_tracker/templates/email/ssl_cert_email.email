@@ -41,4 +41,7 @@ SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 {% elif not data %}
 <div><p>No qualifying SSL certificates have been found.</p></div>
 {% endif %}
+<div><p>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</p></div>
 {% endblock %}

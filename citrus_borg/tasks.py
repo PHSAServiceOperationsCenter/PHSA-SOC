@@ -122,7 +122,7 @@ def expire_events():
 
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        - settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
+        -settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
 
     if settings.CITRUS_BORG_DELETE_EXPIRED:
         WinlogEvent.objects.filter(is_expired=True).all().delete()
@@ -345,13 +345,14 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    now = _get_now(now)
     data = raise_failed_logins_alarm(
-        now=_get_now(now), time_delta=time_delta,
+        now=now, time_delta=time_delta,
         failed_threshold=failed_threshold)
 
     if not data:
         return (
-            'there were less than %s failed logins between %s and %s'
+            'there were less than %s failed logon events between %s and %s'
             % (failed_threshold, now, now - time_delta)
         )
 

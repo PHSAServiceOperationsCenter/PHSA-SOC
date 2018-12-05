@@ -180,6 +180,38 @@ class Email():
     instances of this class are multi-part (test and html) email messages
     """
 
+    def _get_headers_with_titles(self):
+        """
+        prepare the column heads
+
+        in most cases these can be the model.field.verbose_name properties
+        so we look into the model._meta API
+
+        if there is __ we are looking at a relationship. for the moment we
+        will just take the substring after the last __ and call it a day
+
+        if we cannot find a field that matches and it is not a relationship,
+        it is an annotation and there isn't much we cando; replace _ with
+        space and call it a day
+
+        everything will be capitalized using ``str.title()``
+
+        :returns: a ``dict`` that will be part of the template context
+        """
+        field_names = [
+            field.name for field in self.data.model._meta.get_fields()]
+        headers = dict()
+        for key in self.subscription_obj.headers.split(','):
+            if key in field_names:
+                headers[key] = self.data.model._meta.get_field(
+                    key).verbose_name.title()
+            elif '__' in key:
+                headers[key] = key.split('__')[-1].title()
+            else:
+                headers[key] = key.replace('_', ' ').title()
+
+        return headers
+
     def __init__(
             self,
             data=None, subscription_obj=None, logger=None, **extra_context):
@@ -210,15 +242,16 @@ class Email():
             self.logger.error('no data was provided for the email')
             raise NoDataEmailError('no data was provided for the email')
 
+        self.data = data
+
         if subscription_obj is None:
             self.logger.error('no subscription was provided for the email')
             raise NoSubscriptionEmailError(
                 'no subscription was provided for the email')
 
-        self.headers = {
-            key: key.replace('_', ' ').title() for key in
-            subscription_obj.headers.split(',')
-        }
+        self.subscription_obj = subscription_obj
+
+        self.headers = self._get_headers_with_titles()
 
         self.prepared_data = []
         for data_item in data.values(*self.headers.keys()):
@@ -229,7 +262,8 @@ class Email():
             report_date_time=timezone.now(),
             headers=self.headers, data=self.prepared_data,
             host_name='http://%s:%s' % (socket.getfqdn(),
-                                        settings.SERVER_PORT))
+                                        settings.SERVER_PORT),
+            source_host=socket.getfqdn())
 
         if extra_context:
             self.context.update(**extra_context)

@@ -17,5 +17,5 @@ django project p_soc_auto
 """
 from .celery import app as celery_app
 
-__all__ = ('celery_app', )
-__version__ = '0.5.0-dev'
+__all__ = ('celery_app',)
+__version__ = '0.5.4-dev'

@@ -19,8 +19,9 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from simple_history.models import HistoricalRecords
 
-from p_soc_auto_base.models import BaseModel
 from orion_integration.models import OrionNode
+from p_soc_auto_base.models import BaseModel
+
 from .lib import expires_in, has_expired, is_not_yet_valid
 
 
@@ -72,10 +73,10 @@ class NmapCertsData(BaseModel, models.Model):
         ' defined in the orion_integration application')
     addresses = models.CharField(max_length=100, blank=False, null=False)
     not_before = models.DateTimeField(
-        'not before', db_index=True, null=False, blank=False,
+        'not valid before', db_index=True, null=False, blank=False,
         help_text='certificate not valid before this date')
     not_after = models.DateTimeField(
-        'not after', db_index=True, null=False, blank=False,
+        'not valid after', db_index=True, null=False, blank=False,
         help_text='certificate not valid after this date')
     xml_data = models.TextField()
     common_name = models.CharField(
@@ -107,7 +108,7 @@ class NmapCertsData(BaseModel, models.Model):
             orion_node = orion_node.get()
             return '<a href="%s">%s on django</>' % (
                 reverse('admin:orion_integration_orionnode_change',
-                        args=(orion_node.id, )),
+                        args=(orion_node.id,)),
                 orion_node.node_caption)
 
         return 'acquired outside the Orion infrastructure'

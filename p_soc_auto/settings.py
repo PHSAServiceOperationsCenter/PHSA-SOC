@@ -27,7 +27,6 @@ import os
 from django.utils import timezone
 from kombu import Queue, Exchange
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -116,6 +115,7 @@ INSTALLED_APPS = [
     'grappelli',
     'rangefilter',
     'templated_email',
+    'timedeltatemplatefilter',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -158,7 +158,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
@@ -171,7 +170,6 @@ DATABASES = {
         'USER': 'phsa_db_user',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -191,7 +189,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
 
@@ -204,7 +201,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
@@ -242,7 +238,8 @@ CELERY_QUEUES = (
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
     Queue('ssl', Exchange('ssl'), routing_key='ssl'),
     Queue('shared', Exchange('shared'), routing_key='shared'),
-    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg')
+    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
+    Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -255,11 +252,9 @@ CELERY_EXCHANGES = {
     'default': {'name': 'logstash', 'type': 'topic', },
 }
 
-
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
 NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
-
 
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -271,7 +266,7 @@ EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = ['TSCST-Support@hssbc.ca']
+DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
@@ -281,6 +276,9 @@ SUB_ESC_EMAIL_TYPE = 2
 # # email settings for gmail
 # # these will not work from 10.1.80.0
 # EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
@@ -293,9 +291,12 @@ SERVER_PORT = '8080'
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
+CITRUS_BORG_DEAD_BOT_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_SITE_AFTER = timezone.timedelta(minutes=12)
+CITRUS_BORG_DEAD_BROKER_AFTER = timezone.timedelta(hours=24)
+CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER = timezone.timedelta(hours=72)
+CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN = timezone.timedelta(hours=72)
 CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_DELETE_EXPIRED = True
-CITRUS_BORG_BROKER_LAST_SEEN_ALARM_AFTER = '1 hour'
-CITRUS_BORG_YELLOW_LOGON_ALARM = 'more than X in Y interval'
-CITRUS_BORG_RED_LOGON_ALARM = 'X in a row'
-CITRUS_BORG_EVENT_ANALYSIS_EVERY = 'to be determined'
+CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL = timezone.timedelta(minutes=10)
+CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD = 2

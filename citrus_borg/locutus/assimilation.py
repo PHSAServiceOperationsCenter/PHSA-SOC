@@ -1,9 +1,9 @@
 """
-.. _lib:
+.. _assimilation:
 
-functions and classes for the citrus_borg app
+functions and classes for uploading windows events to the citrus_borg app
 
-:module:    citrus_borg.lib
+:module:    citrus_borg.locutus.assimilation
 
 :copyright:
 
@@ -12,7 +12,7 @@ functions and classes for the citrus_borg app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    nov. 19, 2018
+:updated:    nov. 128, 2018
 
 """
 import collections
@@ -30,7 +30,7 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     :arg list ip_list: a list of ip addresses for a host as returned from
                        external sources
 
-    :raises: 
+    :raises:
 
         :exception:`<ValueError>` if either argument is missing
 
@@ -108,8 +108,8 @@ def process_borg(body=None):
     borg.record_number = body.get('record_number', 0)
     borg.opcode = body.get('opcode', None)
     borg.level = body.get('level', None)
-    borg.event_source = body.get('event_source', None)
-    borg.windows_log = body.get('windows_log', None)
+    borg.event_source = body.get('source_name', None)
+    borg.windows_log = body.get('log_name', None)
     borg.borg_message = process_borg_message(body.get('message', None))
 
     return borg
@@ -125,8 +125,9 @@ def process_borg_host(host=None):
     borg_host = collections.namedtuple(
         'BorgHost', ['host_name', 'ip_address', ])
 
-    borg_host.hostname = host.name
-    borg_host.ip_address = get_ip_for_host_name(host.name, host.ip)
+    borg_host.host_name = host.get('name', None)
+    borg_host.ip_address = get_ip_for_host_name(host.get('name', None),
+                                                host.get('ip', None))
 
     return borg_host
 
@@ -214,3 +215,4 @@ def process_borg_message(message=None):
         borg_message.logoff_achieved_duration = None
 
     return borg_message
+

@@ -1,11 +1,22 @@
+{% load timedelta_filter %}
+
 {% block subject %}
-Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+{% if time_delta %}
+ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{% else %}
+ControlUp Logon Simulator Event Summary by Host and Hour
+{% endif %}
 {% endblock %}
 
 {% block html %}
 {% if data %}
-<div>
-<table color="#000000">
+<p>
+Logon event success/fail counts for each Citrix monitoring bot over the last 
+{{ time_delta|timedelta:"{hours_total} hours" }}
+grouped by hour
+</p>
+<div><p>
+<table style="border: 1px solid black;">
 <tr align="left" valign="center">
 {% for key, val in headers.items %}
 <th><strong>{{val}}</strong></th>
@@ -14,18 +25,12 @@ Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 {% for item in data %}
 <tr align="left" valign="center">
 {% for value in item.values %}
-<td>{{value}}</td>
+<td style="border: 1px solid black;">{{value}}</td>
 {% endfor %}
 </tr>
 {% endfor %}
 </table>
-</div>
-
-<div>
-<p>More details available at
-<a href="{{host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}">
-{{host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</></p>
-</div>
+</p></div>
 
 {% if email_uuid %}
 <div>
@@ -35,9 +40,13 @@ Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 </p></div>
 {% endif %}
 {% elif not data %}
-<div><p>No qualifying SSL certificates have been found.</p></div>
+<div><p>
+Could not find any logon events over the last
+{{ time_delta|timedelta:"{hours_total} hours" }}.
+</p></div>
 {% endif %}
 <div><p>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
+
 {% endblock %}

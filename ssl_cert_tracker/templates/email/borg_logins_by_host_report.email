@@ -2,7 +2,7 @@
 
 {% block subject %}
 {% if time_delta %}
-ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
 ControlUp Logon Simulator Event Summary by Host and Hour
 {% endif %}
@@ -12,7 +12,7 @@ ControlUp Logon Simulator Event Summary by Host and Hour
 {% if data %}
 <p>
 Logon event success/fail counts for each Citrix monitoring bot over the last 
-{{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ time_delta|timedelta:"{hours_total} hours" }}
 grouped by hour
 </p>
 <div><p>
@@ -42,7 +42,7 @@ grouped by hour
 {% elif not data %}
 <div><p>
 Could not find any logon events over the last
-{{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}.
+{{ time_delta|timedelta:"{hours_total} hours" }}.
 </p></div>
 {% endif %}
 <div><p>

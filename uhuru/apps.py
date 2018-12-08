@@ -22,7 +22,7 @@ from django.utils.translation import gettext_lazy as _
 
 class UhuruConfig(AppConfig):
     name = 'uhuru'
-    verbose_name = _('PHSA Service Operations Center Communications Station')
+    verbose_name = _('PHSA Service Operations Center Communications Center')
 
     def ready(self):
         """

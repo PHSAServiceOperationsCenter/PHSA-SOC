@@ -109,6 +109,8 @@ INSTALLED_APPS = [
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
+    'uhuru.apps.UhuruConfig',
+    'phonenumber_field',
     'simple_history',
     'dal',
     'dal_select2',
@@ -300,3 +302,7 @@ CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 CITRUS_BORG_DELETE_EXPIRED = True
 CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL = timezone.timedelta(minutes=10)
 CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD = 2
+
+# settings for dealing with phone numbers
+PHONENUMBER_DB_FORMAT = 'NATIONAL'
+PHONENUMBER_DEFAULT_REGION = 'CA'

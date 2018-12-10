@@ -57,7 +57,7 @@ def disable_selected(modeladmin, request, queryset):
         modeladmin.message_user(request, str(err), level=messages.ERROR)
         return
 
-    rows_enabled = queryset.update(enabled=True)
+    rows_enabled = queryset.update(enabled=False)
     if rows_enabled == 1:
         msg = '1 %s was disabled' % modeladmin.model._meta.verbose_name
     else:

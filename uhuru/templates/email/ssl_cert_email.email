@@ -1,0 +1,47 @@
+{% block subject %}
+{% if expires_in_less_than %}
+SSL Certificates that will expire in less than {{expires_in_less_than}} days Report as of {{report_date_time|date:"D, M d Y"}}
+{% else %}
+SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<div>
+<table color="#000000">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td>{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</div>
+
+<div>
+<p>More details available at
+<a href="{{host_name}}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}">
+{{host_name}}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}</></p>
+</div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><p>No qualifying SSL certificates have been found.</p></div>
+{% endif %}
+<div><p>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</p></div>
+{% endblock %}

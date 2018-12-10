@@ -1,0 +1,52 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{% else %}
+ControlUp Logon Simulator Event Summary by Host and Hour
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<p>
+Logon event success/fail counts for each Citrix monitoring bot over the last 
+{{ time_delta|timedelta:"{hours_total} hours" }}
+grouped by hour
+</p>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><p>
+Could not find any logon events over the last
+{{ time_delta|timedelta:"{hours_total} hours" }}.
+</p></div>
+{% endif %}
+<div><p>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</p></div>
+
+{% endblock %}

@@ -12,7 +12,7 @@ django models module for the uhuru app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 23, 2018
+:updated:    Dec. 10, 2018
 
 """
 import os
@@ -35,19 +35,14 @@ class Subscriber(BaseModel, models.Model):
         on_delete=models.CASCADE)
     delegate = models.ManyToManyField(
         'self', symmetrical=False, through='Delegation',
-        verbose_name=_('Delegate to'))
+        verbose_name=_('Delegate to'), related_name='delegate_to')
     escalate = models.ManyToManyField(
         'self', symmetrical=False, through='Escalation',
-        verbose_name=_('Escalate to'))
+        verbose_name=_('Escalate to'), related_name='escalate_to')
 
     def __str__(self):
-        subscriber = '{} {}'.format(self.subscriber.first_name,
-                                    self.subscriber.last_name)
-        delegate_to = '{} {}'.format(self.delegate.subscriber.first_name,
-                                     self.delegate.subscriber.last_name)
-
-        return '{} delegated to {}'.format(subscriber, delegate_to) \
-            if self.delegate.enabled else subscriber
+        return '{} {}'.format(self.subscriber.first_name,
+                              self.subscriber.last_name)
 
     class Meta:
         app_label = 'uhuru'
@@ -58,10 +53,9 @@ class Subscriber(BaseModel, models.Model):
 class SubscriberGroup(BaseModel, models.Model):
     subscriber_group = models.CharField(
         _('subscriber group name'), unique=True, db_index=True, blank=False,
-        null=False)
+        null=False, max_length=64)
     subscriber = models.ManyToManyField(
-        Subscriber, db_index=True, blank=False, null=False,
-        verbose_name=_('Team Member'))
+        Subscriber, db_index=True, verbose_name=_('Team Member'))
     group_email_address = models.EmailField(
         _('group email address'), db_index=True, blank=True, null=True)
     group_pager = PhoneNumberField(
@@ -80,10 +74,12 @@ class SubscriberGroup(BaseModel, models.Model):
 class Delegation(BaseModel, models.Model):
     subscriber = models.ForeignKey(
         Subscriber, db_index=True, blank=False, null=False,
-        verbose_name=_('Team Member'), on_delete=models.CASCADE)
+        verbose_name=_('Team Member'), on_delete=models.CASCADE,
+        related_name='delegate_from_subscriber')
     delegate_to = models.ForeignKey(
         Subscriber, db_index=True, blank=False, null=False,
-        verbose_name=_('Delegate to Team Member'), on_delete=models.CASCADE)
+        verbose_name=_('Delegate to Team Member'), on_delete=models.CASCADE,
+        related_name='delegate_to_subscriber')
     enabled = models.BooleanField(
         _('enabled'), db_index=True, default=False, null=False, blank=False,
         help_text=_('if this field is checked out, the row will always be'
@@ -102,10 +98,12 @@ class Delegation(BaseModel, models.Model):
 class Escalation(BaseModel, models.Model):
     subscriber = models.ForeignKey(
         Subscriber, db_index=True, blank=False, null=False,
-        verbose_name=_('Team Member'), on_delete=models.CASCADE)
+        verbose_name=_('Team Member'), on_delete=models.CASCADE,
+        related_name='escalate_from_subscriber')
     escalate_to = models.ForeignKey(
         Subscriber, db_index=True, blank=False, null=False,
-        verbose_name=_('Escalate to Team Member'), on_delete=models.CASCADE)
+        verbose_name=_('Escalate to Team Member'), on_delete=models.CASCADE,
+        related_name='escalate_to_subscriber')
 
     def __str__(self):
         return 'Notifications for {} will be escalated to {}'.\
@@ -165,9 +163,16 @@ class Subject(BaseModel, models.Model):
         _('from email address'), db_index=True, blank=False, null=False,
         default=settings.DEFAULT_FROM_EMAIL)
     template_file = models.FilePathField(
-        _('template file'), path=EMAIL_TEMPLATE_PATH, match='*.email',
+        _('template file'), path=EMAIL_TEMPLATE_PATH,
+        match=r'.*\.email$',
         allow_files=True, recursive=False, max_length=253, blank=False,
         null=False, db_index=True)
+    subscribers = models.ManyToManyField(
+        Subscriber, through='UserSubscription',
+        verbose_name=_('users subscribing to this subject'))
+    subscribing_groups = models.ManyToManyField(
+        SubscriberGroup, through='GroupSubscription',
+        verbose_name=_('groups subscribing to this subject'))
 
     def __str__(self):
         return self.subject
@@ -213,27 +218,41 @@ class SubjectTag(BaseModel, models.Model):
         indexes = [models.Index(fields=['subject_tag', 'subject']), ]
 
 
-class Subscription(BaseModel, models.Model):
-    subscription = models.CharField(
-        'subscription', max_length=64, unique=True, db_index=True, blank=False,
-        null=False)
-    emails_list = models.TextField('subscribers', blank=False, null=False)
-    from_email = models.CharField(
-        'from', max_length=255, blank=True, null=True,
-        default=settings.DEFAULT_FROM_EMAIL)
-    template_dir = models.CharField(
-        'email templates directory', max_length=255, blank=False, null=False)
-    template_name = models.CharField(
-        'email template name', max_length=64, blank=False, null=False)
-    template_prefix = models.CharField(
-        'email template prefix', max_length=64, blank=False, null=False,
-        default='email/')
-    headers = models.TextField(
-        'data headers', blank=False, null=False,
-        default='common_name,expires_in,not_before,not_after')
+class UserSubscription(BaseModel, models.Model):
+    subject = models.ForeignKey(
+        Subject, db_index=True, blank=False, null=False,
+        on_delete=models.CASCADE, verbose_name=_('subscribes to'))
+    subscriber = models.ForeignKey(
+        Subscriber, db_index=True, blank=False, null=False,
+        on_delete=models.CASCADE, verbose_name=_('subscriber'))
 
     def __str__(self):
-        return self.subscription
+        return '{} is receiving notifications about {}'.format(
+            self.subscriber, self.subject)
 
     class Meta:
         app_label = 'uhuru'
+        indexes = [models.Index(fields=['subject', 'subscriber', ]), ]
+        unique_together = (('subject', 'subscriber', ), )
+        verbose_name = _("User's Subscriptions")
+        verbose_name_plural = _("Users' Subscriptions")
+
+
+class GroupSubscription(BaseModel, models.Model):
+    subject = models.ForeignKey(
+        Subject, db_index=True, blank=False, null=False,
+        on_delete=models.CASCADE, verbose_name=_('subscribes to'))
+    subscribing_group = models.ForeignKey(
+        SubscriberGroup, db_index=True, blank=False, null=False,
+        on_delete=models.CASCADE, verbose_name=_('subscribing group'))
+
+    def __str__(self):
+        return '{} is receiving notifications about {}'.format(
+            self.subscribing_group, self.subject)
+
+    class Meta:
+        app_label = 'uhuru'
+        indexes = [models.Index(fields=['subject', 'subscribing_group', ]), ]
+        unique_together = (('subject', 'subscribing_group', ), )
+        verbose_name = _("Group's Subscriptions")
+        verbose_name_plural = _("Groups' Subscriptions")

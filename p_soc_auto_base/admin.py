@@ -19,6 +19,7 @@ contains base classes for admin forms
 from django.contrib import admin
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
+from django.contrib.admin.templatetags.admin_list import date_hierarchy
 
 
 def enable_selected(modeladmin, request, queryset):
@@ -81,6 +82,7 @@ class BaseAdmin(admin.ModelAdmin):
     actions_on_bottom = True
     actions_selection_counter = True
     save_on_top = True
+    date_hierarchy = 'updated_on'
 
     def get_actions(self, request):
         """

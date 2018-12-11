@@ -16,19 +16,20 @@ celery tasks for the ssl_certificates app
 :updated: Nov. 22, 2018
 
 """
+from smtplib import SMTPConnectError
 import xml.dom.minidom
 
-from smtplib import SMTPConnectError
 from celery import shared_task
-from celery.utils.log import get_task_logger
 from celery.exceptions import MaxRetriesExceededError
+from celery.utils.log import get_task_logger
 from libnmap.process import NmapProcess
+
 from orion_integration.lib import OrionSslNode
 
 from .db_helper import insert_into_certs_data
 from .lib import Email, expires_in, has_expired, is_not_yet_valid
-from .utils import process_xml_cert
 from .models import Subscription
+from .utils import process_xml_cert
 
 logger = get_task_logger(__name__)
 
@@ -206,7 +207,7 @@ def go_node(node_id, node_address):
     return 'successful SSL nmap probe on node address %s' % node_address
 
 
-@shared_task(queue='ssl')
+@shared_task(queue='shared')
 def getnmapdata():
     """
     get the orion node information that will be used for nmap probes

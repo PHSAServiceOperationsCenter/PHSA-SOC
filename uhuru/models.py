@@ -40,6 +40,15 @@ class Subscriber(BaseModel, models.Model):
         'self', symmetrical=False, through='Escalation',
         verbose_name=_('Escalate to'), related_name='escalate_to')
 
+    @property
+    def name(self):
+        return '{} {}'.format(self.subscriber.first_name,
+                              self.subscriber.last_name)
+
+    @property
+    def primary_email(self):
+        return self.subscriber.email
+
     def __str__(self):
         return '{} {}'.format(self.subscriber.first_name,
                               self.subscriber.last_name)
@@ -124,8 +133,8 @@ class EmailAddress(BaseModel, models.Model):
         null=False)
 
     def __str__(self):
-        return '%s %s <%s>' % (self.subscriber.first_name,
-                               self.subscriber.last_name,
+        return '%s %s <%s>' % (self.subscriber.subscriber.first_name,
+                               self.subscriber.subscriber.last_name,
                                self.email_address)
 
     class Meta:
@@ -146,8 +155,8 @@ class Telephone(BaseModel, models.Model):
 
     def __str__(self):
         return '{} {}: {}'.\
-            format(self.subscriber.first_name,
-                   self.subscriber.last_name, self.telephone)
+            format(self.subscriber.subscriber.first_name,
+                   self.subscriber.subscriber.last_name, self.telephone)
 
     class Meta:
         app_label = 'uhuru'
@@ -173,6 +182,10 @@ class Subject(BaseModel, models.Model):
     subscribing_groups = models.ManyToManyField(
         SubscriberGroup, through='GroupSubscription',
         verbose_name=_('groups subscribing to this subject'))
+    headers = models.ManyToManyField(
+        'SubjectHeader', verbose_name=_('field headers for this subject'))
+    tags = models.ManyToManyField(
+        'SubjectTag', verbose_name=_('tags for this subject'))
 
     def __str__(self):
         return self.subject
@@ -187,12 +200,9 @@ class SubjectHeader(BaseModel, models.Model):
     subject_header = models.CharField(
         _('subject header'), max_length=64, unique=True, db_index=True,
         blank=False, null=False)
-    subject = models.ForeignKey(
-        Subject, db_index=True, null=False, blank=False,
-        on_delete=models.CASCADE, verbose_name=_('subject'))
 
     def __str__(self):
-        return '{}.{}'.format(self.subject.subject, self.subject_header)
+        return self.subject_header
 
     class Meta:
         app_label = 'uhuru'
@@ -204,18 +214,14 @@ class SubjectTag(BaseModel, models.Model):
     subject_tag = models.CharField(
         _('tag'), max_length=64, unique=True, db_index=True,
         blank=False, null=False)
-    subject = models.ForeignKey(
-        Subject, db_index=True, null=False, blank=False,
-        on_delete=models.CASCADE, verbose_name=_('subject'))
 
     def __str__(self):
-        return '[{}] {}'.format(self.subject_tag, self.subject.subject)
+        return self.subject_tag
 
     class Meta:
         app_label = 'uhuru'
         verbose_name = _('Subject Tag')
         verbose_name_plural = _('Subject Tags')
-        indexes = [models.Index(fields=['subject_tag', 'subject']), ]
 
 
 class UserSubscription(BaseModel, models.Model):

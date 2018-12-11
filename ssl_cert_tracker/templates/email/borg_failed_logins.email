@@ -1,13 +1,13 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-ControlUp Logon Simulator Failed Event Alerts by Host for the last {{ time_delta | timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+ControlUp Logon Simulator Failed Event Alerts by Host for the last {{ time_delta | timedelta:"{minutes_total} minutes" }}
 {% endblock %}
 
 {% block html %}
 <p>
 Failed logon event counts for each Citrix monitoring bot over the last 
-{{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ time_delta|timedelta:"{minutes_total} minutes" }}
 </p>
 <div><p>
 <table style="border: 1px solid black;">

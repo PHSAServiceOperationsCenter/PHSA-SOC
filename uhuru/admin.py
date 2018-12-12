@@ -187,19 +187,19 @@ class SubjectAdmin(UhuruBaseAdmin, admin.ModelAdmin):
 
 @admin.register(SubjectHeader)
 class SubjectHeaderAdmin(UhuruBaseAdmin, admin.ModelAdmin):
-    list_display = ('subject_header', 'enabled', 'created_on',
+    list_display = ('subject_header', 'enabled', 'used_for', 'created_on',
                     'updated_on', 'created_by', 'updated_by',)
     list_editable = ('enabled', )
     list_filter = ('enabled',
                    ('created_on', DateRangeFilter),
                    ('updated_on', DateRangeFilter),)
     search_fields = ['subject_header', ]
-    readonly_fields = ('created_on', 'updated_on', 'created_by', 'updated_by',)
+    readonly_fields = ('created_on', 'updated_on', 'used_for',)
 
     fieldsets = (
         ('Identification', {
             'classes': ('extrapretty', 'wide', ),
-            'fields': (('enabled', 'subject_header', ), ),
+            'fields': (('enabled', 'subject_header', ), ('used_for', ), ),
         }, ),
         ('Description', {
             'classes': ('grp-collapse grp-closed', ),
@@ -215,19 +215,19 @@ class SubjectHeaderAdmin(UhuruBaseAdmin, admin.ModelAdmin):
 
 @admin.register(SubjectTag)
 class SubjectTagAdmin(UhuruBaseAdmin, admin.ModelAdmin):
-    list_display = ('subject_tag', 'enabled', 'created_on',
+    list_display = ('subject_tag', 'enabled', 'used_for', 'created_on',
                     'updated_on', 'created_by', 'updated_by',)
     list_editable = ('enabled', )
     list_filter = ('enabled',
                    ('created_on', DateRangeFilter),
                    ('updated_on', DateRangeFilter),)
     search_fields = ['subject_tag', ]
-    readonly_fields = ('created_on', 'updated_on', 'created_by', 'updated_by',)
+    readonly_fields = ('created_on', 'updated_on', 'used_for',)
 
     fieldsets = (
         ('Identification', {
             'classes': ('extrapretty', 'wide', ),
-            'fields': (('enabled', 'subject_tag', ), ),
+            'fields': (('enabled', 'subject_tag', ), ('used_for', ), ),
         }, ),
         ('Description', {
             'classes': ('grp-collapse grp-closed', ),
@@ -246,13 +246,32 @@ class SubscriberAdmin(UhuruBaseAdmin, admin.ModelAdmin):
     list_display = ('subscriber', 'name', 'primary_email', 'enabled',
                     'updated_on', 'updated_by')
     readonly_fields = ('name', 'primary_email', 'created_on',
-                       'updated_on', 'created_by', 'updated_by',)
+                       'updated_on', 'belongs_to', )
     list_editable = ('enabled',)
-    list_filter = ('enabled',
+    list_filter = ('subscribergroup__subscriber_group', 'enabled',
                    ('created_on', DateRangeFilter),
                    ('updated_on', DateRangeFilter),)
     search_fields = ['subscriber__username', 'subscriber__last_name',
                      'subscriber__first_name', 'subscriber__email', ]
+    readonly_fields = ('created_on', 'updated_on', 'name', 'primary_email',
+                       'belongs_to', )
+
+    fieldsets = (
+        ('Identification', {
+            'classes': ('extrapretty', 'wide', ),
+            'fields': (('enabled', 'subscriber', ),
+                       ('name', 'primary_email', 'belongs_to', ), ),
+        }, ),
+        ('Description', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': ('notes', ),
+        }, ),
+        ('History', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': (('created_on', 'created_by', ),
+                       ('updated_on', 'updated_by', ),),
+        }, ),
+    )
 
 
 @admin.register(SubscriberGroup)
@@ -266,3 +285,25 @@ class SubscriberGroupAdmin(UhuruBaseAdmin, admin.ModelAdmin):
     search_fields = ['subscriber_group',
                      'group_email_address', 'group_pager', ]
     filter_horizontal = ('subscriber', )
+    readonly_fields = ('created_on', 'updated_on', )
+
+    fieldsets = (
+        ('Identification', {
+            'classes': ('extrapretty', 'wide', ),
+            'fields': (('enabled', 'subscriber_group', ),
+                       ('group_email_address', 'group_pager', ), ),
+        }, ),
+        ('Description', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': ('notes', ),
+        }, ),
+        ('Members', {
+            'classes': ('extrapretty', 'wide', ),
+            'fields': (('subscriber', ), ),
+        }, ),
+        ('History', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': (('created_on', 'created_by', ),
+                       ('updated_on', 'updated_by', ),),
+        }, ),
+    )

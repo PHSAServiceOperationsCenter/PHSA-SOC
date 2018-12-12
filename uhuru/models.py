@@ -48,6 +48,24 @@ class Subscriber(BaseModel, models.Model):
     @property
     def primary_email(self):
         return self.subscriber.email
+    primary_email.fget.short_description = _('main email address')
+
+    @property
+    def belongs_to(self):
+        return ', '.join(
+            self.subscribergroup_set.values_list('subscriber_group',
+                                                 flat=True))
+    belongs_to.fget.short_description = _('member of these groups')
+
+    @property
+    def other_emails(self):
+        return ', '.join(
+            self.emailaddress_set.values_list('email_address', flat=True))
+    other_emails.fget.short_description = _('other email addresses')
+
+    @property
+    def telephones(self):
+        pass
 
     def __str__(self):
         return '{} {}'.format(self.subscriber.first_name,
@@ -201,6 +219,11 @@ class SubjectHeader(BaseModel, models.Model):
         _('subject header'), max_length=64, unique=True, db_index=True,
         blank=False, null=False)
 
+    @property
+    def used_for(self):
+        return ', '.join(self.subject_set.values_list('subject', flat=True))
+    used_for.fget.short_description = _('used for these subjects')
+
     def __str__(self):
         return self.subject_header
 
@@ -214,6 +237,11 @@ class SubjectTag(BaseModel, models.Model):
     subject_tag = models.CharField(
         _('tag'), max_length=64, unique=True, db_index=True,
         blank=False, null=False)
+
+    @property
+    def used_for(self):
+        return ', '.join(self.subject_set.values_list('subject', flat=True))
+    used_for.fget.short_description = _('used for these subjects')
 
     def __str__(self):
         return self.subject_tag

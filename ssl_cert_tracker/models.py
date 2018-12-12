@@ -76,7 +76,7 @@ class NmapCertsData(BaseModel, models.Model):
         'not valid before', db_index=True, null=False, blank=False,
         help_text='certificate not valid before this date')
     not_after = models.DateTimeField(
-        'not valid after', db_index=True, null=False, blank=False,
+        'expires on', db_index=True, null=False, blank=False,
         help_text='certificate not valid after this date')
     xml_data = models.TextField()
     common_name = models.CharField(

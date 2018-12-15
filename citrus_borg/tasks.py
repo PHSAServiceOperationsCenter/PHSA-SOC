@@ -27,6 +27,7 @@ from django.utils import timezone
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
+    login_states_by_site_host_hour,
 )
 from ssl_cert_tracker.lib import Email
 from ssl_cert_tracker.models import Subscription
@@ -327,6 +328,49 @@ def email_borg_login_summary_report(now=None, **dead_for):
             logger=_logger, time_delta=time_delta)
     except Exception as error:
         raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_sites_login_ux_summary_reports(now=None, **dead_for):
+    """
+    send reports reports about logon events for each Citrix bot
+
+    see other similar tasks for details
+
+    #TODO: split this using a celery group
+    #TODO: add site and host_name args here
+    #TODO: create a default setting of 24 hours here
+    #TODO: add the tasks
+    """
+    from citrus_borg.models import BorgSite, WinlogbeatHost
+
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    results = []
+    for site in BorgSite.objects.filter(enabled=True).order_by('site').\
+            values_list('site', flat=True):
+        for host_name in WinlogbeatHost.objects.filter(site__site__iexact=site).\
+                order_by('host_name').values_list('host_name', flat=True):
+
+            try:
+                res = _borgs_are_hailing(
+                    data=login_states_by_site_host_hour(
+                        now=_get_now(now),
+                        time_delta=time_delta, site=site, host_name=host_name),
+                    subscription=_get_subscription(
+                        'Citrix logon event and ux summary'),
+                    logger=_logger,
+                    time_delta=time_delta, site=site, host_name=host_name)
+                results.append((res, site, host_name))
+            except Exception as error:
+                _logger.info('completed {}'.format(results))
+                raise error
+
+    return results
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,

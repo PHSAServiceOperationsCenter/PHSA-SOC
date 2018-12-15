@@ -23,14 +23,14 @@ Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 
 <div>
 <p>More details available at
-<a href="{{host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}">
-{{host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</></p>
+<a href="{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}">
+{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</></p>
 </div>
 
 {% if email_uuid %}
 <div>
 <p>You can view this email online at
-<a href="{{host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+<a href="{{source_host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
 {{email_uuid}}</a>
 </p></div>
 {% endif %}

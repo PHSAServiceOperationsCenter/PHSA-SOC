@@ -35,7 +35,7 @@ grouped by hour
 {% if email_uuid %}
 <div>
 <p>You can view this email online at
-<a href="{{host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+<a href="{{source_host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
 {{email_uuid}}</a>
 </p></div>
 {% endif %}

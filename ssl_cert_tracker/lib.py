@@ -261,8 +261,8 @@ class Email():
         self.context = dict(
             report_date_time=timezone.now(),
             headers=self.headers, data=self.prepared_data,
-            host_name='http://%s:%s' % (socket.getfqdn(),
-                                        settings.SERVER_PORT),
+            source_host_name='http://%s:%s' % (socket.getfqdn(),
+                                               settings.SERVER_PORT),
             source_host=socket.getfqdn())
 
         if extra_context:

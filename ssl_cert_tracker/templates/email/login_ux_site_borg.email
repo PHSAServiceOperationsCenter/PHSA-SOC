@@ -1,0 +1,57 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary for the last {{ time_delta | timedelta:"{hours_total} Hours" }}
+{% else %}
+{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary by Hour
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<p>
+Logon event success/fail counts and user experience evaluations for the 
+<strong>{{ host_name }}</strong>
+Citrix monitoring bot in <strong>{{ site }}</strong> grouped by hour
+{% if time_delta %}
+over the last {{ time_delta|timedelta:"{hours_total} hours" }}.
+{% else %}
+.
+{% endif %}
+</p>
+<div><p>
+<table>
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th style="border: 0.1px solid black;"><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 0.1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{source_host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><p style="color: red; font-size: 160%;">
+Alert: could not find any logon events in <strong>{{ site }}, {{ host_name }}</strong>.<br>
+Please investigate.
+</p></div>
+{% endif %}
+<div><p>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</p></div>
+
+{% endblock %}

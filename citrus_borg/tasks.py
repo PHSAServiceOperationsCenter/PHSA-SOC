@@ -18,7 +18,7 @@ celery tasks for the citrus_borg application
 import datetime
 from smtplib import SMTPConnectError
 
-from celery import shared_task
+from celery import shared_task, group
 from celery.exceptions import MaxRetriesExceededError
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -330,9 +330,9 @@ def email_borg_login_summary_report(now=None, **dead_for):
         raise error
 
 
-@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
-             retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_sites_login_ux_summary_reports(now=None, **dead_for):
+@shared_task(queue='borg_chat')
+def email_sites_login_ux_summary_reports(now=None, site=None,
+                                         borg_name=None, **reporting_period):
     """
     send reports reports about logon events for each Citrix bot
 
@@ -345,32 +345,62 @@ def email_sites_login_ux_summary_reports(now=None, **dead_for):
     """
     from citrus_borg.models import BorgSite, WinlogbeatHost
 
-    if not dead_for:
-        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+    if not reporting_period:
+        time_delta = settings.CITRUS_BORG_SITE_UX_REPORTING_PERIOD
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = _get_timedelta(**reporting_period)
 
-    results = []
-    for site in BorgSite.objects.filter(enabled=True).order_by('site').\
-            values_list('site', flat=True):
-        for host_name in WinlogbeatHost.objects.filter(site__site__iexact=site).\
-                order_by('host_name').values_list('host_name', flat=True):
+    sites = BorgSite.objects.filter(enabled=True)
+    if site:
+        sites = sites.filter(site__iexact=site)
+    if not sites.exists():
+        return 'site {} does not exist. there is no report to diseminate.'.\
+            format(site)
+    sites = sites.order_by('site').values_list('site', flat=True)
 
-            try:
-                res = _borgs_are_hailing(
-                    data=login_states_by_site_host_hour(
-                        now=_get_now(now),
-                        time_delta=time_delta, site=site, host_name=host_name),
-                    subscription=_get_subscription(
-                        'Citrix logon event and ux summary'),
-                    logger=_logger,
-                    time_delta=time_delta, site=site, host_name=host_name)
-                results.append((res, site, host_name))
-            except Exception as error:
-                _logger.info('completed {}'.format(results))
-                raise error
+    site_host_arg_list = []
+    for borg_site in sites:
+        borg_names = WinlogbeatHost.objects.filter(
+            site__site__iexact=borg_site)
+        if borg_name:
+            borg_names = borg_names.filter(host_name__iexact=borg_name)
+        if not borg_names.exists():
+            _logger.info(
+                'there is no bot named {} on site {}. skipping report...'.
+                format(borg_name, borg_site))
+            continue
 
-    return results
+        borg_names = borg_names.\
+            order_by('host_name').values_list('host_name', flat=True)
+
+        for host_name in borg_names:
+
+            site_host_arg_list.append((borg_site, host_name))
+
+    group(email_login_ux_summary.s(now, time_delta, site_host_args) for
+          site_host_args in site_host_arg_list)()
+
+    return 'bootstraped logon state counts and ux evaluation for {}'.\
+        format(site_host_arg_list)
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3, serializer='pickle',
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_login_ux_summary(now, time_delta, site_host_args):
+    """
+    email a login event state count and ux evaluation for a given site and host
+    """
+    try:
+        return _borgs_are_hailing(
+            data=login_states_by_site_host_hour(
+                now=now, time_delta=time_delta,
+                site=site_host_args[0], host_name=site_host_args[1]),
+            subscription=_get_subscription(
+                'Citrix logon event and ux summary'),
+            logger=_logger, time_delta=time_delta,
+            site=site_host_args[0], host_name=site_host_args[1])
+    except Exception as error:
+        raise error
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,

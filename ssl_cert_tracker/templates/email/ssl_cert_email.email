@@ -27,8 +27,8 @@ SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 
 <div>
 <p>More details available at
-<a href="{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}">
-{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}</></p>
+<a href="{{ source_host_name }}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}">
+{{ source_host }}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}</></p>
 </div>
 
 {% if email_uuid %}

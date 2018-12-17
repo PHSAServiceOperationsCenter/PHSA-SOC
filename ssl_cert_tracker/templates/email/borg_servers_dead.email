@@ -41,8 +41,8 @@ the Web interface opened by the link above.</p>
 
 <div>
 <p>A list of all the known Citrix App Server Hosts is available at: 
-<a href="{{source_host_name}}{% url 'admin:citrus_borg_knownbrokeringdevice_changelist' %}">
-{{source_host_name}}{% url 'admin:citrus_borg_knownbrokeringdevice_changelist' %}</a></p>
+<a href="{{ source_host_name }}{% url 'admin:citrus_borg_knownbrokeringdevice_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_knownbrokeringdevice_changelist' %}</a></p>
 </div>
 
 

@@ -40,8 +40,9 @@ the Web interface opened by the link above.</p>
 </div>
 
 <div>
-<p>A list of all the sites with ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available at:<a href="{{source_host_name}}{% url 'admin:citrus_borg_borgsite_changelist' %}">
-{{source_host_name}}{% url 'admin:citrus_borg_borgsite_changelist' %}</a></p>
+<p>A list of all the sites with ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is 
+available at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_borgsite_changelist' %}</a></p>
 </div>
 
 

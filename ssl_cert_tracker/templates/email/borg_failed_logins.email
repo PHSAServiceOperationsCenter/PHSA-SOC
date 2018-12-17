@@ -30,8 +30,8 @@ Failed logon event counts for each Citrix monitoring bot over the last
 <div>
 <p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
 the Web interface at:
-<a href="{{source_host_name}}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
-{{source_host_name}}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a>
+<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a>
 .</p>
 </div>
 
@@ -39,7 +39,7 @@ the Web interface at:
 {% if email_uuid %}
 <div>
 <p>You can view this email online at
-<a href="{{source_host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
 {{email_uuid}}</a>
 </p></div>
 {% endif %}

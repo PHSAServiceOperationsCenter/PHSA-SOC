@@ -200,8 +200,110 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
         order_by('-hour', 'site__site')
 
 
-def login_states_by_site_host_hour(now=None, time_delta=None, site=None,
-                                   host_name=None, include_ux_stats=True):
+def raise_ux_alarm(now=None, time_delta=None, site=None,
+                   host_name=None):
+    pass
+
+
+def _include_event_counts(queryset):
+    return queryset.annotate(
+        failed_events=Count(
+            'winlogevent__event_state',
+            filter=Q(winlogevent__event_state__iexact='failed'))).\
+        annotate(
+            successful_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='successful')))
+
+
+def _include_ux_stats(queryset):
+    return queryset.annotate(
+        min_storefront_connection_time=Min(
+            'winlogevent__storefront_connection_duration')).\
+        annotate(
+            avg_storefront_connection_time=Avg(
+                'winlogevent__storefront_connection_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_storefront_connection_time=Max(
+                'winlogevent__storefront_connection_duration')).\
+        annotate(
+            stddev_storefront_connection_time=StdDev(
+                'winlogevent__storefront_connection_duration')).\
+        annotate(
+            min_receiver_startup_time=Min(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            avg_receiver_startup_time=Avg(
+                'winlogevent__receiver_startup_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_receiver_startup_time=Max(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            stddev_receiver_startup_time=StdDev(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            min_connection_achieved_time=Min(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            avg_connection_achieved_time=Avg(
+                'winlogevent__connection_achieved_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_connection_achieved_time=Max(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            stddev_connection_achieved_time=StdDev(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            min_logon_time=Min('winlogevent__receiver_startup_duration')).\
+        annotate(
+            avg_logon_time=Avg(
+                'winlogevent__logon_achieved_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_logon_time=Max('winlogevent__logon_achieved_duration')).\
+        annotate(
+            stddev_logon_time=StdDev('winlogevent__logon_achieved_duration'))
+
+
+def _by_site_host_hour(now, time_delta, site=None, host_name=None,
+                       logon_alert_thresold=None, ux_alert_threshold=None,
+                       include_event_counts=True, include_ux_stats=True):
+
+    queryset = WinlogbeatHost.objects.\
+        filter(winlogevent__created_on__gt=now - time_delta)
+
+    if site:
+        queryset = queryset.filter(site__site__iexact=site)
+
+    if host_name:
+        queryset = queryset.filter(host_name__iexact=host_name)
+
+    queryset = queryset.values('site__site').values('host_name').\
+        annotate(hour=TruncHour('winlogevent__created_on')).values('hour')
+
+    if include_event_counts:
+        queryset = _include_event_counts(queryset)
+
+    if include_ux_stats:
+        queryset = _include_ux_stats(queryset)
+
+    if logon_alert_thresold:
+        queryset = queryset.filter(failed_events__gt=logon_alert_thresold)
+
+    if ux_alert_threshold:
+        queryset = queryset.\
+            filter(
+                Q(avg_storefront_connection_time__gt=ux_alert_threshold) |
+                Q(avg_logon_time__gt=ux_alert_threshold))
+
+    return queryset
+
+
+def login_states_by_site_host_hour(
+        now=None, time_delta=None, site=None, host_name=None):
     """
     :returns:
 
@@ -260,76 +362,7 @@ def login_states_by_site_host_hour(now=None, time_delta=None, site=None,
         raise TypeError(
             '%s type invalid for %s' % (type(time_delta), time_delta))
 
-    queryset = WinlogbeatHost.objects.\
-        filter(winlogevent__created_on__gt=now - time_delta)
-
-    if site:
-        queryset = queryset.filter(site__site__iexact=site)
-
-    if host_name:
-        queryset = queryset.filter(host_name__iexact=host_name)
-
-    queryset = queryset.values('site__site').values('host_name').\
-        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
-        annotate(
-            failed_events=Count(
-                'winlogevent__event_state',
-                filter=Q(winlogevent__event_state__iexact='failed'))).\
-        annotate(
-            successful_events=Count(
-                'winlogevent__event_state',
-                filter=Q(winlogevent__event_state__iexact='successful')))
-
-    if include_ux_stats:
-        queryset = queryset.annotate(
-            min_storefront_connection_time=Min(
-                'winlogevent__storefront_connection_duration')).\
-            annotate(
-                avg_storefront_connection_time=Avg(
-                    'winlogevent__storefront_connection_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_storefront_connection_time=Max(
-                    'winlogevent__storefront_connection_duration')).\
-            annotate(
-                stddev_storefront_connection_time=StdDev(
-                    'winlogevent__storefront_connection_duration')).\
-            annotate(
-                min_receiver_startup_time=Min(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                avg_receiver_startup_time=Avg(
-                    'winlogevent__receiver_startup_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_receiver_startup_time=Max(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                stddev_receiver_startup_time=StdDev(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                min_connection_achieved_time=Min(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                avg_connection_achieved_time=Avg(
-                    'winlogevent__connection_achieved_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_connection_achieved_time=Max(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                stddev_connection_achieved_time=StdDev(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                min_logon_time=Min('winlogevent__receiver_startup_duration')).\
-            annotate(
-                avg_logon_time=Avg(
-                    'winlogevent__logon_achieved_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_logon_time=Max('winlogevent__logon_achieved_duration')).\
-            annotate(
-                stddev_logon_time=StdDev('winlogevent__logon_achieved_duration'))
+    queryset = _by_site_host_hour(now, time_delta, site, host_name)
 
     return queryset.order_by('site__site', 'host_name', '-hour')
 

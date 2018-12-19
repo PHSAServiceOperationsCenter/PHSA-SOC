@@ -62,9 +62,9 @@ the Web interface opened by the link above.</p>
 </p></div>
 {% endif %}
 {% elif not data %}
-<div><p style="color: red; font-size: 160%;">
-Alert: could not find any logon events in <strong>{{ site }}, {{ host_name }}</strong>.<br>
-Please investigate.
+<div><p>
+The User Experience on <strong>{{ site }}, {{ host_name }}</strong> has been 
+acceptable over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 </p></div>
 {% endif %}
 <div><p>

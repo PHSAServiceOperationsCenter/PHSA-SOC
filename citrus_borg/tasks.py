@@ -397,7 +397,60 @@ def email_login_ux_summary(now, time_delta, site_host_args):
 @shared_task(queue='borg_chat')
 def email_ux_alarms(now=None, site=None, borg_name=None,
                     ux_alert_threshold=None, **reporting_period):
-    pass
+    """
+    bootstrap the process of sending email alerts about user experience
+    faults
+
+    """
+    if not reporting_period:
+        time_delta = settings.CITRUS_BORG_UX_ALERT_INTERVAL
+    else:
+        time_delta = _get_timedelta(**reporting_period)
+
+    if ux_alert_threshold is None:
+        ux_alert_threshold = settings.CITRUS_BORG_UX_ALERT_THRESHOLD
+    else:
+        if not isinstance(ux_alert_threshold, dict):
+            raise TypeError(
+                'object {} type {} is not valid. must be a dictionary'
+                ' suitable for datetime.timedelta() arguments'.format(
+                    ux_alert_threshold, type(ux_alert_threshold)))
+
+        ux_alert_threshold = _get_timedelta(**ux_alert_threshold)
+
+    sites = BorgSite.objects.filter(enabled=True)
+    if site:
+        sites = sites.filter(site__iexact=site)
+    if not sites.exists():
+        return 'site {} does not exist. there is no report to diseminate.'.\
+            format(site)
+    sites = sites.order_by('site').values_list('site', flat=True)
+
+    site_host_arg_list = []
+    for borg_site in sites:
+        borg_names = WinlogbeatHost.objects.filter(
+            site__site__iexact=borg_site, enabled=True)
+        if borg_name:
+            borg_names = borg_names.filter(host_name__iexact=borg_name)
+        if not borg_names.exists():
+            LOGGER.info(
+                'there is no bot named {} on site {}. skipping report...'.
+                format(borg_name, borg_site))
+            continue
+
+        borg_names = borg_names.\
+            order_by('host_name').values_list('host_name', flat=True)
+
+        for host_name in borg_names:
+
+            site_host_arg_list.append((borg_site, host_name))
+
+    group(email_ux_alarm.s(now, time_delta,
+                           ux_alert_threshold, site_host_args) for
+          site_host_args in site_host_arg_list)()
+
+    return 'bootstraped ux evaluation alarms for {}'.\
+        format(site_host_arg_list)
 
 
 @shared_task(

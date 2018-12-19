@@ -46,7 +46,7 @@ import datetime
 
 from django.conf import settings
 from django.db.models import Count, Q, Min, Max, Avg, StdDev, DurationField
-from django.db.models.functions import TruncHour
+from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
 
 from citrus_borg.models import (

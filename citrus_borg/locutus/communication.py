@@ -44,6 +44,8 @@ and same thing for brokers
 """
 import datetime
 
+from enum import Enum
+
 from django.conf import settings
 from django.db.models import Count, Q, Min, Max, Avg, StdDev, DurationField
 from django.db.models.functions import TruncHour, TruncMinute
@@ -52,6 +54,15 @@ from django.utils import timezone
 from citrus_borg.models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
 )
+
+
+class GroupBy(Enum):
+    """
+    enumeration for specifying the group by time sequence details
+    """
+    NONE = None
+    HOUR = 'hour'
+    MINUTE = 'minute'
 
 
 def get_dead_bots(now=None, time_delta=None):
@@ -204,7 +215,7 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
 
 def raise_ux_alarm(
         now=None, site=None, host_name=None,
-        by_hour=False, include_event_counts=False,
+        group_by=GroupBy.MINUTE, include_event_counts=False,
         time_delta=settings.CITRUS_BORG_UX_ALERT_INTERVAL,
         ux_alert_threshold=settings.CITRUS_BORG_UX_ALERT_THRESHOLD):
     """
@@ -218,13 +229,14 @@ def raise_ux_alarm(
     """
     try:
         queryset = _by_site_host_hour(
-            now, time_delta, site, host_name, by_hour, ux_alert_threshold,
-            include_event_counts)
+            now=now, time_delta=time_delta, site=site, host_name=host_name,
+            group_by=group_by, ux_alert_threshold=ux_alert_threshold,
+            include_event_counts=include_event_counts)
     except Exception as error:
         raise error
 
     return queryset.order_by(
-        'site__site', 'host_name', '-avg_logon_time',
+        'site__site', 'host_name', '-avg_logon_time', '-minute',
         '-avg_storefront_connection_time')
 # pylint: enable=too-many-arguments
 
@@ -303,7 +315,7 @@ def _include_ux_stats(queryset):
 def _by_site_host_hour(now, time_delta, site=None, host_name=None,
                        logon_alert_threshold=None, ux_alert_threshold=None,
                        include_event_counts=True, include_ux_stats=True,
-                       by_hour=True):
+                       group_by=GroupBy.HOUR):
     """
     :returns:
 
@@ -363,7 +375,12 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         include min, max, avg, and stdev for all the subevent durations
         provided by ControlUp, default ``True``
 
-    :arg bool by_hour: group the rows by hourly increments
+    :arg group_by:
+
+        the kind of sequence to use, if any, when grouping by time,
+        default is by hour
+
+    :argtype group_by: :enum:`<GroupBy>`
 
     :raises:
 
@@ -410,9 +427,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     queryset = queryset.values('site__site').values('host_name')
 
-    if by_hour:
-        queryset = queryset.annotate(
-            hour=TruncHour('winlogevent__created_on')).values('hour')
+    queryset = _group_by(queryset, group_by)
 
     if include_event_counts:
         queryset = _include_event_counts(queryset)
@@ -431,6 +446,19 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     return queryset
 # pylint: enable=too-many-arguments,too-many-branches
+
+
+def _group_by(queryset, group_by=GroupBy.NONE):
+    if group_by == GroupBy.HOUR:
+        return queryset.\
+            annotate(hour=TruncHour('winlogevent__created_on')).values('hour')
+
+    if group_by == GroupBy.MINUTE:
+        return queryset.\
+            annotate(minute=TruncMinute('winlogevent__created_on')).\
+            values('minute')
+
+    return queryset
 
 
 def login_states_by_site_host_hour(

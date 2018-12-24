@@ -370,7 +370,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     group(email_login_ux_summary.s(now, time_delta, site_host_args) for
           site_host_args in site_host_arg_list)()
 
-    return 'bootstraped logon state counts and ux evaluation for {}'.\
+    return 'bootstrapped logon state counts and ux evaluation for {}'.\
         format(site_host_arg_list)
 
 
@@ -449,7 +449,7 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
                            ux_alert_threshold, site_host_args) for
           site_host_args in site_host_arg_list)()
 
-    return 'bootstraped ux evaluation alarms for {}'.\
+    return 'bootstrapped ux evaluation alarms for {}'.\
         format(site_host_arg_list)
 
 
@@ -466,8 +466,7 @@ def email_ux_alarm(now, time_delta, ux_alert_threshold, site_host_args):
                 now=now, time_delta=time_delta,
                 ux_alert_threshold=ux_alert_threshold,
                 site=site_host_args[0], host_name=site_host_args[1]),
-            subscription=_get_subscription(
-                'Citrix UX Alert'),
+            subscription=_get_subscription('Citrix UX Alert'),
             logger=LOGGER, time_delta=time_delta,
             ux_alert_threshold=ux_alert_threshold,
             site=site_host_args[0], host_name=site_host_args[1])

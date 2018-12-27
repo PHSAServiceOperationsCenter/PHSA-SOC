@@ -336,12 +336,6 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     """
     send reports reports about logon events for each Citrix bot
 
-    see other similar tasks for details
-
-    #TODO: split this using a celery group
-    #TODO: add site and host_name args here
-    #TODO: create a default setting of 24 hours here
-    #TODO: add the tasks
     """
     from citrus_borg.models import BorgSite, WinlogbeatHost
 

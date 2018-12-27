@@ -1,0 +1,74 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
+{% else %}
+{{ site }}, {{ host_name }} Citrix User Experience Alerts
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<p>
+The User Experience for the 
+<strong>{{ host_name }}</strong>
+Citrix monitoring bot in <strong>{{ site }}</strong> has encountered 
+response times longer than <strong>{{ ux_alert_threshold|timedelta:"{seconds_total} seconds" }}</strong> 
+{% if time_delta %}
+over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
+{% else %}
+.
+{% endif %}
+</p>
+<div><p>
+<table>
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th style="border: 0.1px solid black;"><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 0.1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+<div>
+<p>A list of all the sites with ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is 
+available at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_borgsite_changelist' %}</a></p>
+<p>To stop receiving alarms and reports about a specific site with Citrix bots, disable it using
+the Web interface opened by the link above.</p>
+</div>
+
+<div>
+<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available 
+at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a></p>
+<p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
+the Web interface opened by the link above.</p>
+</div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><p>
+The User Experience on <strong>{{ site }}, {{ host_name }}</strong> has been 
+acceptable over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
+</p></div>
+{% endif %}
+<div><p>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</p></div>
+
+{% endblock %}

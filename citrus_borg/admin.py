@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 
 from p_soc_auto_base.admin import BaseAdmin
-from rangefilter.filter import DateRangeFilter
+from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
@@ -163,5 +163,5 @@ class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_filter = ('event_state', 'source_host__host_name',
                    'source_host__site__site',
                    'xml_broker__broker_name',
-                   ('created_on', DateRangeFilter),
+                   ('created_on', DateTimeRangeFilter),
                    'is_expired',)

@@ -44,14 +44,25 @@ and same thing for brokers
 """
 import datetime
 
+from enum import Enum
+
 from django.conf import settings
 from django.db.models import Count, Q, Min, Max, Avg, StdDev, DurationField
-from django.db.models.functions import TruncHour
+from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
 
 from citrus_borg.models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
 )
+
+
+class GroupBy(Enum):
+    """
+    enumeration for specifying the group by time sequence details
+    """
+    NONE = None
+    HOUR = 'hour'
+    MINUTE = 'minute'
 
 
 def get_dead_bots(now=None, time_delta=None):
@@ -199,20 +210,266 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
                 filter=Q(winlogevent__event_state__iexact='successful'))).\
         order_by('-hour', 'site__site')
 
+# pylint: disable=too-many-arguments
 
-def login_states_by_site_host_hour(now=None, time_delta=None, site=None,
-                                   host_name=None, include_ux_stats=True):
+
+def raise_ux_alarm(
+        now=None, site=None, host_name=None,
+        group_by=GroupBy.MINUTE, include_event_counts=False,
+        time_delta=settings.CITRUS_BORG_UX_ALERT_INTERVAL,
+        ux_alert_threshold=settings.CITRUS_BORG_UX_ALERT_THRESHOLD):
+    """
+    :returns:
+
+        a queryset with rows where the average storefront connection or the
+        average logon duration are greater than or equal to the value of
+        :ux_alert_threshold
+
+
+    """
+    try:
+        queryset = _by_site_host_hour(
+            now=now, time_delta=time_delta, site=site, host_name=host_name,
+            group_by=group_by, ux_alert_threshold=ux_alert_threshold,
+            include_event_counts=include_event_counts)
+    except Exception as error:
+        raise error
+
+    return queryset.order_by(
+        'site__site', 'host_name', '-avg_logon_time', '-minute',
+        '-avg_storefront_connection_time')
+# pylint: enable=too-many-arguments
+
+
+def _include_event_counts(queryset):
+    """
+    annotate a queryset with the counts for event states
+    """
+    return queryset.annotate(
+        failed_events=Count(
+            'winlogevent__event_state',
+            filter=Q(winlogevent__event_state__iexact='failed'))).\
+        annotate(
+            successful_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='successful')))
+
+
+def _include_ux_stats(queryset):
+    """
+    annotate a queryset with min, avg, max, and stddev for subevent duration
+    """
+    return queryset.annotate(
+        min_storefront_connection_time=Min(
+            'winlogevent__storefront_connection_duration')).\
+        annotate(
+            avg_storefront_connection_time=Avg(
+                'winlogevent__storefront_connection_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_storefront_connection_time=Max(
+                'winlogevent__storefront_connection_duration')).\
+        annotate(
+            stddev_storefront_connection_time=StdDev(
+                'winlogevent__storefront_connection_duration')).\
+        annotate(
+            min_receiver_startup_time=Min(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            avg_receiver_startup_time=Avg(
+                'winlogevent__receiver_startup_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_receiver_startup_time=Max(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            stddev_receiver_startup_time=StdDev(
+                'winlogevent__receiver_startup_duration')).\
+        annotate(
+            min_connection_achieved_time=Min(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            avg_connection_achieved_time=Avg(
+                'winlogevent__connection_achieved_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_connection_achieved_time=Max(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            stddev_connection_achieved_time=StdDev(
+                'winlogevent__connection_achieved_duration')).\
+        annotate(
+            min_logon_time=Min('winlogevent__receiver_startup_duration')).\
+        annotate(
+            avg_logon_time=Avg(
+                'winlogevent__logon_achieved_duration',
+                output_field=DurationField())).\
+        annotate(
+            max_logon_time=Max('winlogevent__logon_achieved_duration')).\
+        annotate(
+            stddev_logon_time=StdDev('winlogevent__logon_achieved_duration'))
+
+# pylint: disable=too-many-arguments,too-many-branches
+
+
+def _by_site_host_hour(now, time_delta, site=None, host_name=None,
+                       logon_alert_threshold=None, ux_alert_threshold=None,
+                       include_event_counts=True, include_ux_stats=True,
+                       group_by=GroupBy.HOUR):
+    """
+    :returns:
+
+        a queryset grouped by site and host
+
+        if requested:
+
+        *    the querysset will be grouped by hourly increments
+
+        *    the queryset will include counts of failed and successful logins
+
+        *    the queryset will include user experience estimates based on
+             the min, max, and avg valaues of the durations associated with
+             each subevent (connect to storefront, start receiver,
+             logon achieved, connection achieved)
+
+        *    the queryset will be filtered on the failed event count using
+             the gte operator
+
+        *    the queryset will be filtered on the average storefront connection
+             duration or the average logon connection duration using a
+             (gte or gte) operator combination
+
+    :rtype: `<django.db.models.query.QuerySet>`
+
+    :arg `datetime.datetime` now: the reference time point for the report
+
+    :arg `datetime.timedelta` time_delta:
+
+        the period to report upon, measured backwards from :now:
+
+    :arg str site:
+
+        filter by site; default ``None`` meaning return data for all sites
+
+    :arg str host_name:
+
+        filter by host name; default ``None`` meaning return data for all the
+        bots
+
+    :arg int logon_alert_trehsold:
+
+        only return rows where the failed event count is gte to this
+        argument
+
+    :arg `datetime.timedelta` ux_alert_threshold:
+
+        only return rows where the average storefront connection or the
+        average logon duration are gte to this argument
+
+    :arg bool include_event_counts:
+
+        include count for event states (successful and failed)
+
+    :arg bool include_ux_stats:
+
+        include min, max, avg, and stdev for all the subevent durations
+        provided by ControlUp, default ``True``
+
+    :arg group_by:
+
+        the kind of sequence to use, if any, when grouping by time,
+        default is by hour
+
+    :argtype group_by: :enum:`<GroupBy>`
+
+    :raises:
+
+        :exception:`<TypeError>` if :arg:`<now>` is not a
+        `datetime.datetime` instance
+
+        :exception:`<TypeError>` if  :arg:`<time_delta>` or
+        :arg:`<ux-alert_threshold>` are not `datetime.timedelta` instances
+
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+
+    if logon_alert_threshold is not None:
+        try:
+            logon_alert_threshold = int(logon_alert_threshold)
+        except ValueError as error:
+            raise error
+
+    if ux_alert_threshold is not None:
+        if not isinstance(ux_alert_threshold, datetime.timedelta):
+            raise TypeError(
+                '%s type invalid for %s' % (type(ux_alert_threshold),
+                                            ux_alert_threshold))
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
+
+    queryset = WinlogbeatHost.objects.\
+        filter(winlogevent__created_on__gt=now - time_delta)
+
+    if site:
+        queryset = queryset.filter(site__site__iexact=site)
+
+    if host_name:
+        queryset = queryset.filter(host_name__iexact=host_name)
+
+    queryset = queryset.values('site__site').values('host_name')
+
+    queryset = _group_by(queryset, group_by)
+
+    if include_event_counts:
+        queryset = _include_event_counts(queryset)
+
+    if include_ux_stats:
+        queryset = _include_ux_stats(queryset)
+
+    if logon_alert_threshold:
+        queryset = queryset.filter(failed_events__gt=logon_alert_threshold)
+
+    if ux_alert_threshold:
+        queryset = queryset.\
+            filter(
+                Q(avg_storefront_connection_time__gt=ux_alert_threshold) |
+                Q(avg_logon_time__gt=ux_alert_threshold))
+
+    return queryset
+# pylint: enable=too-many-arguments,too-many-branches
+
+
+def _group_by(queryset, group_by=GroupBy.NONE):
+    if group_by == GroupBy.HOUR:
+        return queryset.\
+            annotate(hour=TruncHour('winlogevent__created_on')).values('hour')
+
+    if group_by == GroupBy.MINUTE:
+        return queryset.\
+            annotate(minute=TruncMinute('winlogevent__created_on')).\
+            values('minute')
+
+    return queryset
+
+
+def login_states_by_site_host_hour(
+        now=None, time_delta=settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN,
+        site=None, host_name=None):
     """
     :returns:
 
         a queryset grouped by site, host, and time in hour increments
 
         the queryset is sorted by site, host, and time descending.
-        it includes counts of failed and successful logins for each row.
-        if requested, the queryset will also include user experience
-        estimates based the min, max, and avg valaues of the durations
-        associated with each subevent (connect to storefront, start receiver,
-        logon achieved, connection achieved)
 
     :rtype: `<django.db.models.query.QuerySet>`
 
@@ -236,100 +493,15 @@ def login_states_by_site_host_hour(now=None, time_delta=None, site=None,
         filter by host name; default ``None`` meaning return data for all the
         bots
 
-    :arg bool include_ux_stats:
-
-        include min, max, avg, and stdev for all the subevent durations
-        provided by ControlUp (begs the question, what happens when we have
-        holess in the dataset?)
-
     :raises:
 
-        :exception:`<TypeError>` if :arg:`<now>` or :arg:`<time_delta>` are
+        :exception:`<Exception>` if :arg:`<now>` or :arg:`<time_delta>` are
         not of the specified types
     """
-    if now is None:
-        now = timezone.now()
-
-    if time_delta is None:
-        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
-
-    queryset = WinlogbeatHost.objects.\
-        filter(winlogevent__created_on__gt=now - time_delta)
-
-    if site:
-        queryset = queryset.filter(site__site__iexact=site)
-
-    if host_name:
-        queryset = queryset.filter(host_name__iexact=host_name)
-
-    queryset = queryset.values('site__site').values('host_name').\
-        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
-        annotate(
-            failed_events=Count(
-                'winlogevent__event_state',
-                filter=Q(winlogevent__event_state__iexact='failed'))).\
-        annotate(
-            successful_events=Count(
-                'winlogevent__event_state',
-                filter=Q(winlogevent__event_state__iexact='successful')))
-
-    if include_ux_stats:
-        queryset = queryset.annotate(
-            min_storefront_connection_time=Min(
-                'winlogevent__storefront_connection_duration')).\
-            annotate(
-                avg_storefront_connection_time=Avg(
-                    'winlogevent__storefront_connection_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_storefront_connection_time=Max(
-                    'winlogevent__storefront_connection_duration')).\
-            annotate(
-                stddev_storefront_connection_time=StdDev(
-                    'winlogevent__storefront_connection_duration')).\
-            annotate(
-                min_receiver_startup_time=Min(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                avg_receiver_startup_time=Avg(
-                    'winlogevent__receiver_startup_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_receiver_startup_time=Max(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                stddev_receiver_startup_time=StdDev(
-                    'winlogevent__receiver_startup_duration')).\
-            annotate(
-                min_connection_achieved_time=Min(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                avg_connection_achieved_time=Avg(
-                    'winlogevent__connection_achieved_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_connection_achieved_time=Max(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                stddev_connection_achieved_time=StdDev(
-                    'winlogevent__connection_achieved_duration')).\
-            annotate(
-                min_logon_time=Min('winlogevent__receiver_startup_duration')).\
-            annotate(
-                avg_logon_time=Avg(
-                    'winlogevent__logon_achieved_duration',
-                    output_field=DurationField())).\
-            annotate(
-                max_logon_time=Max('winlogevent__logon_achieved_duration')).\
-            annotate(
-                stddev_logon_time=StdDev('winlogevent__logon_achieved_duration'))
+    try:
+        queryset = _by_site_host_hour(now, time_delta, site, host_name)
+    except Exception as error:
+        raise error
 
     return queryset.order_by('site__site', 'host_name', '-hour')
 

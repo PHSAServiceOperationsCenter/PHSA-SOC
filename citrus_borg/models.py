@@ -20,12 +20,12 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.db.models.deletion import SET_NULL
 from django.utils.timezone import now, timedelta
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from p_soc_auto_base.models import BaseModel
-from django.db.models.deletion import SET_NULL
 
 
 def get_uuid():
@@ -37,6 +37,8 @@ def get_uuid():
     """
     return uuid.uuid4()
 
+# pylint: disable=too-few-public-methods,no-self-use
+
 
 class BorgSiteNotSeenManager(models.Manager):
     """
@@ -44,9 +46,14 @@ class BorgSiteNotSeenManager(models.Manager):
     """
 
     def get_queryset(self):
+        """
+        override the get_queryset method
+        """
         return BorgSite.objects.\
             exclude(winlogbeathost__last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+# pylint: enable=too-few-public-methods,no-self-use
 
 
 class BorgSite(BaseModel, models.Model):

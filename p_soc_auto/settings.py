@@ -34,7 +34,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -301,5 +301,5 @@ CITRUS_BORG_DELETE_EXPIRED = True
 CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL = timezone.timedelta(minutes=10)
 CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD = 2
 CITRUS_BORG_SITE_UX_REPORTING_PERIOD = timezone.timedelta(hours=24)
-CITRUS_BORG_UX_ALARM_PERIOD = timezone.timedelta(minutes=10)
-CITRUS_BORG_UX_ALARM_THRESHOLD = timezone.timedelta(seconds=10)
+CITRUS_BORG_UX_ALERT_THRESHOLD = timezone.timedelta(seconds=10)
+CITRUS_BORG_UX_ALERT_INTERVAL = timezone.timedelta(minutes=10)

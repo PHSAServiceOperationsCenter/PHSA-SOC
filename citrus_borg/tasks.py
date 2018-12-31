@@ -29,7 +29,7 @@ from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
-    login_states_by_site_host_hour, raise_ux_alarm,
+    login_states_by_site_host_hour, raise_ux_alarm, get_failed_events,
 )
 from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
@@ -508,6 +508,40 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
             data=data, subscription=_get_subscription('Citrix logon alert'),
             logger=LOGGER, time_delta=time_delta,
             failed_threshold=failed_threshold)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_failed_logins_report(
+        now=None, send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS,
+        **dead_for):
+    """
+    send out the report with all known failed logon events
+    """
+    if not dead_for:
+        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    now = _get_now(now)
+
+    data = get_failed_events(now=now, time_delta=time_delta)
+
+    if not data and send_no_news:
+        return (
+            'there were no failed logon events between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
+    try:
+        return _borgs_are_hailing(
+            data=data,
+            subscription=_get_subscription('Citrix Failed Logins Report'),
+            logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
 

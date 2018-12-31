@@ -323,7 +323,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
         if requested:
 
-        *    the querysset will be grouped by hourly increments
+        *    the queryset will be grouped by hourly increments
 
         *    the queryset will include counts of failed and successful logins
 
@@ -548,3 +548,67 @@ def raise_failed_logins_alarm(
                 filter=Q(winlogevent__event_state__iexact='failed'))).\
         filter(failed_events__gte=failed_threshold).\
         order_by('site__site')
+
+
+def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
+    """
+    :returns: a queryset extracted from :class:`<models.WinlogEvent>`
+    :rtype: `<django.db.models.query.QuerySet>`
+
+    :arg `datetime.datetime` now:
+
+        the reference time point for the report; default is ``None`` in which
+        case the value returned by the django equivalent of
+        `datetime.dateime.now` is used
+
+    :arg `datetime.timedelta` time_delta:
+
+        the period to report upon, measured backwards from :now:; default is
+        ``None`` in which case a default value configured in
+        :module:`<settings>` is used
+
+    :arg str site:
+
+        filter by site; default ``None`` meaning return data for all sites
+
+    :arg str host_name:
+
+        filter by host name; default ``None`` meaning return data for all the
+        bots
+
+    :raises:
+
+        :exception:`<TypeError>` if :arg:`<now>` is not a
+        `datetime.datetime` instance
+
+        :exception:`<TypeError>` if  :arg:`<time_delta>` is not
+        `datetime.timedelta` instances
+
+
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
+
+    queryset = WinlogEvent.objects.\
+        filter(created_on__gt=now - time_delta).\
+        exclude(event_state__iexact='successful')
+
+    if site:
+        queryset = queryset.filter(site__site__iexact=site)
+
+    if host_name:
+        queryset = queryset.filter(host_name__iexact=host_name)
+
+    queryset = queryset.order_by('-created_on')
+
+    return queryset

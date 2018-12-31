@@ -1,0 +1,69 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{% else %}
+{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h2>{{ site }}, {{ host_name }}</h2>
+<h3>
+Failed Logon Events Over the Last 
+{{ time_delta|timedelta:"{hours_total} Hours" }}
+</h3>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+<div><h3>Disabling Report for a Given Site or Citrix Bot</h3>
+<ul><li>
+Open the list of sites with ControlUp Logon Monitoring Hosts at:
+<a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_borgsite_changelist' %}</a>, 
+select the specific site(s), and disable it/them.
+</li>
+
+<li>
+<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available 
+at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a></p>
+<p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
+the Web interface opened by the link above.</p>
+</li></ul>
+
+{% if email_uuid %}
+<h5>To view this email in a browser</h5>
+<ul><li>Navigate to: 
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</li></ul>
+{% endif %}
+{% elif not data %}
+<h2>{{ site }}, {{ host_name }}</h2>
+<div><h3>
+No Failed Logon Events Over the Last 
+{{ time_delta|timedelta:"{hours_total} Hours" }}
+</h3></div>
+{% endif %}
+<div><h5>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</h5></div>
+
+{% endblock %}

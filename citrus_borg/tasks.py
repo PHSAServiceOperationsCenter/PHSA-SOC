@@ -546,6 +546,19 @@ def email_failed_logins_report(
         raise error
 
 
+@shared_task(queue='borg_chat')
+def email_failed_login_sites_report(
+        now=None, site=None, borg_name=None,
+        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **reporting_period):
+    """
+    bootstrap emails for per siteand bot failed login reports
+    """
+    if not reporting_period:
+        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+    else:
+        time_delta = _get_timedelta(**reporting_period)
+
+
 def _get_now(now=None):
     """
     :returns: a valid ``datetime.datetime`` object or ``datetime.dateime.now``

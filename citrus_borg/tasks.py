@@ -58,32 +58,35 @@ def store_borg_data(body):
     generic :exception:`<Exception>` are raised and logged to the celery log
     if anything goes amiss while processing the event data
     """
+    def reraise(msg, body, error):
+        LOGGER.error('{} {}: {}'.format(msg, body, str(error)))
+        raise error
+
     try:
         borg = process_borg(body)
     except Exception as error:
-        msg = 'processing %s raises %s' % (body, str(error))
-        LOGGER.error(msg)
+        reraise('cannot save event data from event', body, error)
 
     try:
         event_host = WinlogbeatHost.get_or_create_from_borg(borg)
     except Exception as error:
-        LOGGER.error(error)
+        reraise('cannot retrieve bot info from event', body, error)
 
     try:
         event_broker = KnownBrokeringDevice.get_or_create_from_borg(borg)
     except Exception as error:
-        LOGGER.error(error)
+        reraise('cannot retrieve session host info from event', body, error)
 
     try:
         event_source = AllowedEventSource.objects.get(
             source_name=borg.event_source)
     except Exception as error:
-        LOGGER.error(error)
+        reraise('cannot match event source for event', body, error)
 
     try:
         windows_log = WindowsLog.objects.get(log_name=borg.windows_log)
     except Exception as error:
-        LOGGER.error(error)
+        reraise('cannot match windows log info for event', body, error)
 
     user = WinlogEvent.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
     winlogevent = WinlogEvent(
@@ -100,13 +103,14 @@ def store_borg_data(body):
         logoff_achieved_duration=borg.borg_message.logoff_achieved_duration,
         failure_reason=borg.borg_message.failure_reason,
         failure_details=borg.borg_message.failure_details,
+        raw_message=borg.borg_message.raw_message,
         created_by=user, updated_by=user
     )
 
     try:
         winlogevent.save()
     except Exception as error:
-        LOGGER.error(error)
+        reraise('cannot save data collected from event', body, error)
 
     return 'saved event: %s' % winlogevent.uuid
 # pylint: enable=R0914

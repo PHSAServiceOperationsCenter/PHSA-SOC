@@ -604,10 +604,10 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         exclude(event_state__iexact='successful')
 
     if site:
-        queryset = queryset.filter(site__site__iexact=site)
+        queryset = queryset.filter(source_host__site__site__iexact=site)
 
     if host_name:
-        queryset = queryset.filter(host_name__iexact=host_name)
+        queryset = queryset.filter(source_host__host_name__iexact=host_name)
 
     queryset = queryset.order_by('-created_on')
 

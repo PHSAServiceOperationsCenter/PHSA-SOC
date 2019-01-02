@@ -37,15 +37,14 @@ Failed Logon Events Over the Last
 Open the list of sites with ControlUp Logon Monitoring Hosts at:
 <a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_changelist' %}">
 {{ source_host }}{% url 'admin:citrus_borg_borgsite_changelist' %}</a>, 
-select the specific site(s), and disable it/them.
+select the specific site(s), and disable it/them
 </li>
 
 <li>
-<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available 
+Open the list of ControlUp Logon Monitoring Hosts a.k.a Citrix Bots  
 at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
-{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a></p>
-<p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
-the Web interface opened by the link above.</p>
+{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a>, 
+select the specific Citrix bot(s), and disable it/them
 </li></ul>
 
 {% if email_uuid %}

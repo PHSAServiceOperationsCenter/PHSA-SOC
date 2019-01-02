@@ -132,7 +132,9 @@ def expire_events():
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_alert(now=None, **dead_for):
+def email_dead_borgs_alert(
+        now=None,
+        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
     """
     send out alerts about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -151,14 +153,25 @@ def email_dead_borgs_alert(now=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
+    now = _get_now(now)
+
     if not dead_for:
         time_delta = settings.CITRUS_BORG_DEAD_BOT_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_bots(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'all monitoring bots were active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_bots(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Dead Citrix monitoring bots'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -167,7 +180,7 @@ def email_dead_borgs_alert(now=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_report(now=None, **dead_for):
+def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
     """
     send out reports about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -186,14 +199,25 @@ def email_dead_borgs_report(now=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
+    now = _get_now(now)
+
     if not dead_for:
         time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_bots(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'all monitoring bots were active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_bots(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Dead Citrix monitoring bots'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -202,7 +226,9 @@ def email_dead_borgs_report(now=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_sites_alert(now=None, **dead_for):
+def email_dead_sites_alert(
+        now=None,
+        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
     """
     email alerts about dead sites
 
@@ -223,14 +249,25 @@ def email_dead_sites_alert(now=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
+    now = _get_now(now)
+
     if not dead_for:
         time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_sites(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'at least one monitoring bot on each site was active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Dead Citrix client sites'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -239,20 +276,31 @@ def email_dead_sites_alert(now=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_sites_report(now=None, **dead_for):
+def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
     """
     send reports about dead Ctirix client sites
 
     see other similar tasks for details
     """
+    now = _get_now(now)
+
     if not dead_for:
         time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_sites(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'at least one monitoring bot on each site was active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_sites(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Dead Citrix client sites'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -261,20 +309,31 @@ def email_dead_sites_report(now=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_servers_report(now=None, **dead_for):
+def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
     """
     send reports about dead Citrix app hosts
 
     see other similar tasks for details
     """
+    now = _get_now(now)
+
     if not dead_for:
         time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_brokers(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'all known Cerner session servers were active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_brokers(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Missing Citrix farm hosts'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -283,20 +342,33 @@ def email_dead_servers_report(now=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_servers_alert(now=None, **dead_for):
+def email_dead_servers_alert(
+        now=None,
+        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
     """
     send reports about dead Citrix app hosts
 
     see other similar tasks for details
     """
+    now = _get_now(now)
+
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_DEAD_BROKER_AFTER
+        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
     else:
         time_delta = _get_timedelta(**dead_for)
 
+    data = get_dead_brokers(now=now, time_delta=time_delta)
+    if not data and send_no_news:
+        return (
+            'all known Cerner session servers were active between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=get_dead_brokers(now=_get_now(now), time_delta=time_delta),
+            data=data,
             subscription=_get_subscription('Missing Citrix farm hosts'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
@@ -396,12 +468,15 @@ def email_login_ux_summary(now, time_delta, site_host_args):
 
 @shared_task(queue='borg_chat')
 def email_ux_alarms(now=None, site=None, borg_name=None,
+                    send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS,
                     ux_alert_threshold=None, **reporting_period):
     """
     bootstrap the process of sending email alerts about user experience
     faults
 
     """
+    now = _get_now(now)
+
     if not reporting_period:
         time_delta = settings.CITRUS_BORG_UX_ALERT_INTERVAL
     else:
@@ -418,6 +493,7 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
 
         ux_alert_threshold = _get_timedelta(**ux_alert_threshold)
 
+    # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
     sites = BorgSite.objects.filter(enabled=True)
     if site:
         sites = sites.filter(site__iexact=site)
@@ -445,7 +521,7 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
 
             site_host_arg_list.append((borg_site, host_name))
 
-    group(email_ux_alarm.s(now, time_delta,
+    group(email_ux_alarm.s(now, time_delta, send_no_news,
                            ux_alert_threshold, site_host_args) for
           site_host_args in site_host_arg_list)()
 
@@ -456,17 +532,30 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
 @shared_task(
     queue='borg_chat', rate_limit='3/s', max_retries=3, serializer='pickle',
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_ux_alarm(now, time_delta, ux_alert_threshold, site_host_args):
+def email_ux_alarm(
+        now, time_delta, send_no_news, ux_alert_threshold, site_host_args):
     """
     email an ux alarm for a given site and host
     """
+    now = _get_now(now)
+    site, host_name = site_host_args
+
+    data = raise_ux_alarm(
+        now=now, time_delta=time_delta,
+        ux_alert_threshold=ux_alert_threshold,
+        site=site, host_name=host_name)
+    if not data and send_no_news:
+        return (
+            'Citrix response times on {} bot in {} were better than {} between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(host_name, site, ux_alert_threshold,
+                   timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
     try:
         return _borgs_are_hailing(
-            data=raise_ux_alarm(
-                now=now, time_delta=time_delta,
-                ux_alert_threshold=ux_alert_threshold,
-                site=site_host_args[0], host_name=site_host_args[1]),
-            subscription=_get_subscription('Citrix UX Alert'),
+            data=data, subscription=_get_subscription('Citrix UX Alert'),
             logger=LOGGER, time_delta=time_delta,
             ux_alert_threshold=ux_alert_threshold,
             site=site_host_args[0], host_name=site_host_args[1])
@@ -514,9 +603,7 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_failed_logins_report(
-        now=None, send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS,
-        **dead_for):
+def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
     """
     send out the report with all known failed logon events
     """
@@ -549,14 +636,81 @@ def email_failed_logins_report(
 @shared_task(queue='borg_chat')
 def email_failed_login_sites_report(
         now=None, site=None, borg_name=None,
-        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **reporting_period):
+        send_no_news=True, **reporting_period):
     """
-    bootstrap emails for per siteand bot failed login reports
+    bootstrap emails for per site and bot failed login reports
     """
     if not reporting_period:
         time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
     else:
         time_delta = _get_timedelta(**reporting_period)
+
+        # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
+    sites = BorgSite.objects.filter(enabled=True)
+    if site:
+        sites = sites.filter(site__iexact=site)
+    if not sites.exists():
+        return 'site {} does not exist. there is no report to diseminate.'.\
+            format(site)
+    sites = sites.order_by('site').values_list('site', flat=True)
+
+    site_host_arg_list = []
+    for borg_site in sites:
+        borg_names = WinlogbeatHost.objects.filter(
+            site__site__iexact=borg_site, enabled=True)
+        if borg_name:
+            borg_names = borg_names.filter(host_name__iexact=borg_name)
+        if not borg_names.exists():
+            LOGGER.info(
+                'there is no bot named {} on site {}. skipping report...'.
+                format(borg_name, borg_site))
+            continue
+
+        borg_names = borg_names.\
+            order_by('host_name').values_list('host_name', flat=True)
+
+        for host_name in borg_names:
+
+            site_host_arg_list.append((borg_site, host_name))
+
+    group(email_failed_login_site_report.s(now, time_delta,
+                                           send_no_news, site_host_args) for
+          site_host_args in site_host_arg_list)()
+
+    return 'bootstrapped failed login reports for {}'.\
+        format(site_host_arg_list)
+
+
+@shared_task(
+    queue='borg_chat', rate_limit='3/s', max_retries=3, serializer='pickle',
+    retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_failed_login_site_report(
+        now, time_delta, send_no_news, site_host_args):
+    """
+    email a report with the failed logon events for a specific site, bot pair
+    """
+    now = _get_now(now)
+    site, host_name = site_host_args
+
+    data = get_failed_events(
+        now=now, time_delta=time_delta, site=site, host_name=host_name)
+    if not data and send_no_news:
+        return (
+            'there were no failed logon events on the {} bot in {} between'
+            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            format(host_name, site, timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
+    try:
+        return _borgs_are_hailing(
+            data=data,
+            subscription=_get_subscription(
+                'Citrix Failed Logins per Site Report'),
+            logger=LOGGER,
+            time_delta=time_delta, site=site, host_name=host_name)
+    except Exception as error:
+        raise error
 
 
 def _get_now(now=None):

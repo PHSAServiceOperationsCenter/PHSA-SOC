@@ -182,7 +182,7 @@ def process_borg_message(message=None):
             'state', 'broker', 'test_result', 'storefront_connection_duration',
             'receiver_startup_duration', 'connection_achieved_duration',
             'logon_achieved_duration', 'logoff_achieved_duration',
-            'failure_reason', 'failure_details'
+            'failure_reason', 'failure_details', 'raw_message'
         ]
     )
 
@@ -203,7 +203,7 @@ def process_borg_message(message=None):
         borg_message.failure_reason = None
         borg_message.failure_details = None
 
-    else:
+    elif borg_message.state in ['Failed']:
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])
         borg_message.broker = None
@@ -213,6 +213,16 @@ def process_borg_message(message=None):
         borg_message.connection_achieved_duration = None
         borg_message.logon_achieved_duration = None
         borg_message.logoff_achieved_duration = None
+    else:
+        borg_message.raw_message = message
+        borg_message.broker = None
+        borg_message.test_result = False
+        borg_message.storefront_connection_duration = None
+        borg_message.receiver_startup_duration = None
+        borg_message.connection_achieved_duration = None
+        borg_message.logon_achieved_duration = None
+        borg_message.logoff_achieved_duration = None
+        borg_message.failure_reason = None
+        borg_message.failure_details = None
 
     return borg_message
-

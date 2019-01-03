@@ -304,6 +304,9 @@ class WinlogEvent(BaseModel, models.Model):
         _('Failure Reason'), blank=True, null=True)
     failure_details = models.TextField(
         _('Failure Details'), blank=True, null=True)
+    raw_message = models.TextField(
+        _('Raw Message'), blank=True, null=True,
+        help_text=_('the application cannot process this message'))
     is_expired = models.BooleanField(
         _('event has expired'), db_index=True, blank=False, null=False,
         default=False)

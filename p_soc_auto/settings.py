@@ -34,7 +34,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*', ]
 
@@ -260,12 +260,12 @@ NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
-# EMAIL_HOST = 'smtp.healthbc.org'
-# EMAIL_USE_TLS = False
-# EMAIL_USE_SSL = False
-# EMAIL_PORT = 25
-# EMAIL_HOST_USER = ''
-# EMAIL_HOST_PASSWORD = ''
+EMAIL_HOST = 'smtp.healthbc.org'
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+EMAIL_PORT = 25
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
@@ -275,12 +275,12 @@ SUB_ESC_EMAIL_TYPE = 2
 #=========================================================================
 # # email settings for gmail
 # # these will not work from 10.1.80.0
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'phsadev@gmail.com'
-EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'phsadev@gmail.com'
+# EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 #=========================================================================
 
 # broadcast only notifications of these levels

@@ -36,14 +36,20 @@ from dynamic_preferences.registries import global_preferences_registry
 
 citrus_borg_common = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
+
 citrus_borg_events = Section(
     'citrusborgevents', verbose_name=_('citrus borg event settings').title())
-citrus_borg_node = Section('citrusborgnode', verbose_name=_(
-    'Citrus Borg Node settings').title())
-citrus_borg_ux = Section('citrusborgux', verbose_name=_(
-    'Citrus Borg User Experience settings').title())
-citrus_borg_logon = Section('citruborglogon', verbose_name=_(
-    'Citrus Borg Citrix Logon settings').title())
+
+citrus_borg_node = Section(
+    'citrusborgnode', verbose_name=_('Citrus Borg Node settings').title())
+
+citrus_borg_ux = Section(
+    'citrusborgux',
+    verbose_name=_('Citrus Borg User Experience settings').title())
+
+citrus_borg_logon = Section(
+    'citrusborglogon',
+    verbose_name=_('Citrus Borg Citrix Logon settings').title())
 
 # pylint: enable=C0103
 
@@ -181,6 +187,21 @@ class UxReportingPeriod(DurationPreference):
 
 
 @global_preferences_registry.register
+class NodeForgottenAfter(DurationPreference):
+    """
+    reprot something as dead after preference
+    """
+    section = citrus_borg_node
+    name = 'node_forgotten_after'
+    default = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    verbose_name = _('reporting period for dead nodes').title()
+    help_text = format_html(
+        "{}<br>{}",
+        _('reports about dead bots, site, or session hosts are based'),
+        _('on this period'))
+
+
+@global_preferences_registry.register
 class BotAlertAfter(DurationPreference):
     """
     reprot something as dead after preference
@@ -227,4 +248,48 @@ class SessionHostAlertAfter(DurationPreference):
         _('mostly informative in nature'))
 
 
-#pylint: enable=E1101
+@global_preferences_registry.register
+class FailedLogonAlertInterval(DurationPreference):
+    """
+    reprot something as dead after preference
+    """
+    section = citrus_borg_logon
+    name = 'logon_alert_after'
+    default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+    verbose_name = _('failed logons alert interval').title()
+    help_text = format_html(
+        "{}<br>{}",
+        _('interval at which to verify sites and bots for failed logon'),
+        _('events'))
+
+
+@global_preferences_registry.register
+class FailedLogonAlertThreshold(IntPreference):
+    """
+    failed logon events count threshold preference
+    """
+    section = citrus_borg_logon
+    name = 'logon_alert_threshold'
+    default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
+    verbose_name = _('failed logon events count alert threshold').title()
+    help_text = format_html(
+        "{}<br>{}",
+        _('how many times does a failed logon happen in a given interval'),
+        _('before an alert is raised'))
+
+
+@global_preferences_registry.register
+class LogonReportsInterval(DurationPreference):
+    """
+    report interval for logon events preference
+    """
+    section = citrus_borg_logon
+    name = 'logon_report_period'
+    default = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+    verbose_name = _('logon events reporting period').title()
+    help_text = format_html(
+        "{}<br>{}",
+        _('logon reports are calculated, created, and sent over this'),
+        _('time interval'))
+
+# pylint: enable=E1101

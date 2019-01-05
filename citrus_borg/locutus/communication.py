@@ -46,14 +46,17 @@ import datetime
 
 from enum import Enum
 
-from django.conf import settings
 from django.db.models import Count, Q, Min, Max, Avg, StdDev, DurationField
 from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
+from dynamic_preferences.registries import global_preferences_registry
 
 from citrus_borg.models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
 )
+
+
+PREFS = global_preferences_registry.manager()
 
 
 class GroupBy(Enum):
@@ -86,7 +89,7 @@ def get_dead_bots(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_BOT_AFTER
+        time_delta = PREFS.get('citrusborgnode__dead_bot_after')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -116,7 +119,7 @@ def get_dead_brokers(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_BROKER_AFTER
+        time_delta = PREFS.get('citrusborgnode__dead_session_host_after')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -148,7 +151,7 @@ def get_dead_sites(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+        time_delta = PREFS.get('citrusborgnode__dead_site_after')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -188,7 +191,7 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+        time_delta = PREFS.get('citrusborgcommon__dead_after')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -216,8 +219,8 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
 def raise_ux_alarm(
         now=None, site=None, host_name=None,
         group_by=GroupBy.MINUTE, include_event_counts=False,
-        time_delta=settings.CITRUS_BORG_UX_ALERT_INTERVAL,
-        ux_alert_threshold=settings.CITRUS_BORG_UX_ALERT_THRESHOLD):
+        time_delta=PREFS.get('citrusborgux__ux_alert_interval'),
+        ux_alert_threshold=PREFS.get('citrusborgux__ux_alert_threshold')):
     """
     :returns:
 
@@ -395,7 +398,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+        time_delta = PREFS.get('citrusborgevents__ignore_events_older_than')
 
     if logon_alert_threshold is not None:
         try:
@@ -462,7 +465,8 @@ def _group_by(queryset, group_by=GroupBy.NONE):
 
 
 def login_states_by_site_host_hour(
-        now=None, time_delta=settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN,
+        now=None,
+        time_delta=PREFS.get('citrusborgevents__ignore_events_older_than'),
         site=None, host_name=None):
     """
     :returns:
@@ -523,10 +527,10 @@ def raise_failed_logins_alarm(
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+        time_delta = PREFS.get('citrusborglogon__logon_alert_after')
 
     if failed_threshold is None:
-        failed_threshold = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
+        failed_threshold = PREFS.get('citrusborglogon__logon_alert_threshold')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
@@ -590,7 +594,7 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         now = timezone.now()
 
     if time_delta is None:
-        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+        time_delta = PREFS.get('citrusborglogon__logon_report_period')
 
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))

@@ -275,7 +275,7 @@ SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2
 
-#=========================================================================
+# =========================================================================
 # # email settings for gmail
 # # these will not work from 10.1.80.0
 # EMAIL_HOST = 'smtp.gmail.com'
@@ -284,7 +284,7 @@ SUB_ESC_EMAIL_TYPE = 2
 # EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
-#=========================================================================
+# =========================================================================
 
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []

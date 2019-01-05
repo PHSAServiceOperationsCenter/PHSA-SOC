@@ -175,7 +175,7 @@ def go_node(node_id, node_address):
         nmap_task.run()
     except MaxRetriesExceededError as error:
         logger.error(
-            'nmap retry limit exceeded for node address %s' % node_address)
+            'nmap retry limit exceeded for node address %s', node_address)
         raise error
     except Exception as ex:
         raise NmapError(
@@ -186,8 +186,8 @@ def go_node(node_id, node_address):
             node_id, xml.dom.minidom.parseString(nmap_task.stdout))
     except Exception as error:
         logger.error(
-            'cannot process nmap XML report for node address %s: %s'
-            % (node_address, str(error)))
+            'cannot process nmap XML report for node address %s: %s',
+            node_address, str(error))
 
     if json["md5"] is None:
         logger.error(

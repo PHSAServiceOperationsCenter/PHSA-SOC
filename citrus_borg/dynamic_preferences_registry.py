@@ -78,8 +78,8 @@ class SendNoNews(BooleanPreference):
     section = citrus_borg_common
     name = 'send_no_news'
     default = settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS
-    required = True
-    verbose_name = _("don't send empty citrix alert emails").title()
+    required = False
+    verbose_name = _("do not send empty citrix alert emails").title()
     help_text = format_html(
         "{}<br>{}",
         _('by default the application sends alert emails even if there is no'
@@ -96,6 +96,7 @@ class DeadAfter(DurationPreference):
     section = citrus_borg_common
     name = 'dead_after'
     default = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+    required = True
     verbose_name = _('dead if not seen for more than').title()
     help_text = format_html(
         "{}<br>{}",
@@ -111,6 +112,7 @@ class IgnoreEvents(DurationPreference):
     section = citrus_borg_events
     name = 'ignore_events_older_than'
     default = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+    required = True
     verbose_name = _('ignore events created older than').title()
     help_text = _(
         'events older than this value will not be used for any analysis')
@@ -124,6 +126,7 @@ class ExpireEvents(DurationPreference):
     section = citrus_borg_events
     name = 'expire_events_older_than'
     default = settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER
+    required = True
     verbose_name = _('mark events as expired if older than').title()
     help_text = _(
         'events older than this value will be marked as expired')
@@ -137,6 +140,7 @@ class DeleteExpireEvents(BooleanPreference):
     section = citrus_borg_events
     name = 'delete_expired_events'
     default = settings.CITRUS_BORG_DELETE_EXPIRED
+    required = False
     verbose_name = _('delete expired events').title()
 
 
@@ -148,6 +152,7 @@ class UxAlertThreshold(DurationPreference):
     section = citrus_borg_ux
     name = 'ux_alert_threshold'
     default = settings.CITRUS_BORG_UX_ALERT_THRESHOLD
+    required = True
     verbose_name = _(
         'maximum acceptable response time for citrix events').title()
     help_text = format_html(
@@ -164,6 +169,7 @@ class UxAlertInterval(DurationPreference):
     section = citrus_borg_ux
     name = 'ux_alert_interval'
     default = settings.CITRUS_BORG_UX_ALERT_INTERVAL
+    required = True
     verbose_name = _('alert monitoring interval for citrix events').title()
     help_text = format_html(
         "{}<br>{}",
@@ -179,6 +185,7 @@ class UxReportingPeriod(DurationPreference):
     section = citrus_borg_ux
     name = 'ux_reporting_period'
     default = settings.CITRUS_BORG_SITE_UX_REPORTING_PERIOD
+    required = True
     verbose_name = _('user experience reporting period').title()
     help_text = format_html(
         "{}<br>{}",
@@ -194,6 +201,7 @@ class NodeForgottenAfter(DurationPreference):
     section = citrus_borg_node
     name = 'node_forgotten_after'
     default = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+    required = True
     verbose_name = _('reporting period for dead nodes').title()
     help_text = format_html(
         "{}<br>{}",
@@ -209,6 +217,7 @@ class BotAlertAfter(DurationPreference):
     section = citrus_borg_node
     name = 'dead_bot_after'
     default = settings.CITRUS_BORG_DEAD_BOT_AFTER
+    required = True
     verbose_name = _('bot not seen alert threshold').title()
     help_text = format_html(
         "{}<br>{}",
@@ -224,6 +233,7 @@ class SiteAlertAfter(DurationPreference):
     section = citrus_borg_node
     name = 'dead_site_after'
     default = settings.CITRUS_BORG_DEAD_SITE_AFTER
+    required = True
     verbose_name = _('site not seen alert threshold').title()
     help_text = format_html(
         "{}<br>{}",
@@ -239,6 +249,7 @@ class SessionHostAlertAfter(DurationPreference):
     section = citrus_borg_node
     name = 'dead_session_host_after'
     default = settings.CITRUS_BORG_DEAD_BROKER_AFTER
+    required = True
     verbose_name = _('session host not seen alert threshold').title()
     help_text = format_html(
         "{}<br>{}<br>{}<br>{}",
@@ -256,6 +267,7 @@ class FailedLogonAlertInterval(DurationPreference):
     section = citrus_borg_logon
     name = 'logon_alert_after'
     default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+    required = True
     verbose_name = _('failed logons alert interval').title()
     help_text = format_html(
         "{}<br>{}",
@@ -270,6 +282,7 @@ class FailedLogonAlertThreshold(IntPreference):
     """
     section = citrus_borg_logon
     name = 'logon_alert_threshold'
+    required = True
     default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
     verbose_name = _('failed logon events count alert threshold').title()
     help_text = format_html(
@@ -286,6 +299,7 @@ class LogonReportsInterval(DurationPreference):
     section = citrus_borg_logon
     name = 'logon_report_period'
     default = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+    required = True
     verbose_name = _('logon events reporting period').title()
     help_text = format_html(
         "{}<br>{}",
@@ -293,3 +307,14 @@ class LogonReportsInterval(DurationPreference):
         _('time interval'))
 
 # pylint: enable=E1101
+
+
+def get_preference(key=None):
+    """
+    get the preference
+    """
+    preferences = global_preferences_registry.manager().load_from_db()
+    try:
+        return preferences.get(key)
+    except Exception as error:
+        raise error

@@ -20,8 +20,6 @@ from smtplib import SMTPConnectError
 
 from django.utils import timezone
 
-from dynamic_preferences.registries import global_preferences_registry
-
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -31,6 +29,7 @@ from citrus_borg.locutus.communication import (
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
     login_states_by_site_host_hour, raise_ux_alarm, get_failed_events,
 )
+from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
     WinlogEvent, BorgSite,
@@ -41,7 +40,6 @@ from ssl_cert_tracker.models import Subscription
 
 LOGGER = get_task_logger(__name__)
 
-PREFS = global_preferences_registry.manager()
 
 # pylint: disable=W0703,R0914
 
@@ -91,7 +89,7 @@ def store_borg_data(body):
         reraise('cannot match windows log info for event', body, error)
 
     user = WinlogEvent.get_or_create_user(
-        PREFS.get('citrusborgcommon__service_user'))
+        get_preference('citrusborgcommon__service_user'))
     winlogevent = WinlogEvent(
         source_host=event_host, record_number=borg.record_number,
         event_source=event_source, windows_log=windows_log,
@@ -126,23 +124,21 @@ def expire_events():
     """
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        - PREFS.get('citrusborgevents__expire_events_older_than')
+        - get_preference('citrusborgevents__expire_events_older_than')
     ).update(is_expired=True)
 
-    if PREFS.get('citrusborgevents__delete_expired_events'):
+    if get_preference('citrusborgevents__delete_expired_events'):
         WinlogEvent.objects.filter(is_expired=True).all().delete()
         return 'deleted %s events accumulated over the last %s' % (
-            expired, PREFS.get('citrusborgevents__expire_events_older_than'))
+            expired, get_preference('citrusborgevents__expire_events_older_than'))
 
     return 'expired %s events accumulated over the last %s' % (
-        expired, PREFS.get('citrusborgevents__expire_events_older_than'))
+        expired, get_preference('citrusborgevents__expire_events_older_than'))
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_alert(
-        now=None,
-        send_no_news=PREFS.get('citrusborgcommon__send_no_news'), **dead_for):
+def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
     """
     send out alerts about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -164,9 +160,18 @@ def email_dead_borgs_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__dead_bot_after')
+        time_delta = get_preference('citrusborgnode__dead_bot_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_bots(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -210,7 +215,7 @@ def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__node_forgotten_after')
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -234,9 +239,7 @@ def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_sites_alert(
-        now=None,
-        send_no_news=PREFS.get('citrusborgcommon__send_no_news'), **dead_for):
+def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
     """
     email alerts about dead sites
 
@@ -260,9 +263,18 @@ def email_dead_sites_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__dead_site_after')
+        time_delta = get_preference('citrusborgnode__dead_site_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_sites(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -293,7 +305,7 @@ def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__node_forgotten_after')
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -326,7 +338,7 @@ def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__node_forgotten_after')
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -350,9 +362,7 @@ def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_servers_alert(
-        now=None,
-        send_no_news=PREFS.get('citrusborgcommon__send_no_news'), **dead_for):
+def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
     """
     send reports about dead Citrix app hosts
 
@@ -361,9 +371,18 @@ def email_dead_servers_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborgnode__node_forgotten_after')
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_brokers(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -392,7 +411,8 @@ def email_borg_login_summary_report(now=None, **dead_for):
     see other similar tasks for details
     """
     if not dead_for:
-        time_delta = PREFS.get('citrusborgeents__ignore_events_older_than')
+        time_delta = get_preference(
+            'citrusborgeents__ignore_events_older_than')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -416,7 +436,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
 
     """
     if not reporting_period:
-        time_delta = PREFS.get('citrusborgux__ux_reporting_period')
+        time_delta = get_preference('citrusborgux__ux_reporting_period')
     else:
         time_delta = _get_timedelta(**reporting_period)
 
@@ -476,7 +496,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
 
 @shared_task(queue='borg_chat')
 def email_ux_alarms(now=None, site=None, borg_name=None,
-                    send_no_news=PREFS.get('citrusborgcommon__send_no_news'),
+                    send_no_news=None,
                     ux_alert_threshold=None, **reporting_period):
     """
     bootstrap the process of sending email alerts about user experience
@@ -486,12 +506,21 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
     now = _get_now(now)
 
     if not reporting_period:
-        time_delta = PREFS.get('citrusborgux__ux_alert_interval')
+        time_delta = get_preference('citrusborgux__ux_alert_interval')
     else:
         time_delta = _get_timedelta(**reporting_period)
 
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
+
     if ux_alert_threshold is None:
-        ux_alert_threshold = PREFS.get('citrusborgux__ux_alert_threshold')
+        ux_alert_threshold = get_preference('citrusborgux__ux_alert_threshold')
     else:
         if not isinstance(ux_alert_threshold, dict):
             raise TypeError(
@@ -580,10 +609,11 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     see other similar tasks for details
     """
     if failed_threshold is None:
-        failed_threshold = PREFS.get('citrusborglogon__logon_alert_threshold')
+        failed_threshold = get_preference(
+            'citrusborglogon__logon_alert_threshold')
 
     if not dead_for:
-        time_delta = PREFS.get('citrusborglogon__logon_alert_interval')
+        time_delta = get_preference('citrusborglogon__logon_alert_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -616,7 +646,7 @@ def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
     send out the report with all known failed logon events
     """
     if not dead_for:
-        time_delta = PREFS.get('citrusborglogon__logon_report_period')
+        time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -649,7 +679,7 @@ def email_failed_login_sites_report(
     bootstrap emails for per site and bot failed login reports
     """
     if not reporting_period:
-        time_delta = PREFS.get('citrusborglogon__logon_report_period')
+        time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
         time_delta = _get_timedelta(**reporting_period)
 

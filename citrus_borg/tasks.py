@@ -18,11 +18,9 @@ celery tasks for the citrus_borg application
 import datetime
 from smtplib import SMTPConnectError
 
-from django.conf import settings
 from django.utils import timezone
 
 from celery import shared_task, group
-from celery.exceptions import MaxRetriesExceededError
 from celery.utils.log import get_task_logger
 
 from citrus_borg.locutus.assimilation import process_borg
@@ -31,6 +29,7 @@ from citrus_borg.locutus.communication import (
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
     login_states_by_site_host_hour, raise_ux_alarm, get_failed_events,
 )
+from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
     WinlogEvent, BorgSite,
@@ -40,6 +39,7 @@ from ssl_cert_tracker.models import Subscription
 
 
 LOGGER = get_task_logger(__name__)
+
 
 # pylint: disable=W0703,R0914
 
@@ -59,7 +59,7 @@ def store_borg_data(body):
     if anything goes amiss while processing the event data
     """
     def reraise(msg, body, error):
-        LOGGER.error('{} {}: {}'.format(msg, body, str(error)))
+        LOGGER.error('%s %s: %s', msg, body, str(error))
         raise error
 
     try:
@@ -88,7 +88,8 @@ def store_borg_data(body):
     except Exception as error:
         reraise('cannot match windows log info for event', body, error)
 
-    user = WinlogEvent.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+    user = WinlogEvent.get_or_create_user(
+        get_preference('citrusborgcommon__service_user'))
     winlogevent = WinlogEvent(
         source_host=event_host, record_number=borg.record_number,
         event_source=event_source, windows_log=windows_log,
@@ -123,22 +124,21 @@ def expire_events():
     """
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()
-        - settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER).update(is_expired=True)
+        - get_preference('citrusborgevents__expire_events_older_than')
+    ).update(is_expired=True)
 
-    if settings.CITRUS_BORG_DELETE_EXPIRED:
+    if get_preference('citrusborgevents__delete_expired_events'):
         WinlogEvent.objects.filter(is_expired=True).all().delete()
         return 'deleted %s events accumulated over the last %s' % (
-            expired, settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER)
+            expired, get_preference('citrusborgevents__expire_events_older_than'))
 
     return 'expired %s events accumulated over the last %s' % (
-        expired, settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER)
+        expired, get_preference('citrusborgevents__expire_events_older_than'))
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_alert(
-        now=None,
-        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
+def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
     """
     send out alerts about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -160,9 +160,18 @@ def email_dead_borgs_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_DEAD_BOT_AFTER
+        time_delta = get_preference('citrusborgnode__dead_bot_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_bots(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -206,7 +215,7 @@ def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -230,9 +239,7 @@ def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_sites_alert(
-        now=None,
-        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
+def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
     """
     email alerts about dead sites
 
@@ -256,9 +263,18 @@ def email_dead_sites_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_DEAD_SITE_AFTER
+        time_delta = get_preference('citrusborgnode__dead_site_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_sites(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -289,7 +305,7 @@ def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -322,7 +338,7 @@ def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -346,9 +362,7 @@ def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_servers_alert(
-        now=None,
-        send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS, **dead_for):
+def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
     """
     send reports about dead Citrix app hosts
 
@@ -357,9 +371,18 @@ def email_dead_servers_alert(
     now = _get_now(now)
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
+        time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
         time_delta = _get_timedelta(**dead_for)
+
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
 
     data = get_dead_brokers(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -388,7 +411,8 @@ def email_borg_login_summary_report(now=None, **dead_for):
     see other similar tasks for details
     """
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
+        time_delta = get_preference(
+            'citrusborgeents__ignore_events_older_than')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -412,7 +436,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
 
     """
     if not reporting_period:
-        time_delta = settings.CITRUS_BORG_SITE_UX_REPORTING_PERIOD
+        time_delta = get_preference('citrusborgux__ux_reporting_period')
     else:
         time_delta = _get_timedelta(**reporting_period)
 
@@ -432,8 +456,8 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
             LOGGER.info(
-                'there is no bot named {} on site {}. skipping report...'.
-                format(borg_name, borg_site))
+                'there is no bot named %s on site %s. skipping report...',
+                borg_name, borg_site)
             continue
 
         borg_names = borg_names.\
@@ -472,7 +496,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
 
 @shared_task(queue='borg_chat')
 def email_ux_alarms(now=None, site=None, borg_name=None,
-                    send_no_news=settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS,
+                    send_no_news=None,
                     ux_alert_threshold=None, **reporting_period):
     """
     bootstrap the process of sending email alerts about user experience
@@ -482,12 +506,21 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
     now = _get_now(now)
 
     if not reporting_period:
-        time_delta = settings.CITRUS_BORG_UX_ALERT_INTERVAL
+        time_delta = get_preference('citrusborgux__ux_alert_interval')
     else:
         time_delta = _get_timedelta(**reporting_period)
 
+    if send_no_news is None:
+        send_no_news = get_preference('citrusborgcommon__send_no_news')
+
+    if not isinstance(send_no_news, bool):
+        raise TypeError(
+            'object {} type {} is not valid. must be boolean'.
+            format(send_no_news, type(send_no_news))
+        )
+
     if ux_alert_threshold is None:
-        ux_alert_threshold = settings.CITRUS_BORG_UX_ALERT_THRESHOLD
+        ux_alert_threshold = get_preference('citrusborgux__ux_alert_threshold')
     else:
         if not isinstance(ux_alert_threshold, dict):
             raise TypeError(
@@ -514,8 +547,8 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
             LOGGER.info(
-                'there is no bot named {} on site {}. skipping report...'.
-                format(borg_name, borg_site))
+                'there is no bot named %s on site %s. skipping report...',
+                borg_name, borg_site)
             continue
 
         borg_names = borg_names.\
@@ -576,10 +609,11 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     see other similar tasks for details
     """
     if failed_threshold is None:
-        failed_threshold = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
+        failed_threshold = get_preference(
+            'citrusborglogon__logon_alert_threshold')
 
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
+        time_delta = get_preference('citrusborglogon__logon_alert_after')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -612,7 +646,7 @@ def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
     send out the report with all known failed logon events
     """
     if not dead_for:
-        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+        time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -645,7 +679,7 @@ def email_failed_login_sites_report(
     bootstrap emails for per site and bot failed login reports
     """
     if not reporting_period:
-        time_delta = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
+        time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
         time_delta = _get_timedelta(**reporting_period)
 
@@ -666,8 +700,8 @@ def email_failed_login_sites_report(
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
             LOGGER.info(
-                'there is no bot named {} on site {}. skipping report...'.
-                format(borg_name, borg_site))
+                'there is no bot named %s on site %s. skipping report...',
+                borg_name, borg_site)
             continue
 
         borg_names = borg_names.\
@@ -751,7 +785,7 @@ def _borgs_are_hailing(data, subscription, logger, **extra_context):
             data=data, subscription_obj=subscription, logger=logger,
             **extra_context)
     except Exception as error:
-        logger.error('cannot initialize email object: %s' % str(error))
+        logger.error('cannot initialize email object: %s', str(error))
         return 'cannot initialize email object: %s' % str(error)
 
     try:

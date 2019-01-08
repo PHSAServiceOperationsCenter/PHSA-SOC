@@ -192,7 +192,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
+def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
     """
     send out reports about borgs that have not been seen within the date-time
     interval defined by :arg:`<now>` - :arg:`<**dead_for>`
@@ -295,7 +295,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
+def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
     """
     send reports about dead Ctirix client sites
 
@@ -328,7 +328,7 @@ def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
+def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
     """
     send reports about dead Citrix app hosts
 
@@ -411,7 +411,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
     """
     if not dead_for:
         time_delta = get_preference(
-            'citrusborgeents__ignore_events_older_than')
+            'citrusborgevents__ignore_events_older_than')
     else:
         time_delta = _get_timedelta(**dead_for)
 
@@ -640,7 +640,7 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
+def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
     """
     send out the report with all known failed logon events
     """
@@ -673,7 +673,7 @@ def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
 @shared_task(queue='borg_chat')
 def email_failed_login_sites_report(
         now=None, site=None, borg_name=None,
-        send_no_news=True, **reporting_period):
+        send_no_news=False, **reporting_period):
     """
     bootstrap emails for per site and bot failed login reports
     """

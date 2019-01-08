@@ -18,18 +18,17 @@ celery tasks for the citrus_borg application
 import datetime
 from smtplib import SMTPConnectError
 
-from django.utils import timezone
-
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
+from django.utils import timezone
 
+from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
     login_states_by_site_host_hour, raise_ux_alarm, get_failed_events,
 )
-from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
     WinlogEvent, BorgSite,
@@ -177,7 +176,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
     if not data and send_no_news:
         return (
             'all monitoring bots were active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -223,7 +222,7 @@ def email_dead_borgs_report(now=None, send_no_news=True, **dead_for):
     if not data and send_no_news:
         return (
             'all monitoring bots were active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -280,7 +279,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
     if not data and send_no_news:
         return (
             'at least one monitoring bot on each site was active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -313,7 +312,7 @@ def email_dead_sites_report(now=None, send_no_news=True, **dead_for):
     if not data and send_no_news:
         return (
             'at least one monitoring bot on each site was active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -346,7 +345,7 @@ def email_dead_servers_report(now=None, send_no_news=True, **dead_for):
     if not data and send_no_news:
         return (
             'all known Cerner session servers were active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -388,7 +387,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
     if not data and send_no_news:
         return (
             'all known Cerner session servers were active between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -584,7 +583,7 @@ def email_ux_alarm(
     if not data and send_no_news:
         return (
             'Citrix response times on {} bot in {} were better than {} between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(host_name, site, ux_alert_threshold,
                    timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
@@ -625,7 +624,7 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     if not data:
         return (
             'there were less than {} failed logon events between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(failed_threshold, timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -657,7 +656,7 @@ def email_failed_logins_report(now=None, send_no_news=True, **dead_for):
     if not data and send_no_news:
         return (
             'there were no failed logon events between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )
@@ -735,7 +734,7 @@ def email_failed_login_site_report(
     if not data and send_no_news:
         return (
             'there were no failed logon events on the {} bot in {} between'
-            ' {:%a %b %-m, %Y %H:%M %Z} and {:%a %b %-m, %Y %H:%M %Z}'.
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
             format(host_name, site, timezone.localtime(value=now),
                    timezone.localtime(now - time_delta))
         )

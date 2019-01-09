@@ -18,9 +18,10 @@ celery tasks for the citrus_borg application
 import datetime
 from smtplib import SMTPConnectError
 
+from django.utils import timezone
+
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
-from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.assimilation import process_borg
@@ -33,6 +34,7 @@ from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
     WinlogEvent, BorgSite,
 )
+
 from ssl_cert_tracker.lib import Email
 from ssl_cert_tracker.models import Subscription
 

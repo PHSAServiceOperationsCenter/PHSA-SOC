@@ -83,7 +83,7 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
             if host_name in _host_name:
                 return ip_address
             continue
-        except:  # noqa: E722
+        except:  # pylint: disable=W0702
             continue
 
     return None
@@ -187,7 +187,7 @@ def process_borg_message(message=None):
     )
 
     borg_message.state = message[0].split()[0]
-    if borg_message.state in ['Successful']:
+    if borg_message.state.lower() in ['successful']:
         borg_message.broker = message[0].split()[-1]
         borg_message.test_result = bool(message[4].split()[-1])
         borg_message.storefront_connection_duration = \
@@ -203,7 +203,7 @@ def process_borg_message(message=None):
         borg_message.failure_reason = None
         borg_message.failure_details = None
 
-    elif borg_message.state in ['Failed']:
+    elif borg_message.state.lower in ['failed']:
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])
         borg_message.broker = None
@@ -214,7 +214,8 @@ def process_borg_message(message=None):
         borg_message.logon_achieved_duration = None
         borg_message.logoff_achieved_duration = None
     else:
-        borg_message.raw_message = message
+        borg_message.state = 'undetermined'
+        borg_message.raw_message = str(message)
         borg_message.broker = None
         borg_message.test_result = False
         borg_message.storefront_connection_duration = None

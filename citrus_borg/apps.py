@@ -1,18 +1,18 @@
 """
 .. _apps:
 
-django apps module for the rules_engine app
+django apps module for the citrus_borg app
 
-:module:    p_soc_auto.orion_integration.apps
+:module:    p_soc_auto.citrus_borg.apps
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    nov. 16, 2018
+:updated:    Jan. 15, 2019
 
 """
 from django.apps import AppConfig

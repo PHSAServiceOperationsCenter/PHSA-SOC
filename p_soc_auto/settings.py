@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
+    'orion_flash.apps.OrionFlashConfig',
     'simple_history',
     'dal',
     'dal_select2',
@@ -171,8 +172,22 @@ DATABASES = {
         'HOST': '',
         'PASSWORD': 'phsa_db_password',
         'USER': 'phsa_db_user',
-    }
+    },
+    'orion_aux_db': {
+        'ENGINE': 'sql_server.pyodbc',
+        'NAME': 'orion_aux_db',
+        'USER': 'orion_aux_db_user',
+        'PASSWORD': 'orion_aux_db_password',
+        'HOST': '10.66.6.9',
+        'PORT': '',
+
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
+    },
 }
+
+DATABASE_ROUTERS = ['orion_flash.router.OrionAuxRouter', ]
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators

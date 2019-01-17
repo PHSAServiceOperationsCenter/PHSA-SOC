@@ -1,0 +1,2 @@
+alert message example:
+${SQL: SELECT alert_body from orion_aux_db.dbo.orion_flash_orionnodeauxalert where orion_node_id = ${N=SwisEntity;M=NodeID} } ham ham ${N=Alerting;M=AlertName} was triggered.

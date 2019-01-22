@@ -17,6 +17,7 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from orion_integration.models import OrionNode
@@ -135,6 +136,61 @@ class NmapCertsData(BaseModel, models.Model):
     class Meta:
         verbose_name = 'SSL Certificate'
         verbose_name_plural = 'SSL Certificates'
+
+
+class SslCertificateBase(BaseModel, models.Model):
+    """
+    base model for SSL certificate models
+    """
+    common_name = models.CharField(
+        _('common name'), db_index=True, max_length=253, blank=False,
+        unique=True,
+        null=False, help_text=_('SSL certificate commonName field'))
+    organization_name = models.CharField(
+        _('organization name'), db_index=True, max_length=253, blank=True,
+        null=True, help_text=_('SSL certificate organizationName field'))
+    country_name = models.CharField(
+        _('country name'), db_index=True, max_length=2, blank=True, null=True,
+        help_text=_('SSL certificate countryName field'))
+
+    class Meta:
+        abstract = True
+
+
+class SslCertificateIssuer(SslCertificateBase, models.Model):
+    """
+    model for SSL certificate issujing authorities
+    """
+    @classmethod
+    def get_or_create(
+            cls, ssl_issuer, username=settings.NMAP_SERVICE_USER):
+        """
+        create and return an issuing authority if it doesn't already exist
+
+        if it exists already, just return it
+        """
+        if cls._meta.model.objects.filter(
+                common_name__iexact=ssl_issuer.get('commonName')).exists():
+            return cls._meta.model.objects.filter(
+                common_name__iexact=ssl_issuer.get('commonName')).get()
+
+        user = cls.get_or_create_user(username)
+        ssl_certificate_issuer = cls(
+            common_name=ssl_issuer.get('commonName'),
+            organization_name=ssl_issuer.get('organizationName'),
+            country_name=ssl_issuer.get('countryName'),
+            created_by=username, updated_by=username)
+        ssl_certificate_issuer.save()
+
+        return ssl_certificate_issuer
+
+    def __str__(self):
+        return self.common_name
+
+    class Meta:
+        app_label = 'ssl_cert_tracker'
+        verbose_name = _('Issuing Authority for SSL Certificates')
+        verbose_name_plural = _('Issuing Authorities for SSL Certificates')
 
 
 class SslExpiresIn(NmapCertsData):

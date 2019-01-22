@@ -178,6 +178,7 @@ DATABASES = {
         'NAME': 'orion_aux_db',
         'USER': 'orion_aux_db_user',
         'PASSWORD': 'orion_aux_db_password',
+        #	'SA_PASSWORD': "orion_aux_db_password123',
         'HOST': '10.66.6.9',
         'PORT': '',
 
@@ -354,3 +355,5 @@ DYNAMIC_PREFERENCES = {
     # debug things
     'VALIDATE_NAMES': True,
 }
+
+NMAP_SERVICE_USER = 'nmap_user'

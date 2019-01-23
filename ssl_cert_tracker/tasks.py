@@ -19,7 +19,7 @@ celery tasks for the ssl_certificates app
 from smtplib import SMTPConnectError
 import xml.dom.minidom
 
-from celery import shared_task
+from celery import shared_task, group
 from celery.exceptions import MaxRetriesExceededError
 from celery.utils.log import get_task_logger
 from libnmap.process import NmapProcess
@@ -28,7 +28,8 @@ from orion_integration.lib import OrionSslNode
 
 from .db_helper import insert_into_certs_data
 from .lib import Email, expires_in, has_expired, is_not_yet_valid
-from .models import Subscription
+from .models import Subscription, SslProbePort
+from .nmap import SslProbe, NmapError, NmapHostDownError
 from .utils import process_xml_cert
 
 logger = get_task_logger(__name__)
@@ -224,3 +225,42 @@ def getnmapdata():
         go_node.delay(node.id, node.ip_address)
 
     return 'queued SSL nmap probes for %s Orion nodes' % len(nodes)
+
+
+@shared_task(task_serializer='pickle', queue='shared')
+def get_ssl_for_node(orion_node):
+    """
+    initiate an nmap ssl probe task for each known SSL port
+    """
+    ssl_ports = SslProbePort.objects.filter(enabled=True).all()
+
+    group(get_ssl_for_node_port.
+          s(orion_node.ip_address, ssl_port).
+          set(serializer='pickle') for ssl_port in ssl_ports)()
+
+    return 'looking for SSL certificates on Orion node %s (%s), ports %s' % \
+        (orion_node.caption, orion_node.ip_address,
+         ', '.join(ssl_ports.values_list('port', flat=True)))
+
+
+@shared_task(task_serializer='pickle', rate_limit='0.5/s', queue='nmap',
+             autoretry_for=(NmapError, NmapHostDownError),
+             max_retries=3, retry_backoff=True)
+def get_ssl_for_node_port(orion_node, port):
+    pass
+
+
+@shared_task(queue='shared')
+def get_nodes():
+    """
+    get the orion nodes and initiate a (set) of ssl probes for each of them
+    """
+    orion_nodes = OrionSslNode.nodes()
+    if not orion_nodes:
+        raise OrionDataError(
+            'there are no Orion nodes available for SSL nmap probing')
+
+    group(get_ssl_for_node.s(orion_node).set(serializer='pickle') for
+          orion_node in orion_nodes)()
+
+    return 'looking for SSL certificates on %s Orion nodes' % len(orion_nodes)

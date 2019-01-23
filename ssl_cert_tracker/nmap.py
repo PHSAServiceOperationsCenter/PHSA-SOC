@@ -17,6 +17,7 @@ nmap functions and classes for the ssl_certificates app
 """
 import logging
 
+from django.conf import settings
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
@@ -24,7 +25,6 @@ from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser
 
 LOG = logging.getLogger('ssl_cert_tracker_log')
-SSL_PROBE_OPTIONS = r'-Pn -p 443 --script ssl-cert'
 
 
 class NmapTargetError(Exception):
@@ -196,9 +196,10 @@ class SslProbe(NmapProbe):
     nmap data for ssl nodes
     """
 
-    def __init__(self, address=None, opts=None, logger=LOG):
-        if opts is None:
-            opts = SSL_PROBE_OPTIONS
+    def __init__(
+            self, address=None, port=settings.SSL_DEFAULT_PORT, logger=LOG):
+
+        opts = r'{}'.format(settings.SSL_PROBE_OPTIONS % port)
 
         super().__init__(address, opts, logger)
 
@@ -245,13 +246,6 @@ class SslProbe(NmapProbe):
         public key type
         """
         return self.ssl_data.get('pubkey', None).get('type', None)
-
-    @property
-    def ssl_sig_algo(self):
-        """
-        ssl certificate signature algorithm
-        """
-        return self.ssl_data.get('sig_algo', None)
 
     @property
     def ssl_pem(self):

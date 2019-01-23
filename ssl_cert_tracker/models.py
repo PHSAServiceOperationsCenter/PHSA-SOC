@@ -16,6 +16,7 @@ django models for the ssl_certificates app
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
@@ -157,10 +158,31 @@ class SslCertificateBase(BaseModel, models.Model):
         abstract = True
 
 
+class SslProbePort(BaseModel, models.Model):
+    """
+    probe fro SSL certs on all these ports
+    """
+    port = models.PositiveIntegerField(
+        _('port'), unique=True, db_index=True, blank=False, null=False)
+
+    def __str__(self):
+        return '%s' % self.port
+
+    class Meta:
+        app_label = 'ssl_cert_tracker'
+        verbose_name = _('Network Port')
+        verbose_name_plural = _('Network Ports')
+
+
 class SslCertificateIssuer(SslCertificateBase, models.Model):
     """
     model for SSL certificate issujing authorities
     """
+    is_trusted = models.BooleanField(
+        _('is trusted'), db_index=True, default=False, null=False, blank=False,
+        help_text=_('is this a known SSL issuing authority'
+                    ' (like Verisign or DigiCert)?'))
+
     @classmethod
     def get_or_create(
             cls, ssl_issuer, username=settings.NMAP_SERVICE_USER):
@@ -169,17 +191,17 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
 
         if it exists already, just return it
         """
-        if cls._meta.model.objects.filter(
-                common_name__iexact=ssl_issuer.get('commonName')).exists():
-            return cls._meta.model.objects.filter(
-                common_name__iexact=ssl_issuer.get('commonName')).get()
+        ssl_certificate_issuer = cls._meta.model.objects.\
+            filter(common_name__iexact=ssl_issuer.get('commonName'))
+        if ssl_certificate_issuer.exists():
+            return ssl_certificate_issuer.get()
 
         user = cls.get_or_create_user(username)
         ssl_certificate_issuer = cls(
             common_name=ssl_issuer.get('commonName'),
             organization_name=ssl_issuer.get('organizationName'),
             country_name=ssl_issuer.get('countryName'),
-            created_by=username, updated_by=username)
+            created_by=user, updated_by=user)
         ssl_certificate_issuer.save()
 
         return ssl_certificate_issuer
@@ -191,6 +213,122 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
         app_label = 'ssl_cert_tracker'
         verbose_name = _('Issuing Authority for SSL Certificates')
         verbose_name_plural = _('Issuing Authorities for SSL Certificates')
+
+
+class SslCertificate(SslCertificateBase, models.Model):
+    """
+    SSL certificate data
+    """
+    orion_id = models.BigIntegerField(
+        _('orion node identifier'), blank=False, null=False, db_index=True,
+        help_text=_('Orion Node unique identifier  on the Orion server'
+                    ' used to show the node in the Orion web console'))
+    port = models.ForeignKey(
+        SslProbePort, db_index=True, blank=False, null=False,
+        verbose_name=_('TCP port'), on_delete=models.PROTECT)
+    issuer = models.ForeignKey(
+        SslCertificateIssuer, db_index=True, blank=True, null=True,
+        verbose_name=_('Issued By'), on_delete=models.PROTECT)
+    hostnames = models.TextField(_('host names'), blank=False, null=False)
+    not_before = models.DateTimeField(
+        _('not valid before'), db_index=True, null=False, blank=False)
+    not_after = models.DateTimeField(
+        _('expires on'), db_index=True, null=False, blank=False)
+    pem = models.TextField(_('PEM'), null=False, blank=False)
+    pk_bits = models.CharField(
+        _('primary key bits'), max_length=4, db_index=True,
+        blank=False, null=False)
+    pk_type = models.CharField(
+        _('primary key type'), max_length=4, db_index=True,
+        blank=False, null=False)
+    pk_md5 = models.CharField(
+        _('primary key md5 shecksum'), unique=True, db_index=True,
+        max_length=64, blank=False, null=False)
+    pk_sha1 = models.TextField(
+        _('primary key sha1 checksum'), blank=False, null=False)
+    last_seen = models.DateTimeField(
+        _('last seen'), db_index=True, blank=False, null=False)
+
+    def __str__(self):
+        return (
+            'Subject: commonName: {}, organizationName: {}, countryName: {}'
+        ).format(
+            self.common_name, self.organization_name, self.country_name)
+
+    @classmethod
+    def create_or_update(cls, orion_id, ssl_certificate,
+                         username=settings.NMAP_SERVICE_USER):
+        """
+        create or update the representation of an SSL certificate in the
+        database
+
+        if the SSL certificate already exists, just update the last_seen
+        field
+
+        return the SSL certificate
+        """
+        ssl_obj = cls._meta.model.objects.filter(
+            pk_md5=ssl_certificate.ssl_md5)
+
+        if ssl_obj.exists():
+            ssl_obj = ssl_obj.get()
+            ssl_obj.last_seen = timezone.now()
+            ssl_obj.save()
+
+            return ssl_obj
+
+        user = cls.get_or_create_user(username)
+        issuer = SslCertificateIssuer.get_or_create(
+            ssl_certificate.ssl_issuer, username)
+        port = SslProbePort.objects.get(port=int(ssl_certificate.port))
+        ssl_obj = cls(
+            common_name=ssl_certificate.ssl_subject.get('commonName'),
+            organization_name=ssl_certificate.ssl_subject.get(
+                'organizationName'),
+            country_names=ssl_certificate.ssl_subject.get('countryName'),
+            orion_id=orion_id, port=port, issuer=issuer,
+            hostnames=ssl_certificate.hostnames,
+            not_before=ssl_certificate.ssl_not_before,
+            not_after=ssl_certificate.ssl_not_after,
+            pem=ssl_certificate.ssl_pem, pk_bits=ssl_certificate.ssl_pk_bits,
+            pk_type=ssl_certificate.ssl_pk_type,
+            pk_md5=ssl_certificate.ssl_md5, pk_sha1=ssl_certificate.ssl_sha1,
+            created_by=user, updated_by=user, last_seen=timezone.now())
+        ssl_obj.save()
+
+        return ssl_obj
+
+    @property
+    @mark_safe
+    def node_admin_url(self):
+        """
+        admin link to the Orion node where the certificate resides
+        """
+        orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
+        if orion_node.exists():
+            orion_node = orion_node.get()
+            return '<a href="%s">%s on django</>' % (
+                reverse('admin:orion_integration_orionnode_change',
+                        args=(orion_node.id,)),
+                orion_node.node_caption)
+
+        return 'acquired outside the Orion infrastructure'
+
+    @property
+    @mark_safe
+    def orion_node_url(self):
+        """
+        link to the Orion Node object on the Orion server
+        """
+        orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
+        if orion_node.exists():
+            orion_node = orion_node.values('node_caption', 'details_url')[0]
+            return '<a href="%s%s">%s on Orion</>' % (
+                settings.ORION_ENTITY_URL, orion_node.get('details_url'),
+                orion_node.get('node_caption')
+            )
+
+        return 'acquired outside the Orion infrastructure'
 
 
 class SslExpiresIn(NmapCertsData):

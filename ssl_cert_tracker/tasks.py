@@ -229,7 +229,7 @@ def getnmapdata():
     return 'queued SSL nmap probes for %s Orion nodes' % len(nodes)
 
 
-@shared_task(task_serializer='pickle', queue='shared')
+@shared_task(task_serializer='pickle', rate_limit='10/s', queue='shared')
 def get_ssl_for_node(orion_node):
     """
     initiate an nmap ssl probe task for each known SSL port
@@ -242,10 +242,10 @@ def get_ssl_for_node(orion_node):
 
     return 'looking for SSL certificates on Orion node %s (%s), ports %s' % \
         (orion_node.node_caption, orion_node.ip_address,
-         ', '.join(ssl_ports.values_list('port', flat=True)))
+         ', '.join(str(ssl_ports.values_list('port', flat=True))))
 
 
-@shared_task(task_serializer='pickle', rate_limit='0.5/s', queue='nmap',
+@shared_task(task_serializer='pickle', rate_limit='2/s', queue='nmap',
              autoretry_for=(NmapError, NmapHostDownError),
              max_retries=3, retry_backoff=True)
 def get_ssl_for_node_port(orion_node, port):
@@ -262,21 +262,9 @@ def get_ssl_for_node_port(orion_node, port):
 
     LOG.debug('nmap returned %s', ssl_certificate.summary)
 
-    save_ssl_for_node_port.apply_async(
-        (orion_node.orion_id, ssl_certificate), serializer='pickle')
-
-    return 'orion_node.orion_id: {}, SSL partial data: {}'.format(
-        orion_node.orion_id, ssl_certificate.ssl_subject)
-
-
-@shared_task(task_serializer='pickle', rate_limit='0.5/s', queue='nmap')
-def save_ssl_for_node_port(orion_id, ssl_certificate):
-    """
-    save the SSL data
-    """
     try:
         created, ssl_obj = SslCertificate.create_or_update(
-            orion_id, ssl_certificate)
+            orion_node.orion_id, ssl_certificate)
     except Exception as error:
         raise error
 
@@ -291,7 +279,7 @@ def save_ssl_for_node_port(orion_id, ssl_certificate):
 
 
 @shared_task(queue='shared')
-def get_nodes():
+def get_ssl_nodes():
     """
     get the orion nodes and initiate a (set) of ssl probes for each of them
     """

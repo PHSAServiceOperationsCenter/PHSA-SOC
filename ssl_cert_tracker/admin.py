@@ -20,10 +20,22 @@ from rangefilter.filter import DateRangeFilter
 
 from simple_history.admin import SimpleHistoryAdmin
 
+from p_soc_auto_base.admin import BaseAdmin
+
 from .models import (
     NmapCertsData, SslExpiresIn, SslHasExpired, SslNotYetValid, Subscription,
+    SslCertificate, SslCertificateIssuer,
 )
-from p_soc_auto_base.admin import BaseAdmin
+
+
+@admin.register(SslCertificate)
+class SslCertificateAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(SslCertificateIssuer)
+class SslCertificateIssuerAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Subscription)

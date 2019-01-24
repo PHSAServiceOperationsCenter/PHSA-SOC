@@ -144,9 +144,8 @@ class SslCertificateBase(BaseModel, models.Model):
     base model for SSL certificate models
     """
     common_name = models.CharField(
-        _('common name'), db_index=True, max_length=253, blank=False,
-        unique=True,
-        null=False, help_text=_('SSL certificate commonName field'))
+        _('common name'), db_index=True, max_length=253, blank=True,
+        null=True, help_text=_('SSL certificate commonName field'))
     organization_name = models.CharField(
         _('organization name'), db_index=True, max_length=253, blank=True,
         null=True, help_text=_('SSL certificate organizationName field'))

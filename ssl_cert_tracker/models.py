@@ -206,7 +206,8 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
         return ssl_certificate_issuer
 
     def __str__(self):
-        return self.common_name
+        return 'commonName: %s, organizationName: %s' % \
+            (self.common_name, self.organization_name)
 
     class Meta:
         app_label = 'ssl_cert_tracker'
@@ -235,22 +236,22 @@ class SslCertificate(SslCertificateBase, models.Model):
         _('expires on'), db_index=True, null=False, blank=False)
     pem = models.TextField(_('PEM'), null=False, blank=False)
     pk_bits = models.CharField(
-        _('primary key bits'), max_length=4, db_index=True,
+        _('private key bits'), max_length=4, db_index=True,
         blank=False, null=False)
     pk_type = models.CharField(
         _('primary key type'), max_length=4, db_index=True,
         blank=False, null=False)
     pk_md5 = models.CharField(
-        _('primary key md5 shecksum'), unique=True, db_index=True,
+        _('primary key md5 checksum (hex)'), unique=True, db_index=True,
         max_length=64, blank=False, null=False)
     pk_sha1 = models.TextField(
-        _('primary key sha1 checksum'), blank=False, null=False)
+        _('primary key sha1 checksum (hex)'), blank=False, null=False)
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
 
     def __str__(self):
         return (
-            'Subject: commonName: {}, organizationName: {}, countryName: {}'
+            'CN: {}, O: {}, c: {}'
         ).format(
             self.common_name, self.organization_name, self.country_name)
 

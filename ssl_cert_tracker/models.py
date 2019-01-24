@@ -275,7 +275,7 @@ class SslCertificate(SslCertificateBase, models.Model):
             ssl_obj.last_seen = timezone.now()
             ssl_obj.save()
 
-            return ssl_obj
+            return False, ssl_obj
 
         user = cls.get_or_create_user(username)
         issuer = SslCertificateIssuer.get_or_create(
@@ -285,7 +285,7 @@ class SslCertificate(SslCertificateBase, models.Model):
             common_name=ssl_certificate.ssl_subject.get('commonName'),
             organization_name=ssl_certificate.ssl_subject.get(
                 'organizationName'),
-            country_names=ssl_certificate.ssl_subject.get('countryName'),
+            country_name=ssl_certificate.ssl_subject.get('countryName'),
             orion_id=orion_id, port=port, issuer=issuer,
             hostnames=ssl_certificate.hostnames,
             not_before=ssl_certificate.ssl_not_before,
@@ -296,7 +296,7 @@ class SslCertificate(SslCertificateBase, models.Model):
             created_by=user, updated_by=user, last_seen=timezone.now())
         ssl_obj.save()
 
-        return ssl_obj
+        return True, ssl_obj
 
     @property
     @mark_safe
@@ -329,6 +329,11 @@ class SslCertificate(SslCertificateBase, models.Model):
             )
 
         return 'acquired outside the Orion infrastructure'
+
+    class Meta:
+        app_label = 'ssl_cert_tracker'
+        verbose_name = _('SSL Certificate (new)')
+        verbose_name_plural = _('SSL Certificates (new)')
 
 
 class SslExpiresIn(NmapCertsData):

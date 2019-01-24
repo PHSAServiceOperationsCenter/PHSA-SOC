@@ -28,11 +28,13 @@ from orion_integration.lib import OrionSslNode
 
 from .db_helper import insert_into_certs_data
 from .lib import Email, expires_in, has_expired, is_not_yet_valid
-from .models import Subscription, SslProbePort
-from .nmap import SslProbe, NmapError, NmapHostDownError
+from .models import Subscription, SslProbePort, SslCertificate
+from .nmap import (
+    SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
+)
 from .utils import process_xml_cert
 
-logger = get_task_logger(__name__)
+LOG = get_task_logger(__name__)
 
 SSL_PROBE_OPTIONS = r'-Pn -p 443 --script ssl-cert'
 
@@ -91,7 +93,7 @@ def email_ssl_report():
         return _email_report(
             data=expires_in(),
             subscription_obj=Subscription.objects.get(
-                subscription='SSl Report'), logger=logger)
+                subscription='SSl Report'), logger=LOG)
     except Exception as err:
         raise err
 
@@ -108,7 +110,7 @@ def email_ssl_expires_in_days_report(lt_days):
         return _email_report(
             data=expires_in(lt_days),
             subscription_obj=Subscription.objects.get(
-                subscription='SSl Report'), logger=logger,
+                subscription='SSl Report'), logger=LOG,
             expires_in_less_than=lt_days)
     except Exception as err:
         raise err
@@ -126,7 +128,7 @@ def email_expired_ssl_report():
         return _email_report(
             data=has_expired(),
             subscription_obj=Subscription.objects.get(
-                subscription='Expired SSl Report'), logger=logger)
+                subscription='Expired SSl Report'), logger=LOG)
     except Exception as err:
         raise err
 
@@ -143,7 +145,7 @@ def email_invalid_ssl_report():
         return _email_report(
             data=is_not_yet_valid(),
             subscription_obj=Subscription.objects.get(
-                subscription='Invalid SSl Report'), logger=logger)
+                subscription='Invalid SSl Report'), logger=LOG)
     except Exception as err:
         raise err
 
@@ -175,7 +177,7 @@ def go_node(node_id, node_address):
         nmap_task = NmapProcess(node_address, options=SSL_PROBE_OPTIONS)
         nmap_task.run()
     except MaxRetriesExceededError as error:
-        logger.error(
+        LOG.error(
             'nmap retry limit exceeded for node address %s', node_address)
         raise error
     except Exception as ex:
@@ -186,12 +188,12 @@ def go_node(node_id, node_address):
         json = process_xml_cert(
             node_id, xml.dom.minidom.parseString(nmap_task.stdout))
     except Exception as error:
-        logger.error(
+        LOG.error(
             'cannot process nmap XML report for node address %s: %s',
             node_address, str(error))
 
     if json["md5"] is None:
-        logger.error(
+        LOG.error(
             'could not retrieve SSL certificate from node address %s'
             % node_address)
         return (
@@ -235,11 +237,11 @@ def get_ssl_for_node(orion_node):
     ssl_ports = SslProbePort.objects.filter(enabled=True).all()
 
     group(get_ssl_for_node_port.
-          s(orion_node.ip_address, ssl_port).
+          s(orion_node, ssl_port).
           set(serializer='pickle') for ssl_port in ssl_ports)()
 
     return 'looking for SSL certificates on Orion node %s (%s), ports %s' % \
-        (orion_node.caption, orion_node.ip_address,
+        (orion_node.node_caption, orion_node.ip_address,
          ', '.join(ssl_ports.values_list('port', flat=True)))
 
 
@@ -247,7 +249,45 @@ def get_ssl_for_node(orion_node):
              autoretry_for=(NmapError, NmapHostDownError),
              max_retries=3, retry_backoff=True)
 def get_ssl_for_node_port(orion_node, port):
-    pass
+    """
+    get the ssl certificate data for a node and port
+    """
+    try:
+        ssl_certificate = SslProbe(orion_node.ip_address, port)
+    except NmapNotAnSslNodeError:
+        return 'there is no SSL certificate on {}:{}'.format(
+            orion_node.ip_address, port)
+    except Exception as error:
+        raise error
+
+    LOG.debug('nmap returned %s', ssl_certificate.summary)
+
+    save_ssl_for_node_port.apply_async(
+        (orion_node.orion_id, ssl_certificate), serializer='pickle')
+
+    return 'orion_node.orion_id: {}, SSL partial data: {}'.format(
+        orion_node.orion_id, ssl_certificate.ssl_subject)
+
+
+@shared_task(task_serializer='pickle', rate_limit='0.5/s', queue='nmap')
+def save_ssl_for_node_port(orion_id, ssl_certificate):
+    """
+    save the SSL data
+    """
+    try:
+        created, ssl_obj = SslCertificate.create_or_update(
+            orion_id, ssl_certificate)
+    except Exception as error:
+        raise error
+
+    if created:
+        return 'SSL certificate {} on {}, port {} has been created at {}'.\
+            format(ssl_certificate.ssl_subject, ssl_certificate.hostnames,
+                   ssl_certificate.port, ssl_obj.created_on)
+
+    return 'SSL certificate {} on {}, port {} last seen at {}'.format(
+        ssl_certificate.ssl_subject, ssl_certificate.hostnames,
+        ssl_certificate, ssl_obj.last_seen)
 
 
 @shared_task(queue='shared')

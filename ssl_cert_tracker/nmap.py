@@ -259,14 +259,14 @@ class SslProbe(NmapProbe):
         """
         MD5 sum
         """
-        return to_hex(self.ssl_data.get('md5', None))
+        return self.ssl_data.get('md5', None)
 
     @property
     def ssl_sha1(self):
         """
         SHA-1 sum
         """
-        return to_hex(self.ssl_data.get('sha1', None))
+        return self.ssl_data.get('sha1', None)
 
     @property
     def ssl_not_before(self):

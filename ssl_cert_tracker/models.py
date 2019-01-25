@@ -242,7 +242,7 @@ class SslCertificate(SslCertificateBase, models.Model):
         _('primary key type'), max_length=4, db_index=True,
         blank=False, null=False)
     pk_md5 = models.CharField(
-        _('primary key md5 checksum (hex)'), unique=True, db_index=True,
+        _('primary key md5 checksum (hex)'), db_index=True,
         max_length=64, blank=False, null=False)
     pk_sha1 = models.TextField(
         _('primary key sha1 checksum (hex)'), blank=False, null=False)
@@ -267,19 +267,43 @@ class SslCertificate(SslCertificateBase, models.Model):
 
         return the SSL certificate
         """
+        user = cls.get_or_create_user(username)
+        issuer = SslCertificateIssuer.get_or_create(
+            ssl_certificate.ssl_issuer, username)
+
         ssl_obj = cls._meta.model.objects.filter(
-            pk_md5=ssl_certificate.ssl_md5)
+            orion_id=orion_id, port__port=ssl_certificate.port)
 
         if ssl_obj.exists():
             ssl_obj = ssl_obj.get()
+            if ssl_obj.pk_md5 != ssl_certificate.ssl_md5:
+                """
+                host and port are the same but the checksum has changed,
+                ergo the certificate has been replaced. we need to save
+                the new data
+                """
+                ssl_obj.common_name = ssl_certificate.ssl_subject.\
+                    get('commonName')
+                ssl_obj.organization_name = ssl_certificate.ssl_subject.\
+                    get('organizationName')
+                ssl_obj.country_name = ssl_certificate.ssl_subject.\
+                    get('countryName')
+                ssl_obj.issuer = issuer
+                ssl_obj.hostnames = ssl_certificate.hostnames
+                ssl_obj.not_before = ssl_certificate.ssl_not_before
+                ssl_obj.not_after = ssl_certificate.ssl_not_after
+                ssl_obj.pem = ssl_certificate.ssl_pem
+                ssl_obj.pk_bits = ssl_certificate.ssl_pk_bits
+                ssl_obj.pk_type = ssl_certificate.ssl_pk_type
+                ssl_obj.pk_md5 = ssl_certificate.ssl_md5
+                ssl_obj.pk_sha1 = ssl_certificate.ssl_sha1
+                ssl_obj.updated_by = user
+
             ssl_obj.last_seen = timezone.now()
             ssl_obj.save()
 
             return False, ssl_obj
 
-        user = cls.get_or_create_user(username)
-        issuer = SslCertificateIssuer.get_or_create(
-            ssl_certificate.ssl_issuer, username)
         port = SslProbePort.objects.get(port=int(ssl_certificate.port))
         ssl_obj = cls(
             common_name=ssl_certificate.ssl_subject.get('commonName'),
@@ -334,6 +358,7 @@ class SslCertificate(SslCertificateBase, models.Model):
         app_label = 'ssl_cert_tracker'
         verbose_name = _('SSL Certificate (new)')
         verbose_name_plural = _('SSL Certificates (new)')
+        unique_together = (('orion_id', 'port'),)
 
 
 class SslExpiresIn(NmapCertsData):

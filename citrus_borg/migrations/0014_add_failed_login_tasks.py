@@ -19,7 +19,7 @@ def prepare_task_schedules(apps, schema_editor):
         ('Email Citrix Failed Logons Report',
          'citrus_borg.tasks.email_failed_logins_report', '06,18', '30',),
         ('Trigger Emails with Citrix Failed Logons per Site Report',
-         'citrus_borg.tasks.email_failed_login_sites_report', '60,18', '35',)
+         'citrus_borg.tasks.email_failed_login_sites_report', '06,18', '35',)
     ]
 
     CrontabSchedule = apps.get_model('django_celery_beat', 'CrontabSchedule')

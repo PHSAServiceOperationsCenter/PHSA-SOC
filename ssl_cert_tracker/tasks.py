@@ -25,6 +25,7 @@ from celery.utils.log import get_task_logger
 from libnmap.process import NmapProcess
 
 from orion_integration.lib import OrionSslNode
+from orion_integration.models import OrionNode
 
 from .db_helper import insert_into_certs_data
 from .lib import Email, expires_in, has_expired, is_not_yet_valid
@@ -33,6 +34,7 @@ from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
 )
 from .utils import process_xml_cert
+
 
 LOG = get_task_logger(__name__)
 
@@ -276,6 +278,48 @@ def get_ssl_for_node_port(orion_node, port):
     return 'SSL certificate {} on {}, port {} last seen at {}'.format(
         ssl_certificate.ssl_subject, ssl_certificate.hostnames,
         ssl_certificate, ssl_obj.last_seen)
+
+
+@shared_task(rate_limit='2/s', queue='nmap',
+             autoretry_for=(NmapError, NmapHostDownError),
+             max_retries=3, retry_backoff=True)
+def verify_ssl_for_node_port(cert_node_port_tuple):
+    """
+    for a known node and port do we still have a certificate?
+    if not, removw the node_port certificate instance from the database
+    """
+    port = cert_node_port_tuple[2]
+    ip_address = OrionNode.objects.get(
+        orion_id=cert_node_port_tuple[1]).ip_address
+    try:
+        _ = SslProbe(ip_address, port)
+    except NmapNotAnSslNodeError:
+        SslCertificate.objects.filter(
+            id=cert_node_port_tuple[0]).delete()
+        return ('there is no SSL certificate on %s:%s.'
+                ' removing this certificate from the database' %
+                (ip_address, port))
+
+    except Exception as error:
+        raise error
+
+    return 'found an SSL certificate on %s:%s.' % (ip_address, port)
+
+
+@shared_task(queue='shared')
+def verify_ssl_certificates():
+    """
+    verify that the known SSL certificates are still active on their
+    respective Orion nodes
+    """
+    cert_node_port_list = SslCertificate.objects.filter(enabled=True).\
+        values_list('id', 'orion_id', 'port__port')
+
+    group(verify_ssl_for_node_port.s(cert_node_port_tuple) for
+          cert_node_port_tuple in cert_node_port_list)()
+
+    return 'verifying {} known SSL certificates against Orion nodes'.format(
+        len(cert_node_port_list))
 
 
 @shared_task(queue='shared')

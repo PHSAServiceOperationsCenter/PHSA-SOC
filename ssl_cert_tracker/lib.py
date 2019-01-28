@@ -19,6 +19,7 @@ from logging import getLogger
 from smtplib import SMTPConnectError
 import socket
 
+from django.apps import apps
 from django.conf import settings
 from django.db.models import (
     Case, When, CharField, BigIntegerField, Value, F, Func,
@@ -76,7 +77,8 @@ class DateDiff(Func):
     output_field = CharField()
 
 
-def expires_in(lt_days=None, logger=None):
+def expires_in(app_label='ssl_cert_tracker', model_name='ssl_certificate',
+               lt_days=None, logger=None):
     """
     annotation function that prepares a query with calculated values
 
@@ -88,8 +90,8 @@ def expires_in(lt_days=None, logger=None):
               NmapCertData plus a state field, an expires_in_x_days field, and
               a field with the value returned by the MySql SQL function NOW()
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
+    base_queryset = apps.get_model(app_label, model_name).\
+        objects.filter(enabled=True)
 
     if logger is None:
         logger = log
@@ -114,15 +116,15 @@ def expires_in(lt_days=None, logger=None):
     return queryset
 
 
-def has_expired():
+def has_expired(app_label='ssl_cert_tracker', model_name='ssl_certificate'):
     """
     annotation function that returns data calculated at the database level
     for expired certificates
 
     :returns: a django queryset
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
+    base_queryset = apps.get_model(app_label, model_name).\
+        objects.filter(enabled=True)
 
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='expired').\
@@ -134,15 +136,16 @@ def has_expired():
     return queryset
 
 
-def is_not_yet_valid():
+def is_not_yet_valid(
+        app_label='ssl_cert_tracker', model_name='ssl_certificate'):
     """
     annotation function that returns data calculated at the database level
     for certificates that are not yet valid
 
     :returns: a django queryset
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
+    base_queryset = apps.get_model(app_label, model_name).\
+        objects.filter(enabled=True)
 
     queryset = base_queryset.\
         annotate(state=state_field).filter(state='not yet valid').\

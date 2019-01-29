@@ -54,6 +54,8 @@ class SslAuxAlertBase(models.Model):
         _('SSL certificate URL'), blank=True, null=True)
     ssl_alert_body = models.TextField(
         _('alert body'), blank=False, null=False)
+    ssl_cert_issuer = models.TextField(
+        _('SSL certificate issuing authority'), blank=False, null=False)
 
     class Meta:
         abstract = True
@@ -80,8 +82,6 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
 
     the self url(s) need to be created in the post-save signal
     """
-    ssl_cert_issuer = ssl_cert_subject = models.TextField(
-        _('SSL certificate issuing authority'), blank=False, null=False)
     ssl_cert_notes = models.TextField(
         _('SSL certificate notes'), blank=True, null=True)
     ssl_cert_issuer_notes = models.TextField(
@@ -102,3 +102,12 @@ class SslInvalidAuxAlert(SslAuxAlertBase, models.Model):
         _('not valid before'), db_index=True, null=False, blank=False)
     not_after = models.DateTimeField(
         _('expires on'), db_index=True, null=False, blank=False)
+
+    def __str__(self):
+        return self.ssl_cert_subject
+
+    class Meta:
+        app_label = 'orion_flash'
+        verbose_name = _('Custom Orion Alert for SSL certificates Validity')
+        verbose_name_plural = _(
+            'Custom Orion Alerts for SSL certificates Validity')

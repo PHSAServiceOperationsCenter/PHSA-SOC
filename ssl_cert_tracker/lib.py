@@ -77,7 +77,7 @@ class DateDiff(Func):
     output_field = CharField()
 
 
-def expires_in(app_label='ssl_cert_tracker', model_name='ssl_certificate',
+def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                lt_days=None, logger=None):
     """
     annotation function that prepares a query with calculated values
@@ -116,7 +116,7 @@ def expires_in(app_label='ssl_cert_tracker', model_name='ssl_certificate',
     return queryset
 
 
-def has_expired(app_label='ssl_cert_tracker', model_name='ssl_certificate'):
+def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     annotation function that returns data calculated at the database level
     for expired certificates
@@ -137,7 +137,7 @@ def has_expired(app_label='ssl_cert_tracker', model_name='ssl_certificate'):
 
 
 def is_not_yet_valid(
-        app_label='ssl_cert_tracker', model_name='ssl_certificate'):
+        app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     annotation function that returns data calculated at the database level
     for certificates that are not yet valid
@@ -208,10 +208,9 @@ class Email():
             if key in field_names:
                 headers[key] = self.data.model._meta.get_field(
                     key).verbose_name.title()
-            elif '__' in key:
-                headers[key] = key.split('__')[-1].title()
             else:
-                headers[key] = key.replace('_', ' ').title()
+                headers[key] = key.replace(
+                    '__', ': ').replace('_', ' ').title()
 
         return headers
 

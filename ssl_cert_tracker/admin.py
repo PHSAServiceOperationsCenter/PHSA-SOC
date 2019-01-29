@@ -312,7 +312,7 @@ class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
                    ('not_before', DateRangeFilter),
                    ('updated_on', DateRangeFilter)]
     search_fields = ['common_name', 'organization_name']
-    readonly_fields = ['node_admin_url', 'orion_node_url', ]
+    readonly_fields = ('node_admin_url', 'orion_node_url', )
 
 
 @admin.register(SslExpiresIn)

@@ -179,7 +179,7 @@ DATABASES = {
         'USER': 'orion_aux_db_user',
         'PASSWORD': 'orion_aux_db_password',
         #	'SA_PASSWORD': "orion_aux_db_password123',
-        'HOST': 'localhost',
+        'HOST': '10.248.211.70',
         'PORT': '',
 
         'OPTIONS': {
@@ -259,6 +259,7 @@ CELERY_QUEUES = (
     Queue('shared', Exchange('shared'), routing_key='shared'),
     Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
     Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
+    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash')
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'

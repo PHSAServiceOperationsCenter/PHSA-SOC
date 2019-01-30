@@ -40,7 +40,6 @@ SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 </li></ul>
 {% endif %}
 {% elif not data %}
-<h2>{{ site }}, {{ host_name }}</h2>
 <div><h3>
 No qualifying SSL certificates have been found.
 </h3></div>

@@ -99,7 +99,7 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
     if lt_days and lt_days < 2:
         log.warning(
             'expiring in less than 2 days is not supported.'
-            '; resetting lt_days=%s to 2' % lt_days)
+            '; resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
     queryset = base_queryset.\
@@ -163,7 +163,6 @@ class NoDataEmailError(Exception):
     raise this if one tries to create an instance of :class:`<Email>` with no
     data
     """
-    pass
 
 
 class NoSubscriptionEmailError(Exception):
@@ -171,7 +170,6 @@ class NoSubscriptionEmailError(Exception):
     raise this if one tries to create an instance of :class:`<Email>` with no
     subscription object
     """
-    pass
 
 
 class Email():

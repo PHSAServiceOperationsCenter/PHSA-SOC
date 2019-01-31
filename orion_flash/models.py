@@ -15,8 +15,14 @@ django models module for the orion_flash app
 :updated:    Jan. 15, 2019
 
 """
+import logging
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from ssl_cert_tracker.models import SslCertificate
+
+LOG = logging.getLogger('orion_flash')
 
 
 class SslAuxAlertBase(models.Model):
@@ -39,19 +45,20 @@ class SslAuxAlertBase(models.Model):
         help_text=_(
             'this is the value in this field to'
             ' SQL join the Orion server database'))
+    orion_node_port = models.BigIntegerField(
+        _('Orion Node TCP Port'), db_index=True, blank=False, null=False)
     ssl_cert_url = models.URLField(
         _('SSL certificate URL'), blank=False, null=False)
     ssl_cert_subject = models.TextField(
         _('SSL certificate subject'), blank=False, null=False)
     raised_on = models.DateTimeField(
-        _('alert raised on'), db_index=True, auto_now_add=True, blank=False,
-        null=False)
+        _('alert first raised on'), db_index=True, auto_now_add=True,
+        blank=False, null=False)
     enabled = models.BooleanField(
-        _('alert enabled'), db_index=True, default=True, null=False, blank=False,
+        _('alert enabled'), db_index=True, default=True, null=False,
+        blank=False,
         help_text=_(
             'if this field is disabled, the Orion alert will not be raised'))
-    self_url = models.URLField(
-        _('SSL certificate URL'), blank=True, null=True)
     ssl_alert_body = models.TextField(
         _('alert body'), blank=False, null=False)
     ssl_cert_issuer = models.TextField(
@@ -89,6 +96,38 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
 
     def __str__(self):
         return self.ssl_cert_subject
+
+    @classmethod
+    def create(cls, ssl_certificate_pk):
+        """
+        create orion custom alert objects
+
+        :arg int ssl_certificate_pk:
+
+            the primary key for retrieving the ssl certificate object
+        """
+        ssl_certificate_obj = SslCertificate.objects.get(pk=ssl_certificate_pk)
+
+        untrusted_ssl_alert = cls(
+            orion_node_id=ssl_certificate_obj.orion_id,
+            orion_node_port=ssl_certificate_obj.port.port,
+            ssl_cert_notes=ssl_certificate_obj.notes,
+            ssl_cert_issuer_notes=ssl_certificate_obj.issuer.notes,
+            ssl_cert_url=ssl_certificate_obj.absolute_url,
+            ssl_cert_subject='CN: {}, O: {}, C:{}'.format(
+                ssl_certificate_obj.common_name,
+                ssl_certificate_obj.organization_name,
+                ssl_certificate_obj.country_name),
+            ssl_cert_issuer='CN: {}, O: {}, C:{}'.format(
+                ssl_certificate_obj.issuer.common_name,
+                ssl_certificate_obj.issuer.organization_name,
+                ssl_certificate_obj.issuer.country_name),
+            ssl_alert_body='Untrusted SSL Certificate'
+        )
+
+        untrusted_ssl_alert.save()
+
+        return untrusted_ssl_alert
 
     class Meta:
         app_label = 'orion_flash'

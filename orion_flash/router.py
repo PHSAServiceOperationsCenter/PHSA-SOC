@@ -61,7 +61,5 @@ class OrionAuxRouter():
         """
         if app_label == 'orion_flash':
             return db == 'orion_aux_db'
-        elif db == 'orion_aux_db':
-            return False
 
         return None

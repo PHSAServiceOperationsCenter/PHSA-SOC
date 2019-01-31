@@ -13,6 +13,8 @@ django models for the ssl_certificates app
 :contact:    ali.rahmat@phsa.ca
 
 """
+import socket
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
@@ -337,6 +339,18 @@ class SslCertificate(SslCertificateBase, models.Model):
                 orion_node.node_caption)
 
         return 'acquired outside the Orion infrastructure'
+
+    @property
+    @mark_safe
+    def absolute_url(self):
+        """
+        we need the absolute url to pass around
+        """
+        return '<a href="{proto}://{host}:{port}/{path}'.format(
+            proto=settings.SERVER_PROTO, host=socket.getfqdn(),
+            port=settings.SERVER_PROTO,
+            path=reverse('admin:ssl_cert_tracker_sslcertificate_change',
+                         args=(self.id,)))
 
     @property
     @mark_safe

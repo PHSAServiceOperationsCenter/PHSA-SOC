@@ -76,6 +76,13 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'orion_flash_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'orion_flash.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -95,6 +102,11 @@ LOGGING = {
         },
         'ssl_cert_tracker': {
             'handlers': ['ssl_cert_tracker_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'orion_flash': {
+            'handlers': ['orion_flash_log', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },
@@ -179,7 +191,8 @@ DATABASES = {
         'USER': 'orion_aux_db_user',
         'PASSWORD': 'orion_aux_db_password',
         #	'SA_PASSWORD': "orion_aux_db_password123',
-        'HOST': '10.248.211.70',
+        #    'HOST': '10.248.211.70',
+        'HOST': '10.66.6.9',
         'PORT': '',
 
         'OPTIONS': {
@@ -306,8 +319,9 @@ SUB_ESC_EMAIL_TYPE = 2
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []
 
-# server port
+# server settings: use them to build URL's
 SERVER_PORT = '8080'
+SERVER_PROTO = 'http'
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'

@@ -25,6 +25,13 @@ from ssl_cert_tracker.models import SslCertificate
 LOG = logging.getLogger('orion_flash')
 
 
+class SslAuxAlertError(Exception):
+    """
+    custom exception wrapper for this module
+    """
+    pass
+
+
 class SslAuxAlertBase(models.Model):
     """
     base class for Orion custom alerts
@@ -106,7 +113,11 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
 
             the primary key for retrieving the ssl certificate object
         """
-        ssl_certificate_obj = SslCertificate.objects.get(pk=ssl_certificate_pk)
+        try:
+            ssl_certificate_obj = SslCertificate.objects.get(
+                pk=ssl_certificate_pk)
+        except SslCertificate.DoesNotExist as err:
+            raise SslAuxAlertError from err
 
         untrusted_ssl_alert = cls(
             orion_node_id=ssl_certificate_obj.orion_id,
@@ -125,9 +136,12 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
             ssl_alert_body='Untrusted SSL Certificate'
         )
 
-        untrusted_ssl_alert.save()
+        try:
+            untrusted_ssl_alert.save()
+        except Exception as err:
+            raise SslAuxAlertError from err
 
-        return untrusted_ssl_alert
+        return 'created orion alert with pk=%s'.format(untrusted_ssl_alert.id)
 
     class Meta:
         app_label = 'orion_flash'
@@ -137,6 +151,9 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
 
 
 class SslInvalidAuxAlert(SslAuxAlertBase, models.Model):
+    """
+    external data for orion custom alerts specific to invalid SSL certificates
+    """
     not_before = models.DateTimeField(
         _('not valid before'), db_index=True, null=False, blank=False)
     not_after = models.DateTimeField(

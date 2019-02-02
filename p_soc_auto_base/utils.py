@@ -7,12 +7,12 @@ utility classes and functions for the p_soc_auto project
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:update:    sep. 27, 2018
+:update:    Feb. 1, 2019
 
 """
 
@@ -47,7 +47,33 @@ def remove_duplicates(sequence=None):
             raise IterableError(sequence)
 
     no_dup_sequence = []
-    [no_dup_sequence.append(item)
-     for item in sequence if item not in no_dup_sequence]
+    _ = [no_dup_sequence.append(item)
+         for item in sequence if item not in no_dup_sequence]
 
     return no_dup_sequence
+
+
+def get_pk_list(queryset, pk_field_name='id'):
+    """
+    get the primary key values from a queryset
+
+    needed when invoking celery tasks without a pickle serializer:
+
+        *    if we pass around model instances, we must use pickle and that
+             is a security problem
+
+        *    the proper pattern is to pass around primary keys (usually
+             ``int``) which are JSON serializable and pulling the instance
+             from the database inside the celery task. note that this will
+             increase the number of database access calls considerably
+
+    :arg queryset: the (pre-processed) queryset
+    :type queryset: :class"`<django.db.models.query.QuerySet>`
+
+    :arg str pk_field_name:
+
+        the name of the primary key field, (``django``) default 'id'
+
+    :returns: a ``list`` of primary key values
+    """
+    return list(queryset.values_list(pk_field_name, flat=True))

@@ -15,14 +15,16 @@ library module for the ssl_certificates app
 :updated:    Oct. 30, 2018
 
 """
+import socket
+
+from enum import Enum
 from logging import getLogger
 from smtplib import SMTPConnectError
-import socket
 
 from django.apps import apps
 from django.conf import settings
 from django.db.models import (
-    Case, When, CharField, BigIntegerField, Value, F, Func,
+    Case, When, CharField, BigIntegerField, Value, F, Func, TextField,
 )
 from django.db.models.functions import Now, Cast
 from django.utils import timezone
@@ -30,30 +32,41 @@ from django.utils import timezone
 from templated_email import get_templated_mail
 
 
-log = getLogger('ssl_cert_tracker')
+LOG = getLogger('ssl_cert_tracker')
 
-expired = When(not_after__lt=timezone.now(), then=Value('expired'))
+
+class State(Enum):
+    """
+    enumeration for state values
+    """
+    VALID = 'valid'
+    EXPIRED = 'expired'
+    NOT_YET_VALID = 'not yet valid'
+
+
+CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
-:var expired: a representation of an SQL WHEN snippet looking for certificates
+:var CASE_EXPIRED: a representation of an SQL WHEN snippet looking for certificates
               that have expired already
 
 :vartype: :class:`<django.db.models.When>`
 """
 
 
-not_yet_valid = When(not_before__gt=timezone.now(),
-                     then=Value('not yet valid'))
+CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
+                          then=Value(State.NOT_YET_VALID))
 """
-:var not_yet_valid: a representation of an SQL WHEN snippet looking for
+:var CASE_NOT_YET_VALID: a representation of an SQL WHEN snippet looking for
                     certificates that are not yet valid
 
 :vartype: :class:`<django.db.models.When>`
 """
 
-state_field = Case(
-    expired, not_yet_valid, default=Value('valid'), output_field=CharField())
+STATE_FIELD = Case(
+    CASE_EXPIRED, CASE_NOT_YET_VALID, default=Value(State.VALID),
+    output_field=CharField())
 """
-:var state_field: a representation of an SQL CASE snipped that used the
+:var STATE_FIELD: a representation of an SQL CASE snipped that used the
                   WHEN snippetys from above to categorize SSL certificates by
                   their validity state
 
@@ -77,6 +90,49 @@ class DateDiff(Func):
     output_field = CharField()
 
 
+def is_not_trusted(
+        app_label='ssl_cert_tracker', model_name='sslcertificate', state=None):
+    """
+    get untrusted certificates
+    """
+    queryset = apps.get_model(app_label, model_name).objects.\
+        filter(enabled=True, issuer__is_trusted=False)
+
+    queryset = queryset.annotate(alarm_body=Value('Untrusted SSL Certificate',
+                                                  output_field=TextField()))
+
+    if state:
+        queryset = queryset.\
+            annotate(state=STATE_FIELD).filter(state=state).\
+            annotate(mysql_now=Now())
+
+        if state == State.VALID:
+            queryset = queryset.\
+                annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
+                annotate(expires_in_x_days=Cast('expires_in',
+                                                BigIntegerField())).\
+                order_by('expires_in_x_days')
+
+        elif state == State.EXPIRED:
+            queryset = queryset.\
+                annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
+                annotate(mysql_now=Now()).\
+                annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
+                                                         F('not_after'))).\
+                order_by('-has_expired_x_days_ago')
+
+        elif state == State.NOT_YET_VALID:
+            queryset = queryset.\
+                annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
+                annotate(mysql_now=Now()).\
+                annotate(
+                    will_become_valid_in_x_days=DateDiff(F('not_before'),
+                                                         F('mysql_now'))).\
+                order_by('-will_become_valid_in_x_days')
+
+    return queryset
+
+
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                lt_days=None, logger=None):
     """
@@ -94,16 +150,16 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
         objects.filter(enabled=True)
 
     if logger is None:
-        logger = log
+        logger = LOG
 
     if lt_days and lt_days < 2:
-        log.warning(
+        logger.warning(
             'expiring in less than 2 days is not supported.'
             '; resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
     queryset = base_queryset.\
-        annotate(state=state_field).filter(state='valid').\
+        annotate(state=STATE_FIELD).filter(state=State.VALID).\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
         annotate(expires_in_x_days=Cast('expires_in', BigIntegerField()))
@@ -127,7 +183,7 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
         objects.filter(enabled=True)
 
     queryset = base_queryset.\
-        annotate(state=state_field).filter(state='expired').\
+        annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
         annotate(mysql_now=Now()).\
         annotate(
             has_expired_x_days_ago=DateDiff(F('mysql_now'), F('not_after'))).\
@@ -148,7 +204,7 @@ def is_not_yet_valid(
         objects.filter(enabled=True)
 
     queryset = base_queryset.\
-        annotate(state=state_field).filter(state='not yet valid').\
+        annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
         annotate(mysql_now=Now()).\
         annotate(
             will_become_valid_in_x_days=DateDiff(F('not_before'),
@@ -234,7 +290,7 @@ class Email():
         :arg dict extra_context: just in case one needs more data
         """
         if logger is None:
-            self.logger = log
+            self.logger = LOG
         else:
             self.logger = logger
 

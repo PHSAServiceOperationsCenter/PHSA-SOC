@@ -70,6 +70,11 @@ class SslAuxAlertBase(models.Model):
         _('alert body'), blank=False, null=False)
     ssl_cert_issuer = models.TextField(
         _('SSL certificate issuing authority'), blank=False, null=False)
+    ssl_self_url = models.URLField(
+        _('Custom SSL alert URL'), blank=True, null=True)
+    ssl_md5 = models.CharField(
+        _('primary key md5 fingerprint'), db_index=True,
+        max_length=64, blank=False, null=False)
 
     class Meta:
         abstract = True
@@ -112,6 +117,8 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
         :arg int ssl_certificate_pk:
 
             the primary key for retrieving the ssl certificate object
+
+        #TODO: fix problems here
         """
         try:
             ssl_certificate_obj = SslCertificate.objects.get(
@@ -141,7 +148,8 @@ class SslUntrustedAuxAlert(SslAuxAlertBase, models.Model):
         except Exception as err:
             raise SslAuxAlertError from err
 
-        return 'created orion alert with pk=%s'.format(untrusted_ssl_alert.id)
+        return 'created orion alert for SSL certificate CN: {}'.format(
+            untrusted_ssl_alert.ssl_cert_subject)
 
     class Meta:
         app_label = 'orion_flash'
@@ -158,6 +166,12 @@ class SslInvalidAuxAlert(SslAuxAlertBase, models.Model):
         _('not valid before'), db_index=True, null=False, blank=False)
     not_after = models.DateTimeField(
         _('expires on'), db_index=True, null=False, blank=False)
+    validity_info = models.CharField(
+        _('validity info'), db_index=True, blank=False, null=False,
+        max_length=64, default='expires in less than')
+    validity_data = models.CharField(
+        _('validity data'), db_index=True, blank=False, null=False,
+        max_length=32, default='7 days')
 
     def __str__(self):
         return self.ssl_cert_subject
@@ -167,3 +181,4 @@ class SslInvalidAuxAlert(SslAuxAlertBase, models.Model):
         verbose_name = _('Custom Orion Alert for SSL certificates Validity')
         verbose_name_plural = _(
             'Custom Orion Alerts for SSL certificates Validity')
+        indexes = [models.Index(fields=['validity_info', 'validity_data']), ]

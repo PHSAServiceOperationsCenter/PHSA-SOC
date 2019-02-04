@@ -244,10 +244,10 @@ class SslCertificate(SslCertificateBase, models.Model):
         _('primary key type'), max_length=4, db_index=True,
         blank=False, null=False)
     pk_md5 = models.CharField(
-        _('primary key md5 checksum (hex)'), db_index=True,
+        _('primary key md5 fingerprint'), db_index=True,
         max_length=64, blank=False, null=False)
     pk_sha1 = models.TextField(
-        _('primary key sha1 checksum (hex)'), blank=False, null=False)
+        _('primary key sha1 fingerprint'), blank=False, null=False)
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
 

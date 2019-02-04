@@ -31,7 +31,7 @@ LOG = get_task_logger(__name__)
 
 
 @shared_task(rate_limit='2/s', queue='orion_flash')
-def create_orion_alert(dest_name, source_pk):
+def update_or_create_orion_alert(dest_name, source_pk):
     """
     create orion auxiliary alert instances
     """
@@ -49,13 +49,9 @@ def refresh_ssl_untrusted_alerts():
     dest_name = 'orion_flash.ssluntrustedauxalert'
     source_pks = get_pk_list(is_not_trusted())
 
-    purged = apps.get_model(dest_name).objects.all().delete()
-
-    group(create_orion_alert.s(dest_name, source_pk)
+    group(update_or_create_orion_alert.s(dest_name, source_pk)
           for source_pk in source_pks)()
 
-    msg = ('purged %s untrusted SSL certificate alerts') % purged
-    msg += '\n'
-    msg += ('dispatched %s fresh untrusted'
-            ' SSL certificate alerts') % len(source_pks)
+    msg = ('dispatched %s untrusted'
+           ' SSL certificate alerts') % len(source_pks)
     return msg

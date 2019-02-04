@@ -26,7 +26,7 @@ from django.conf import settings
 from django.db.models import (
     Case, When, CharField, BigIntegerField, Value, F, Func, TextField,
 )
-from django.db.models.functions import Now, Cast
+from django.db.models.functions import Now, Cast, Concat
 from django.utils import timezone
 
 from templated_email import get_templated_mail
@@ -42,6 +42,16 @@ class State(Enum):
     VALID = 'valid'
     EXPIRED = 'expired'
     NOT_YET_VALID = 'not yet valid'
+
+
+class AlertType(Enum):
+    """
+    enumeration for alert types
+    """
+    UNTRUSTED = 'Untrusted SSL Certificate'
+    EXPIRED = 'Expired SSL Certificate'
+    INVALID = 'Not yet valid SSL Certificate'
+    EXPIRES = 'SSL Certificate expiration warning'
 
 
 CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
@@ -98,8 +108,10 @@ def is_not_trusted(
     queryset = apps.get_model(app_label, model_name).objects.\
         filter(enabled=True, issuer__is_trusted=False)
 
-    queryset = queryset.annotate(alarm_body=Value('Untrusted SSL Certificate',
-                                                  output_field=TextField()))
+    queryset = queryset.\
+        annotate(alert_type=Value(AlertType.UNTRUSTED.value, CharField())).\
+        annotate(alert_body=Value(
+            'Untrusted SSL Certificate', output_field=TextField()))
 
     if state:
         queryset = queryset.\
@@ -109,16 +121,17 @@ def is_not_trusted(
         if state == State.VALID:
             queryset = queryset.\
                 annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
-                annotate(expires_in_x_days=Cast('expires_in',
-                                                BigIntegerField())).\
+                annotate(
+                    expires_in_x_days=Cast('expires_in', BigIntegerField())).\
                 order_by('expires_in_x_days')
 
         elif state == State.EXPIRED:
             queryset = queryset.\
                 annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
                 annotate(mysql_now=Now()).\
-                annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
-                                                         F('not_after'))).\
+                annotate(
+                    has_expired_x_days_ago=DateDiff(
+                        F('mysql_now'), F('not_after'))).\
                 order_by('-has_expired_x_days_ago')
 
         elif state == State.NOT_YET_VALID:
@@ -126,8 +139,8 @@ def is_not_trusted(
                 annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
                 annotate(mysql_now=Now()).\
                 annotate(
-                    will_become_valid_in_x_days=DateDiff(F('not_before'),
-                                                         F('mysql_now'))).\
+                    will_become_valid_in_x_days=DateDiff(
+                        F('not_before'), F('mysql_now'))).\
                 order_by('-will_become_valid_in_x_days')
 
     return queryset
@@ -153,9 +166,8 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
         logger = LOG
 
     if lt_days and lt_days < 2:
-        logger.warning(
-            'expiring in less than 2 days is not supported.'
-            '; resetting lt_days=%s to 2', lt_days)
+        logger.warning('expiring in less than 2 days is not supported.'
+                       ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
     queryset = base_queryset.\
@@ -165,7 +177,17 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
         annotate(expires_in_x_days=Cast('expires_in', BigIntegerField()))
 
     if lt_days:
-        queryset = queryset.filter(expires_in_x_days__lt=lt_days)
+        queryset = queryset.\
+            annotate(alert_type=Value(AlertType.EXPIRES.value, CharField())).\
+            annotate(expires_in_less_than=Value(lt_days, BigIntegerField())).\
+            annotate(expires_in_less_than_cast=Cast(
+                'expires_in_less_than', CharField())).\
+            annotate(alert_body=Concat(
+                Value(
+                    'SSL Certificate will expire in less than ', TextField()),
+                F('expires_in_less_than_cast'),
+                Value(' days', TextField()), output_field=TextField())).\
+            filter(expires_in_x_days__lt=lt_days)
 
     queryset = queryset.order_by('expires_in_x_days')
 
@@ -184,9 +206,16 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     queryset = base_queryset.\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
+        annotate(alert_type=Value(AlertType.EXPIRED.value, CharField())).\
         annotate(mysql_now=Now()).\
-        annotate(
-            has_expired_x_days_ago=DateDiff(F('mysql_now'), F('not_after'))).\
+        annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
+                                                 F('not_after'))).\
+        annotate(has_expired_x_days_ago_cast=Cast('has_expired_x_days_ago',
+                                                  CharField())).\
+        annotate(alert_body=Concat(
+            Value('SSL Certificate has expired ', TextField()),
+            F('has_expired_x_days_ago_cast'),
+            Value(' days ago', TextField()), output_field=TextField())).\
         order_by('-has_expired_x_days_ago')
 
     return queryset
@@ -205,10 +234,16 @@ def is_not_yet_valid(
 
     queryset = base_queryset.\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
+        annotate(alert_type=Value(AlertType.EXPIRED.value, CharField())).\
         annotate(mysql_now=Now()).\
-        annotate(
-            will_become_valid_in_x_days=DateDiff(F('not_before'),
-                                                 F('mysql_now'))).\
+        annotate(will_become_valid_in_x_days=DateDiff(
+            F('not_before'), F('mysql_now'))).\
+        annotate(will_become_valid_in_x_days_cast=Cast(
+            'will_become_valid_in_x_days', CharField())).\
+        annotate(alert_body=Concat(
+            Value('SSL Certificate will become valid in ', TextField()),
+            F('will_become_valid_in_x_days_cast'),
+            Value(' days', TextField()), output_field=TextField())).\
         order_by('-will_become_valid_in_x_days')
 
     return queryset
@@ -351,6 +386,7 @@ class Email():
             raise err
 
         self.logger.debug(
-            'sent email with subject %s and body %s' % (self.email.subject,
-                                                        self.email.body))
+            'sent email with subject %s and body %s',
+            self.email.subject, self.email.body)
+
         return sent

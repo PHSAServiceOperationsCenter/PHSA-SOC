@@ -175,8 +175,6 @@ def process_borg_message(message=None):
     if message is None:
         raise ValueError('message argument is mandatory')
 
-    message = message.split('\n')
-
     borg_message = collections.namedtuple(
         'BorgMessage', [
             'state', 'broker', 'test_result', 'storefront_connection_duration',
@@ -186,7 +184,10 @@ def process_borg_message(message=None):
         ]
     )
 
+    borg_message.raw_message = str(message)
+    message = message.split('\n')
     borg_message.state = message[0].split()[0]
+
     if borg_message.state.lower() in ['successful']:
         borg_message.broker = message[0].split()[-1]
         borg_message.test_result = bool(message[4].split()[-1])
@@ -203,7 +204,7 @@ def process_borg_message(message=None):
         borg_message.failure_reason = None
         borg_message.failure_details = None
 
-    elif borg_message.state.lower in ['failed']:
+    elif borg_message.state.lower() in ['failed']:
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])
         borg_message.broker = None
@@ -215,7 +216,6 @@ def process_borg_message(message=None):
         borg_message.logoff_achieved_duration = None
     else:
         borg_message.state = 'undetermined'
-        borg_message.raw_message = str(message)
         borg_message.broker = None
         borg_message.test_result = False
         borg_message.storefront_connection_duration = None

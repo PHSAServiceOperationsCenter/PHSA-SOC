@@ -34,6 +34,13 @@ LOG = get_task_logger(__name__)
 def update_or_create_orion_alert(dest_name, source_pk):
     """
     create orion auxiliary alert instances
+
+    ok, we can make the source for this a dictionary
+
+    but this means that the 'source' in the calling function must use
+    queryset.values(field_names)
+
+    define the list of queryset_keys in the model and get it from apps.get_model().property
     """
     try:
         return apps.get_model(dest_name).create(source_pk)

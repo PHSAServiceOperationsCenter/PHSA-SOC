@@ -44,16 +44,6 @@ class State(Enum):
     NOT_YET_VALID = 'not yet valid'
 
 
-class AlertType(Enum):
-    """
-    enumeration for alert types
-    """
-    UNTRUSTED = 'Untrusted SSL Certificate'
-    EXPIRED = 'Expired SSL Certificate'
-    INVALID = 'Not yet valid SSL Certificate'
-    EXPIRES = 'SSL Certificate expiration warning'
-
-
 CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
 :var CASE_EXPIRED: a representation of an SQL WHEN snippet looking for certificates
@@ -100,50 +90,23 @@ class DateDiff(Func):
     output_field = CharField()
 
 
-def is_not_trusted(
-        app_label='ssl_cert_tracker', model_name='sslcertificate', state=None):
+def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     get untrusted certificates
     """
-    queryset = apps.get_model(app_label, model_name).objects.\
-        filter(enabled=True, issuer__is_trusted=False)
+    return _get_base_queryset(app_label, model_name).\
+        filter(issuer__is_trusted=False).\
+        annotate(alert_body=Value('Untrusted SSL Certificate',
+                                  output_field=TextField()))
 
-    queryset = queryset.\
-        annotate(alert_type=Value(AlertType.UNTRUSTED.value, CharField())).\
-        annotate(alert_body=Value(
-            'Untrusted SSL Certificate', output_field=TextField()))
 
-    if state:
-        queryset = queryset.\
-            annotate(state=STATE_FIELD).filter(state=state).\
-            annotate(mysql_now=Now())
+def _get_base_queryset(app_label, model_name):
+    """
+    In [15]: qs.annotate(url=Concat(Value('https://'),Value(socket.getfqdn()), output_field=TextField())).values('common_name','url')[0]
+Out[15]: {'common_name': 'AH_SPAPPMAV01', 'url': 'https://lvmsocq01.healthbc.org'}
 
-        if state == State.VALID:
-            queryset = queryset.\
-                annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
-                annotate(
-                    expires_in_x_days=Cast('expires_in', BigIntegerField())).\
-                order_by('expires_in_x_days')
-
-        elif state == State.EXPIRED:
-            queryset = queryset.\
-                annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
-                annotate(mysql_now=Now()).\
-                annotate(
-                    has_expired_x_days_ago=DateDiff(
-                        F('mysql_now'), F('not_after'))).\
-                order_by('-has_expired_x_days_ago')
-
-        elif state == State.NOT_YET_VALID:
-            queryset = queryset.\
-                annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
-                annotate(mysql_now=Now()).\
-                annotate(
-                    will_become_valid_in_x_days=DateDiff(
-                        F('not_before'), F('mysql_now'))).\
-                order_by('-will_become_valid_in_x_days')
-
-    return queryset
+    """
+    return apps.get_model(app_label, model_name).objects.filter(enabled=True)
 
 
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
@@ -159,9 +122,6 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
               NmapCertData plus a state field, an expires_in_x_days field, and
               a field with the value returned by the MySql SQL function NOW()
     """
-    base_queryset = apps.get_model(app_label, model_name).\
-        objects.filter(enabled=True)
-
     if logger is None:
         logger = LOG
 
@@ -170,7 +130,7 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                        ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
-    queryset = base_queryset.\
+    queryset = _get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.VALID).\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
@@ -178,7 +138,6 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
 
     if lt_days:
         queryset = queryset.\
-            annotate(alert_type=Value(AlertType.EXPIRES.value, CharField())).\
             annotate(expires_in_less_than=Value(lt_days, BigIntegerField())).\
             annotate(expires_in_less_than_cast=Cast(
                 'expires_in_less_than', CharField())).\
@@ -206,7 +165,6 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     queryset = base_queryset.\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
-        annotate(alert_type=Value(AlertType.EXPIRED.value, CharField())).\
         annotate(mysql_now=Now()).\
         annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
                                                  F('not_after'))).\
@@ -234,7 +192,6 @@ def is_not_yet_valid(
 
     queryset = base_queryset.\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
-        annotate(alert_type=Value(AlertType.EXPIRED.value, CharField())).\
         annotate(mysql_now=Now()).\
         annotate(will_become_valid_in_x_days=DateDiff(
             F('not_before'), F('mysql_now'))).\

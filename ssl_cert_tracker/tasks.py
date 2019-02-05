@@ -103,7 +103,7 @@ def email_ssl_report(app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_ssl_expires_in_days_report(
+def email_ssl_expires_in_days_report(  # pylint: disable=invalid-name
         lt_days, app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
     """
     task to send ssl reports about certificates that expire soon via email
@@ -192,7 +192,7 @@ def go_node(node_id, node_address):
     try:
         json = process_xml_cert(
             node_id, xml.dom.minidom.parseString(nmap_task.stdout))
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-except
         LOG.error(
             'cannot process nmap XML report for node address %s: %s',
             node_address, str(error))
@@ -220,8 +220,6 @@ def getnmapdata():
     """
     get the orion node information that will be used for nmap probes
 
-    #TODO: rename this to get_orion_nodes()
-    #TODO: replace the go_node.delay() loop with a celery group
     """
     nodes = OrionSslNode.nodes()
     if not nodes:

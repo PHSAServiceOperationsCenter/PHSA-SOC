@@ -230,7 +230,7 @@ class NoSubscriptionEmailError(Exception):
     """
 
 
-class Email():
+class Email():  # pylint: disable=too-few-public-methods
     """
     a (more or less) subclass of
     :class:`<django.core.mail.EmailMultiAlternatives>` with a body prepared

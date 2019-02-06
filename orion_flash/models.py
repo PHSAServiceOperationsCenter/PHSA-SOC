@@ -20,12 +20,11 @@ import logging
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from ssl_cert_tracker.models import SslCertificate
 
 LOG = logging.getLogger('orion_flash')
 
 
-class SslAuxAlertError(Exception):
+class SslAlertError(Exception):
     """
     custom exception wrapper for this module
     """
@@ -86,10 +85,6 @@ class BaseSslAlert(models.Model):
     md5 = models.CharField(
         _('primary key md5 fingerprint'), db_index=True,
         max_length=64, blank=False, null=False)
-    cert_notes = models.TextField(
-        _('SSL certificate notes'), blank=True, null=True)
-    cert_issuer_notes = models.TextField(
-        _('SSL certificate issuing authority notes'), blank=True, null=True)
     not_before = models.DateTimeField(
         _('not valid before'), db_index=True, null=False, blank=False)
     not_after = models.DateTimeField(
@@ -98,85 +93,112 @@ class BaseSslAlert(models.Model):
     def __str__(self):
         return self.cert_subject
 
-    @classmethod
-    def exists(cls, orion_node_id, orion_port):
-        pass
+    def set_attr(self, attr_name, attr_value):
+        """
+        we want to set self.has_expired (for example) but this is an
+        abstract model and there are fields that are only defined in
+        its children
+
+        we don't know the name of the field and we don't know if the
+        model has said field until we actually execute this and we also
+        want to reuse this for more than one field
+
+        """
+        if hasattr(self, attr_name):
+            setattr(self, attr_name, attr_value)
 
     @classmethod
-    def update_or_create(cls, ssl_certificate_pk):
+    def update_or_create(cls, qs_row_as_dict):
         """
         create orion custom alert objects
 
-        :arg int ssl_certificate_pk:
+        :arg qs_row_as_dict:
 
-            the primary key for retrieving the ssl certificate object
+            an item from the return of
+            :method:`<django.db.models.query.Queryset.values>`. we can
+            accept that this method returns a ``list`` of ``dict`` therefore
+            this argument can be treated as a ``dict``
 
         """
-        try:
-            ssl_certificate_obj = SslCertificate.objects.get(
-                pk=ssl_certificate_pk)
-        except SslCertificate.DoesNotExist as err:
-            raise SslAuxAlertError from err
 
-        untrusted_ssl_alert = cls.objects.filter(
-            orion_node_id=ssl_certificate_obj.orion_id,
-            orion_node_port=ssl_certificate_obj.port.port)
-
-        if untrusted_ssl_alert.exists():
-            untrusted_ssl_alert = untrusted_ssl_alert.get()
-
-            if untrusted_ssl_alert.ssl_md5 == ssl_certificate_obj.pk_md5:
-                """
-                the certificate has not changed, just bail
-                """
-                return 'SSL certificate {} has not changed'.format(
-                    untrusted_ssl_alert.ssl_cert_subject)
-
-            untrusted_ssl_alert.ssl_cert_notes = ssl_certificate_obj.notes
-            untrusted_ssl_alert.ssl_cert_issuer_notes = \
-                ssl_certificate_obj.issuer.notes
-            untrusted_ssl_alert.ssl_cert_url = \
-                ssl_certificate_obj.absolute_url
-            untrusted_ssl_alert.ssl_cert_subject = \
-                'CN: {}, O: {}, C:{}'.format(
-                    ssl_certificate_obj.common_name,
-                    ssl_certificate_obj.organization_name,
-                    ssl_certificate_obj.country_name)
-            untrusted_ssl_alert.ssl_cert_issuer = \
-                'CN: {}, O: {}, C:{}'.format(
-                    ssl_certificate_obj.issuer.common_name,
-                    ssl_certificate_obj.issuer.organization_name,
-                    ssl_certificate_obj.issuer.country_name)
-            untrusted_ssl_alert.ssl_alert_body = \
-                'Untrusted SSL Certificate'
-            msg = 'updated orion alert for SSL certificate CN: {}'.format(
-                untrusted_ssl_alert.ssl_cert_subject)
-
-        else:
-            untrusted_ssl_alert = cls(
-                orion_node_id=ssl_certificate_obj.orion_id,
-                orion_node_port=ssl_certificate_obj.port.port,
-                ssl_cert_notes=ssl_certificate_obj.notes,
-                ssl_cert_issuer_notes=ssl_certificate_obj.issuer.notes,
-                ssl_cert_url=ssl_certificate_obj.absolute_url,
-                ssl_cert_subject='CN: {}, O: {}, C:{}'.format(
-                    ssl_certificate_obj.common_name,
-                    ssl_certificate_obj.organization_name,
-                    ssl_certificate_obj.country_name),
-                ssl_cert_issuer='CN: {}, O: {}, C:{}'.format(
-                    ssl_certificate_obj.issuer.common_name,
-                    ssl_certificate_obj.issuer.organization_name,
-                    ssl_certificate_obj.issuer.country_name),
-                ssl_alert_body='Untrusted SSL Certificate'
+        def get_subject():
+            return 'CN: {}, O: {}, C:{}'.format(
+                qs_row_as_dict.get('common_name'),
+                qs_row_as_dict.get('organization_name'),
+                qs_row_as_dict.get('country_name')
             )
 
-            msg = 'created orion alert for SSL certificate CN: {}'.format(
-                untrusted_ssl_alert.ssl_cert_subject)
+        def get_issuer():
+            return 'CN: {}, O: {}, C:{}'.format(
+                qs_row_as_dict.get('issuer__common_name'),
+                qs_row_as_dict.get('issuer__organization_name'),
+                qs_row_as_dict.get('issuer__country_name')
+            )
+
+        ssl_alert = cls.objects.filter(
+            orion_node_id=qs_row_as_dict.get('orion_id'),
+            orion_node_port=qs_row_as_dict.get('port__port'))
+
+        if ssl_alert.exists():
+            ssl_alert = ssl_alert.get()
+
+            ssl_alert.silenced = False
+            ssl_alert.alert_body = qs_row_as_dict.get('alert_body')
+            ssl_alert.set_attr(
+                'expires_in', qs_row_as_dict.get('expires_in_x_days'))
+            ssl_alert.set_attr(
+                'expires_in_lt',
+                qs_row_as_dict.get('expires_in_less_than'))
+            ssl_alert.set_attr(
+                'has_expired',
+                qs_row_as_dict.get('has_expired_x_days_ago'))
+            ssl_alert.set_attr(
+                'invalid_for',
+                qs_row_as_dict.get('will_become_valid_in_x_days'))
+
+            if ssl_alert.md5 == qs_row_as_dict.get('pk_md5'):
+                msg = 'updated alert for unchanged SSL certificate {}'.format(
+                    ssl_alert.cert_subject)
+
+            else:
+                ssl_alert.cert_subject = get_subject()
+                ssl_alert.ssl_cert_issuer = get_issuer()
+                ssl_alert.md5 = qs_row_as_dict.get('pk_md5')
+                ssl_alert.not_before = qs_row_as_dict.get('not_before')
+                ssl_alert.not_after = qs_row_as_dict.get('not_after')
+                msg = 'updated alert and information for SSL certificate {}'.\
+                    format(ssl_alert.cert_subject)
+
+        else:
+            ssl_alert = cls(
+                orion_node_id=qs_row_as_dict.get('orion_id'),
+                orion_node_port=qs_row_as_dict.get('port__port'),
+                cert_url=qs_row_as_dict.get('url'),
+                cert_subject=get_subject(),
+                cert_issuer=get_issuer(),
+                alert_body='Untrusted SSL Certificate',
+                not_before=qs_row_as_dict.get('not_before'),
+                not_after=qs_row_as_dict.get('not_after')
+            )
+            ssl_alert.set_attr(
+                'cert_is_trusted', qs_row_as_dict.get('issuer__is_trusted'))
+            ssl_alert.set_attr(
+                'expires_in', qs_row_as_dict.get('expires_in_x_days'))
+            ssl_alert.set_attr(
+                'expires_in_lt', qs_row_as_dict.get('expires_in_less_than'))
+            ssl_alert.set_attr(
+                'has_expired', qs_row_as_dict.get('has_expired_x_days_ago'))
+            ssl_alert.set_attr(
+                'invalid_for',
+                qs_row_as_dict.get('will_become_valid_in_x_days'))
+
+            msg = 'created alert for SSL certificate {}'.format(
+                ssl_alert.cert_subject)
 
         try:
-            untrusted_ssl_alert.save()
+            ssl_alert.save()
         except Exception as err:
-            raise SslAuxAlertError from err
+            raise SslAlertError from err
 
         return msg
 
@@ -196,37 +218,23 @@ class UntrustedSslAlert(BaseSslAlert, models.Model):
     :function:`<ssl_cert_tracker.lib.is_not_trusted>` and iterating through
     the queryset.
 
-        *    if the node:port combination exists, check the md5 fingerprint
-
-            *    if the md5 fingerprint matches, check the trust:
-
-                *    if the cert is now trusted, delete the record and bail
-
-                *    otherwise:
-
-                    *    unsilence the alarm
-
-                    *    update the last_raised_on field (this will happen
-                         automatically if we just save the record and
-                         force an update)
-
-            * otherwise, check the trust:
-
-                *    if not trusted, unsilence the alert and update the
-                     whole row
-
-                *    otherwise, delete the row
-
     the model needs to also be trimmed. use a celery task to iterate
     through each instance. use the node:port combination to extract the
     corresponding row from :class:`<ssl_cert_tracker.models.SslCertificate>`
 
-        *    if a corresponding row is found, check the issuer__is_trusted
-             field and delete the alert
+        *    if a corresponding row is found, next
 
         *    otherwise, the certificate doesn't exist anymore so there is no
              alert, delete the alert row
     """
+    qs_fields = [
+        'orion_id', 'port__port', 'common_name', 'organization_name',
+        'country_name', 'issuer__common_name', 'issuer__organization_name',
+        'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
+        'alert_body',
+        'issuer__is_trusted',
+    ]
+
     cert_is_trusted = models.BooleanField(
         _('is trusted'), db_index=True, null=False, blank=False)
 
@@ -253,21 +261,16 @@ class ExpiresSoonSslAlert(BaseSslAlert, models.Model):
     and the filter used in the joined query must match that value.
     lt_days is mapped to the field named 'expires_in_less_than'.
 
-        *    if there is no node:port combination in this model, just
-             create the record
-
-        *    if there is a node:port combination matching, check the md5
-             value:
-
-            *    if md5 matches, unsilence the alert and update the
-                  last_raised_on field
-
-            *    otherwise update the entire row. this is probably a very long
-                 shot, it means that a certificate that expires soon has been
-                 replaced with another certificate that expires soon
-
     the model needs to be trimmed. see previous model for ideas
     """
+    qs_fields = [
+        'orion_id', 'port__port', 'common_name', 'organization_name',
+        'country_name', 'issuer__common_name', 'issuer__organization_name',
+        'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
+        'alert_body',
+        'expires_in_x_days', 'expires_in_less_than',
+    ]
+
     expires_in = models.BigIntegerField(
         _('expires in'), db_index=True, blank=False, null=False)
     expires_in_lt = models.BigIntegerField(
@@ -288,6 +291,14 @@ class ExpiredSslAlert(BaseSslAlert, models.Model):
 
     see previous model(s) for ideas
     """
+    qs_fields = [
+        'orion_id', 'port__port', 'common_name', 'organization_name',
+        'country_name', 'issuer__common_name', 'issuer__organization_name',
+        'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
+        'alert_body',
+        'has_expired_x_days_ago',
+    ]
+
     has_expired = models.BigIntegerField(
         _('has expired'), db_index=True, blank=False, null=False)
 
@@ -307,6 +318,14 @@ class InvalidSslAlert(BaseSslAlert, models.Model):
 
     see previous model(s) for ideas
     """
+    qs_fields = [
+        'orion_id', 'port__port', 'common_name', 'organization_name',
+        'country_name', 'issuer__common_name', 'issuer__organization_name',
+        'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
+        'alert_body',
+        'will_become_valid_in_x_days',
+    ]
+
     invalid_for = models.BigIntegerField(
         _('will become valid in'), db_index=True, blank=False, null=False)
 

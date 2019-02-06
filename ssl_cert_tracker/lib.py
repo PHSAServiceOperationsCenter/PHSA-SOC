@@ -176,10 +176,7 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     :returns: a django queryset
     """
-    base_queryset = apps.get_model(app_label, model_name).\
-        objects.filter(enabled=True)
-
-    queryset = base_queryset.\
+    queryset = _get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
         annotate(mysql_now=Now()).\
         annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
@@ -203,10 +200,7 @@ def is_not_yet_valid(
 
     :returns: a django queryset
     """
-    base_queryset = apps.get_model(app_label, model_name).\
-        objects.filter(enabled=True)
-
-    queryset = base_queryset.\
+    queryset = _get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
         annotate(mysql_now=Now()).\
         annotate(will_become_valid_in_x_days=DateDiff(

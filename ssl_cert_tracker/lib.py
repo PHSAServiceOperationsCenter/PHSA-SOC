@@ -102,11 +102,27 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
 def _get_base_queryset(app_label, model_name):
     """
-    In [15]: qs.annotate(url=Concat(Value('https://'),Value(socket.getfqdn()), output_field=TextField())).values('common_name','url')[0]
-Out[15]: {'common_name': 'AH_SPAPPMAV01', 'url': 'https://lvmsocq01.healthbc.org'}
+    get a basic queryset object and also annotate with the absolute
+    django admin change URL
 
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :returns:
+
+        a django queryset that includes a field named 'url' containing
+        tbe absolute URL for the django admin change page associated with
+        the row
     """
-    return apps.get_model(app_label, model_name).objects.filter(enabled=True)
+    return apps.get_model(app_label, model_name).objects.filter(enabled=True).\
+        annotate(url_id=Cast('id', TextField())).\
+        annotate(url=Concat(
+            Value(settings.SERVER_PROTO), Value('://'),
+            Value(socket.getfqdn()), Value(':'), Value(settings.SERVER_PORT),
+            Value('/admin/'), Value(app_label), Value('/'), Value(model_name),
+            Value('/'), F('url_id'), Value('/change/'),
+            output_field=TextField()))
 
 
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',

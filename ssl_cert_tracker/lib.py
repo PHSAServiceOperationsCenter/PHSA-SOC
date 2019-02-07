@@ -46,8 +46,10 @@ class State(Enum):
 
 CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
-:var CASE_EXPIRED: a representation of an SQL WHEN snippet looking for certificates
-              that have expired already
+:var CASE_EXPIRED:
+
+    a representation of an SQL WHEN snippet looking for certificates
+    that have expired already
 
 :vartype: :class:`<django.db.models.When>`
 """
@@ -74,7 +76,7 @@ STATE_FIELD = Case(
 """
 
 
-class DateDiff(Func):
+class DateDiff(Func):  # pylint: disable=abstract-method
     """
     django wrapper for the MariaDB function DATEDIFF(). see
 
@@ -93,14 +95,22 @@ class DateDiff(Func):
 def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     get untrusted certificates
+
+    the arguments are required because this and the other queryset returning
+    functions in this module are written so that we can pull data from either
+    the old certificate model or the new, refoctored certificate models.
+
+    :arg str app_label:
+
+    :arg str model_name:
     """
-    return _get_base_queryset(app_label, model_name).\
+    return get_base_queryset(app_label, model_name).\
         filter(issuer__is_trusted=False).\
         annotate(alert_body=Value('Untrusted SSL Certificate',
                                   output_field=TextField()))
 
 
-def _get_base_queryset(app_label, model_name):
+def get_base_queryset(app_label, model_name, url_annotate=True):
     """
     get a basic queryset object and also annotate with the absolute
     django admin change URL
@@ -115,14 +125,21 @@ def _get_base_queryset(app_label, model_name):
         tbe absolute URL for the django admin change page associated with
         the row
     """
-    return apps.get_model(app_label, model_name).objects.filter(enabled=True).\
-        annotate(url_id=Cast('id', TextField())).\
-        annotate(url=Concat(
-            Value(settings.SERVER_PROTO), Value('://'),
-            Value(socket.getfqdn()), Value(':'), Value(settings.SERVER_PORT),
-            Value('/admin/'), Value(app_label), Value('/'), Value(model_name),
-            Value('/'), F('url_id'), Value('/change/'),
-            output_field=TextField()))
+    queryset = apps.get_model(app_label,
+                              model_name).objects.filter(enabled=True)
+
+    if url_annotate:
+        queryset = queryset.annotate(url_id=Cast('id', TextField())).\
+            annotate(url=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()),
+                Value(':'), Value(settings.SERVER_PORT),
+                Value('/admin/'),
+                Value(app_label), Value('/'), Value(model_name),
+                Value('/'), F('url_id'), Value('/change/'),
+                output_field=TextField()))
+
+    return queryset
 
 
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
@@ -146,7 +163,7 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                        ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
-    queryset = _get_base_queryset(app_label, model_name).\
+    queryset = get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.VALID).\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
@@ -176,7 +193,7 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     :returns: a django queryset
     """
-    queryset = _get_base_queryset(app_label, model_name).\
+    queryset = get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
         annotate(mysql_now=Now()).\
         annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
@@ -200,7 +217,7 @@ def is_not_yet_valid(
 
     :returns: a django queryset
     """
-    queryset = _get_base_queryset(app_label, model_name).\
+    queryset = get_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
         annotate(mysql_now=Now()).\
         annotate(will_become_valid_in_x_days=DateDiff(

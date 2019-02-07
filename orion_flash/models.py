@@ -28,7 +28,6 @@ class SslAlertError(Exception):
     """
     custom exception wrapper for this module
     """
-    pass
 
 
 class BaseSslAlert(models.Model):

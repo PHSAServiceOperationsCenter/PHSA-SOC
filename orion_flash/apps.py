@@ -28,4 +28,4 @@ class OrionFlashConfig(AppConfig):
         """
         place holder for weird imports
         """
-        pass
+        import orion_flash.signals  # @UnresolvedImport @UnusedImport

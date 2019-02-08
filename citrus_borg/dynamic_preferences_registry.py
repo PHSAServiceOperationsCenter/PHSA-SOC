@@ -21,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from dynamic_preferences.types import (
     BooleanPreference, StringPreference, DurationPreference, IntPreference,
+    LongStringPreference, FloatPreference,
 )
 from dynamic_preferences.preferences import Section
 from dynamic_preferences.registries import global_preferences_registry
@@ -51,7 +52,95 @@ citrus_borg_logon = Section(
     'citrusborglogon',
     verbose_name=_('Citrus Borg Citrix Logon settings').title())
 
+orion_server_conn = Section(
+    'orionserverconn',
+    verbose_name=_('Orion Server Connection Settings').title())
+
 # pylint: enable=C0103
+
+
+@global_preferences_registry.register
+class OrionServerUrl(LongStringPreference):
+    """
+    url used to create links to Orion Node server pages
+    """
+    section = orion_server_conn
+    name = 'orion_server_url'
+    default = settings.ORION_ENTITY_URL
+    required = True
+    verbose_name = _('Orion Server Root URL')
+
+
+@global_preferences_registry.register
+class OrionServerRestUrl(LongStringPreference):
+    """
+    url used to create links to Orion REST end points
+    """
+    section = orion_server_conn
+    name = 'orion_rest_url'
+    default = settings.ORION_URL
+    required = True
+    verbose_name = _('Orion Server REST API root URL')
+
+
+@global_preferences_registry.register
+class OrionServerUser(StringPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_user'
+    default = settings.ORION_USER
+    required = True
+    verbose_name = _('Orion Server User Name')
+
+
+@global_preferences_registry.register
+class OrionServerPassword(StringPreference):
+    """
+    orion password
+    """
+    section = orion_server_conn
+    name = 'orion_password'
+    default = settings.ORION_PASSWORD
+    required = True
+    verbose_name = _('Orion Server Password')
+
+
+@global_preferences_registry.register
+class OrionServerAcceptUnsignedCertificate(BooleanPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_verify+ssl+cert'
+    default = settings.ORION_VERIFY_SSL_CERT
+    required = True
+    verbose_name = _('Ignore unsigned SSL certificate on the Orion server')
+
+
+@global_preferences_registry.register
+class OrionServerConnectionTimeout(FloatPreference):
+    """
+    orion server cconnection timeout
+    """
+    section = orion_server_conn
+    name = 'orion_conn_timeout'
+    default = settings.ORION_TIMEOUT[0]
+    required = True
+    verbose_name = _('Orion Server Connection Timeout')
+
+
+@global_preferences_registry.register
+class OrionServerReadTimeout(FloatPreference):
+    """
+    orion server read timeout
+    """
+    section = orion_server_conn
+    name = 'orion_read_timeout'
+    default = settings.ORION_TIMEOUT[1]
+    required = True
+    verbose_name = _('Orion Server Read Timeout')
 
 
 @global_preferences_registry.register

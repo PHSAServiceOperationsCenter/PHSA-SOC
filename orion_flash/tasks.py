@@ -22,7 +22,7 @@ from celery.utils.log import get_task_logger  # @UnresolvedImport
 
 
 from ssl_cert_tracker.lib import (
-    is_not_trusted, expires_in, has_expired,
+    is_not_trusted, expires_in, has_expired,  # @UnresolvedImport
     is_not_yet_valid,  # @UnresolvedImport
 )
 
@@ -64,7 +64,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
         raise err
 
 
-@shared_task(queue='orion_flash_dispatch')
+@shared_task(queue='orion_flash')
 def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary alert models
@@ -126,9 +126,15 @@ def get_data_for(destination, **kwargs):
     these arguments are function specific and documenting them here is not
     exactly useful
 
+    note that the lt_days default cannot be None. it doesn't make sense to
+    create alerts for certififcates that expire soon unless soon is actually
+    defined. for that matter lt_days default cannot be 0 for the same reason.
+    it also shouldn't be 1 but in that case it will be reset to 2 in the
+    queryset function
+
     :raises: :exception:`<UnknownDataSourceError>`
     """
-    lt_days = kwargs.get('lt_days', None)
+    lt_days = kwargs.get('lt_days', 2)
 
     if destination in ['orion_flash.expiressoonsslalert']:
         return expires_in(lt_days=lt_days)

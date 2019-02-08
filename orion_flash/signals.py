@@ -23,7 +23,8 @@ from django.dispatch import receiver
 from django.urls import reverse
 
 from .models import (
-    UntrustedSslAlert, ExpiresSoonSslAlert, ExpiredSslAlert, InvalidSslAlert,
+    UntrustedSslAlert, ExpiresSoonSslAlert,  # @UnresolvedImport
+    ExpiredSslAlert, InvalidSslAlert,   # @UnresolvedImport
 )
 
 
@@ -31,7 +32,7 @@ from .models import (
 @receiver(post_save, sender=ExpiredSslAlert)
 @receiver(post_save, sender=ExpiresSoonSslAlert)
 @receiver(post_save, sender=InvalidSslAlert)
-def update_local_url(sender, instance, created, *args, **kwargs):
+def update_local_url(sender, instance, created, *args, **kwargs):    # pylint: disable=unused-argument
     """
     add an URL to self in the instance
 
@@ -45,5 +46,3 @@ def update_local_url(sender, instance, created, *args, **kwargs):
                 'admin:orion_flash_{}_change'.format(sender._meta.model_name),
                 args=(instance.id,)))
         instance.save()
-
-    return

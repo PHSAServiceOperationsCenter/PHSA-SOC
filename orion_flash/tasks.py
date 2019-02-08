@@ -25,7 +25,7 @@ from ssl_cert_tracker.lib import (
     is_not_trusted, expires_in, has_expired,  # @UnresolvedImport
     is_not_yet_valid,  # @UnresolvedImport
 )
-from ssl_cert_tracker.models import SslCertificate
+from ssl_cert_tracker.models import SslCertificate  # @UnresolvedImport
 
 
 LOG = get_task_logger(__name__)

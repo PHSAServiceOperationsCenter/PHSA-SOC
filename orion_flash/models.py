@@ -107,7 +107,7 @@ class BaseSslAlert(models.Model):
             setattr(self, attr_name, attr_value)
 
     @classmethod
-    def update_or_create(cls, qs_row_as_dict):
+    def create_or_update(cls, qs_row_as_dict):
         """
         create orion custom alert objects
 

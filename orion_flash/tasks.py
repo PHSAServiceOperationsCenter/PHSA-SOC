@@ -25,6 +25,7 @@ from ssl_cert_tracker.lib import (
     is_not_trusted, expires_in, has_expired,  # @UnresolvedImport
     is_not_yet_valid,  # @UnresolvedImport
 )
+from ssl_cert_tracker.models import SslCertificate
 
 
 LOG = get_task_logger(__name__)
@@ -50,6 +51,36 @@ class DataTargetFieldsAttributeError(Exception):
     """
     raise when the target model doesn't have a qs_fields attribute
     """
+
+
+@shared_task(queue='orion_flash')
+def purge_ssl_alerts():
+    """
+    go through the model defined by :arg:`<source>` and verify that each
+    instance still matches to a certificate in the
+    :class:`<ssl_cert_tracker.models.SslCertificate>`
+
+    if it doesn't, delete the instance
+    """
+    delete_info = []
+    for data_source in KNOWN_DESTINATIONS:
+
+        model = get_model(data_source)
+        for alert in model.objects.values('orion_node_id', 'orion_node_port'):
+            deleted = 0
+            if not SslCertificate.objects.filter(
+                    orion_id=alert['orion_node_id'],
+                    port__port=alert['orion_node_port']).exists():
+
+                deleted = model.filter(
+                    orion_node_id=alert['orion_node_id'],
+                    orion_node_port=alert['orion_node_port']
+                ).objects().all().delete()
+
+            delete_info.append(
+                'deleted orphaned %s alerts from %s' % (deleted, data_source))
+
+    return delete_info
 
 
 @shared_task(rate_limit='2/s', queue='orion_flash')

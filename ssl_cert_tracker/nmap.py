@@ -31,21 +31,18 @@ class NmapTargetError(Exception):
     """
     raise when nmap is invoked with no target
     """
-    pass
 
 
 class NmapError(Exception):
     """
     raise if the nmap probe returns an error
     """
-    pass
 
 
 class NmapHostDownError(Exception):
     """
     raise if nmap reports the host as down
     """
-    pass
 
 
 class NmapTooManyHostsError(Exception):
@@ -55,14 +52,12 @@ class NmapTooManyHostsError(Exception):
     no idea how this can happen but hte data structures suggest that it is
     possible
     """
-    pass
 
 
 class NmapNotAnSslNodeError(Exception):
     """
     raise if there is no SSL data returned by the probe
     """
-    pass
 
 
 class NmapProbe():

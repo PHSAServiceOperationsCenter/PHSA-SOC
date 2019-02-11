@@ -20,9 +20,9 @@ import decimal
 
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from requests import Session, urllib3
 
+from citrus_borg.dynamic_preferences_registry import get_preference
 
 SESSION = Session()
 """
@@ -33,8 +33,9 @@ SESSION = Session()
 :vartype SESSION: `<request.Session.`
 """
 
-SESSION.auth = (settings.ORION_USER, settings.ORION_PASSWORD)
-SESSION.verify = settings.ORION_VERIFY_SSL_CERT
+SESSION.auth = (get_preference('orionserverconn__orion_user'),
+                get_preference('orionserverconn__orion_password'))
+SESSION.verify = get_preference('orionserverconn__orion_verify_ssl_cert')
 SESSION.headers = {'Content-Type': 'application/json'}
 
 if not SESSION.verify:
@@ -81,11 +82,13 @@ class OrionClient():
         :raises:
         """
         response = SESSION.post(
-            '{}/Query'.format(settings.ORION_URL),
+            '{}/Query'.format(
+                get_preference('orionserverconn__orion_rest_url')),
             data=json.dumps(
                 dict(query=orion_query, params=params),
                 default=serialize_custom_json),
-            timeout=settings.ORION_TIMEOUT
+            timeout=(get_preference('orionserverconn__orion_conn_timeout'),
+                     get_preference('orionserverconn__orion_read_timeout'))
         )
 
         response.raise_for_status()

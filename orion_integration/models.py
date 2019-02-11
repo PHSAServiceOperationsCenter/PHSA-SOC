@@ -20,7 +20,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
-
+from citrus_borg.dynamic_preferences_registry import get_preference
 from .orion import OrionClient
 
 # pylint:disable=R0903
@@ -40,7 +40,9 @@ class OrionCernerCSTNodeManager(models.Manager):
         :method:`django.queryset.filter`
         """
         return super().\
-            get_queryset().filter(program_application__exact='Cerner-CST')
+            get_queryset().filter(
+                program_application__exact=get_preference(
+                    'orionfilters__cerner_cst'))
 # pylint:enable=R0903
 
 
@@ -48,14 +50,12 @@ class OrionQueryError(Exception):
     """
     raise if the model doesn't have an orion_query attribute
     """
-    pass
 
 
 class OrionMappingsError(Exception):
     """
     raise if the model doesn't have an orion_mappings attribute
     """
-    pass
 
 
 class OrionBaseModel(BaseModel, models.Model):

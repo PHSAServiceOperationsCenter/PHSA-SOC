@@ -56,7 +56,91 @@ orion_server_conn = Section(
     'orionserverconn',
     verbose_name=_('Orion Server Connection Settings').title())
 
+orion_filters = Section(
+    'orionfilters',
+    verbose_name=_('Filters used for Orion REST queries').title())
+
+orion_probe_defaults = Section(
+    'orionprobe',
+    verbose_name=_('Filters used for Orion data probes').title())
+
+
 # pylint: enable=C0103
+
+
+@global_preferences_registry.register
+class OrionProbeCSTOnly(BooleanPreference):
+    """
+    run data probes only against Cerner CST Orion Nodes
+    """
+    section = orion_probe_defaults
+    name = 'cerner_cst'
+    default = True
+    required = True
+    verbose_name = _('Only probe Cerner CST Orion nodes').title()
+
+
+@global_preferences_registry.register
+class OrionProbeKnownSslOnly(BooleanPreference):
+    """
+    run data probes only against Orion Nodes known to serve Ssl
+    """
+    section = orion_probe_defaults
+    name = 'orion_ssl'
+    default = False
+    required = True
+    verbose_name = _(
+        'Only probe Orion nodes known to serve applications over SSL').title()
+
+
+@global_preferences_registry.register
+class OrionProbeServersOnly(BooleanPreference):
+    """
+    run data probes only against Orion Nodes categorized as server
+    """
+    section = orion_probe_defaults
+    name = 'server'
+    default = True
+    required = True
+    verbose_name = _('Only probe Orion nodes categorized as servers').title()
+
+
+@global_preferences_registry.register
+class OrionCernerCSTFilter(StringPreference):
+    """
+    filter to extract Orion Nodes tagged as Cerner CST
+    """
+    section = orion_filters
+    name = 'cerner_cst'
+    default = 'Cerner-CST'
+    required = True
+    verbose_name = _('Query Filter for Cerner CST Orion nodes').title()
+
+
+@global_preferences_registry.register
+class OrionServerNodesFilter(StringPreference):
+    """
+    filter to run queries only against Orion Nodes of type 'server'
+    """
+    section = orion_filters
+    name = 'server_node'
+    default = 'server'
+    required = True
+    verbose_name = _('Query Filter for Orion server nodes').title()
+
+
+@global_preferences_registry.register
+class OrionAppSslFilter(StringPreference):
+    """
+    service or default user preference
+    """
+    section = orion_filters
+    name = 'ssl_app'
+    default = 'ssl'
+    required = True
+    verbose_name = _(
+        'Query Filter for Orion nodes known to run applications over SSL'
+    ).title()
 
 
 @global_preferences_registry.register
@@ -113,7 +197,7 @@ class OrionServerAcceptUnsignedCertificate(BooleanPreference):
     orion user
     """
     section = orion_server_conn
-    name = 'orion_verify+ssl+cert'
+    name = 'orion_verify_ssl_cert'
     default = settings.ORION_VERIFY_SSL_CERT
     required = True
     verbose_name = _('Ignore unsigned SSL certificate on the Orion server')

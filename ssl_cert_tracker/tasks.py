@@ -41,25 +41,16 @@ LOG = get_task_logger(__name__)
 SSL_PROBE_OPTIONS = r'-Pn -p 443 --script ssl-cert'
 
 
-class NmapError(Exception):
-    """
-    raise on nmap failure
-    """
-    pass
-
-
 class NmapXMLError(Exception):
     """
     raise when the XML report from nmap cannot be processed
     """
-    pass
 
 
 class NoSSLCertOnNodeError(Exception):
     """
     raise if there is no SSL certificate on the node probed by nmap
     """
-    pass
 
 
 class SSLDatabaseError(Exception):
@@ -67,14 +58,12 @@ class SSLDatabaseError(Exception):
     raise if one cannot update the database with the SSL certificate
     collected with nmap
     """
-    pass
 
 
 class OrionDataError(Exception):
     """
     raise when there are no orion nodes available for nmap probing
     """
-    pass
 
 
 @shared_task(
@@ -199,8 +188,8 @@ def go_node(node_id, node_address):
 
     if json["md5"] is None:
         LOG.error(
-            'could not retrieve SSL certificate from node address %s'
-            % node_address)
+            'could not retrieve SSL certificate from node address %s',
+            node_address)
         return (
             'could not retrieve SSL certificate from node address %s'
             % node_address)

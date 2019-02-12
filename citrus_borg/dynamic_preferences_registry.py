@@ -99,7 +99,7 @@ class OrionProbeServersOnly(BooleanPreference):
     run data probes only against Orion Nodes categorized as server
     """
     section = orion_probe_defaults
-    name = 'server'
+    name = 'servers_only'
     default = True
     required = True
     verbose_name = _('Only probe Orion nodes categorized as servers').title()

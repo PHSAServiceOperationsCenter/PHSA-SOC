@@ -33,9 +33,6 @@ SESSION = Session()
 :vartype SESSION: `<request.Session.`
 """
 
-SESSION.auth = (get_preference('orionserverconn__orion_user'),
-                get_preference('orionserverconn__orion_password'))
-SESSION.verify = get_preference('orionserverconn__orion_verify_ssl_cert')
 SESSION.headers = {'Content-Type': 'application/json'}
 
 if not SESSION.verify:
@@ -81,6 +78,15 @@ class OrionClient():
 
         :raises:
         """
+
+        # need to configure the SESSION object here because the
+        # user configurable settings will not work if used at the
+        # module level
+        SESSION.auth = (get_preference('orionserverconn__orion_user'),
+                        get_preference('orionserverconn__orion_password'))
+        SESSION.verify = get_preference(
+            'orionserverconn__orion_verify_ssl_cert')
+
         response = SESSION.post(
             '{}/Query'.format(
                 get_preference('orionserverconn__orion_rest_url')),

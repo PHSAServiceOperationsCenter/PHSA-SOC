@@ -71,7 +71,7 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         return super().change_view(
             request, object_id, form_url=form_url, extra_context=extra_context)
 
-    def get_readonly_fields(self, request, obj=None):
+    def get_readonly_fields(self, request, obj=None):  # @UnusedVariable
         """
         overload to make sure that some fields are always readonly
         """
@@ -84,6 +84,9 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 @admin.register(BorgSite)
 class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for borg sites
+    """
     list_display = ('site', 'enabled', 'notes',
                     'last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)

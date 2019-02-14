@@ -94,6 +94,10 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('last_seen',)
 
     def last_seen(self, obj):
+        """
+        last seen is based on when the borgs on the site were last seen
+        ordered descending
+        """
         return obj.winlogbeathost_set.first().last_seen
     last_seen.short_description = 'last seen'
 

@@ -175,6 +175,7 @@ class BaseSslAlert(models.Model):
                 cert_url=qs_row_as_dict.get('url'),
                 cert_subject=get_subject(),
                 cert_issuer=get_issuer(),
+                md5=qs_row_as_dict.get('pk_md5'),
                 alert_body='Untrusted SSL Certificate',
                 not_before=qs_row_as_dict.get('not_before'),
                 not_after=qs_row_as_dict.get('not_after')

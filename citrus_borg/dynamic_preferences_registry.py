@@ -67,7 +67,7 @@ orion_probe_defaults = Section(
 
 # pylint: enable=C0103
 
-
+# pylint: disable=too-few-public-methods
 @global_preferences_registry.register
 class OrionProbeCSTOnly(BooleanPreference):
     """
@@ -76,7 +76,7 @@ class OrionProbeCSTOnly(BooleanPreference):
     section = orion_probe_defaults
     name = 'cerner_cst'
     default = True
-    required = True
+    required = False
     verbose_name = _('Only probe Cerner CST Orion nodes').title()
 
 
@@ -88,7 +88,7 @@ class OrionProbeKnownSslOnly(BooleanPreference):
     section = orion_probe_defaults
     name = 'orion_ssl'
     default = False
-    required = True
+    required = False
     verbose_name = _(
         'Only probe Orion nodes known to serve applications over SSL').title()
 
@@ -101,7 +101,7 @@ class OrionProbeServersOnly(BooleanPreference):
     section = orion_probe_defaults
     name = 'servers_only'
     default = True
-    required = True
+    required = False
     verbose_name = _('Only probe Orion nodes categorized as servers').title()
 
 
@@ -199,7 +199,7 @@ class OrionServerAcceptUnsignedCertificate(BooleanPreference):
     section = orion_server_conn
     name = 'orion_verify_ssl_cert'
     default = settings.ORION_VERIFY_SSL_CERT
-    required = True
+    required = False
     verbose_name = _('Ignore unsigned SSL certificate on the Orion server')
 
 
@@ -478,7 +478,7 @@ class LogonReportsInterval(DurationPreference):
         "{}<br>{}",
         _('logon reports are calculated, created, and sent over this'),
         _('time interval'))
-
+# pylint: disable=too-few-public-methods
 # pylint: enable=E1101
 
 

@@ -70,7 +70,7 @@ class BaseSslAlert(models.Model):
         _('alert last raised on'), db_index=True, auto_now=True,
         blank=False, null=False)
     silenced = models.BooleanField(
-        _('alert is silenced'), db_index=True, default=False, null=False,
+        _('silence this alert?'), db_index=True, default=False, null=False,
         blank=False,
         help_text=_('The Orion server will ignore this row when evaluating'
                     ' alert conditions. Note that this flag will be'
@@ -87,7 +87,7 @@ class BaseSslAlert(models.Model):
     not_before = models.DateTimeField(
         _('not valid before'), db_index=True, null=False, blank=False)
     not_after = models.DateTimeField(
-        _('expires on'), db_index=True, null=False, blank=False)
+        _('not valid after'), db_index=True, null=False, blank=False)
 
     def __str__(self):
         return self.cert_subject

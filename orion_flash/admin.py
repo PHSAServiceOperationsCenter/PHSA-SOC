@@ -10,6 +10,7 @@ class BaseSslAlertAdmin(admin.ModelAdmin):
     """
     parent class for the admin classes defined in this module
     """
+    actions = None
     list_display = ('cert_subject', 'md5', 'orion_node_id', 'orion_node_port',
                     'silenced', 'alert_body', 'show_cert_url')
     list_editable = ('silenced',)

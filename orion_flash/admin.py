@@ -1,3 +1,20 @@
+"""
+.. _admin:
+
+django admin module for the orion_flash app
+
+:module:    p_soc_auto.orion_flash.admin
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Feb. 20, 2019
+
+"""
 from django.utils.safestring import mark_safe
 from django.contrib import admin
 

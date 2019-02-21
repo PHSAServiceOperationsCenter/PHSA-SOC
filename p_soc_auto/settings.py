@@ -241,6 +241,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
 
 # orion logins
+ORION_HOSTNAME = 'orion.vch.ca'
 ORION_ENTITY_URL = 'https://orion.vch.ca'
 ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
@@ -254,6 +255,8 @@ ORION_TIMEOUT = (10.0, 22.0)
     timeout, the second one is the read tiemout
 
 """
+ORION_RETRY = 3
+ORION_BACKOFF_FACTOR = 0.3
 
 # celery settings (use namespace='CELERY')
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'

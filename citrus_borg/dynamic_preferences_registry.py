@@ -168,6 +168,18 @@ class OrionServerRestUrl(LongStringPreference):
 
 
 @global_preferences_registry.register
+class OrionServer(StringPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_hostname'
+    default = settings.ORION_HOSTNAME
+    required = True
+    verbose_name = _('Orion Server Host Name or IP Address')
+
+
+@global_preferences_registry.register
 class OrionServerUser(StringPreference):
     """
     orion user
@@ -225,6 +237,34 @@ class OrionServerReadTimeout(FloatPreference):
     default = settings.ORION_TIMEOUT[1]
     required = True
     verbose_name = _('Orion Server Read Timeout')
+
+
+@global_preferences_registry.register
+class OrionServerRetry(IntPreference):
+    """
+    orion server retries
+    """
+    section = orion_server_conn
+    name = 'orion_retry'
+    default = settings.ORION_RETRY
+    required = True
+    verbose_name = _('Orion Server Connection Retries')
+
+
+@global_preferences_registry.register
+class OrionServerRetryBackoff(FloatPreference):
+    """
+    orion server retry backoff factor
+    """
+    section = orion_server_conn
+    name = 'orion_backoff_factor'
+    default = settings.ORION_BACKOFF_FACTOR
+    required = True
+    verbose_name = _('Orion Server Retry Backoff Factor')
+    help_text = format_html(
+        "See 'backoff_factor' at <a href={}>{}</a>",
+        'https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#module-urllib3.util.retry',
+        _('Retry connection backoff factor'))
 
 
 @global_preferences_registry.register

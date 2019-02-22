@@ -69,7 +69,11 @@ class NmapCertsData(BaseModel, models.Model):
     """
     SSL certificate data class
 
-    #TODO: change all xml.dom objects to something readable by humans 
+    #TODO:DONE: change all xml.dom objects to something readable by humans, see
+    :module:`<ssl_cert_tracker.nmap>`
+
+    #TODO: refactor SSL certificate reports and email alarms to use
+    :class:`<SSLCertificate>`
     """
     node_id = models.BigIntegerField(
         'orion node local id', blank=False, null=False, db_index=True,

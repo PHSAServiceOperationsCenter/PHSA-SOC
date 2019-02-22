@@ -112,8 +112,10 @@ class NmapProbe():
     @property
     def summary(self):
         """
-        :returns: the summary of the :class:`<libnmap.objects.report.NmapReport>`
-        instance created by :method:`,libnmap.parser.NmapParser.parse>`
+        :returns:
+
+            the summary of the :class:`<libnmap.objects.report.NmapReport>`
+            instance created by :method:`<libnmap.parser.NmapParser.parse>`
         """
         return self.nmap_data.summary
 

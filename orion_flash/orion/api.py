@@ -15,21 +15,27 @@ functions and methods for the orion package
 :updated:    Feb. 21, 2019
 
 """
+import logging
 import requests
 
 from requests import urllib3
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry  # @UnresolvedImport
 
 from orionsdk import SwisClient
 
 from django.conf import settings
 
+import qv
+
 from citrus_borg.dynamic_preferences_registry import get_preference
 
-src_defaults = (settings.ORION_HOSTNAME,
+LOG = logging.getLogger('orion_flash')
+
+
+SRC_DEFAULTS = (settings.ORION_HOSTNAME,
                 settings.ORION_USER, settings.ORION_PASSWORD)
-dst_defaults = ('10.248.211.70',
+DST_DEFAULTS = ('10.248.211.70',
                 # get_preference('orionservercon__orion_hostname'),
                 get_preference('orionserverconn__orion_user'),
                 get_preference('orionserverconn__orion_password'))
@@ -67,32 +73,15 @@ def get_session():
     return session
 
 
-def query_props(host, user, password, qry):
-    """
-    execute a SWSQL query against an Orion Server
-
-    :arg host: the name or ip address of the Orion server
-
-    :arg user: the username of the account used to access the server
-
-    :arg password: the password of the account used to access the server
-
-    :arg str qry: the SWQL query
-
-    :returns: a ``list`` of ``dict``
-    """
-    return SwisClient(
-        host, user, password,
-        verify=get_preference('orionserverconn__orion_verify_ssl_cert')).\
-        query(qry).get('results')
-
-
-class SourceSwis():
+class SourceSwis():  # pylint: disable=too-few-public-methods
     """
     wrap around the SwisClient for a cleaner look
+
+    provides only methods for reading data from the server
     """
 
-    def __init__(self, *args, verify=settings.ORION_VERIFY_SSL_CERT):
+    def __init__(
+            self, *args, verify=settings.ORION_VERIFY_SSL_CERT, logger=LOG):
         """
         :arg args: (host, user, password) for the orion server
 
@@ -101,10 +90,13 @@ class SourceSwis():
         production quality but for expediency
 
         """
+        self.logger = logger
         if not args:
-            args = src_defaults
-        self.orion_connection = SwisClient(  # pylint: disable=no-value-for-parameter
-            *args, verify=verify)
+            args = SRC_DEFAULTS
+
+        # pylint: disable=no-value-for-parameter
+        self.orion_connection = SwisClient(*args, verify=verify)
+        # pylint: enable=no-value-for-parameter
 
     def query(self, query, **params):
         """
@@ -114,69 +106,61 @@ class SourceSwis():
 
 
 class DestSwis(SourceSwis):
+    """
+    another wrap around for :class:`<orionsdk.SwisClient>`
+
+    this one will add write methods as well, probably delete methods if we
+    need them
+    """
+
     def __init__(
             self, *args,
-            verify=get_preference('orionserverconn__orion_verify_ssl_cert')):
+            verify=get_preference('orionserverconn__orion_verify_ssl_cert'),
+            logger=LOG):
+        """
+        override the parent constructor to prefer defaults specific to the
+        target server
+        """
         if not args:
-            args = dst_defaults
+            args = DST_DEFAULTS
 
-        super().__init__(*args, verify)
+        super().__init__(*args, verify, logger)
 
-    def create_custom_property(
-            self, src_props, entity='Orion.NodesCustomProperties'):
-        pass
+    def copy_custom_props(self, src_props=None):
+        """
+        copy custom properties between servers
 
+        :arg src: the source orion server
+        """
+        results = []
 
-def create_props(entity, verb, props, host=None, user=None, password=None):
-    results = []
+        if src_props is None:
+            src_props = SourceSwis().query(query=qv.CUSTOM_PROPS_QUERY)
 
-    if host is None:
-        host = dst_defaults[0]
+        for prop in src_props:
+            self.logger.info(
+                'copying custom property Table: %s, Field: %s',
+                prop.get('Table'), prop.get('Field'))
+            if self.query(query=qv.CUSTOM_PROPS_QUERY,
+                          Table=prop.get('Table'), Field=prop.get('Field')):
 
-    if user is None:
-        user = dst_defaults[1]
+                self.logger.debug(
+                    'custom property Table: %s, Field: %s exists, skipping',
+                    prop.get('Table'), prop.get('Field'))
+                continue
 
-    if password is None:
-        password = dst_defaults[2]
+            results.append(
+                self._invoke(
+                    target=prop.get('TargetEntity'), verb=qv.CUSTOM_PROPS_VERB,
+                    data=[prop.get(key, None) for key
+                          in qv.CUSTOM_PROPS_INVOKE_ARGS]))
 
-    swis_client = SwisClient(
-        host, user, password,
-        verify=get_preference('orionserverconn__orion_verify_ssl_cert')
-    )
+        return results
 
-    for prop in props:
-        #results.append(swis_client.create(entity, **prop))
+    def _invoke(self, target, verb, data):
         try:
-            res = swis_client.invoke(entity, verb, *prop.values())
-            print(res)
-            results.append(res)
-        except Exception as err:
-            print('!!!', prop, '\n', err)
-
-    return results
-
-
-def src_props(qry, host=None, user=None, password=None):
-    if host is None:
-        host = src_defaults[0]
-
-    if user is None:
-        user = src_defaults[1]
-
-    if password is None:
-        password = src_defaults[2]
-
-    return query_props(host, user, password, qry)
-
-
-def dst_props(qry, host=None, user=None, password=None):
-    if host is None:
-        host = dst_defaults[0]
-
-    if user is None:
-        user = dst_defaults[1]
-
-    if password is None:
-        password = dst_defaults[2]
-
-    return query_props(host, user, password, qry)
+            return self.orion_connection.invoke(target, verb, *data)
+        except Exception:  # pylint: disable=broad-except
+            self.logger.exception(
+                'cannot create custom property: %s against target entity: %s',
+                data[0], target)

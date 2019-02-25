@@ -44,3 +44,13 @@ VALUES_FOR_CUSTOM_PROP_QUERY = (
     'FROM Orion.CustomPropertyValues '
     'WHERE Table=@table AND Field=@field'
 )
+NODE_PROPS_QUERY = (
+    'SELECT Caption, NodeDescription, Description, DNS, SysName, Vendor, '
+    'Location, Contact, CustomStatus, IOSImage, IOSVersion '
+    'FROM Orion.Nodes '
+    'WHERE IPAddress=@ipaddress')
+NODE_URI_QUERY = (
+    'SELECT Uri '
+    'FROM Orion.Nodes '
+    'WHERE IPAddress=@ipaddress')
+ALL_NODES_IPADDRESS_QUERY = ('SELECT IPAddress FROM Orion.Nodes')

@@ -34,11 +34,105 @@ def add_beats_for_orion_flash(apps, schema_editor):
             ('Refresh Orion alerts for SSL certificates that will expire in'
              ' less than 90 days'),
             'task': 'orion_flash.tasks.refresh_ssl_alerts',
-            'args': '["orion_flash.untrustedsslalert"]',
-            'kwargs': '{"lt_days":90 }',
+            'args': '["orion_flash.expiressoonsslalert"]',
+            'kwargs': '{"lt_days":90}',
             'crontab': {
                 'minute': '01',
                 'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Refresh Orion alerts for SSL certificates that will expire in'
+             ' less than 30 days'),
+            'task': 'orion_flash.tasks.refresh_ssl_alerts',
+            'args': '["orion_flash.expiressoonsslalert"]',
+            'kwargs': '{"lt_days":30}',
+            'crontab': {
+                'minute': '02',
+                'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Refresh Orion alerts for SSL certificates that will expire in'
+             ' less than 7 days'),
+            'task': 'orion_flash.tasks.refresh_ssl_alerts',
+            'args': '["orion_flash.expiressoonsslalert"]',
+            'kwargs': '{"lt_days":7}',
+            'crontab': {
+                'minute': '03',
+                'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Refresh Orion alerts for SSL certificates that will expire in'
+             ' less than 2 days'),
+            'task': 'orion_flash.tasks.refresh_ssl_alerts',
+            'args': '["orion_flash.expiressoonsslalert"]',
+            'kwargs': '{"lt_days":2}',
+            'crontab': {
+                'minute': '04',
+                'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Refresh Orion alerts for SSL certificates that have expired'),
+            'task': 'orion_flash.tasks.refresh_ssl_alerts',
+            'args': '["orion_flash.expiredsslalert"]',
+            'kwargs': '{}',
+            'crontab': {
+                'minute': '05',
+                'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Refresh Orion alerts for SSL certificates that are not yet'
+             ' valid'),
+            'task': 'orion_flash.tasks.refresh_ssl_alerts',
+            'args': '["orion_flash.invalidsslalert"]',
+            'kwargs': '{}',
+            'crontab': {
+                'minute': '06',
+                'hour': '07,15,23',
+                'day_of_week': '*',
+                'day_of_month': '*',
+                'month_of_year': '*',
+                'timezone': timezone,
+            },
+        },
+        {
+            'name':
+            ('Purge Orion alerts for SSL certificates'),
+            'task': 'orion_flash.tasks.purge_ssl_alerts',
+            'args': '[]',
+            'kwargs': '{}',
+            'crontab': {
+                'minute': '55',
+                'hour': '06,14,22',
                 'day_of_week': '*',
                 'day_of_month': '*',
                 'month_of_year': '*',
@@ -53,12 +147,11 @@ def add_beats_for_orion_flash(apps, schema_editor):
     PeriodicTask = apps.get_model('django_celery_beat', 'PeriodicTask')
 
     for _task in cron_tasks:
-        cron, _ = CrontabSchedule.objects.get_or_create(
-            minute=_task[3], hour=_task[2], day_of_week='*', day_of_month='*',
-            month_of_year='*', timezone=timezone)
+        cron, _ = CrontabSchedule.objects.get_or_create(**_task['crontab'])
 
-        PeriodicTask.objects.create(
-            crontab=cron, name=_task[0], task=_task[1])
+        _task['crontab'] = cron
+
+        PeriodicTask.objects.create(**_task)
 
     for _task in periodic_tasks:
         interval, _ = IntervalSchedule.objects.get_or_create(
@@ -75,4 +168,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(add_beats_for_orion_flash,
+                             reverse_code=migrations.RunPython.noop)
     ]

@@ -106,6 +106,10 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
 
     data_rows = get_data_for(destination, **kwargs).\
         values(*get_queryset_values_keys(get_model(destination)))
+
+    if not data_rows:
+        return 'no data'
+
     logger.debug('retrieved %s new/updated data rows for destination %s.'
                  ' first row sample: %s',
                  len(data_rows), destination, data_rows[0])

@@ -26,9 +26,14 @@ from orionsdk import SwisClient
 
 from django.conf import settings
 
-import qv
+from .qv import (
+    ALL_CUSTOM_PROPS_QUERY, FILTERED_CUSTOM_PROPS_QUERY,
+    CUSTOM_PROPS_VALS_VERB,
+    CUSTOM_PROPS_VALS_INVOKE_ARGS, VALUES_FOR_CUSTOM_PROP_QUERY,
+)
 
 from citrus_borg.dynamic_preferences_registry import get_preference
+
 
 LOG = logging.getLogger('orion_flash')
 
@@ -124,7 +129,7 @@ class DestSwis(SourceSwis):
         if not args:
             args = DST_DEFAULTS
 
-        super().__init__(*args, verify, logger)
+        super().__init__(*args, verify=verify, logger=logger)
 
     def copy_custom_props(self, src_props=None):
         """
@@ -135,31 +140,41 @@ class DestSwis(SourceSwis):
         results = []
 
         if src_props is None:
-            src_props = SourceSwis().query(query=qv.CUSTOM_PROPS_QUERY)
+            src_props = SourceSwis().query(query=ALL_CUSTOM_PROPS_QUERY)
 
         for prop in src_props:
             self.logger.info(
                 'copying custom property Table: %s, Field: %s',
                 prop.get('Table'), prop.get('Field'))
-            if self.query(query=qv.CUSTOM_PROPS_QUERY,
-                          Table=prop.get('Table'), Field=prop.get('Field')):
-
+            if self.query(query=FILTERED_CUSTOM_PROPS_QUERY,
+                          table=prop.get('Table'), field=prop.get('Field')):
                 self.logger.debug(
                     'custom property Table: %s, Field: %s exists, skipping',
                     prop.get('Table'), prop.get('Field'))
                 continue
 
+            values = SourceSwis().query(
+                query=VALUES_FOR_CUSTOM_PROP_QUERY,
+                table=prop.get('Table'), field=prop.get('Field'))
+            if values:
+                values = [value.get('Value') for value in values]
+                self.logger.info('also copying values %s', values)
+
+            prop['Values'] = values
+
             results.append(
                 self._invoke(
-                    target=prop.get('TargetEntity'), verb=qv.CUSTOM_PROPS_VERB,
+                    target=prop.get('TargetEntity'),
+                    verb=CUSTOM_PROPS_VALS_VERB,
                     data=[prop.get(key, None) for key
-                          in qv.CUSTOM_PROPS_INVOKE_ARGS]))
+                          in CUSTOM_PROPS_VALS_INVOKE_ARGS]))
 
         return results
 
     def _invoke(self, target, verb, data):
         try:
-            return self.orion_connection.invoke(target, verb, *data)
+            self.orion_connection.invoke(target, verb, *data)
+            return 'executed %s against %s with data %s' % (verb, target, data)
         except Exception:  # pylint: disable=broad-except
             self.logger.exception(
                 'cannot create custom property: %s against target entity: %s',

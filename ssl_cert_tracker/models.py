@@ -133,8 +133,7 @@ class NmapCertsData(BaseModel, models.Model):
             orion_node = orion_node.values('node_caption', 'details_url')[0]
             return '<a href="%s%s">%s on Orion</>' % (
                 get_preference('orionserverconn__orion_server_url'),
-                orion_node.get('details_url'),
-                orion_node.get('node_caption')
+                orion_node.get('details_url'), orion_node.get('node_caption')
             )
 
         return 'acquired outside the Orion infrastructure'
@@ -368,8 +367,8 @@ class SslCertificate(SslCertificateBase, models.Model):
         if orion_node.exists():
             orion_node = orion_node.values('node_caption', 'details_url')[0]
             return '<a href="%s%s">%s on Orion</>' % (
-                settings.ORION_ENTITY_URL, orion_node.get('details_url'),
-                orion_node.get('node_caption')
+                get_preference('orionserverconn__orion_server_url'),
+                orion_node.get('details_url'), orion_node.get('node_caption')
             )
 
         return 'acquired outside the Orion infrastructure'

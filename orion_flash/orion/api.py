@@ -31,6 +31,7 @@ from .qv import (
     CUSTOM_PROPS_VALS_VERB,
     CUSTOM_PROPS_VALS_INVOKE_ARGS, VALUES_FOR_CUSTOM_PROP_QUERY,
     NODE_PROPS_QUERY, NODE_URI_QUERY, ALL_NODES_IPADDRESS_QUERY,
+    NODE_CUSTOM_PROPS_QUERY,
 )
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -183,13 +184,7 @@ class DestSwis(SourceSwis):
             raise TypeError(
                 'invalid type %s for %s object' % (type(src), src))
 
-        ipaddresses = self.query(ALL_NODES_IPADDRESS_QUERY)
-        if not ipaddresses:
-            raise ValueError('there are no spoons on the destination server')
-
-        ipaddresses = [ipaddress.get('IPAddress') for ipaddress in ipaddresses]
-
-        for ipaddress in ipaddresses:
+        for ipaddress in self.ipaddresses:
 
             src_props = src.query(
                 query=NODE_PROPS_QUERY, ipaddress=ipaddress)
@@ -198,16 +193,57 @@ class DestSwis(SourceSwis):
                 continue
 
             src_props = src_props[0]
-            uri = self.query(
-                query=NODE_URI_QUERY,  ipaddress=ipaddress)[0].get('Uri')
+            uri = self._node_uri_by_ip(ipaddress)
 
             try:
                 self.orion_connection.update(uri=uri, **src_props)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 self.logger.exception(
                     'cannot update node at %s with %s', uri, src_props)
 
             self.logger.info('updated %s with %s', uri, src_props)
+
+    def update_nodes_with_custom_props(self, src=None):
+        if src is None:
+            src = SourceSwis()
+
+        if not isinstance(src, SourceSwis):
+            raise TypeError(
+                'invalid type %s for %s object' % (type(src), src))
+
+        for ipaddress in self.ipaddresses:
+
+            src_props = src.query(
+                query=NODE_CUSTOM_PROPS_QUERY, ipaddress=ipaddress)
+            if not src_props:
+                self.logger.info('there is no source spoon for %s', ipaddress)
+                continue
+
+            src_props = src_props[0]
+            src_props.pop('NodeID', None)
+            src_props.pop('IPAddress', None)
+            uri = self._node_uri_by_ip(ipaddress)
+
+            try:
+                self.orion_connection.update(
+                    uri='{}/CustomProperties'.format(uri), **src_props)
+            except Exception:  # pylint: disable=broad-except
+                self.logger.exception(
+                    'cannot update node at %s with %s', uri, src_props)
+
+            self.logger.info('updated %s with %s', uri, src_props)
+
+    def _node_uri_by_ip(self, ipaddress):
+        return self.query(query=NODE_URI_QUERY,
+                          ipaddress=ipaddress)[0].get('Uri')
+
+    @property
+    def ipaddresses(self):
+        ipaddresses = self.query(ALL_NODES_IPADDRESS_QUERY)
+        if not ipaddresses:
+            raise ValueError('there are no spoons on the destination server')
+
+        return [ipaddress.get('IPAddress') for ipaddress in ipaddresses]
 
     def _invoke(self, target, verb, data):
         try:

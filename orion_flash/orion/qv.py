@@ -54,3 +54,17 @@ NODE_URI_QUERY = (
     'FROM Orion.Nodes '
     'WHERE IPAddress=@ipaddress')
 ALL_NODES_IPADDRESS_QUERY = ('SELECT IPAddress FROM Orion.Nodes')
+NODE_CUSTOM_PROPS_QUERY = (
+    'SELECT ons.NodeID, ons.IPAddress,'
+    ' oncp.Address, oncp.Building, oncp.City, oncp.Closet, oncp.Comments,'
+    ' oncp.DeviceType, oncp.HA, oncp.HardwareIncidentStatus,'
+    ' oncp.IncidentStatus, oncp.Make, oncp.NodeOwner, oncp.OutOfBand,'
+    ' oncp.ProgramApplication, oncp.ProgramApplicationType,'
+    ' oncp.Provider, oncp.Region, oncp.Site, oncp.SiteContactName,'
+    ' oncp.SiteHours, oncp.SitePhone, oncp.SiteType,'
+    ' oncp.WANbandwidth, oncp.WANnode, oncp.WANProvider'
+    ' FROM Orion.Nodes(nolock=true) ons'
+    ' LEFT JOIN Orion.NodesCustomProperties(nolock=true) oncp'
+    ' on ons.NodeID = oncp.NodeID'
+    ' WHERE ons.IPAddress=@ipaddress'
+)

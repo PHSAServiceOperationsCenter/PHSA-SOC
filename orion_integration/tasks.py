@@ -15,6 +15,8 @@ celery tasks for the orion_integration app
 :updated:    Sep. 5, 2018
 
 """
+from requests.exceptions import HTTPError
+
 from celery import shared_task, group
 from django.apps import apps
 from orion_integration.models import (
@@ -39,7 +41,13 @@ def populate_from_orion():
     """
     ret = []
     for model in [OrionNodeCategory, OrionNode, OrionAPMApplication, ]:
-        _ret = model.update_or_create_from_orion()
+        try:
+            _ret = model.update_or_create_from_orion()
+        except HTTPError as error:
+            _ret = str(error)
+        except Exception as error:
+            raise error
+
         ret.append(_ret)
 
     return ret
@@ -85,6 +93,11 @@ def verify_known_orion_data():
     for model in [OrionNodeCategory, OrionAPMApplication, OrionNode]:
         ids = list(model.objects.filter(
             enabled=True).all().values_list('id', flat=True))
+        if not ids:
+            ret.append(
+                'no entries in %s. skipping...' % model._meta.verbose_name)
+            continue
+
         group(orion_entity_exists.s(model._meta.model_name, pk) for
               pk in ids)()
         ret.append('%s: looking for %s entities' % (model._meta.verbose_name,

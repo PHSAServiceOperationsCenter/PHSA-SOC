@@ -23,6 +23,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
+from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode
 from p_soc_auto_base.models import BaseModel
 
@@ -131,7 +132,8 @@ class NmapCertsData(BaseModel, models.Model):
         if orion_node.exists():
             orion_node = orion_node.values('node_caption', 'details_url')[0]
             return '<a href="%s%s">%s on Orion</>' % (
-                settings.ORION_ENTITY_URL, orion_node.get('details_url'),
+                get_preference('orionserverconn__orion_server_url'),
+                orion_node.get('details_url'),
                 orion_node.get('node_caption')
             )
 

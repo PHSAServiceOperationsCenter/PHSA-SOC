@@ -104,7 +104,7 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     :arg str model_name:
     """
-    return get_base_queryset(app_label, model_name).\
+    return get_ssl_base_queryset(app_label, model_name).\
         filter(issuer__is_trusted=False).\
         annotate(alert_body=Value('Untrusted SSL Certificate',
                                   output_field=TextField()))
@@ -142,6 +142,37 @@ def get_base_queryset(app_label, model_name, url_annotate=True):
     return queryset
 
 
+def get_ssl_base_queryset(
+        app_label, model_name, url_annotate=True, issuer_url_annotate=True):
+    """
+    annotate with the absolute url to the certificate issuer row
+
+    we put this in a separate function because get_base_queryset is
+    supposed to be pristine with no dependencies to any specific model
+    whatsoever
+
+    this cannot be abstracted to generate annotations for each
+    foreign key field  because the annotation name cannot be passed as
+    a variable
+    """
+    queryset = get_base_queryset(app_label, model_name, url_annotate)
+    if issuer_url_annotate \
+            and app_label in ['ssl_cert_tracker'] \
+            and model_name in ['sslcertificate']:
+        queryset = queryset.\
+            annotate(url_issuer_id=Cast('issuer__id', TextField())).\
+            annotate(url_issuer=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()),
+                Value(':'), Value(settings.SERVER_PORT),
+                Value('/admin/'),
+                Value(app_label), Value('/sslcertificateissuer/'),
+                F('url_issuer_id'), Value('/change/'),
+                output_field=TextField()))
+
+    return queryset
+
+
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                lt_days=None, logger=None):
     """
@@ -163,7 +194,7 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                        ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
-    queryset = get_base_queryset(app_label, model_name).\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.VALID).\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
@@ -193,7 +224,7 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     :returns: a django queryset
     """
-    queryset = get_base_queryset(app_label, model_name).\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
         annotate(mysql_now=Now()).\
         annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
@@ -217,7 +248,7 @@ def is_not_yet_valid(
 
     :returns: a django queryset
     """
-    queryset = get_base_queryset(app_label, model_name).\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
         annotate(mysql_now=Now()).\
         annotate(will_become_valid_in_x_days=DateDiff(

@@ -79,6 +79,8 @@ class BaseSslAlert(models.Model):
         _('alert body'), blank=False, null=False)
     cert_issuer = models.TextField(
         _('SSL certificate issuing authority'), blank=False, null=False)
+    cert_issuer_url = models.URLField(
+        _('SSL certificate issuing authority URL'), blank=True, null=True)
     self_url = models.URLField(
         _('Custom SSL alert URL'), blank=True, null=True)
     md5 = models.CharField(
@@ -162,6 +164,7 @@ class BaseSslAlert(models.Model):
             else:
                 ssl_alert.cert_subject = get_subject()
                 ssl_alert.ssl_cert_issuer = get_issuer()
+                ssl_alert.cert_issuer_url = qs_row_as_dict.get('url_issuer')
                 ssl_alert.md5 = qs_row_as_dict.get('pk_md5')
                 ssl_alert.not_before = qs_row_as_dict.get('not_before')
                 ssl_alert.not_after = qs_row_as_dict.get('not_after')
@@ -175,6 +178,7 @@ class BaseSslAlert(models.Model):
                 cert_url=qs_row_as_dict.get('url'),
                 cert_subject=get_subject(),
                 cert_issuer=get_issuer(),
+                cert_issuer_url=qs_row_as_dict.get('url_issuer'),
                 md5=qs_row_as_dict.get('pk_md5'),
                 alert_body=qs_row_as_dict.get('alert_body'),
                 not_before=qs_row_as_dict.get('not_before'),
@@ -232,7 +236,7 @@ class UntrustedSslAlert(BaseSslAlert, models.Model):
         'country_name', 'issuer__common_name', 'issuer__organization_name',
         'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
         'alert_body',
-        'issuer__is_trusted',
+        'issuer__is_trusted', 'url_issuer',
     ]
 
     cert_is_trusted = models.BooleanField(
@@ -268,7 +272,7 @@ class ExpiresSoonSslAlert(BaseSslAlert, models.Model):
         'country_name', 'issuer__common_name', 'issuer__organization_name',
         'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
         'alert_body',
-        'expires_in_x_days', 'expires_in_less_than',
+        'expires_in_x_days', 'expires_in_less_than', 'url_issuer',
     ]
 
     expires_in = models.BigIntegerField(
@@ -296,7 +300,7 @@ class ExpiredSslAlert(BaseSslAlert, models.Model):
         'country_name', 'issuer__common_name', 'issuer__organization_name',
         'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
         'alert_body',
-        'has_expired_x_days_ago',
+        'has_expired_x_days_ago', 'url_issuer',
     ]
 
     has_expired = models.BigIntegerField(
@@ -323,7 +327,7 @@ class InvalidSslAlert(BaseSslAlert, models.Model):
         'country_name', 'issuer__common_name', 'issuer__organization_name',
         'issuer__country_name', 'url', 'not_before', 'not_after', 'pk_md5',
         'alert_body',
-        'will_become_valid_in_x_days',
+        'will_become_valid_in_x_days', 'url_issuer',
     ]
 
     invalid_for = models.BigIntegerField(

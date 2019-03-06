@@ -104,3 +104,6 @@ def details_url_annotate(
             output_field=URLField()))
     except Exception as error:
         raise error
+
+
+def get_dead_bots():

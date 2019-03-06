@@ -343,11 +343,13 @@ class InvalidSslAlert(BaseSslAlert, models.Model):
 
 
 class BaseCitrusBorgAlert(models.Model):
+    """
+    common fields, attributes, methods for custom alerts related to Citrix bots
+    """
     orion_node_id = models.BigIntegerField(
         _('Orion Node Id'), db_index=True, blank=False, null=False,
-        help_text=_(
-            'this is the value in this field to'
-            ' SQL join the Orion server database'))
+        help_text=_('this is the value in this field to'
+                    ' SQL join the Orion server database'))
     first_raised_on = models.DateTimeField(
         _('alert first raised on'), db_index=True, auto_now_add=True,
         blank=False, null=False)
@@ -380,11 +382,26 @@ class BaseCitrusBorgAlert(models.Model):
 
 
 class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
+    """
+    alerts about bots that have not been seen for a while
+    """
     not_seen_hours = models.DurationField()
     not_seen_gt_hours = models.DurationField()
 
 
 class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
+    """
+    alerts about citrix logon failures on bots
+    """
     sampled_over = models.DurationField()
     failed_events_count = models.BigIntegerField()
     failed_events_threshold = models.BigIntegerField()
+
+
+class CitrusBorgUxAlert(BaseCitrusBorgAlert, models.Model):
+    """
+    alerts about Citrix response times
+    """
+    sampled_over = models.DurationField()
+    avg_response_time = models.DurationField()
+    avg_response_time_threshold = models.DurationField()

@@ -1,0 +1,106 @@
+"""
+.. _api:
+
+api module for the orion_flash app
+
+:module:    p_soc_auto.orion_flash.api
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Mar. 6, 2019
+
+"""
+import socket
+
+from django.conf import settings
+from django.db.models import F, Value, TextField, URLField
+from django.db.models.functions import Cast, Concat
+from django.db.models.query import QuerySet
+
+from citrus_borg.locutus.communication import get_dead_bots as _get_dead_bots
+
+
+def url_annotate(queryset):
+    """
+    annotate a queryset with the admin url of the underlying model
+
+    :arg queryset: the :class:`<django.db.models.query.QuerySet>` object
+
+    :returns: the queryset with an additional field named url
+
+    :raises:
+
+        :exception:`<TypeError>` if the argument is nnot a queryset
+
+        :exception:`<ValueError>` if the queryset is empty
+    """
+    if not queryset:
+        raise ValueError('there is no data in the queryset')
+    if not isinstance(queryset, QuerySet):
+        raise TypeError(
+            'bad type %s for object %s' % (type(queryset), queryset))
+
+    # get the object metadata from an (the first) element of the queryset
+    # we need the app_lable, model_name, and primary key field name so
+    # that we can build the url value
+    obj_sample = queryset.first()._meta
+
+    return queryset.annotate(url_id=Cast(obj_sample.pk.name, TextField())).\
+        annotate(url=Concat(
+            Value(settings.SERVER_PROTO), Value('://'),
+            Value(socket.getfqdn()),
+            Value(':'), Value(settings.SERVER_PORT),
+            Value('/admin/'),
+            Value(obj_sample.app_label), Value(
+                '/'), Value(obj_sample.model_name),
+            Value('/'), F('url_id'), Value('/change/'),
+            output_field=URLField()))
+
+
+def details_url_annotate(
+        queryset, app_path=None,
+        model_path=None, param_name=None, param_lookup_name=None):
+    """
+    annotate a queryset with an admin link to related records
+    http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
+    """
+    if not queryset:
+        raise ValueError('there is no data in the queryset')
+
+    if not isinstance(queryset, QuerySet):
+        raise TypeError(
+            'bad type %s for object %s' % (type(queryset), queryset))
+
+    if param_name is None:
+        raise ValueError(
+            'cannot build URL parameters without a parameter name')
+
+    if param_lookup_name is None:
+        raise ValueError(
+            'cannot build URL parameters without a parameter value')
+
+    obj_sample = queryset.first()._meta
+
+    if app_path is None:
+        app_path = obj_sample.app_label
+
+    if model_path is None:
+        model_path = obj_sample.model_name
+
+    try:
+        return queryset.annotate(details_url=Concat(
+            Value(settings.SERVER_PROTO), Value('://'),
+            Value(socket.getfqdn()),
+            Value(':'), Value(settings.SERVER_PORT),
+            Value('/admin/'),
+            Value(app_path), Value(
+                '/'), Value(model_path),
+            Value('/?'), Value(param_name), Value('='), F(param_lookup_name),
+            output_field=URLField()))
+    except Exception as error:
+        raise error

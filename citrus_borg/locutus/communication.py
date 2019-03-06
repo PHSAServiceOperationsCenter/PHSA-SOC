@@ -96,7 +96,8 @@ def get_dead_bots(now=None, time_delta=None):
             '%s type invalid for %s' % (type(time_delta), time_delta))
 
     live_bots = list(WinlogEvent.objects.
-                     filter(created_on__gt=now - time_delta).distinct().
+                     filter(enabled=True,
+                            last_seen__gt=now - time_delta).distinct().
                      values_list('source_host__host_name', flat=True))
 
     all_bots = list(WinlogbeatHost.objects.filter(enabled=True).

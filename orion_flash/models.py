@@ -340,3 +340,51 @@ class InvalidSslAlert(BaseSslAlert, models.Model):
     class Meta:
         verbose_name = _('Not Yet Valid SSL Certificates Alert')
         verbose_name_plural = _('Not Yet Valid SSL Certificates Alert')
+
+
+class BaseCitrusBorgAlert(models.Model):
+    orion_node_id = models.BigIntegerField(
+        _('Orion Node Id'), db_index=True, blank=False, null=False,
+        help_text=_(
+            'this is the value in this field to'
+            ' SQL join the Orion server database'))
+    first_raised_on = models.DateTimeField(
+        _('alert first raised on'), db_index=True, auto_now_add=True,
+        blank=False, null=False)
+    last_raised_on = models.DateTimeField(
+        _('alert last raised on'), db_index=True, auto_now=True,
+        blank=False, null=False)
+    silenced = models.BooleanField(
+        _('silence this alert?'), db_index=True, default=False, null=False,
+        blank=False,
+        help_text=_('The Orion server will ignore this row when evaluating'
+                    ' alert conditions. Note that this flag will be'
+                    ' automatically reset every $configurable_interval'))
+    alert_body = models.TextField(
+        _('alert body'), blank=False, null=False)
+    bot_url = models.URLField(
+        _('Citrix bot URL'), blank=False, null=False)
+    events_url = models.URLField(
+        _('ControlUp windows log events URL'), blank=False, null=False)
+    self_url = models.URLField(
+        _('SSL certificate URL'), blank=True, null=True)
+    host_name = models.CharField(
+        _('host name'), max_length=63, db_index=True, unique=True,
+        blank=False, null=False)
+
+    def __str__(self):
+        return '{}: {}'.format(self.host_name, self.alert_body)
+
+    class Meta:
+        abstract = True
+
+
+class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
+    not_seen_hours = models.DurationField()
+    not_seen_gt_hours = models.DurationField()
+
+
+class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
+    sampled_over = models.DurationField()
+    failed_events_count = models.BigIntegerField()
+    failed_events_threshold = models.BigIntegerField()

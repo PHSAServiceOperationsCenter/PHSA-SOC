@@ -46,8 +46,10 @@ import datetime
 
 from enum import Enum
 
-from django.db.models import Count, Q, Min, Max, Avg, StdDev, DurationField
-from django.db.models.functions import TruncHour, TruncMinute
+from django.db.models import (
+    Count, Q, Min, Max, Avg, StdDev, DurationField, Value,
+)
+from django.db.models.functions import TruncHour, TruncMinute, Now
 from django.utils import timezone
 
 from citrus_borg.models import (
@@ -81,6 +83,9 @@ def get_dead_bots(now=None, time_delta=None):
 
     we need to do list=list - list or something
 
+    use? https://mariadb.com/kb/en/library/timediff/ to annotate with the diff
+    on the queryset?
+
     """
     if now is None:
         now = timezone.now()
@@ -105,6 +110,11 @@ def get_dead_bots(now=None, time_delta=None):
     dead_bots = set(all_bots).symmetric_difference(set(live_bots))
 
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
+
+    dead_bots = dead_bots.\
+        annotate(not_seen_gt=Value(time_delta), output_field=DurationField()).\
+        annotate(now=Now())
+
     if dead_bots.exists():
         dead_bots = dead_bots.order_by('last_seen')
 

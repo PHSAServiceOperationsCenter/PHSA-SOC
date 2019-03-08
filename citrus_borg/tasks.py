@@ -35,6 +35,8 @@ from citrus_borg.models import (
     WinlogEvent, BorgSite,
 )
 
+from p_soc_auto_base.utils import get_pk_list
+
 from ssl_cert_tracker.lib import Email
 from ssl_cert_tracker.models import Subscription
 
@@ -116,6 +118,32 @@ def store_borg_data(body):
 
     return 'saved event: %s' % winlogevent.uuid
 # pylint: enable=R0914
+
+
+@shared_task(queue='citrus_borg', rate_limit='3/s')
+def get_orion_id(pk):
+    """
+    wrap around :methood:`<models.WinlogbeatHost.get_orion_id>`
+    """
+    instance = WinlogbeatHost.objects.get(pk=pk)
+
+    try:
+        instance.get_orion_id()
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='citrus_borg')
+def get_orion_ids():
+    """
+    launch :method:`<get_orion_id>` for each object in
+    :class:`<models.WinlogbeatHost>`
+    """
+    citrus_borg_pks = get_pk_list(WinlogbeatHost.objects.filter(enabled=True))
+
+    group(get_orion_id.s(pk) for pk in citrus_borg_pks)()
+
+    return 'refreshing orion ids for %s citrix bots' % len(citrus_borg_pks)
 
 
 @shared_task(queue='citrus_borg')

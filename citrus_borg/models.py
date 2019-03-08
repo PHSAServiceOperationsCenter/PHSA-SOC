@@ -38,6 +38,12 @@ def get_uuid():
     """
     return uuid.uuid4()
 
+
+class OrionNodeIDError(ValueError):
+    """
+    raise if we cannot grab the orion node id in :class:`<WinlogbeatHost>`
+    """
+
 # pylint: disable=too-few-public-methods,no-self-use
 
 
@@ -122,36 +128,13 @@ class WinlogbeatHost(BaseModel, models.Model):
         use the resolved_fqdn or the ip address to ask the orion server
         for the orion id
 
-        the normal way to call this method is to wrap it a celery task.
-        invoke it from the post_save event.
+        the normal way to call this method is to wrap it a celery task
+        that is part of a celery group.
 
-        post_save is triggered from :method:`<get_or_create_from_borg>` which
-        is invoked by celery every tiume an winlogbeat sends an event for this
-        host. we don't need to worry about pre-populating this on our own
-
-        see this to avoid the infinite save loop in post_save
-        http://www.re-cycledair.com/saving-within-a-post_save-signal-in-django
-
-        need to rethink this big time:
-        we are grabbing stuff from orion in a model.save
-        (actually model.signals.post_save) which means that we are
-        chaining a lot fo async calls
-
-        maybe it is a better idea to have this running in a completely
-        separate group of tasks with each task responsible for updating
-        one winloghost instance on it's own.
-        no more post_save interactions with all the recurring depth mess
-
-        calliong this method from a celery task does is not idempotent,
-        or at least it puts too many balls in the air
+        we may want to have the nodes tagged with a custom property
+        application name and use that one as SWSQL key
 
         """
-        def save_in_post_save():
-            self.orion_id = orion_id
-            models.signals.post_save.disconnect(self.save, self._meta.model)
-            self.save()
-            models.signals.post_save.connect(self.save, self._meta.model)
-
         orion_query = (
             'SELECT NodeID FROM Orion.Nodes(nolock=true) '
             'WHERE %s=%s')
@@ -168,22 +151,27 @@ class WinlogbeatHost(BaseModel, models.Model):
             return
 
         if self.resolved_fqdn:
+            # let's use the DNS property, these nodes are mostly DHCP'ed
             orion_query_by_dns = orion_query % ("ToLower('DNS')",
                                                 self.resolved_fqdn.lower())
             orion_id = OrionClient.query(
                 orion_query=orion_query_by_dns).get('NodeID')
             if orion_id:
-                save_in_post_save()
+                # but can we use the DNS property?
+                self.save()
                 return
 
+        # couldn't use DNS, falling back to IPAddress
         orion_query_by_ip = orion_query % ('IPAddress', self.ip_address)
         orion_id = OrionClient.query(
             orion_query=orion_query_by_ip).get('NodeID')
 
         if orion_id:
-            save_in_post_save()
+            self.save()
+            return
 
-        return
+        raise OrionNodeIDError(
+            'cannot find Citrix bot %s on the Orion server' % self.host_name)
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)

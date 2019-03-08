@@ -106,4 +106,20 @@ def details_url_annotate(
         raise error
 
 
-def get_dead_bots():
+def get_dead_bots(
+        now=None, time_delta=None,
+        annotate_url=True, annotate_details_url=True, **details):
+    """
+    get the dead bots and annotate each of them with an url to the
+    admin change form for the bot and with the amdin link for the events
+    coming from this bot
+    """
+    queryset = _get_dead_bots(now, time_delta)
+
+    if annotate_url:
+        queryset = url_annotate(queryset)
+
+    if annotate_details_url:
+        queryset = details_url_annotate(queryset, **details)
+
+    return queryset

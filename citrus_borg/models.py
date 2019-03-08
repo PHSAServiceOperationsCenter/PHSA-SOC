@@ -26,6 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
 from p_soc_auto_base.models import BaseModel
+from orion_integration.orion import OrionClient
 
 
 def get_uuid():
@@ -106,11 +107,83 @@ class WinlogbeatHost(BaseModel, models.Model):
     site = models.ForeignKey(
         BorgSite, db_index=True, blank=True, null=True,
         on_delete=models.SET_NULL)
-    history = HistoricalRecords()
+    orion_id = models.BigIntegerField(
+        _('Orion Object Id'), db_index=False, unique=False, blank=True,
+        null=True, default=0,
+        help_text=_(
+            'Use the value in this field to query the Orion server'))
 
     @property
     def resolved_fqdn(self):
         return socket.getfqdn(self.ip_address) if self.ip_address else None
+
+    def get_orion_id(self):
+        """
+        use the resolved_fqdn or the ip address to ask the orion server
+        for the orion id
+
+        the normal way to call this method is to wrap it a celery task.
+        invoke it from the post_save event.
+
+        post_save is triggered from :method:`<get_or_create_from_borg>` which
+        is invoked by celery every tiume an winlogbeat sends an event for this
+        host. we don't need to worry about pre-populating this on our own
+
+        see this to avoid the infinite save loop in post_save
+        http://www.re-cycledair.com/saving-within-a-post_save-signal-in-django
+
+        need to rethink this big time:
+        we are grabbing stuff from orion in a model.save
+        (actually model.signals.post_save) which means that we are
+        chaining a lot fo async calls
+
+        maybe it is a better idea to have this running in a completely
+        separate group of tasks with each task responsible for updating
+        one winloghost instance on it's own.
+        no more post_save interactions with all the recurring depth mess
+
+        calliong this method from a celery task does is not idempotent,
+        or at least it puts too many balls in the air
+
+        """
+        def save_in_post_save():
+            self.orion_id = orion_id
+            models.signals.post_save.disconnect(self.save, self._meta.model)
+            self.save()
+            models.signals.post_save.connect(self.save, self._meta.model)
+
+        orion_query = (
+            'SELECT NodeID FROM Orion.Nodes(nolock=true) '
+            'WHERE %s=%s')
+
+        if not self.enabled:
+            # it's disabled, we don't care so go away
+            return
+
+        if self.resolved_fqdn is None and self.ip_address is None:
+            # there is no way to identity the node in orion
+
+            # TODO: this is an error condition, must integrate with
+            # https://trello.com/c/1Aadwukn
+            return
+
+        if self.resolved_fqdn:
+            orion_query_by_dns = orion_query % ("ToLower('DNS')",
+                                                self.resolved_fqdn.lower())
+            orion_id = OrionClient.query(
+                orion_query=orion_query_by_dns).get('NodeID')
+            if orion_id:
+                save_in_post_save()
+                return
+
+        orion_query_by_ip = orion_query % ('IPAddress', self.ip_address)
+        orion_id = OrionClient.query(
+            orion_query=orion_query_by_ip).get('NodeID')
+
+        if orion_id:
+            save_in_post_save()
+
+        return
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)

@@ -384,9 +384,28 @@ class BaseCitrusBorgAlert(models.Model):
 class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
     """
     alerts about bots that have not been seen for a while
+
+    we cannot usse duration fields here, we need to use floats and/or ints
+    because we need to feed comparions into the sql query that defines the
+    alarm
+
+    btw, MSSQL and probably most databases do not support a native timedelta
+    data type, it is the driver that handles the conversions
+
+    we may have to use pandas.Timedelta.round() to convert to hours and/or
+    minutes
     """
-    not_seen_hours = models.DurationField()
-    not_seen_gt_hours = models.DurationField()
+    last_seen = models.DateTimeField(
+        _('last seen'),
+        help_text=_('last seen as shown in WinlogbeatHost'))
+    not_seen_for = models.FloatField(
+        _('not seen for'),
+        help_text='the diference between now and last_seen converted to'
+        ' a suitable time unit')
+    not_seen_gt = models.FloatField(
+        _('not seen threshold'),
+        help_text=_('what we used for comparion also converted to a'
+                    ' suitbale time unit'))
 
 
 class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):

@@ -91,7 +91,7 @@ class OrionClient():
             '{}/Query'.format(
                 get_preference('orionserverconn__orion_rest_url')),
             data=json.dumps(
-                dict(query=orion_query, params=params),
+                dict(query=orion_query, parameters=params),
                 default=serialize_custom_json),
             timeout=(get_preference('orionserverconn__orion_conn_timeout'),
                      get_preference('orionserverconn__orion_read_timeout'))

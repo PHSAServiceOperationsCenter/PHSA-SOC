@@ -112,8 +112,7 @@ def get_dead_bots(now=None, time_delta=None):
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
 
     dead_bots = dead_bots.\
-        annotate(not_seen_gt=Value(time_delta), output_field=DurationField()).\
-        annotate(now=Now())
+        annotate(not_seen_gt=Value(time_delta, output_field=DurationField()))
 
     if dead_bots.exists():
         dead_bots = dead_bots.order_by('last_seen')

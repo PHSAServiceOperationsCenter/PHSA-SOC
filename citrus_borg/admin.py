@@ -130,11 +130,11 @@ class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
 @admin.register(WinlogbeatHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
-    list_display = ('host_name', 'ip_address',  'enabled', 'site',
+    list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'resolved_fqdn', 'last_seen', 'created_on',)
     list_editable = ('site', 'enabled',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
-                       'created_on',)
+                       'created_on', 'orion_id',)
     list_filter = ('site__site', 'enabled',)
 
 

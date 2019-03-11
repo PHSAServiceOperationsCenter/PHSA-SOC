@@ -121,6 +121,9 @@ class WinlogbeatHost(BaseModel, models.Model):
 
     @property
     def resolved_fqdn(self):
+        """
+        try to acquire the fqdn of the bot
+        """
         return socket.getfqdn(self.ip_address) if self.ip_address else None
 
     def get_orion_id(self):
@@ -135,9 +138,8 @@ class WinlogbeatHost(BaseModel, models.Model):
         application name and use that one as SWSQL key
 
         """
-        orion_query = (
-            'SELECT NodeID FROM Orion.Nodes(nolock=true) '
-            'WHERE %s=%s')
+        orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
+                       'WHERE ToLower(DNS)=@dns')
 
         if not self.enabled:
             # it's disabled, we don't care so go away
@@ -152,21 +154,23 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         if self.resolved_fqdn:
             # let's use the DNS property, these nodes are mostly DHCP'ed
-            orion_query_by_dns = orion_query % ("ToLower('DNS')",
-                                                self.resolved_fqdn.lower())
             orion_id = OrionClient.query(
-                orion_query=orion_query_by_dns).get('NodeID')
+                orion_query=orion_query,
+                dns=self.resolved_fqdn)
             if orion_id:
                 # but can we use the DNS property?
+                self.orion_id = orion_id[0].get('NodeID', None)
                 self.save()
                 return
 
         # couldn't use DNS, falling back to IPAddress
-        orion_query_by_ip = orion_query % ('IPAddress', self.ip_address)
+        orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
+                       'WHERE IPAddress=@ip_address')
         orion_id = OrionClient.query(
-            orion_query=orion_query_by_ip).get('NodeID')
+            orion_query=orion_query, ip_address=self.ip_address)
 
         if orion_id:
+            self.orion_id = orion_id[0].get('NodeID', None)
             self.save()
             return
 

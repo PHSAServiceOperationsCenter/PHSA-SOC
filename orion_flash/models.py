@@ -377,6 +377,48 @@ class BaseCitrusBorgAlert(models.Model):
     def __str__(self):
         return '{}: {}'.format(self.host_name, self.alert_body)
 
+    def set_attr(self, attr_name, attr_value):
+        """
+        we want to set self.has_expired (for example) but this is an
+        abstract model and there are fields that are only defined in
+        its children
+
+        we don't know the name of the field and we don't know if the
+        model has said field until we actually execute this and we also
+        want to reuse this for more than one field
+
+        """
+        if hasattr(self, attr_name):
+            setattr(self, attr_name, attr_value)
+
+    @classmethod
+    def create_or_update(cls, qs_row_as_dict):
+        """
+        create orion custom alert objects
+
+        :arg qs_row_as_dict:
+
+            an item from the return of
+            :method:`<django.db.models.query.Queryset.values>`. we can
+            accept that this method returns a ``list`` of ``dict`` therefore
+            this argument can be treated as a ``dict``
+
+        """
+        borg_alert = cls.objects.filter(
+            orion_node_id=qs_row_as_dict.get('orion_id'))
+
+        if borg_alert.exists():
+            borg_alert = borg_alert.get()
+
+        else:
+            borg_alert = cls(orion_node_id=qs_row_as_dict.get('orion_id'))
+
+        borg_alert.bot_url = qs_row_as_dict.get('url')
+        borg_alert.events_url = qs_row_as_dict.get('details_url')
+        borg_alert.host_name = qs_row_as_dict.get('host_name')
+
+        borg_alert.set_attr('last_seen', qs_row_as_dict.get('last_seen'))
+
     class Meta:
         abstract = True
 
@@ -395,10 +437,13 @@ class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
     we may have to use pandas.Timedelta.round() to convert to hours and/or
     minutes
     """
+    qs_fields = ['orion_id', 'alert_body', 'url', 'details_url', 'host_name',
+                 'last_seen', 'not_seen_gt', 'site__site', ]
+
     last_seen = models.DateTimeField(
         _('last seen'),
         help_text=_('last seen as shown in WinlogbeatHost'))
-    not_seen_for = models.FloatField(
+    not_seen_for = models.CharField(
         _('not seen for'),
         help_text='the diference between now and last_seen converted to'
         ' a suitable time unit')
@@ -406,6 +451,27 @@ class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
         _('not seen threshold'),
         help_text=_('what we used for comparion also converted to a'
                     ' suitbale time unit'))
+
+    """
+    pendulum tricks
+    
+    In [38]: pendulum.now(tz='UTC').diff_for_humans(qs.values()[0].get('created_on'),True)
+    Out[38]: '3 months'
+
+    In [50]: pendulum.duration(days=qs.values('not_seen_gt')[0].get('not_seen_gt').days,seconds=qs.values('not_s
+    ...: een_gt')[0].get('not_seen_gt').seconds).in_words()
+    Out[50]: '1 minute'
+
+    """
+
+    def set_alert_body(self, site):
+        alert_template = (
+            'Citrix bot {host_name} on {site} has not sent ControlUp logon'
+            ' events for more than {not_seen_gt}')
+
+        return alert_template.format(host_name=self.host_name,
+                                     site=site,
+                                     last_seen_gt=self.not_seen_gt)
 
 
 class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):

@@ -22,7 +22,9 @@ from django.db.models import F, Value, TextField, URLField
 from django.db.models.functions import Cast, Concat
 from django.db.models.query import QuerySet
 
-from citrus_borg.locutus.communication import get_dead_bots as _get_dead_bots
+from citrus_borg.locutus.communication import (
+    get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,
+)
 
 
 def url_annotate(queryset):
@@ -115,6 +117,23 @@ def get_dead_bots(
     coming from this bot
     """
     queryset = _get_dead_bots(now, time_delta)
+
+    if annotate_url:
+        queryset = url_annotate(queryset)
+
+    if annotate_details_url:
+        queryset = details_url_annotate(queryset, **details)
+
+    return queryset
+
+
+def get_failed_logons(
+        now=None, time_delta=None, failed_threshold=None,
+        annotate_url=True, annotate_details_url=True, **details):
+    """
+    get the failed login counts that are raising alerts
+    """
+    queryset = raise_failed_logins_alarm(now, time_delta, failed_threshold)
 
     if annotate_url:
         queryset = url_annotate(queryset)

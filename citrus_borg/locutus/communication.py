@@ -47,9 +47,10 @@ import datetime
 from enum import Enum
 
 from django.db.models import (
-    Count, Q, Min, Max, Avg, StdDev, DurationField, Value,
+    Count, Q, Min, Max, Avg, StdDev, DurationField, Value, DateTimeField,
+    BigIntegerField, FloatField,
 )
-from django.db.models.functions import TruncHour, TruncMinute, Now
+from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
 
 from citrus_borg.models import (
@@ -112,7 +113,8 @@ def get_dead_bots(now=None, time_delta=None):
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
 
     dead_bots = dead_bots.\
-        annotate(not_seen_gt=Value(time_delta, output_field=DurationField()))
+        annotate(measured_now=Value(now, output_field=DateTimeField())).\
+        annotate(measured_over=Value(time_delta, output_field=DurationField()))
 
     if dead_bots.exists():
         dead_bots = dead_bots.order_by('last_seen')
@@ -560,6 +562,12 @@ def raise_failed_logins_alarm(
                 'winlogevent__event_state',
                 filter=Q(winlogevent__event_state__iexact='failed'))).\
         filter(failed_events__gte=failed_threshold).\
+        annotate(
+            failed_threshold=Value(
+                failed_threshold, output_field=BigIntegerField())).\
+        annotate(measured_now=Value(now, output_field=DateTimeField())).\
+        annotate(
+            measured_over=Value(time_delta, output_field=DurationField())).\
         order_by('site__site')
 
 

@@ -16,6 +16,7 @@ django models module for the orion_flash app
 
 """
 import logging
+import pendulum
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -373,6 +374,25 @@ class BaseCitrusBorgAlert(models.Model):
     host_name = models.CharField(
         _('host name'), max_length=63, db_index=True, unique=True,
         blank=False, null=False)
+    site = models.CharField(
+        _('host name'), max_length=64, db_index=True,
+        blank=False, null=False)
+    measured_now = models.DateTimeField(
+        _('measured from'),
+        help_text=_('the definition of now. normally it is now() but it can'
+                    ' be any moment in time for which we have data'))
+    measured_over_mins = models.BigIntegerField(
+        _('not seen threshold measured in minutes'), db_index=True,
+        help_text=_(
+            'use this field to compare if threshold is specified in minutes'))
+    measured_over_hours = models.BigIntegerField(
+        _('not seen threshold measured in hours'), db_index=True,
+        help_text=_(
+            'use this field to compare if threshold is specified in hours'))
+    measured_over_days = models.BigIntegerField(
+        _('not seen threshold measured in days'), db_index=True,
+        help_text=_(
+            'use this field to compare if threshold is specified in days'))
 
     def __str__(self):
         return '{}: {}'.format(self.host_name, self.alert_body)
@@ -404,20 +424,50 @@ class BaseCitrusBorgAlert(models.Model):
             this argument can be treated as a ``dict``
 
         """
+        def duration(duration):
+            """
+            helper function to create a pendulum duration object from
+            a django timezone.timedelta object
+            """
+            return pendulum.duration(days=duration.days,
+                                     seconds=duration.seconds,
+                                     microseconds=duration.microseconds)
+
         borg_alert = cls.objects.filter(
-            orion_node_id=qs_row_as_dict.get('orion_id'))
+            host_name__iequals=qs_row_as_dict.get('host_name'))
 
         if borg_alert.exists():
             borg_alert = borg_alert.get()
 
         else:
-            borg_alert = cls(orion_node_id=qs_row_as_dict.get('orion_id'))
+            borg_alert = cls(orion_node_id=qs_row_as_dict.get('host_name'))
 
+        borg_alert.silenced = False
+        borg_alert.site = qs_row_as_dict.get('site__site')
         borg_alert.bot_url = qs_row_as_dict.get('url')
         borg_alert.events_url = qs_row_as_dict.get('details_url')
-        borg_alert.host_name = qs_row_as_dict.get('host_name')
+        borg_alert.orion_node_id = qs_row_as_dict.get('orion_id')
+        borg_alert.measured_now = qs_row_as_dict.get('measured_now')
+        borg_alert.measured_over_days = duration(
+            qs_row_as_dict.get('measured_over')).in_days()
+        borg_alert.measured_over_hours = duration(
+            qs_row_as_dict.get('measured_over')).in_hours()
+        borg_alert.measured_over_mins = duration(
+            qs_row_as_dict.get('measured_over')).in_minutes()
 
         borg_alert.set_attr('last_seen', qs_row_as_dict.get('last_seen'))
+        borg_alert.set_attr('not_seen_for',
+                            pendulum.now(tz='UTC').diff_for_humans(
+                                qs_row_as_dict.get('last_seen')
+                            ))
+
+        borg_alert.set_attr(
+            'failed_events_count', qs_row_as_dict.get('failed_events'))
+        borg_alert.set_attr(
+            'failed_events_threshold',
+            qs_row_as_dict.get('failed_threshold'))
+
+        borg_alert.alert_body = borg_alert.set_alert_body()
 
     class Meta:
         abstract = True
@@ -437,56 +487,77 @@ class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
     we may have to use pandas.Timedelta.round() to convert to hours and/or
     minutes
     """
-    qs_fields = ['orion_id', 'alert_body', 'url', 'details_url', 'host_name',
-                 'last_seen', 'not_seen_gt', 'site__site', ]
+    qs_fields = ['orion_id', 'url', 'details_url', 'host_name',
+                 'last_seen', 'measured_over', 'site__site', 'measured_now', ]
 
     last_seen = models.DateTimeField(
         _('last seen'),
         help_text=_('last seen as shown in WinlogbeatHost'))
     not_seen_for = models.CharField(
-        _('not seen for'),
+        _('not seen for'), max_length=64, blank=True, null=True,
         help_text='the diference between now and last_seen converted to'
         ' a suitable time unit')
-    not_seen_gt = models.FloatField(
-        _('not seen threshold'),
-        help_text=_('what we used for comparion also converted to a'
-                    ' suitbale time unit'))
 
-    """
-    pendulum tricks
-    
-    In [38]: pendulum.now(tz='UTC').diff_for_humans(qs.values()[0].get('created_on'),True)
-    Out[38]: '3 months'
-
-    In [50]: pendulum.duration(days=qs.values('not_seen_gt')[0].get('not_seen_gt').days,seconds=qs.values('not_s
-    ...: een_gt')[0].get('not_seen_gt').seconds).in_words()
-    Out[50]: '1 minute'
-
-    """
-
-    def set_alert_body(self, site):
+    def set_alert_body(self):
+        """
+        set the alert_body
+        """
         alert_template = (
-            'Citrix bot {host_name} on {site} has not sent ControlUp logon'
-            ' events for more than {not_seen_gt}')
+            'Citrix bot %s at %s has not sent ControlUp logon'
+            ' events for more than {measured_over} {units}') % (self.host_name,
+                                                                self.site)
 
-        return alert_template.format(host_name=self.host_name,
-                                     site=site,
-                                     last_seen_gt=self.not_seen_gt)
+        if self.measured_over_days > 0:
+            return alert_template.format(
+                units='days', measured_over=self.measured_over_days)
+
+        if self.measured_over_hours > 0:
+            return alert_template.format(
+                units='hours', measured_over=self.measured_over_hours)
+
+        return alert_template.format(
+            units='minutes', measured_over=self.measured_over_mins)
 
 
 class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
     """
     alerts about citrix logon failures on bots
     """
-    sampled_over = models.DurationField()
-    failed_events_count = models.BigIntegerField()
-    failed_events_threshold = models.BigIntegerField()
+    qs_fields = ['orion_id', 'url', 'details_url', 'host_name',
+                 'measured_over', 'site__site', 'measured_now',
+                 'failed_events', 'failed_threshold', ]
+
+    failed_events_count = models.BigIntegerField(
+        _('failed event count'), blank=False, null=False)
+    failed_events_threshold = models.BigIntegerField(
+        _('failed event count threshold'), db_index=True, blank=False,
+        null=False,
+        help_text=_('trigger failed logon alerts against this field'))
+
+    def set_alert_body(self):
+        """
+        set the alert body
+        """
+        alert_template = (
+            'Citrix bot %s at %s has had at least %s failed ControlUp'
+            ' logon  events over the last {measured_over} {units}'
+        ) % (self.host_name, self.site, self.failed_events_count)
+
+        if self.measured_over_days > 0:
+            return alert_template.format(
+                units='days', measured_over=self.measured_over_days)
+
+        if self.measured_over_hours > 0:
+            return alert_template.format(
+                units='hours', measured_over=self.measured_over_hours)
+
+        return alert_template.format(
+            units='minutes', measured_over=self.measured_over_mins)
 
 
 class CitrusBorgUxAlert(BaseCitrusBorgAlert, models.Model):
     """
     alerts about Citrix response times
     """
-    sampled_over = models.DurationField()
     avg_response_time = models.DurationField()
     avg_response_time_threshold = models.DurationField()

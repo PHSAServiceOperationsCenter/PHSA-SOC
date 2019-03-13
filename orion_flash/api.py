@@ -38,11 +38,7 @@ def url_annotate(queryset):
     :raises:
 
         :exception:`<TypeError>` if the argument is nnot a queryset
-
-        :exception:`<ValueError>` if the queryset is empty
     """
-    if not queryset:
-        raise ValueError('there is no data in the queryset')
     if not isinstance(queryset, QuerySet):
         raise TypeError(
             'bad type %s for object %s' % (type(queryset), queryset))
@@ -71,9 +67,6 @@ def details_url_annotate(
     annotate a queryset with an admin link to related records
     http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
     """
-    if not queryset:
-        raise ValueError('there is no data in the queryset')
-
     if not isinstance(queryset, QuerySet):
         raise TypeError(
             'bad type %s for object %s' % (type(queryset), queryset))

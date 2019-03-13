@@ -411,6 +411,28 @@ class BaseCitrusBorgAlert(models.Model):
         if hasattr(self, attr_name):
             setattr(self, attr_name, attr_value)
 
+    @property
+    def alert_template(self):
+        """
+        just to respect the principles of OOD and keep the hounds at bay
+        """
+        raise NotImplementedError('must be defined by the subclass')
+
+    def set_alert_body(self):
+        """
+        set the alert body
+        """
+        if self.measured_over_days > 0:
+            return self.alert_template.format(
+                units='days', measured_over=self.measured_over_days)
+
+        if self.measured_over_hours > 0:
+            return self.alert_template.format(
+                units='hours', measured_over=self.measured_over_hours)
+
+        return self.alert_template.format(
+            units='minutes', measured_over=self.measured_over_mins)
+
     @classmethod
     def create_or_update(cls, qs_row_as_dict):
         """
@@ -447,7 +469,8 @@ class BaseCitrusBorgAlert(models.Model):
         borg_alert.bot_url = qs_row_as_dict.get('url')
         borg_alert.events_url = qs_row_as_dict.get('details_url')
         borg_alert.orion_node_id = qs_row_as_dict.get('orion_id')
-        borg_alert.measured_now = qs_row_as_dict.get('measured_now')
+        borg_alert.measured_now = pendulum.parse(
+            qs_row_as_dict.get('measured_now'))
         borg_alert.measured_over_days = duration(
             qs_row_as_dict.get('measured_over')).in_days()
         borg_alert.measured_over_hours = duration(
@@ -466,6 +489,16 @@ class BaseCitrusBorgAlert(models.Model):
         borg_alert.set_attr(
             'failed_events_threshold',
             qs_row_as_dict.get('failed_threshold'))
+
+        borg_alert.set_attr(
+            'avg_logon_time', qs_row_as_dict.get('avg_logon_time'))
+        borg_alert.set_attr(
+            'avg_storefront_connection_time',
+            qs_row_as_dict.get('avg_storefront_connection_time'))
+        borg_alert.set_attr('ux_threshold', qs_row_as_dict.get('ux_threshold'))
+        borg_alert.set_attr(
+            'ux_threshold_seconds',
+            duration(qs_row_as_dict.get('ux_threshold')).in_seconds())
 
         borg_alert.alert_body = borg_alert.set_alert_body()
 
@@ -498,25 +531,17 @@ class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
         help_text='the diference between now and last_seen converted to'
         ' a suitable time unit')
 
-    def set_alert_body(self):
-        """
-        set the alert_body
-        """
-        alert_template = (
+    @property
+    def alert_template(self):
+        return (
             'Citrix bot %s at %s has not sent ControlUp logon'
-            ' events for more than {measured_over} {units}') % (self.host_name,
-                                                                self.site)
+            ' events for more than {measured_over} {units}'
+        ) % (self.host_name, self.site)
 
-        if self.measured_over_days > 0:
-            return alert_template.format(
-                units='days', measured_over=self.measured_over_days)
-
-        if self.measured_over_hours > 0:
-            return alert_template.format(
-                units='hours', measured_over=self.measured_over_hours)
-
-        return alert_template.format(
-            units='minutes', measured_over=self.measured_over_mins)
+    class Meta:
+        app_label = 'orion_flash'
+        verbose_name = _('Citrix bot dead alert')
+        verbose_name_plural = _('Citrix bot dead alerts')
 
 
 class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
@@ -534,30 +559,59 @@ class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
         null=False,
         help_text=_('trigger failed logon alerts against this field'))
 
-    def set_alert_body(self):
+    @property
+    def alert_template(self):
         """
-        set the alert body
+        this how the alert_body must look like
         """
-        alert_template = (
+        return (
             'Citrix bot %s at %s has had at least %s failed ControlUp'
             ' logon  events over the last {measured_over} {units}'
         ) % (self.host_name, self.site, self.failed_events_count)
 
-        if self.measured_over_days > 0:
-            return alert_template.format(
-                units='days', measured_over=self.measured_over_days)
-
-        if self.measured_over_hours > 0:
-            return alert_template.format(
-                units='hours', measured_over=self.measured_over_hours)
-
-        return alert_template.format(
-            units='minutes', measured_over=self.measured_over_mins)
+    class Meta:
+        app_label = 'orion_flash'
+        verbose_name = _('Citrix failed logon alert')
+        verbose_name_plural = _('Citrix failed logon alerts')
 
 
 class CitrusBorgUxAlert(BaseCitrusBorgAlert, models.Model):
     """
     alerts about Citrix response times
     """
-    avg_response_time = models.DurationField()
-    avg_response_time_threshold = models.DurationField()
+    qs_fields = ['orion_id', 'url', 'details_url', 'host_name',
+                 'measured_over', 'site__site', 'measured_now',
+                 'ux_threshold', 'avg_logon_time',
+                 'avg_storefront_connection_time', ]
+
+    avg_logon_time = models.DurationField(
+        _('average logon time'), blank=False, null=False,
+        help_text=_('logon time as reported by ControlUp'))
+    avg_storefront_connection_time = models.DurationField(
+        _('average storefront connection time'), blank=False, null=False,
+        help_text=_('storefront connection time as reported by ControlUp'))
+    ux_threshold = models.DurationField(
+        _('response time alert threshold'), blank=False, null=False,
+        help_text=_(
+            'logon or storefront connection times larger than this value'
+            ' will trigger alerts'))
+    ux_threshold_seconds = models.BigIntegerField(
+        _('response time alert threshold in seconds'), blank=False, null=False,
+        help_text=_(
+            'it it easier to handle the response time alert threshold if'
+            'rounded to entire seconds'))
+
+    @property
+    def alert_template(self):
+        """
+        template to render the alert body field
+        """
+        return (
+            'Citrix bot %s at %s has experienced response times larger'
+            ' than {ux_alert_threshold_seconds} seconds over the last'
+            ' {measured_over} {units}') % (self.host_name, self.site)
+
+    class Meta:
+        app_label = 'orion_flash'
+        verbose_name = _('Citrix response time alert')
+        verbose_name_plural = _('Citrix response time alerts')

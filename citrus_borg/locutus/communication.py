@@ -48,7 +48,7 @@ from enum import Enum
 
 from django.db.models import (
     Count, Q, Min, Max, Avg, StdDev, DurationField, Value, DateTimeField,
-    BigIntegerField, FloatField,
+    BigIntegerField, CharField,
 )
 from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
@@ -113,7 +113,7 @@ def get_dead_bots(now=None, time_delta=None):
     dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
 
     dead_bots = dead_bots.\
-        annotate(measured_now=Value(now, output_field=DateTimeField())).\
+        annotate(measured_now=Value(now, output_field=CharField())).\
         annotate(measured_over=Value(time_delta, output_field=DurationField()))
 
     if dead_bots.exists():
@@ -246,8 +246,23 @@ def raise_ux_alarm(
     except Exception as error:
         raise error
 
+    queryset = queryset.\
+        annotate(
+            ux_threshold=Value(ux_alert_threshold,
+                               output_field=DurationField())).\
+        order_by('site__site', 'host_name')
+
+    if group_by == GroupBy.MINUTE:
+        queryset = queryset.order_by('-minute')
+
+    if group_by == GroupBy.HOUR:
+        queryset = queryset.order_by('-hour')
+
+    queryset = queryset.order_by(
+        '-avg_logon_time', '-avg_storefront_connection_time')
+
     return queryset.order_by(
-        'site__site', 'host_name', '-avg_logon_time', '-minute',
+        'site__site', 'host_name', '-avg_logon_time',
         '-avg_storefront_connection_time')
 # pylint: enable=too-many-arguments
 
@@ -310,7 +325,7 @@ def _include_ux_stats(queryset):
             stddev_connection_achieved_time=StdDev(
                 'winlogevent__connection_achieved_duration')).\
         annotate(
-            min_logon_time=Min('winlogevent__receiver_startup_duration')).\
+            min_logon_time=Min('winlogevent__logon_achieved_duration')).\
         annotate(
             avg_logon_time=Avg(
                 'winlogevent__logon_achieved_duration',
@@ -456,6 +471,10 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
                 Q(avg_storefront_connection_time__gt=ux_alert_threshold) |
                 Q(avg_logon_time__gt=ux_alert_threshold))
 
+    queryset = queryset.\
+        annotate(measured_now=Value(now, output_field=CharField())).\
+        annotate(measured_over=Value(time_delta, output_field=DurationField()))
+
     return queryset
 # pylint: enable=too-many-arguments,too-many-branches
 
@@ -565,7 +584,7 @@ def raise_failed_logins_alarm(
         annotate(
             failed_threshold=Value(
                 failed_threshold, output_field=BigIntegerField())).\
-        annotate(measured_now=Value(now, output_field=DateTimeField())).\
+        annotate(measured_now=Value(now, output_field=CharField())).\
         annotate(
             measured_over=Value(time_delta, output_field=DurationField())).\
         order_by('site__site')

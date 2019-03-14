@@ -106,11 +106,47 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
 @shared_task(queue='orion_flash')
 def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     """
-    dispatch alert data to orion auxiliary alert models
+    dispatch alert data to orion auxiliary ssl alert models
     """
     if destination.lower() not in KNOWN_SSL_DESTINATIONS:
         raise UnknownDataTargetError(
             '%s is not known to this application' % destination)
+
+    data_rows = get_data_for(destination, **kwargs).\
+        values(*get_queryset_values_keys(get_model(destination)))
+
+    if not data_rows:
+        return 'no data'
+
+    logger.debug('retrieved %s new/updated data rows for destination %s.'
+                 ' first row sample: %s',
+                 len(data_rows), destination, data_rows[0])
+
+    group(create_or_update_orion_alert.s(destination, data_row)
+          for data_row in data_rows)()
+
+    msg = 'refreshing data in %s from %s entries' % (destination,
+                                                     len(data_rows))
+    return msg
+
+
+@shared_task(queue='orion_flash')
+def refresh_borg_alerts(destination, logger=LOG, **kwargs):
+    """
+    dispatch alert data to orion auxiliary citrix bot alert models
+
+    i know, i know, these refresh functions need to be refactored into
+    a single one. but there is an argument to be made for keeping the
+    periodic task definition simple
+    """
+    if destination.lower() not in KNOWN_BORG_DESTINATIONS:
+        raise UnknownDataTargetError(
+            '%s is not known to this application' % destination)
+
+    deleted = get_model(destination).objects.all().delete()
+    logger.debug(
+        'purged %s records from %s',
+        deleted, get_model(destination)._meta.model_name)
 
     data_rows = get_data_for(destination, **kwargs).\
         values(*get_queryset_values_keys(get_model(destination)))
@@ -178,6 +214,10 @@ def get_data_for(destination, **kwargs):
     :raises: :exception:`<UnknownDataSourceError>`
     """
     lt_days = kwargs.get('lt_days', 2)
+    app_path = kwargs.get('app_path', 'citrus_borg')
+    model_path = kwargs.get('model_path', 'winlogevent')
+    param_name = kwargs.get('param_name', 'source_host__host_name')
+    param_lookup_name = kwargs.get('param_lookup_name', 'host_name')
 
     if destination in ['orion_flash.expiressoonsslalert']:
         return expires_in(lt_days=lt_days)
@@ -187,6 +227,19 @@ def get_data_for(destination, **kwargs):
         return has_expired()
     if destination in ['orion_flash.invalidsslalert']:
         return is_not_yet_valid()
+
+    if destination in ['orion_flash.deadcitrusbotalert']:
+        return get_dead_bots(
+            app_path=app_path, model_path=model_path, param_name=param_name,
+            param_lookup_name=param_lookup_name)
+    if destination in ['orion_flash.citrusborgloginalert']:
+        return get_failed_logons(
+            app_path=app_path, model_path=model_path, param_name=param_name,
+            param_lookup_name=param_lookup_name)
+    if destination in ['orion_flash.citrusborguxalert']:
+        return get_ux_alarms(
+            app_path=app_path, model_path=model_path, param_name=param_name,
+            param_lookup_name=param_lookup_name)
 
     raise UnknownDataSourceError(
         'there is no known data source for destination %s' % destination)

@@ -25,6 +25,8 @@ from django.urls import reverse
 from .models import (
     UntrustedSslAlert, ExpiresSoonSslAlert,  # @UnresolvedImport
     ExpiredSslAlert, InvalidSslAlert,   # @UnresolvedImport
+    DeadCitrusBotAlert, CitrusBorgLoginAlert, CitrusBorgUxAlert,
+
 )
 
 
@@ -32,6 +34,9 @@ from .models import (
 @receiver(post_save, sender=ExpiredSslAlert)
 @receiver(post_save, sender=ExpiresSoonSslAlert)
 @receiver(post_save, sender=InvalidSslAlert)
+@receiver(post_save, sender=DeadCitrusBotAlert)
+@receiver(post_save, sender=CitrusBorgLoginAlert)
+@receiver(post_save, sender=CitrusBorgUxAlert)
 def update_local_url(sender, instance, created, *args, **kwargs):    # pylint: disable=unused-argument
     """
     add an URL to self in the instance

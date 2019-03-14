@@ -19,6 +19,7 @@ import logging
 import pendulum
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -378,19 +379,30 @@ class BaseCitrusBorgAlert(models.Model):
         _('host name'), max_length=64, db_index=True,
         blank=False, null=False)
     measured_now = models.DateTimeField(
-        _('measured from'),
-        help_text=_('the definition of now. normally it is now() but it can'
-                    ' be any moment in time for which we have data'))
+        _('starting point in time'), blank=False, null=False,
+        default=timezone.now,
+        help_text=_(
+            'all the queries that populate these rows are filtered over'
+            ' a period of time defined as going back from this time point'
+            ' for the sampled time interval.'
+            'in other words this is the definition of now. the default is'
+            ' the return of the now() function but the functions running'
+            ' the queries allow the use any moment in time for which we'
+            ' have data'
+        ))
     measured_over_mins = models.BigIntegerField(
-        _('not seen threshold measured in minutes'), db_index=True,
+        _('sampled interval in minutes'), db_index=True,
+        blank=False, null=False, default=0,
         help_text=_(
             'use this field to compare if threshold is specified in minutes'))
     measured_over_hours = models.BigIntegerField(
-        _('not seen threshold measured in hours'), db_index=True,
+        _('sampled interval in hours'), db_index=True,
+        blank=False, null=False, default=0,
         help_text=_(
             'use this field to compare if threshold is specified in hours'))
     measured_over_days = models.BigIntegerField(
-        _('not seen threshold measured in days'), db_index=True,
+        _('sampled interval in days'), db_index=True,
+        blank=False, null=False, default=0,
         help_text=_(
             'use this field to compare if threshold is specified in days'))
 

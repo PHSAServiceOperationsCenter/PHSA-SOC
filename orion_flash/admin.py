@@ -20,19 +20,17 @@ from django.contrib import admin
 
 from .models import (
     UntrustedSslAlert, ExpiresSoonSslAlert, ExpiredSslAlert, InvalidSslAlert,
+    DeadCitrusBotAlert, CitrusBorgLoginAlert, CitrusBorgUxAlert,
 )
 
 
-class BaseSslAlertAdmin(admin.ModelAdmin):
+class BaseAlertAdmin(admin.ModelAdmin):
     """
-    parent class for the admin classes defined in this module
+    parent class for all classes in this module
     """
     actions = None
-    list_display = ('cert_subject', 'md5', 'orion_node_id', 'orion_node_port',
-                    'silenced', 'alert_body', 'show_cert_url')
-    list_editable = ('silenced',)
 
-    readonly_fields = ('show_cert_url',)
+    list_editable = ('silenced',)
 
     def has_add_permission(self, request):  # @UnusedVariable
         """
@@ -60,6 +58,54 @@ class BaseSslAlertAdmin(admin.ModelAdmin):
             tuple([field.name for field in obj._meta.fields
                    if field.name != 'silenced'])
 
+
+class BorgAlertAdmin(BaseAlertAdmin, admin.ModelAdmin):
+    """
+    parent class for admin classes used for borg alerts
+    """
+    list_display = ('host_name', 'site', 'orion_node_id', 'alert_body',
+                    'silenced', 'measured_now', 'show_time_delta',
+                    'show_bot_url', 'show_events_url',)
+    readonly_fields = ('show_time_delta', 'show_bot_url', 'show_events_url',)
+
+    def show_time_delta(self, obj):  # pylint: disable=no-self-use
+        """
+        combine and display the time delta
+        :param obj:
+        :type obj:
+        """
+        if obj.measured_over_hours:
+            return '{} days'.format(obj.measured_over_days)
+
+        if obj.measured_over_minutes:
+            return '{} hours'.format(obj.measured_over_hours)
+
+        return '{} minutes'.format(obj.measured_over_minutes)
+    show_time_delta.format_short_description = 'Time delta'
+
+    def show_bot_url(self, obj):  # pylint: disable=no-self-use
+        """
+        render the link to the Citrix bot admin page as an URL
+        """
+        return mark_safe('<a href="{0}">{0}</a>'.format(obj.bot_url))
+    show_bot_url.short_description = 'Citrix bot details'
+
+    def show_events_url(self, obj):  # pylint: disable=no-self-use
+        """
+        render the link to the Citrix bot events admin page as an URL
+        """
+        return mark_safe('<a href="{0}">{0}</a>'.format(obj.events_url))
+    show_events_url.short_description = 'Citrix bot events summary'
+
+
+class SslAlertAdmin(BaseAlertAdmin, admin.ModelAdmin):
+    """
+    parent class for the admin classes used for ssl alerts
+    """
+    list_display = ('cert_subject', 'md5', 'orion_node_id', 'orion_node_port',
+                    'silenced', 'alert_body', 'show_cert_url')
+    readonly_fields = ('show_cert_url',)
+
     def show_cert_url(self, obj):  # pylint: disable=no-self-use
         """
         render the link to the SSL certificate admin page as an URL
@@ -68,8 +114,34 @@ class BaseSslAlertAdmin(admin.ModelAdmin):
     show_cert_url.short_description = 'SSL Certificate URL'
 
 
+@admin.register(DeadCitrusBotAlert)
+class DeadCitrusBotAlertAdmin(BorgAlertAdmin, admin.ModelAdmin):
+    """
+    admin interface for alerts about dead citrix bots
+    """
+
+    def get_list_display(self, request):  # @UnusedVariable
+        """
+        add our fields to the list_display
+        """
+        return self.list_display + ('not_seen_for')
+
+
+@admin.register(CitrusBorgLoginAlert)
+class CitrusBorgLoginAlertAdmin(BorgAlertAdmin, admin.ModelAdmin):
+    """
+    admin interface for alerts about missed citrix logins
+    """
+
+    def get_list_display(self, request):
+        """
+        add our fields to the list_display
+        """
+        return self.list_display + ('failed_events_count')
+
+
 @admin.register(UntrustedSslAlert)
-class UntrustedSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
+class UntrustedSslAlertAdmin(SslAlertAdmin, admin.ModelAdmin):
     """
     admin interface for alerts about untrusted SSL certificates
     """
@@ -82,7 +154,7 @@ class UntrustedSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
 
 
 @admin.register(ExpiresSoonSslAlert)
-class ExpiresSoonSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
+class ExpiresSoonSslAlertAdmin(SslAlertAdmin, admin.ModelAdmin):
     """
     admin interface for alerts about SSL certificates that expire soon
     """
@@ -107,7 +179,7 @@ class ExpiresSoonSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
 
 
 @admin.register(ExpiredSslAlert)
-class ExpiredSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
+class ExpiredSslAlertAdmin(SslAlertAdmin, admin.ModelAdmin):
     """
     admin forms for alerts about expired SSL certificates
     """
@@ -133,7 +205,7 @@ class ExpiredSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
 
 
 @admin.register(InvalidSslAlert)
-class InvalidSslAlertAdmin(BaseSslAlertAdmin, admin.ModelAdmin):
+class InvalidSslAlertAdmin(SslAlertAdmin, admin.ModelAdmin):
     """
     admin forms for alerts about SSL certificates that are not yet valid
     """

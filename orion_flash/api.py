@@ -24,6 +24,7 @@ from django.db.models.query import QuerySet
 
 from citrus_borg.locutus.communication import (
     get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,
+    raise_ux_alarm, GroupBy,
 )
 
 
@@ -44,9 +45,9 @@ def url_annotate(queryset):
             'bad type %s for object %s' % (type(queryset), queryset))
 
     # get the object metadata from an (the first) element of the queryset
-    # we need the app_lable, model_name, and primary key field name so
+    # we need the app_label, model_name, and primary key field name so
     # that we can build the url value
-    obj_sample = queryset.first()._meta
+    obj_sample = queryset.model._meta
 
     return queryset.annotate(url_id=Cast(obj_sample.pk.name, TextField())).\
         annotate(url=Concat(
@@ -79,7 +80,7 @@ def details_url_annotate(
         raise ValueError(
             'cannot build URL parameters without a parameter value')
 
-    obj_sample = queryset.first()._meta
+    obj_sample = queryset.model._meta
 
     if app_path is None:
         app_path = obj_sample.app_label
@@ -127,6 +128,26 @@ def get_failed_logons(
     get the failed login counts that are raising alerts
     """
     queryset = raise_failed_logins_alarm(now, time_delta, failed_threshold)
+
+    if annotate_url:
+        queryset = url_annotate(queryset)
+
+    if annotate_details_url:
+        queryset = details_url_annotate(queryset, **details)
+
+    return queryset
+
+
+def get_ux_alarms(
+        now=None,  group_by=GroupBy.NONE, time_delta=None,
+        ux_alert_threshold=None, annotate_url=True,
+        annotate_details_url=True, **details):
+    """
+    get the user experience alert data
+    """
+    queryset = raise_ux_alarm(
+        now=now, group_by=group_by, time_delta=time_delta,
+        ux_alert_threshold=ux_alert_threshold)
 
     if annotate_url:
         queryset = url_annotate(queryset)

@@ -138,7 +138,7 @@ def get_failed_logons(
     return queryset
 
 
-def get_ux_alarms(
+def get_ux_alarms(  # pylint: disable=too-many-arguments
         now=None,  group_by=GroupBy.NONE, time_delta=None,
         ux_alert_threshold=None, annotate_url=True,
         annotate_details_url=True, **details):

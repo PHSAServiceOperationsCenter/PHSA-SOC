@@ -27,11 +27,19 @@ from ssl_cert_tracker.lib import (
 )
 from ssl_cert_tracker.models import SslCertificate  # @UnresolvedImport
 
+from .api import get_dead_bots, get_failed_logons, get_ux_alarms
+
 
 LOG = get_task_logger(__name__)
+
 KNOWN_SSL_DESTINATIONS = [
     'orion_flash.expiressoonsslalert', 'orion_flash.untrustedsslalert',
     'orion_flash.expiredsslalert', 'orion_flash.invalidsslalert',
+]
+
+KNOWN_BORG_DESTINATIONS = [
+    'orion_flash.deadcitrusbotalert', 'orion_flash.citrusborgloginalert',
+    'orion_flash.citrusborguxalert',
 ]
 
 

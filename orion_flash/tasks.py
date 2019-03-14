@@ -29,7 +29,7 @@ from ssl_cert_tracker.models import SslCertificate  # @UnresolvedImport
 
 
 LOG = get_task_logger(__name__)
-KNOWN_DESTINATIONS = [
+KNOWN_SSL_DESTINATIONS = [
     'orion_flash.expiressoonsslalert', 'orion_flash.untrustedsslalert',
     'orion_flash.expiredsslalert', 'orion_flash.invalidsslalert',
 ]
@@ -63,7 +63,7 @@ def purge_ssl_alerts():
     if it doesn't, delete the instance
     """
     delete_info = []
-    for data_source in KNOWN_DESTINATIONS:
+    for data_source in KNOWN_SSL_DESTINATIONS:
 
         model = get_model(data_source)
         for alert in model.objects.values('orion_node_id', 'orion_node_port'):
@@ -100,7 +100,7 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary alert models
     """
-    if destination.lower() not in KNOWN_DESTINATIONS:
+    if destination.lower() not in KNOWN_SSL_DESTINATIONS:
         raise UnknownDataTargetError(
             '%s is not known to this application' % destination)
 

@@ -26,6 +26,7 @@ from citrus_borg.locutus.communication import (
     get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,
     raise_ux_alarm, GroupBy,
 )
+from citrus_borg.dynamic_preferences_registry import get_preference
 
 
 def url_annotate(queryset):
@@ -139,9 +140,10 @@ def get_failed_logons(
 
 
 def get_ux_alarms(  # pylint: disable=too-many-arguments
-        now=None,  group_by=GroupBy.NONE, time_delta=None,
-        ux_alert_threshold=None, annotate_url=True,
-        annotate_details_url=True, **details):
+        now=None,  group_by=GroupBy.NONE,
+        time_delta=get_preference('citrusborgux__ux_alert_interval'),
+        ux_alert_threshold=get_preference('citrusborgux__ux_alert_threshold'),
+        annotate_url=True, annotate_details_url=True, **details):
     """
     get the user experience alert data
     """

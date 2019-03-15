@@ -15,6 +15,8 @@ django admin module for the orion_flash app
 :updated:    Feb. 20, 2019
 
 """
+import pendulum
+
 from django.utils.safestring import mark_safe
 from django.contrib import admin
 
@@ -74,14 +76,11 @@ class BorgAlertAdmin(BaseAlertAdmin, admin.ModelAdmin):
         :param obj:
         :type obj:
         """
-        if obj.measured_over_hours:
-            return '{} days'.format(obj.measured_over_days)
-
-        if obj.measured_over_minutes:
-            return '{} hours'.format(obj.measured_over_hours)
-
-        return '{} minutes'.format(obj.measured_over_minutes)
-    show_time_delta.format_short_description = 'Time delta'
+        return pendulum.duration(
+            days=obj.measured_over.days, seconds=obj.measured_over.seconds,
+            microseconds=obj.measured_over.microseconds).\
+            in_words()
+    show_time_delta.short_description = 'Duration Going Backwards'
 
     def show_bot_url(self, obj):  # pylint: disable=no-self-use
         """
@@ -124,7 +123,7 @@ class DeadCitrusBotAlertAdmin(BorgAlertAdmin, admin.ModelAdmin):
         """
         add our fields to the list_display
         """
-        return self.list_display + ('not_seen_for')
+        return self.list_display + ('not_seen_for',)
 
 
 @admin.register(CitrusBorgLoginAlert)
@@ -137,7 +136,21 @@ class CitrusBorgLoginAlertAdmin(BorgAlertAdmin, admin.ModelAdmin):
         """
         add our fields to the list_display
         """
-        return self.list_display + ('failed_events_count')
+        return self.list_display + ('failed_events_count',)
+
+
+@admin.register(CitrusBorgUxAlert)
+class CitrusBorgUxAlertAdmin(BorgAlertAdmin, admin.ModelAdmin):
+    """
+    admin interface for alerts about citrix bot response time events
+    """
+
+    def get_list_display(self, request):
+        """
+        add our fields to the list_display
+        """
+        return self.list_display + (
+            'avg_logon_time', 'avg_storefront_connection_time',)
 
 
 @admin.register(UntrustedSslAlert)

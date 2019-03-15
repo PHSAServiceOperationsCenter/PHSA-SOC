@@ -91,7 +91,7 @@ def purge_ssl_alerts():
     return delete_info
 
 
-@shared_task(rate_limit='2/s', queue='orion_flash')
+@shared_task(task_serializer='pickle', result_serializer='pickle', rate_limit='2/s', queue='orion_flash')
 def create_or_update_orion_alert(destination, qs_rows_as_dict):
     """
     create orion alert instances
@@ -103,7 +103,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
         raise err
 
 
-@shared_task(queue='orion_flash')
+@shared_task(task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
 def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary ssl alert models
@@ -122,7 +122,8 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
                  ' first row sample: %s',
                  len(data_rows), destination, data_rows[0])
 
-    group(create_or_update_orion_alert.s(destination, data_row)
+    group(create_or_update_orion_alert.s(destination, data_row).
+          set(serializer='pickle')
           for data_row in data_rows)()
 
     msg = 'refreshing data in %s from %s entries' % (destination,
@@ -130,7 +131,7 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     return msg
 
 
-@shared_task(queue='orion_flash')
+@shared_task(task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
 def refresh_borg_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary citrix bot alert models
@@ -158,7 +159,8 @@ def refresh_borg_alerts(destination, logger=LOG, **kwargs):
                  ' first row sample: %s',
                  len(data_rows), destination, data_rows[0])
 
-    group(create_or_update_orion_alert.s(destination, data_row)
+    group(create_or_update_orion_alert.s(destination, data_row).
+          set(serializer='pickle')
           for data_row in data_rows)()
 
     msg = 'refreshing data in %s from %s entries' % (destination,
@@ -220,26 +222,26 @@ def get_data_for(destination, **kwargs):
     param_lookup_name = kwargs.get('param_lookup_name', 'host_name')
 
     if destination in ['orion_flash.expiressoonsslalert']:
-        return expires_in(lt_days=lt_days)
+        return expires_in(lt_days=lt_days, **kwargs)
     if destination in ['orion_flash.untrustedsslalert']:
-        return is_not_trusted()
+        return is_not_trusted(**kwargs)
     if destination in ['orion_flash.expiredsslalert']:
-        return has_expired()
+        return has_expired(**kwargs)
     if destination in ['orion_flash.invalidsslalert']:
-        return is_not_yet_valid()
+        return is_not_yet_valid(**kwargs)
 
     if destination in ['orion_flash.deadcitrusbotalert']:
         return get_dead_bots(
             app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name)
+            param_lookup_name=param_lookup_name, **kwargs)
     if destination in ['orion_flash.citrusborgloginalert']:
         return get_failed_logons(
             app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name)
+            param_lookup_name=param_lookup_name, **kwargs)
     if destination in ['orion_flash.citrusborguxalert']:
         return get_ux_alarms(
             app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name)
+            param_lookup_name=param_lookup_name, **kwargs)
 
     raise UnknownDataSourceError(
         'there is no known data source for destination %s' % destination)

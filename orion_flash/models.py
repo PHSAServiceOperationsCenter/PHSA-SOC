@@ -379,7 +379,7 @@ class BaseCitrusBorgAlert(models.Model):
         _('host name'), max_length=64, db_index=True,
         blank=False, null=False)
     measured_now = models.DateTimeField(
-        _('starting point in time'), blank=False, null=False,
+        _('time reference point'), blank=False, null=False,
         default=timezone.now,
         help_text=_(
             'all the queries that populate these rows are filtered over'
@@ -390,6 +390,7 @@ class BaseCitrusBorgAlert(models.Model):
             ' the queries allow the use any moment in time for which we'
             ' have data'
         ))
+    measured_over = models.DurationField()
     measured_over_mins = models.BigIntegerField(
         _('sampled interval in minutes'), db_index=True,
         blank=False, null=False, default=0,
@@ -430,20 +431,11 @@ class BaseCitrusBorgAlert(models.Model):
         """
         raise NotImplementedError('must be defined by the subclass')
 
-    def set_alert_body(self):
+    def set_alert_body(self, measured_over):
         """
         set the alert body
         """
-        if self.measured_over_days > 0:
-            return self.alert_template.format(
-                units='days', measured_over=self.measured_over_days)
-
-        if self.measured_over_hours > 0:
-            return self.alert_template.format(
-                units='hours', measured_over=self.measured_over_hours)
-
-        return self.alert_template.format(
-            units='minutes', measured_over=self.measured_over_mins)
+        return self.alert_template.format(measured_over=measured_over)
 
     @classmethod
     def create_or_update(cls, qs_row_as_dict):
@@ -463,18 +455,21 @@ class BaseCitrusBorgAlert(models.Model):
             helper function to create a pendulum duration object from
             a django timezone.timedelta object
             """
+            if not duration:
+                return pendulum.duration()
+
             return pendulum.duration(days=duration.days,
                                      seconds=duration.seconds,
                                      microseconds=duration.microseconds)
 
         borg_alert = cls.objects.filter(
-            host_name__iequals=qs_row_as_dict.get('host_name'))
+            host_name__iexact=qs_row_as_dict.get('host_name'))
 
         if borg_alert.exists():
             borg_alert = borg_alert.get()
 
         else:
-            borg_alert = cls(orion_node_id=qs_row_as_dict.get('host_name'))
+            borg_alert = cls(host_name=qs_row_as_dict.get('host_name'))
 
         borg_alert.silenced = False
         borg_alert.site = qs_row_as_dict.get('site__site')
@@ -483,6 +478,7 @@ class BaseCitrusBorgAlert(models.Model):
         borg_alert.orion_node_id = qs_row_as_dict.get('orion_id')
         borg_alert.measured_now = pendulum.parse(
             qs_row_as_dict.get('measured_now'))
+        borg_alert.measured_over = qs_row_as_dict.get('measured_over')
         borg_alert.measured_over_days = duration(
             qs_row_as_dict.get('measured_over')).in_days()
         borg_alert.measured_over_hours = duration(
@@ -512,7 +508,10 @@ class BaseCitrusBorgAlert(models.Model):
             'ux_threshold_seconds',
             duration(qs_row_as_dict.get('ux_threshold')).in_seconds())
 
-        borg_alert.alert_body = borg_alert.set_alert_body()
+        borg_alert.alert_body = borg_alert.set_alert_body(duration(
+            qs_row_as_dict.get('measured_over')).in_words())
+
+        borg_alert.save()
 
     class Meta:
         abstract = True
@@ -540,14 +539,14 @@ class DeadCitrusBotAlert(BaseCitrusBorgAlert, models.Model):
         help_text=_('last seen as shown in WinlogbeatHost'))
     not_seen_for = models.CharField(
         _('not seen for'), max_length=64, blank=True, null=True,
-        help_text='the diference between now and last_seen converted to'
+        help_text='the difference between now and last_seen converted to'
         ' a suitable time unit')
 
     @property
     def alert_template(self):
         return (
             'Citrix bot %s at %s has not sent ControlUp logon'
-            ' events for more than {measured_over} {units}'
+            ' events for more than {measured_over}'
         ) % (self.host_name, self.site)
 
     class Meta:
@@ -578,7 +577,7 @@ class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
         """
         return (
             'Citrix bot %s at %s has had at least %s failed ControlUp'
-            ' logon  events over the last {measured_over} {units}'
+            ' logon  events over the last {measured_over}'
         ) % (self.host_name, self.site, self.failed_events_count)
 
     class Meta:
@@ -620,8 +619,9 @@ class CitrusBorgUxAlert(BaseCitrusBorgAlert, models.Model):
         """
         return (
             'Citrix bot %s at %s has experienced response times larger'
-            ' than {ux_alert_threshold_seconds} seconds over the last'
-            ' {measured_over} {units}') % (self.host_name, self.site)
+            ' than %s seconds over the last'
+            ' {measured_over}') % (self.host_name, self.site,
+                                   self.ux_threshold_seconds)
 
     class Meta:
         app_label = 'orion_flash'

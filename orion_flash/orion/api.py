@@ -42,10 +42,10 @@ LOG = logging.getLogger('orion_flash')
 
 SRC_DEFAULTS = (settings.ORION_HOSTNAME,
                 settings.ORION_USER, settings.ORION_PASSWORD)
-DST_DEFAULTS = ('10.248.211.70',
-                # get_preference('orionservercon__orion_hostname'),
-                get_preference('orionserverconn__orion_user'),
-                get_preference('orionserverconn__orion_password'))
+DST_DEFAULTS = (
+    get_preference('orionserverconn__orion_hostname'),
+    get_preference('orionserverconn__orion_user'),
+    get_preference('orionserverconn__orion_password'))
 
 if not settings.ORION_VERIFY_SSL_CERT:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

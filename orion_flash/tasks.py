@@ -91,7 +91,9 @@ def purge_ssl_alerts():
     return delete_info
 
 
-@shared_task(task_serializer='pickle', result_serializer='pickle', rate_limit='2/s', queue='orion_flash')
+@shared_task(
+    task_serializer='pickle', result_serializer='pickle', rate_limit='2/s',
+    queue='orion_flash')
 def create_or_update_orion_alert(destination, qs_rows_as_dict):
     """
     create orion alert instances
@@ -103,7 +105,8 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
         raise err
 
 
-@shared_task(task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
+@shared_task(
+    task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
 def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary ssl alert models
@@ -131,7 +134,8 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     return msg
 
 
-@shared_task(task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
+@shared_task(
+    task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
 def refresh_borg_alerts(destination, logger=LOG, **kwargs):
     """
     dispatch alert data to orion auxiliary citrix bot alert models
@@ -222,7 +226,7 @@ def get_data_for(destination, **kwargs):
     param_lookup_name = kwargs.get('param_lookup_name', 'host_name')
 
     if destination in ['orion_flash.expiressoonsslalert']:
-        return expires_in(lt_days=lt_days, **kwargs)
+        return expires_in(lt_days=lt_days)
     if destination in ['orion_flash.untrustedsslalert']:
         return is_not_trusted(**kwargs)
     if destination in ['orion_flash.expiredsslalert']:

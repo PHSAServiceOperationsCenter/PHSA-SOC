@@ -121,7 +121,7 @@ def store_borg_data(body):
 
 
 @shared_task(queue='citrus_borg', rate_limit='3/s')
-def get_orion_id(pk):
+def get_orion_id(pk):  # pylint: disable=invalid-name
     """
     wrap around :methood:`<models.WinlogbeatHost.get_orion_id>`
     """

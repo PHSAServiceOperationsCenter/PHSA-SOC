@@ -21,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from dynamic_preferences.types import (
     BooleanPreference, StringPreference, DurationPreference, IntPreference,
+    LongStringPreference, FloatPreference,
 )
 from dynamic_preferences.preferences import Section
 from dynamic_preferences.registries import global_preferences_registry
@@ -51,7 +52,219 @@ citrus_borg_logon = Section(
     'citrusborglogon',
     verbose_name=_('Citrus Borg Citrix Logon settings').title())
 
+orion_server_conn = Section(
+    'orionserverconn',
+    verbose_name=_('Orion Server Connection Settings').title())
+
+orion_filters = Section(
+    'orionfilters',
+    verbose_name=_('Filters used for Orion REST queries').title())
+
+orion_probe_defaults = Section(
+    'orionprobe',
+    verbose_name=_('Filters used for Orion data probes').title())
+
+
 # pylint: enable=C0103
+
+# pylint: disable=too-few-public-methods
+@global_preferences_registry.register
+class OrionProbeCSTOnly(BooleanPreference):
+    """
+    run data probes only against Cerner CST Orion Nodes
+    """
+    section = orion_probe_defaults
+    name = 'cerner_cst'
+    default = True
+    required = False
+    verbose_name = _('Only probe Cerner CST Orion nodes').title()
+
+
+@global_preferences_registry.register
+class OrionProbeKnownSslOnly(BooleanPreference):
+    """
+    run data probes only against Orion Nodes known to serve Ssl
+    """
+    section = orion_probe_defaults
+    name = 'orion_ssl'
+    default = False
+    required = False
+    verbose_name = _(
+        'Only probe Orion nodes known to serve applications over SSL').title()
+
+
+@global_preferences_registry.register
+class OrionProbeServersOnly(BooleanPreference):
+    """
+    run data probes only against Orion Nodes categorized as server
+    """
+    section = orion_probe_defaults
+    name = 'servers_only'
+    default = True
+    required = False
+    verbose_name = _('Only probe Orion nodes categorized as servers').title()
+
+
+@global_preferences_registry.register
+class OrionCernerCSTFilter(StringPreference):
+    """
+    filter to extract Orion Nodes tagged as Cerner CST
+    """
+    section = orion_filters
+    name = 'cerner_cst'
+    default = 'Cerner-CST'
+    required = True
+    verbose_name = _('Query Filter for Cerner CST Orion nodes').title()
+
+
+@global_preferences_registry.register
+class OrionServerNodesFilter(StringPreference):
+    """
+    filter to run queries only against Orion Nodes of type 'server'
+    """
+    section = orion_filters
+    name = 'server_node'
+    default = 'server'
+    required = True
+    verbose_name = _('Query Filter for Orion server nodes').title()
+
+
+@global_preferences_registry.register
+class OrionAppSslFilter(StringPreference):
+    """
+    service or default user preference
+    """
+    section = orion_filters
+    name = 'ssl_app'
+    default = 'ssl'
+    required = True
+    verbose_name = _(
+        'Query Filter for Orion nodes known to run applications over SSL'
+    ).title()
+
+
+@global_preferences_registry.register
+class OrionServerUrl(LongStringPreference):
+    """
+    url used to create links to Orion Node server pages
+    """
+    section = orion_server_conn
+    name = 'orion_server_url'
+    default = settings.ORION_ENTITY_URL
+    required = True
+    verbose_name = _('Orion Server Root URL')
+
+
+@global_preferences_registry.register
+class OrionServerRestUrl(LongStringPreference):
+    """
+    url used to create links to Orion REST end points
+    """
+    section = orion_server_conn
+    name = 'orion_rest_url'
+    default = settings.ORION_URL
+    required = True
+    verbose_name = _('Orion Server REST API root URL')
+
+
+@global_preferences_registry.register
+class OrionServer(StringPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_hostname'
+    default = settings.ORION_HOSTNAME
+    required = True
+    verbose_name = _('Orion Server Host Name or IP Address')
+
+
+@global_preferences_registry.register
+class OrionServerUser(StringPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_user'
+    default = settings.ORION_USER
+    required = True
+    verbose_name = _('Orion Server User Name')
+
+
+@global_preferences_registry.register
+class OrionServerPassword(StringPreference):
+    """
+    orion password
+    """
+    section = orion_server_conn
+    name = 'orion_password'
+    default = settings.ORION_PASSWORD
+    required = True
+    verbose_name = _('Orion Server Password')
+
+
+@global_preferences_registry.register
+class OrionServerAcceptUnsignedCertificate(BooleanPreference):
+    """
+    orion user
+    """
+    section = orion_server_conn
+    name = 'orion_verify_ssl_cert'
+    default = settings.ORION_VERIFY_SSL_CERT
+    required = False
+    verbose_name = _('Ignore unsigned SSL certificate on the Orion server')
+
+
+@global_preferences_registry.register
+class OrionServerConnectionTimeout(FloatPreference):
+    """
+    orion server cconnection timeout
+    """
+    section = orion_server_conn
+    name = 'orion_conn_timeout'
+    default = settings.ORION_TIMEOUT[0]
+    required = True
+    verbose_name = _('Orion Server Connection Timeout')
+
+
+@global_preferences_registry.register
+class OrionServerReadTimeout(FloatPreference):
+    """
+    orion server read timeout
+    """
+    section = orion_server_conn
+    name = 'orion_read_timeout'
+    default = settings.ORION_TIMEOUT[1]
+    required = True
+    verbose_name = _('Orion Server Read Timeout')
+
+
+@global_preferences_registry.register
+class OrionServerRetry(IntPreference):
+    """
+    orion server retries
+    """
+    section = orion_server_conn
+    name = 'orion_retry'
+    default = settings.ORION_RETRY
+    required = True
+    verbose_name = _('Orion Server Connection Retries')
+
+
+@global_preferences_registry.register
+class OrionServerRetryBackoff(FloatPreference):
+    """
+    orion server retry backoff factor
+    """
+    section = orion_server_conn
+    name = 'orion_backoff_factor'
+    default = settings.ORION_BACKOFF_FACTOR
+    required = True
+    verbose_name = _('Orion Server Retry Backoff Factor')
+    help_text = format_html(
+        "See 'backoff_factor' at <a href={}>{}</a>",
+        'https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#module-urllib3.util.retry',
+        _('Retry connection backoff factor'))
 
 
 @global_preferences_registry.register
@@ -305,7 +518,7 @@ class LogonReportsInterval(DurationPreference):
         "{}<br>{}",
         _('logon reports are calculated, created, and sent over this'),
         _('time interval'))
-
+# pylint: disable=too-few-public-methods
 # pylint: enable=E1101
 
 

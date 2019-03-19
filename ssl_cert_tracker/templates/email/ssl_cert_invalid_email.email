@@ -4,8 +4,8 @@ Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 
 {% block html %}
 {% if data %}
-<div>
-<table color="#000000">
+<div><p>
+<table style="border: 1px solid black;">
 <tr align="left" valign="center">
 {% for key, val in headers.items %}
 <th><strong>{{val}}</strong></th>
@@ -14,30 +14,33 @@ Not yet valid SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 {% for item in data %}
 <tr align="left" valign="center">
 {% for value in item.values %}
-<td>{{value}}</td>
+<td style="border: 1px solid black;">{{value}}</td>
 {% endfor %}
 </tr>
 {% endfor %}
 </table>
-</div>
+</p></div>
 
 <div>
 <p>More details available at
 <a href="{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}">
-{{ source_host }}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</></p>
+{{ source_host }}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</a></p>
 </div>
 
 {% if email_uuid %}
-<div>
-<p>You can view this email online at
-<a href="{{source_host_name}}{% url 'templated_email:show_email' uuid=email_uuid %}">
+<h5>To view this email in a browser</h5>
+<ul><li>Navigate to: 
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
 {{email_uuid}}</a>
-</p></div>
+</li></ul>
 {% endif %}
 {% elif not data %}
-<div><p>No qualifying SSL certificates have been found.</p></div>
+<div><h3>
+No qualifying SSL certificates have been found.
+</h3></div>
 {% endif %}
-<div><p>
+<div><h5>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
-</p></div>
+</h5></div>
+
 {% endblock %}

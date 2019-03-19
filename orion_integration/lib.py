@@ -17,6 +17,8 @@ published API provided by this application
 
 :updated:    aug. 14, 2018
 """
+from citrus_borg.dynamic_preferences_registry import get_preference
+
 from .models import OrionNode, OrionCernerCSTNode
 
 
@@ -38,10 +40,12 @@ class OrionSslNode():
     '''
     # pylint:enable=C0301
 
-    ssl_filters = dict(orionapmapplication__application_name__icontains='ssl')
+    ssl_filters = dict(
+        orionapmapplication__application_name__icontains=get_preference(
+            'orionfilters__ssl_app'))
 
     @classmethod
-    def nodes(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
+    def nodes(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         # pylint:disable=C0301
         """
         get the orion nodes cached in
@@ -76,7 +80,7 @@ class OrionSslNode():
         this will return a `list` of `dict` where each `dict` looks like::
 
             {'orion_id': 54,
-             'node_name': 'HP Comware Platform Software, Software Version 7.1.045, Release 2416\r\nHP 5900AF-48XG-4QSFP+ Switch\r\nCopyright (c) 2010-2014 Hewlett-Packard Development Company, L.P.',
+             'node_name': 'HP Comware Platform S ... velopment Company, L.P.',
              'ip_address': '10.26.101.11',
              'site': 'Squamish General Hospital'}
 
@@ -85,11 +89,22 @@ class OrionSslNode():
 
         queryset = OrionNode.objects.filter(enabled=True)
 
+        if cerner_cst is None:
+            cerner_cst = get_preference('orionprobe__cerner_cst')
+
+        if servers_only is None:
+            servers_only = get_preference('orionprobe__servers_only')
+
+        if orion_ssl is None:
+            orion_ssl = get_preference('orionprobe__orion_ssl')
+
         if cerner_cst:
             queryset = OrionCernerCSTNode.objects.filter(enabled=True)
 
         if servers_only:
-            queryset = queryset.filter(category__category__icontains='server')
+            queryset = queryset.filter(
+                category__category__icontains=get_preference(
+                    'orionfilters__server_node'))
 
         if orion_ssl:
             return queryset.filter(**cls.ssl_filters).all()
@@ -97,7 +112,7 @@ class OrionSslNode():
         return queryset
 
     @classmethod
-    def count(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
+    def count(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         """
         :returns: the number of SSL nodes
         :rtype: int
@@ -109,7 +124,7 @@ class OrionSslNode():
             orion_ssl=orion_ssl, servers_only=servers_only).count()
 
     @classmethod
-    def ip_addresses(cls, cerner_cst=True, orion_ssl=False, servers_only=True):
+    def ip_addresses(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         """
         :returns: the list of ip addresses for orion ssl nodes
         :rtype: list

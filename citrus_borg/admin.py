@@ -71,7 +71,7 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         return super().change_view(
             request, object_id, form_url=form_url, extra_context=extra_context)
 
-    def get_readonly_fields(self, request, obj=None):
+    def get_readonly_fields(self, request, obj=None):  # @UnusedVariable
         """
         overload to make sure that some fields are always readonly
         """
@@ -84,6 +84,9 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
 @admin.register(BorgSite)
 class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for borg sites
+    """
     list_display = ('site', 'enabled', 'notes',
                     'last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)
@@ -91,6 +94,10 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('last_seen',)
 
     def last_seen(self, obj):
+        """
+        last seen is based on when the borgs on the site were last seen
+        ordered descending
+        """
         return obj.winlogbeathost_set.first().last_seen
     last_seen.short_description = 'last seen'
 
@@ -123,11 +130,11 @@ class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
 @admin.register(WinlogbeatHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
-    list_display = ('host_name', 'ip_address',  'enabled', 'site',
+    list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'resolved_fqdn', 'last_seen', 'created_on',)
     list_editable = ('site', 'enabled',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
-                       'created_on',)
+                       'created_on', 'orion_id',)
     list_filter = ('site__site', 'enabled',)
 
 

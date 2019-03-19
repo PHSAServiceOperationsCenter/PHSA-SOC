@@ -76,6 +76,13 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'orion_flash_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'orion_flash.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -98,6 +105,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'orion_flash': {
+            'handlers': ['orion_flash_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
@@ -109,6 +121,7 @@ INSTALLED_APPS = [
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
+    'orion_flash.apps.OrionFlashConfig',
     'simple_history',
     'dal',
     'dal_select2',
@@ -171,8 +184,24 @@ DATABASES = {
         'HOST': '',
         'PASSWORD': 'phsa_db_password',
         'USER': 'phsa_db_user',
-    }
+    },
+    'orion_aux_db': {
+        'ENGINE': 'sql_server.pyodbc',
+        'NAME': 'orion_aux_db',
+        'USER': 'orion_aux_db_user',
+        'PASSWORD': 'orion_aux_db_password',
+        #	'SA_PASSWORD': "orion_aux_db_password123',
+        'HOST': '10.248.211.70',
+        #    'HOST': '10.66.6.9',
+        'PORT': '',
+
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
+    },
 }
+
+DATABASE_ROUTERS = ['orion_flash.router.OrionAuxRouter', ]
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -212,6 +241,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
 
 # orion logins
+ORION_HOSTNAME = 'orion.vch.ca'
 ORION_ENTITY_URL = 'https://orion.vch.ca'
 ORION_URL = 'https://orion.vch.ca:17778/SolarWinds/InformationService/v3/Json'
 ORION_USER = 'CSTmonitor'
@@ -225,6 +255,8 @@ ORION_TIMEOUT = (10.0, 22.0)
     timeout, the second one is the read tiemout
 
 """
+ORION_RETRY = 3
+ORION_BACKOFF_FACTOR = 0.3
 
 # celery settings (use namespace='CELERY')
 CELERY_BROKER_URL = 'amqp://guest:guest@localhost//'
@@ -243,6 +275,7 @@ CELERY_QUEUES = (
     Queue('shared', Exchange('shared'), routing_key='shared'),
     Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
     Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
+    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -289,8 +322,9 @@ SUB_ESC_EMAIL_TYPE = 2
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []
 
-# server port
+# server settings: use them to build URL's
 SERVER_PORT = '8080'
+SERVER_PROTO = 'http'
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
@@ -310,32 +344,15 @@ CITRUS_BORG_FAILED_LOGONS_PERIOD = timezone.timedelta(hours=12)
 CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS = False
 
 DYNAMIC_PREFERENCES = {
-
-    # a python attribute that will be added to model instances with preferences
-    # override this if the default collide with one of your models
-    # attributes/fields
     'MANAGER_ATTRIBUTE': 'preferences',
-
-    # The python module in which registered preferences will be searched
-    # within each app
     'REGISTRY_MODULE': 'dynamic_preferences_registry',
-
-    # Allow quick editing of preferences directly in admin list view
-    # WARNING: enabling this feature can cause data corruption if multiple users
-    # use the same list view at the same time, see
-    # https://code.djangoproject.com/ticket/11313
     'ADMIN_ENABLE_CHANGELIST_FORM': True,
-
-    # Customize how you can access preferences from managers. The default is to
-    # separate sections and keys with two underscores. This is probably not a settings you'll
-    # want to change, but it's here just in case
     'SECTION_KEY_SEPARATOR': '__',
-
-    # Use this to disable caching of preference. This can be useful to debug
-    # things
     'ENABLE_CACHE': True,
-
-    # Use this to disable checking preferences names. This can be useful to
-    # debug things
     'VALIDATE_NAMES': True,
 }
+
+NMAP_SERVICE_USER = 'nmap_user'
+
+SSL_PROBE_OPTIONS = '-Pn -p %s --script ssl-cert'
+SSL_DEFAULT_PORT = 443

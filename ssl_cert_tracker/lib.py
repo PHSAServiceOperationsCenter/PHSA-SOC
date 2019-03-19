@@ -15,44 +15,60 @@ library module for the ssl_certificates app
 :updated:    Oct. 30, 2018
 
 """
-from logging import getLogger
-from smtplib import SMTPConnectError
 import socket
 
+from enum import Enum
+from logging import getLogger
+from smtplib import SMTPConnectError
+
+from django.apps import apps
 from django.conf import settings
 from django.db.models import (
-    Case, When, CharField, BigIntegerField, Value, F, Func,
+    Case, When, CharField, BigIntegerField, Value, F, Func, TextField,
 )
-from django.db.models.functions import Now, Cast
+from django.db.models.functions import Now, Cast, Concat
 from django.utils import timezone
 
 from templated_email import get_templated_mail
 
 
-log = getLogger('ssl_cert_tracker')
+LOG = getLogger('ssl_cert_tracker')
 
-expired = When(not_after__lt=timezone.now(), then=Value('expired'))
+
+class State(Enum):
+    """
+    enumeration for state values
+    """
+    VALID = 'valid'
+    EXPIRED = 'expired'
+    NOT_YET_VALID = 'not yet valid'
+
+
+CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
-:var expired: a representation of an SQL WHEN snippet looking for certificates
-              that have expired already
+:var CASE_EXPIRED:
+
+    a representation of an SQL WHEN snippet looking for certificates
+    that have expired already
 
 :vartype: :class:`<django.db.models.When>`
 """
 
 
-not_yet_valid = When(not_before__gt=timezone.now(),
-                     then=Value('not yet valid'))
+CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
+                          then=Value(State.NOT_YET_VALID))
 """
-:var not_yet_valid: a representation of an SQL WHEN snippet looking for
+:var CASE_NOT_YET_VALID: a representation of an SQL WHEN snippet looking for
                     certificates that are not yet valid
 
 :vartype: :class:`<django.db.models.When>`
 """
 
-state_field = Case(
-    expired, not_yet_valid, default=Value('valid'), output_field=CharField())
+STATE_FIELD = Case(
+    CASE_EXPIRED, CASE_NOT_YET_VALID, default=Value(State.VALID),
+    output_field=CharField())
 """
-:var state_field: a representation of an SQL CASE snipped that used the
+:var STATE_FIELD: a representation of an SQL CASE snipped that used the
                   WHEN snippetys from above to categorize SSL certificates by
                   their validity state
 
@@ -60,7 +76,7 @@ state_field = Case(
 """
 
 
-class DateDiff(Func):
+class DateDiff(Func):  # pylint: disable=abstract-method
     """
     django wrapper for the MariaDB function DATEDIFF(). see
 
@@ -76,7 +92,89 @@ class DateDiff(Func):
     output_field = CharField()
 
 
-def expires_in(lt_days=None, logger=None):
+def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
+    """
+    get untrusted certificates
+
+    the arguments are required because this and the other queryset returning
+    functions in this module are written so that we can pull data from either
+    the old certificate model or the new, refoctored certificate models.
+
+    :arg str app_label:
+
+    :arg str model_name:
+    """
+    return get_ssl_base_queryset(app_label, model_name).\
+        filter(issuer__is_trusted=False).\
+        annotate(alert_body=Value('Untrusted SSL Certificate',
+                                  output_field=TextField()))
+
+
+def get_base_queryset(app_label, model_name, url_annotate=True):
+    """
+    get a basic queryset object and also annotate with the absolute
+    django admin change URL
+
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :returns:
+
+        a django queryset that includes a field named 'url' containing
+        tbe absolute URL for the django admin change page associated with
+        the row
+    """
+    queryset = apps.get_model(app_label,
+                              model_name).objects.filter(enabled=True)
+
+    if url_annotate:
+        queryset = queryset.annotate(url_id=Cast('id', TextField())).\
+            annotate(url=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()),
+                Value(':'), Value(settings.SERVER_PORT),
+                Value('/admin/'),
+                Value(app_label), Value('/'), Value(model_name),
+                Value('/'), F('url_id'), Value('/change/'),
+                output_field=TextField()))
+
+    return queryset
+
+
+def get_ssl_base_queryset(
+        app_label, model_name, url_annotate=True, issuer_url_annotate=True):
+    """
+    annotate with the absolute url to the certificate issuer row
+
+    we put this in a separate function because get_base_queryset is
+    supposed to be pristine with no dependencies to any specific model
+    whatsoever
+
+    this cannot be abstracted to generate annotations for each
+    foreign key field  because the annotation name cannot be passed as
+    a variable
+    """
+    queryset = get_base_queryset(app_label, model_name, url_annotate)
+    if issuer_url_annotate \
+            and app_label in ['ssl_cert_tracker'] \
+            and model_name in ['sslcertificate']:
+        queryset = queryset.\
+            annotate(url_issuer_id=Cast('issuer__id', TextField())).\
+            annotate(url_issuer=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()),
+                Value(':'), Value(settings.SERVER_PORT),
+                Value('/admin/'),
+                Value(app_label), Value('/sslcertificateissuer/'),
+                F('url_issuer_id'), Value('/change/'),
+                output_field=TextField()))
+
+    return queryset
+
+
+def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
+               lt_days=None, logger=None):
     """
     annotation function that prepares a query with calculated values
 
@@ -88,68 +186,79 @@ def expires_in(lt_days=None, logger=None):
               NmapCertData plus a state field, an expires_in_x_days field, and
               a field with the value returned by the MySql SQL function NOW()
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
-
     if logger is None:
-        logger = log
+        logger = LOG
 
     if lt_days and lt_days < 2:
-        log.warning(
-            'expiring in less than 2 days is not supported.'
-            '; resetting lt_days=%s to 2' % lt_days)
+        logger.warning('expiring in less than 2 days is not supported.'
+                       ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
-    queryset = base_queryset.\
-        annotate(state=state_field).filter(state='valid').\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
+        annotate(state=STATE_FIELD).filter(state=State.VALID).\
         annotate(mysql_now=Now()).\
         annotate(expires_in=DateDiff(F('not_after'), F('mysql_now'))).\
         annotate(expires_in_x_days=Cast('expires_in', BigIntegerField()))
 
     if lt_days:
-        queryset = queryset.filter(expires_in_x_days__lt=lt_days)
+        queryset = queryset.\
+            annotate(expires_in_less_than=Value(lt_days, BigIntegerField())).\
+            annotate(expires_in_less_than_cast=Cast(
+                'expires_in_less_than', CharField())).\
+            annotate(alert_body=Concat(
+                Value(
+                    'SSL Certificate will expire in less than ', TextField()),
+                F('expires_in_less_than_cast'),
+                Value(' days', TextField()), output_field=TextField())).\
+            filter(expires_in_x_days__lt=lt_days)
 
     queryset = queryset.order_by('expires_in_x_days')
 
     return queryset
 
 
-def has_expired():
+def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     annotation function that returns data calculated at the database level
     for expired certificates
 
     :returns: a django queryset
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
-
-    queryset = base_queryset.\
-        annotate(state=state_field).filter(state='expired').\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
+        annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
         annotate(mysql_now=Now()).\
-        annotate(
-            has_expired_x_days_ago=DateDiff(F('mysql_now'), F('not_after'))).\
+        annotate(has_expired_x_days_ago=DateDiff(F('mysql_now'),
+                                                 F('not_after'))).\
+        annotate(has_expired_x_days_ago_cast=Cast('has_expired_x_days_ago',
+                                                  CharField())).\
+        annotate(alert_body=Concat(
+            Value('SSL Certificate has expired ', TextField()),
+            F('has_expired_x_days_ago_cast'),
+            Value(' days ago', TextField()), output_field=TextField())).\
         order_by('-has_expired_x_days_ago')
 
     return queryset
 
 
-def is_not_yet_valid():
+def is_not_yet_valid(
+        app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
     annotation function that returns data calculated at the database level
     for certificates that are not yet valid
 
     :returns: a django queryset
     """
-    from .models import NmapCertsData
-    base_queryset = NmapCertsData.objects.filter(enabled=True)
-
-    queryset = base_queryset.\
-        annotate(state=state_field).filter(state='not yet valid').\
+    queryset = get_ssl_base_queryset(app_label, model_name).\
+        annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
         annotate(mysql_now=Now()).\
-        annotate(
-            will_become_valid_in_x_days=DateDiff(F('not_before'),
-                                                 F('mysql_now'))).\
+        annotate(will_become_valid_in_x_days=DateDiff(
+            F('not_before'), F('mysql_now'))).\
+        annotate(will_become_valid_in_x_days_cast=Cast(
+            'will_become_valid_in_x_days', CharField())).\
+        annotate(alert_body=Concat(
+            Value('SSL Certificate will become valid in ', TextField()),
+            F('will_become_valid_in_x_days_cast'),
+            Value(' days', TextField()), output_field=TextField())).\
         order_by('-will_become_valid_in_x_days')
 
     return queryset
@@ -160,7 +269,6 @@ class NoDataEmailError(Exception):
     raise this if one tries to create an instance of :class:`<Email>` with no
     data
     """
-    pass
 
 
 class NoSubscriptionEmailError(Exception):
@@ -168,10 +276,9 @@ class NoSubscriptionEmailError(Exception):
     raise this if one tries to create an instance of :class:`<Email>` with no
     subscription object
     """
-    pass
 
 
-class Email():
+class Email():  # pylint: disable=too-few-public-methods
     """
     a (more or less) subclass of
     :class:`<django.core.mail.EmailMultiAlternatives>` with a body prepared
@@ -205,10 +312,9 @@ class Email():
             if key in field_names:
                 headers[key] = self.data.model._meta.get_field(
                     key).verbose_name.title()
-            elif '__' in key:
-                headers[key] = key.split('__')[-1].title()
             else:
-                headers[key] = key.replace('_', ' ').title()
+                headers[key] = key.replace(
+                    '__', ': ').replace('_', ' ').title()
 
         return headers
 
@@ -234,7 +340,7 @@ class Email():
         :arg dict extra_context: just in case one needs more data
         """
         if logger is None:
-            self.logger = log
+            self.logger = LOG
         else:
             self.logger = logger
 
@@ -295,6 +401,7 @@ class Email():
             raise err
 
         self.logger.debug(
-            'sent email with subject %s and body %s' % (self.email.subject,
-                                                        self.email.body))
+            'sent email with subject %s and body %s',
+            self.email.subject, self.email.body)
+
         return sent

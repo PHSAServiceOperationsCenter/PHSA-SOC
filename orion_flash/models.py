@@ -489,7 +489,8 @@ class BaseCitrusBorgAlert(models.Model):
         borg_alert.set_attr('last_seen', qs_row_as_dict.get('last_seen'))
         borg_alert.set_attr('not_seen_for',
                             pendulum.now(tz='UTC').diff_for_humans(
-                                qs_row_as_dict.get('last_seen')
+                                qs_row_as_dict.get('last_seen'),
+                                absolute=True
                             ))
 
         borg_alert.set_attr(

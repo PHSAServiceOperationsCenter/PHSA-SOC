@@ -579,7 +579,7 @@ class CitrusBorgLoginAlert(BaseCitrusBorgAlert, models.Model):
         return (
             'Citrix bot %s at %s has had at least %s failed ControlUp'
             ' logon  events over the last {measured_over}'
-        ) % (self.host_name, self.site, self.failed_events_count)
+        ) % (self.host_name, self.site, self.failed_events_threshold)
 
     class Meta:
         app_label = 'orion_flash'

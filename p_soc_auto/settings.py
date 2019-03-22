@@ -124,11 +124,11 @@ CACHES = {
 
 # Application definition
 INSTALLED_APPS = [
-    #    'rules_engine.apps.RulesEngineConfig',
+    'rules_engine.apps.RulesEngineConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
-    #    'notifications.apps.NotificationsConfig',
+    'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     'orion_flash.apps.OrionFlashConfig',
     'simple_history',
@@ -201,7 +201,7 @@ DATABASES = {
         'PASSWORD': 'orion_aux_db_password',
         #	'SA_PASSWORD': "orion_aux_db_password123',
         'HOST': '10.248.211.70',
-        # 'HOST': '10.66.6.9',
+        #    'HOST': '10.66.6.9',
         'PORT': '',
 
         'OPTIONS': {

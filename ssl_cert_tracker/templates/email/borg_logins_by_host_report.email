@@ -1,6 +1,7 @@
 {% load timedelta_filter %}
 
 {% block subject %}
+{{ tags }}
 {% if time_delta %}
 ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
@@ -49,4 +50,5 @@ Could not find any logon events over the last
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

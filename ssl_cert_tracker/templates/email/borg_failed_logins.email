@@ -1,6 +1,7 @@
 {% load timedelta_filter %}
 
 {% block subject %}
+{{ tags }}
 ControlUp Logon Simulator Failed Event Alerts by Host for the last {{ time_delta | timedelta:"{minutes_total} minutes" }}
 {% endblock %}
 
@@ -46,4 +47,5 @@ the Web interface at:
 <div><p>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
+<p>tags: {{ tags }}</p>
 {% endblock %}

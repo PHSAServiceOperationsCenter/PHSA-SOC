@@ -1,6 +1,7 @@
 {% load timedelta_filter %}
 
 {% block subject %}
+{{ tags }}
 {% if time_delta %}
 {{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary for the last {{ time_delta | timedelta:"{hours_total} Hours" }}
 {% else %}
@@ -71,4 +72,5 @@ Please investigate.
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

@@ -1,6 +1,7 @@
 {% load timedelta_filter %}
 
 {% block subject %}
+{{ tags }}
 {% if time_delta %}
 Sites with ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
@@ -60,4 +61,5 @@ available at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_c
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

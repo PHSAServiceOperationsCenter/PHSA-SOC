@@ -275,6 +275,9 @@ def _include_event_counts(queryset):
         failed_events=Count(
             'winlogevent__event_state',
             filter=Q(winlogevent__event_state__iexact='failed'))).\
+        annotate(undetermined_events=Count(
+            'winlogevent__event_state',
+            filter=Q(winlogevent__event_state__iexact='undetermined'))).\
         annotate(
             successful_events=Count(
                 'winlogevent__event_state',

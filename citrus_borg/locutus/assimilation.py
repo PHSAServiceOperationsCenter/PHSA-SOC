@@ -76,17 +76,27 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
             % (type(ip_list), ip_list)
         )
 
-    for ip_address in ip_list:
+    ip_address = None
+    for _ip_address in ip_list:
         try:
             _host_name, _alias_list, _ip_list = \
                 socket.gethostbyaddr(ip_address)
             if host_name in _host_name:
-                return ip_address
+                ip_address = _ip_address
             continue
         except:  # pylint: disable=W0702
             continue
 
-    return None
+    if ip_address:
+        return ip_address
+
+    # the contorsions above are to deal with multiple ip addresses
+    # but sometimes one needs to send for a bigger hammer
+    try:
+        return socket.gethostbyname(host_name)
+    except:  # pylint: disable=W0702
+        # or just give up like a little wimp
+        return None
 
 
 def process_borg(body=None):

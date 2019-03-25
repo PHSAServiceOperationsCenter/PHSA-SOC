@@ -1,8 +1,7 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
-ControlUp Logon Simulator Failed Event Alerts by Host for the last {{ time_delta | timedelta:"{minutes_total} minutes" }}
+{{ tags }}ControlUp Logon Simulator Failed Event Alerts by Host for the last {{ time_delta | timedelta:"{minutes_total} minutes" }}
 {% endblock %}
 
 {% block html %}

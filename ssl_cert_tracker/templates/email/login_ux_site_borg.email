@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary for the last {{ time_delta | timedelta:"{hours_total} Hours" }}
+{{ tags }}{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary for the last {{ time_delta | timedelta:"{hours_total} Hours" }}
 {% else %}
-{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary by Hour
+{{ tags }}{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary by Hour
 {% endif %}
 {% endblock %}
 

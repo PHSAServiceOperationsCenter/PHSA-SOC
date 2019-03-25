@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }}{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
-{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary
+{{ tags }}{{ site }}, {{ host_name }} Failed ControlUp Logon Simulator Events Summary
 {% endif %}
 {% endblock %}
 

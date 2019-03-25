@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ tags }}ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
-ControlUp Logon Simulator Hosts that are considered dead
+{{ tags }}ControlUp Logon Simulator Hosts that are considered dead
 {% endif %}
 {% endblock %}
 

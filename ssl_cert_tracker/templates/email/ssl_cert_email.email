@@ -1,9 +1,8 @@
 {% block subject %}
-{{ tags }}
 {% if expires_in_less_than %}
-SSL Certificates that will expire in less than {{expires_in_less_than}} days Report as of {{report_date_time|date:"D, M d Y"}}
+{{ tags }}SSL Certificates that will expire in less than {{expires_in_less_than}} days Report as of {{report_date_time|date:"D, M d Y"}}
 {% else %}
-SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+{{ tags }}SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
 {% endif %}
 {% endblock %}
 

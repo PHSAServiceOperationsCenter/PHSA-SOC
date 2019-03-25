@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ tags }}Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
-Citrix App Server Hosts that are considered dead
+{{ tags }}Citrix App Server Hosts that are considered dead
 {% endif %}
 {% endblock %}
 

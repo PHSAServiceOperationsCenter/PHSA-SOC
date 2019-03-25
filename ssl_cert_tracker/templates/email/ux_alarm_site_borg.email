@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
+{{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
 {% else %}
-{{ site }}, {{ host_name }} Citrix User Experience Alerts
+{{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts
 {% endif %}
 {% endblock %}
 

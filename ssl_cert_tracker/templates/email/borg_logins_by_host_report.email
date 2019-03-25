@@ -1,11 +1,10 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }}
 {% if time_delta %}
-ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }}ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
-ControlUp Logon Simulator Event Summary by Host and Hour
+{{ tags }}ControlUp Logon Simulator Event Summary by Host and Hour
 {% endif %}
 {% endblock %}
 

@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-{{ tags }}{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary for the last {{ time_delta | timedelta:"{hours_total} Hours" }}
+{{ tags }}{{ site }}, {{ host_name }} {{ email_subject|default:"a subject was not provided" }} {{ time_delta | timedelta:"{hours_total} Hours" }}
 {% else %}
-{{ tags }}{{ site }}, {{ host_name }} Citrix Simulator Event and UX Summary by Hour
+{{ tags }}{{ site }}, {{ host_name }} {{ alternate_email_subject|default:"a subject was not provided" }}
 {% endif %}
 {% endblock %}
 

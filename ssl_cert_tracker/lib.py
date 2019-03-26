@@ -370,7 +370,10 @@ class Email():  # pylint: disable=too-few-public-methods
             source_host_name='http://%s:%s' % (socket.getfqdn(),
                                                settings.SERVER_PORT),
             source_host=socket.getfqdn(),
-            tags=self.set_tags())
+            tags=self.set_tags(),
+            email_subject=self.subscription_obj.email_subject,
+            alternate_email_subject=self.subscription_obj.
+            alternate_email_subject)
 
         if extra_context:
             self.context.update(**extra_context)

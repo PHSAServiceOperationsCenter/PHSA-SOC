@@ -431,6 +431,14 @@ class Subscription(BaseModel):
     template_prefix = models.CharField(
         'email template prefix', max_length=64, blank=False, null=False,
         default='email/')
+    email_subject = models.TextField(
+        'email subject fragment', blank=True, null=True,
+        help_text=('this is the conditional subject of the email template.'
+                   ' it is normally just a fragment that will augmented'
+                   ' by other variables'))
+    alternate_email_subject = models.TextField(
+        'fallback email subject', blank=True, null=True,
+        help_text='this is the non conditional subject of the email template.')
     headers = models.TextField(
         'data headers', blank=False, null=False,
         default='common_name,expires_in,not_before,not_after')

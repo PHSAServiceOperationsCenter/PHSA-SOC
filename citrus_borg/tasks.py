@@ -159,7 +159,8 @@ def expire_events():
     if get_preference('citrusborgevents__delete_expired_events'):
         WinlogEvent.objects.filter(is_expired=True).all().delete()
         return 'deleted %s events accumulated over the last %s' % (
-            expired, get_preference('citrusborgevents__expire_events_older_than'))
+            expired,
+            get_preference('citrusborgevents__expire_events_older_than'))
 
     return 'expired %s events accumulated over the last %s' % (
         expired, get_preference('citrusborgevents__expire_events_older_than'))

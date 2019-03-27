@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-{{ tags }}Failed ControlUp Logon Simulator Events Summary for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }} {{ email_subject|default:"a subject was not provided" }} {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
-{{ tags }}Failed ControlUp Logon Simulator Events Summary
+{{ tags }} {{ alternate_email_subject|default:"a subject was not provided" }}
 {% endif %}
 {% endblock %}
 

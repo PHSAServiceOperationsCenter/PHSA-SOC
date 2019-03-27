@@ -453,11 +453,11 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     if site:
         queryset = queryset.filter(site__site__iexact=site)
+        queryset = queryset.values('site__site')
 
     if host_name:
         queryset = queryset.filter(host_name__iexact=host_name)
-
-    queryset = queryset.values('site__site').values('host_name')
+        queryset = queryset.values('host_name')
 
     queryset = _group_by(queryset, group_by)
 
@@ -468,7 +468,9 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         queryset = _include_ux_stats(queryset)
 
     if logon_alert_threshold:
-        queryset = queryset.filter(failed_events__gt=logon_alert_threshold)
+        queryset = queryset.filter(
+            Q(failed_events__gte=logon_alert_threshold) |
+            Q(undetermined_events__gte=logon_alert_threshold))
 
     if ux_alert_threshold:
         queryset = queryset.\
@@ -644,16 +646,12 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         raise TypeError(
             '%s type invalid for %s' % (type(time_delta), time_delta))
 
-    queryset = WinlogEvent.objects.\
-        filter(created_on__gt=now - time_delta).\
-        exclude(event_state__iexact='successful')
+    queryset = _by_site_host_hour(
+        now=now, time_delta=time_delta, site=site, host_name=host_name,
+        logon_alert_threshold=1, ux_alert_threshold=None,
+        include_event_counts=True, include_ux_stats=False,
+        group_by=GroupBy.NONE)
 
-    if site:
-        queryset = queryset.filter(source_host__site__site__iexact=site)
-
-    if host_name:
-        queryset = queryset.filter(source_host__host_name__iexact=host_name)
-
-    queryset = queryset.order_by('-created_on')
+    queryset = queryset.order_by('-winlogevent__created_on')
 
     return queryset

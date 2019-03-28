@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }}ControlUp Logon Simulator Event Summary by Host and Hour for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
-ControlUp Logon Simulator Event Summary by Host and Hour
+{{ tags }}ControlUp Logon Simulator Event Summary by Host and Hour
 {% endif %}
 {% endblock %}
 
@@ -49,4 +49,5 @@ Could not find any logon events over the last
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

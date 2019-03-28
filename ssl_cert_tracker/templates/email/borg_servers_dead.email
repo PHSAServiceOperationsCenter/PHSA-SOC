@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ tags }}Citrix App Server Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
-Citrix App Server Hosts that are considered dead
+{{ tags }}Citrix App Server Hosts that are considered dead
 {% endif %}
 {% endblock %}
 
@@ -60,4 +60,5 @@ the Web interface opened by the link above.</p>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

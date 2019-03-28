@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
+{{ tags }}ControlUp Logon Simulator Hosts that have not been seen in the last {{ time_delta|timedelta:"{days} days, {hours} hours and {minutes} minutes" }}
 {% else %}
-ControlUp Logon Simulator Hosts that are considered dead
+{{ tags }}ControlUp Logon Simulator Hosts that are considered dead
 {% endif %}
 {% endblock %}
 
@@ -59,4 +59,5 @@ at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_chang
 <div><p>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
+<p>tags: {{ tags }}</p>
 {% endblock %}

@@ -2,9 +2,9 @@
 
 {% block subject %}
 {% if time_delta %}
-{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
+{{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
 {% else %}
-{{ site }}, {{ host_name }} Citrix User Experience Alerts
+{{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts
 {% endif %}
 {% endblock %}
 
@@ -71,4 +71,5 @@ acceptable over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </p></div>
 
+<p>tags: {{ tags }}</p>
 {% endblock %}

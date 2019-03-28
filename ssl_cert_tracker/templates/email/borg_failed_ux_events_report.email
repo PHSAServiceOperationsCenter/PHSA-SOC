@@ -2,7 +2,7 @@
 
 {% block subject %}
 {% if time_delta %}
-{{ tags }} {{ email_subject|default:"a subject was not provided" }} {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }} {{ email_subject|default:"a subject was not provided" }} {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} for the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% else %}
 {{ tags }} {{ alternate_email_subject|default:"a subject was not provided" }}
 {% endif %}
@@ -11,7 +11,7 @@
 {% block html %}
 {% if data %}
 <h3>
-Failed Logon Events Over the Last 
+Response Time Logon Events Longer than {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} Over the Last 
 {{ time_delta|timedelta:"{hours_total} Hours" }}
 </h3>
 <div><p>
@@ -40,7 +40,7 @@ Failed Logon Events Over the Last
 {% endif %}
 {% elif not data %}
 <div><h3>
-No Failed Logon Events Over the Last 
+No Response Time Logon Events Longer than {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} Over the Last 
 {{ time_delta|timedelta:"{hours_total} Hours" }}
 </h3></div>
 {% endif %}

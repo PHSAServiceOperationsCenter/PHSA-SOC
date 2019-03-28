@@ -271,10 +271,15 @@ def _include_event_counts(queryset):
     """
     annotate a queryset with the counts for event states
     """
-    return queryset.annotate(
-        failed_events=Count(
-            'winlogevent__event_state',
-            filter=Q(winlogevent__event_state__iexact='failed'))).\
+    return queryset.\
+        annotate(
+            failed_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='failed'))).\
+        annotate(
+            undetermined_events=Count(
+                'winlogevent__event_state',
+                filter=Q(winlogevent__event_state__iexact='undetermined'))).\
         annotate(
             successful_events=Count(
                 'winlogevent__event_state',
@@ -448,11 +453,11 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     if site:
         queryset = queryset.filter(site__site__iexact=site)
+        queryset = queryset.values('site__site')
 
     if host_name:
         queryset = queryset.filter(host_name__iexact=host_name)
-
-    queryset = queryset.values('site__site').values('host_name')
+        queryset = queryset.values('host_name')
 
     queryset = _group_by(queryset, group_by)
 
@@ -463,13 +468,18 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         queryset = _include_ux_stats(queryset)
 
     if logon_alert_threshold:
-        queryset = queryset.filter(failed_events__gt=logon_alert_threshold)
+        queryset = queryset.filter(
+            Q(failed_events__gte=logon_alert_threshold) |
+            Q(undetermined_events__gte=logon_alert_threshold))
 
     if ux_alert_threshold:
         queryset = queryset.\
             filter(
-                Q(avg_storefront_connection_time__gt=ux_alert_threshold) |
-                Q(avg_logon_time__gt=ux_alert_threshold))
+                Q(avg_storefront_connection_time__gte=ux_alert_threshold) |
+                Q(avg_logon_time__gte=ux_alert_threshold) |
+                Q(avg_receiver_startup_time__gte=ux_alert_threshold) |
+                Q(avg_connection_achieved_time__gte=ux_alert_threshold) |
+                Q(avg_receiver_startup_time__gte=ux_alert_threshold))
 
     queryset = queryset.\
         annotate(measured_now=Value(now, output_field=CharField())).\
@@ -639,16 +649,54 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         raise TypeError(
             '%s type invalid for %s' % (type(time_delta), time_delta))
 
-    queryset = WinlogEvent.objects.\
-        filter(created_on__gt=now - time_delta).\
-        exclude(event_state__iexact='successful')
+    queryset = _by_site_host_hour(
+        now=now, time_delta=time_delta, site=site, host_name=host_name,
+        logon_alert_threshold=1, ux_alert_threshold=None,
+        include_event_counts=True, include_ux_stats=False,
+        group_by=GroupBy.NONE)
 
-    if site:
-        queryset = queryset.filter(source_host__site__site__iexact=site)
+    queryset = queryset.order_by('-winlogevent__created_on')
 
-    if host_name:
-        queryset = queryset.filter(source_host__host_name__iexact=host_name)
+    return queryset
 
-    queryset = queryset.order_by('-created_on')
+
+def get_failed_ux_events(
+        now=None, time_delta=None, site=None, host_name=None,
+        ux_alert_threshold=None):
+    """
+    get response time (ux i.e. user experience) events
+
+    for the purposes of ux,  we define a user experience event as a
+    response time larger than an arbitrary value
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = get_preference('citrusborgux__ux_reporting_period')
+
+    if ux_alert_threshold is None:
+        ux_alert_threshold = get_preference(
+            'citrusborgux__ux_alert_threshold')
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
+
+    if not isinstance(ux_alert_threshold, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(ux_alert_threshold),
+                                        ux_alert_threshold))
+
+    queryset = _by_site_host_hour(
+        now=now, time_delta=time_delta, site=site, host_name=host_name,
+        logon_alert_threshold=None, ux_alert_threshold=ux_alert_threshold,
+        include_event_counts=False, include_ux_stats=True,
+        group_by=GroupBy.NONE)
+
+    queryset = queryset.order_by('-winlogevent__created_on')
 
     return queryset

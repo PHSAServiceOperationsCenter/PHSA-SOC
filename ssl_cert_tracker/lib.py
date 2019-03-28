@@ -369,7 +369,11 @@ class Email():  # pylint: disable=too-few-public-methods
             headers=self.headers, data=self.prepared_data,
             source_host_name='http://%s:%s' % (socket.getfqdn(),
                                                settings.SERVER_PORT),
-            source_host=socket.getfqdn())
+            source_host=socket.getfqdn(),
+            tags=self.set_tags(),
+            email_subject=self.subscription_obj.email_subject,
+            alternate_email_subject=self.subscription_obj.
+            alternate_email_subject)
 
         if extra_context:
             self.context.update(**extra_context)
@@ -385,6 +389,27 @@ class Email():  # pylint: disable=too-few-public-methods
         except Exception as err:
             self.logger.error(str(err))
             raise err
+
+    def set_tags(self):
+        """
+        create the values for a {{ tags }} element in the template
+
+        in case we have subscriptions that have a tags attribute (something
+        that will happend in uhuru), add all the tags from the
+        subscription instance; tags is a CharField and uses comma to
+        separate between tags
+
+        we also prefix everything with a [DEBUG] tag if this is a
+        DEBUG deployment and we always include a [$host name] tag
+        """
+        tags = '[DEBUG]' if settings.DEBUG else None
+        tags += '[{}]'.format(socket.getfqdn())
+
+        if hasattr(self.subscription_obj, 'tags'):
+            for tag in tags.split(','):
+                tags += '[{}]'.format(tag)
+
+        return tags
 
     def send(self):
         """

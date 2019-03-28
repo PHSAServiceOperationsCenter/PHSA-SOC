@@ -23,6 +23,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
+import pathlib
 
 from django.utils import timezone
 from kombu import Queue, Exchange
@@ -248,6 +249,10 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
+
+CSV_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'csv/')
+pathlib.Path(CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+# note that this will not work in Python <3.5
 
 # orion logins
 ORION_HOSTNAME = 'orion.vch.ca'

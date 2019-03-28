@@ -20,6 +20,7 @@ import socket
 from enum import Enum
 from logging import getLogger
 from smtplib import SMTPConnectError
+from djqscsv import write_csv
 
 from django.apps import apps
 from django.conf import settings
@@ -318,9 +319,26 @@ class Email():  # pylint: disable=too-few-public-methods
 
         return headers
 
+    def prepare_csv(self):
+        """
+        generate csv file if possible
+        """
+        if not self.add_csv:
+            return
+
+        filename = '{}{:%Y_%m_%d-%H:%M}_{}.csv'.format(
+            settings.CSV_MEDIA_ROOT,
+            timezone.localtime(value=timezone.now()),
+            self.subscription_obj.email_subject)
+
+        with open(filename, 'wb') as csv_file:
+            write_csv(self.data, csv_file, field_header_map=self.headers)
+
+        self.csv_file = filename
+
     def __init__(
-            self,
-            data=None, subscription_obj=None, logger=None, **extra_context):
+            self, data=None, subscription_obj=None, logger=None,
+            add_csv=True, **extra_context):
         """
         :arg data: a django queryset
                    the constructor will prepare the template context and pass
@@ -335,10 +353,18 @@ class Email():  # pylint: disable=too-few-public-methods
                                template information and pure SMTP data (like
                                email addresses and stuff)
 
-        :arg loggeer: a logging.logger object
+        :arg logger: a logging.logger object
+
+        :arg bool add_csv: generate a csv file from :arg data: and
+                              attach it to the email. if the file is not
+                              generated, log the problem and send the email
+                              without attachments
 
         :arg dict extra_context: just in case one needs more data
         """
+        self.add_csv = add_csv
+        self.csv_file = None
+
         if logger is None:
             self.logger = LOG
         else:
@@ -389,6 +415,9 @@ class Email():  # pylint: disable=too-few-public-methods
         except Exception as err:
             self.logger.error(str(err))
             raise err
+
+        if self.csv_file:
+            self.email.attach_file(self.csv_file)
 
     def set_tags(self):
         """

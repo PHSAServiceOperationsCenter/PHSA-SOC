@@ -62,19 +62,29 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     the one ip address that resolves to the :arg:`<host_name>`
 
     """
+    def _gethostbyname():
+        """
+        the contortions below are to deal with multiple ip addresses
+        as returned by winlogbeat
+
+        but sometimes one needs to KISS the principle
+        """
+        try:
+            return socket.gethostbyname(host_name)
+        except:  # pylint: disable=W0702
+            # or just give up like a little wimp
+            return None
+
     if host_name is None:
         raise ValueError('host_name argument is mandatory')
 
     host_name = str(host_name)
 
     if ip_list is None:
-        raise ValueError('ip_list argument is mandatory')
+        return _gethostbyname()
 
     if not isinstance(ip_list, (list, tuple)):
-        raise TypeError(
-            'bad type %s for %s. must be a list or tuple'
-            % (type(ip_list), ip_list)
-        )
+        return _gethostbyname()
 
     ip_address = None
     for _ip_address in ip_list:
@@ -90,13 +100,7 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     if ip_address:
         return ip_address
 
-    # the contorsions above are to deal with multiple ip addresses
-    # but sometimes one needs to send for a bigger hammer
-    try:
-        return socket.gethostbyname(host_name)
-    except:  # pylint: disable=W0702
-        # or just give up like a little wimp
-        return None
+    return _gethostbyname()
 
 
 def process_borg(body=None):

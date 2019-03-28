@@ -1,0 +1,52 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if time_delta %}
+{{ tags }} {{ email_subject|default:"a subject was not provided" }} {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} for the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{% else %}
+{{ tags }} {{ alternate_email_subject|default:"a subject was not provided" }}
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h3>
+Response Time Logon Events Longer than {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} Over the Last 
+{{ time_delta|timedelta:"{hours_total} Hours" }}
+</h3>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><h3>
+No Response Time Logon Events Longer than {{ ux_alert_threshold | timedelta:"{seconds_total} seconds" }} Over the Last 
+{{ time_delta|timedelta:"{hours_total} Hours" }}
+</h3></div>
+{% endif %}
+<div><h5>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</h5></div>
+
+<p>tags: {{ tags }}</p>
+{% endblock %}

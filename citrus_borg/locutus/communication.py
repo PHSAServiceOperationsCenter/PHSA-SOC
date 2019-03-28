@@ -475,8 +475,11 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
     if ux_alert_threshold:
         queryset = queryset.\
             filter(
-                Q(avg_storefront_connection_time__gt=ux_alert_threshold) |
-                Q(avg_logon_time__gt=ux_alert_threshold))
+                Q(avg_storefront_connection_time__gte=ux_alert_threshold) |
+                Q(avg_logon_time__gte=ux_alert_threshold) |
+                Q(avg_receiver_startup_time__gte=ux_alert_threshold) |
+                Q(avg_connection_achieved_time__gte=ux_alert_threshold) |
+                Q(avg_receiver_startup_time__gte=ux_alert_threshold))
 
     queryset = queryset.\
         annotate(measured_now=Value(now, output_field=CharField())).\
@@ -650,6 +653,48 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         now=now, time_delta=time_delta, site=site, host_name=host_name,
         logon_alert_threshold=1, ux_alert_threshold=None,
         include_event_counts=True, include_ux_stats=False,
+        group_by=GroupBy.NONE)
+
+    queryset = queryset.order_by('-winlogevent__created_on')
+
+    return queryset
+
+
+def get_failed_ux_events(
+        now=None, time_delta=None, site=None, host_name=None,
+        ux_alert_threshold=None):
+    """
+    get response time (ux i.e. user experience) events
+
+    for the purposes of ux,  we define a user experience event as a
+    response time larger than an arbitrary value
+    """
+    if now is None:
+        now = timezone.now()
+
+    if time_delta is None:
+        time_delta = get_preference('citrusborgux__ux_reporting_period')
+
+    if ux_alert_threshold is None:
+        ux_alert_threshold = get_preference(
+            'citrusborgux__ux_alert_threshold')
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(time_delta), time_delta))
+
+    if not isinstance(ux_alert_threshold, datetime.timedelta):
+        raise TypeError(
+            '%s type invalid for %s' % (type(ux_alert_threshold),
+                                        ux_alert_threshold))
+
+    queryset = _by_site_host_hour(
+        now=now, time_delta=time_delta, site=site, host_name=host_name,
+        logon_alert_threshold=None, ux_alert_threshold=ux_alert_threshold,
+        include_event_counts=False, include_ux_stats=True,
         group_by=GroupBy.NONE)
 
     queryset = queryset.order_by('-winlogevent__created_on')

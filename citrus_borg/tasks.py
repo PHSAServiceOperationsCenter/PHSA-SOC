@@ -29,6 +29,7 @@ from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
     login_states_by_site_host_hour, raise_ux_alarm, get_failed_events,
+    get_failed_ux_events,
 )
 from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
@@ -697,6 +698,51 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
             data=data,
             subscription=_get_subscription('Citrix Failed Logins Report'),
             logger=LOGGER, time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def email_failed_ux_report(now=None, send_no_news=False,
+                           ux_threshold_seconds=None, **dead_for):
+    """
+    send out the report with all known failed ux events i.e.
+    all logon subevents that took longer than expected
+    """
+    if not dead_for:
+        time_delta = get_preference('citrusborgux__ux_reporting_period')
+    else:
+        time_delta = _get_timedelta(**dead_for)
+
+    if ux_threshold_seconds is None:
+        ux_alert_threshold = get_preference(
+            'citrusborgux__ux_alert_threshold')
+    else:
+        ux_alert_threshold = _get_timedelta(seconds=ux_threshold_seconds)
+
+    now = _get_now(now)
+
+    data = get_failed_ux_events(
+        now=now, time_delta=time_delta, ux_alert_threshold=ux_alert_threshold)
+
+    if not data and send_no_news:
+        return (
+            'there were no response time logon event  components'
+            ' longer than {:%S} seconds between'
+            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
+            format(ux_alert_threshold,
+                   timezone.localtime(value=now),
+                   timezone.localtime(now - time_delta))
+        )
+
+    try:
+        return _borgs_are_hailing(
+            data=data,
+            subscription=_get_subscription(
+                'Citrix Failed UX Event Components Report'),
+            logger=LOGGER, time_delta=time_delta,
+            ux_alert_threshold=ux_alert_threshold)
     except Exception as error:
         raise error
 

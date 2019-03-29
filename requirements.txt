@@ -29,6 +29,7 @@ django-dynamic-preferences==1.7
 django-grappelli==2.12.1
 django-phonenumber-field==2.1.0
 django-pyodbc-azure==2.1.0.0
+django-queryset-csv==1.0.1
 django-render-block==0.5
 django-rest-framework==0.1.0
 django-simple-history==2.6.0
@@ -116,6 +117,7 @@ tornado==5.1.1
 traitlets==4.3.2
 typed-ast==1.1.1
 typing==3.6.6
+unicodecsv==0.14.1
 urllib3==1.24.1
 uWSGI==2.0.17.1
 uwsgitop==0.11

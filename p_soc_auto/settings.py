@@ -23,6 +23,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
 import os
+import pathlib
 
 from django.utils import timezone
 from kombu import Queue, Exchange
@@ -200,8 +201,8 @@ DATABASES = {
         'USER': 'orion_aux_db_user',
         'PASSWORD': 'orion_aux_db_password',
         #	'SA_PASSWORD': "orion_aux_db_password123',
-        'HOST': '10.248.211.70',
-        #    'HOST': '10.66.6.9',
+        # 'HOST': '10.248.211.70',
+        'HOST': '10.66.6.9',
         'PORT': '',
 
         'OPTIONS': {
@@ -248,6 +249,10 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 MEDIA_URL = '/media/'
+
+CSV_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'csv/')
+pathlib.Path(CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+# note that this will not work in Python <3.5
 
 # orion logins
 ORION_HOSTNAME = 'orion.vch.ca'
@@ -305,19 +310,25 @@ NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = '/tmp'
+
+# ===========================================================================
+# email settings for PHSA Exchange relay
 EMAIL_HOST = 'smtp.healthbc.org'
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
+# ===========================================================================
+
 DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
 SUB_EMAIL_TYPE = 0
 ESC_EMAIL_TYPE = 1
 SUB_ESC_EMAIL_TYPE = 2
 
-# =========================================================================
+#=========================================================================
+# # ==========================================================================
 # # email settings for gmail
 # # these will not work from 10.1.80.0
 # EMAIL_HOST = 'smtp.gmail.com'
@@ -326,7 +337,8 @@ SUB_ESC_EMAIL_TYPE = 2
 # EMAIL_PORT = 587
 # EMAIL_HOST_USER = 'phsadev@gmail.com'
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
-# =========================================================================
+# # ===========================================================================
+#=========================================================================
 
 # broadcast only notifications of these levels
 NOTIFICATION_BROADCAST_LEVELS = []

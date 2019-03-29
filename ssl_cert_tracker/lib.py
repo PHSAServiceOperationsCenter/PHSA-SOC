@@ -326,13 +326,23 @@ class Email():  # pylint: disable=too-few-public-methods
         if not self.add_csv:
             return
 
-        filename = '{}{:%Y_%m_%d-%H:%M}_{}.csv'.format(
+        if not self.data:
+            # there is no spoon; don't try to bend it
+            return
+
+        filename = 'no_name'
+        if self.subscription_obj.email_subject:
+            filename = self.subscription_obj.email_subject.\
+                replace('in less than', 'soon').\
+                replace(' ', '_')
+
+        filename = '{}{:%Y_%m_%d-%H_%M_%S}_{}.csv'.format(
             settings.CSV_MEDIA_ROOT,
-            timezone.localtime(value=timezone.now()),
-            self.subscription_obj.email_subject)
+            timezone.localtime(value=timezone.now()), filename)
 
         with open(filename, 'wb') as csv_file:
-            write_csv(self.data, csv_file, field_header_map=self.headers)
+            write_csv(self.data.values(*self.headers.keys()),
+                      csv_file, field_header_map=self.headers)
 
         self.csv_file = filename
 
@@ -375,7 +385,6 @@ class Email():  # pylint: disable=too-few-public-methods
             raise NoDataEmailError('no data was provided for the email')
 
         self.data = data
-
         if subscription_obj is None:
             self.logger.error('no subscription was provided for the email')
             raise NoSubscriptionEmailError(
@@ -384,6 +393,8 @@ class Email():  # pylint: disable=too-few-public-methods
         self.subscription_obj = subscription_obj
 
         self.headers = self._get_headers_with_titles()
+
+        self.prepare_csv()
 
         self.prepared_data = []
         for data_item in data.values(*self.headers.keys()):

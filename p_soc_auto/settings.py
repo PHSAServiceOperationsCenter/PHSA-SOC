@@ -201,8 +201,8 @@ DATABASES = {
         'USER': 'orion_aux_db_user',
         'PASSWORD': 'orion_aux_db_password',
         #	'SA_PASSWORD': "orion_aux_db_password123',
-        # 'HOST': '10.248.211.70',
-        'HOST': '10.66.6.9',
+        'HOST': '10.248.211.70',
+        # 'HOST': '10.66.6.9',
         'PORT': '',
 
         'OPTIONS': {

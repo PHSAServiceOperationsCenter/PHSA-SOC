@@ -83,6 +83,7 @@ class EmailFromWhenDebug(StringPreference):
     verbose_name = _('originating email address when in DEBUG mode').title()
 
 
+@global_preferences_registry.register
 class EmailToWhenDebug(StringPreference):
     """
     Use this when sending emails in the debug mode as the from_email
@@ -91,7 +92,7 @@ class EmailToWhenDebug(StringPreference):
     name = 'to_emails'
     default = 'serban.teodorescu@phsa.ca,james.reilly@phsa.ca'
     required = True
-    verbose_name = _('destination emails address when in DEBUG mode').title()
+    verbose_name = _('destination email addresses when in DEBUG mode').title()
 
 
 @global_preferences_registry.register

@@ -69,7 +69,7 @@ class OrionDataError(Exception):
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_ssl_report(app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
+def email_ssl_report():
     """
     task to send ssl reports via email
 
@@ -82,7 +82,7 @@ def email_ssl_report(app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
     """
     try:
         return _email_report(
-            data=expires_in(app_label, model_name),
+            data=expires_in(),
             subscription_obj=Subscription.objects.get(
                 subscription='SSl Report'), logger=LOG)
     except Exception as err:
@@ -92,15 +92,14 @@ def email_ssl_report(app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_ssl_expires_in_days_report(  # pylint: disable=invalid-name
-        lt_days, app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
+def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
     """
     task to send ssl reports about certificates that expire soon via email
 
     """
     try:
         return _email_report(
-            data=expires_in(app_label, model_name, lt_days),
+            data=expires_in(lt_days=lt_days),
             subscription_obj=Subscription.objects.get(
                 subscription='SSl Report'), logger=LOG,
             expires_in_less_than=lt_days)
@@ -111,15 +110,14 @@ def email_ssl_expires_in_days_report(  # pylint: disable=invalid-name
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_expired_ssl_report(
-        app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
+def email_expired_ssl_report():
     """
     task to send expired ssl reports via email
 
     """
     try:
         return _email_report(
-            data=has_expired(app_label, model_name),
+            data=has_expired(),
             subscription_obj=Subscription.objects.get(
                 subscription='Expired SSl Report'), logger=LOG)
     except Exception as err:
@@ -129,15 +127,14 @@ def email_expired_ssl_report(
 @shared_task(
     queue='ssl', rate_limit='1/s', max_retries=3,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_invalid_ssl_report(
-        app_label='ssl_cert_tracker', model_name='nmapcertsdata'):
+def email_invalid_ssl_report():
     """
     task to send expired ssl reports via email
 
     """
     try:
         return _email_report(
-            data=is_not_yet_valid(app_label, model_name),
+            data=is_not_yet_valid(),
             subscription_obj=Subscription.objects.get(
                 subscription='Invalid SSl Report'), logger=LOG)
     except Exception as err:

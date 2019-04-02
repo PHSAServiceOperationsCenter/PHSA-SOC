@@ -424,7 +424,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
                 template_prefix=subscription_obj.template_prefix,
                 from_email=get_preference('emailprefs__from_email')
                 if settings.DEBUG else subscription_obj.from_email,
-                to=get_preference('emailprefs__from_email').split(',')
+                to=get_preference('emailprefs__to_emails').split(',')
                 if settings.DEBUG
                 else subscription_obj.emails_list.split(','),
                 context=self.context, create_link=True)

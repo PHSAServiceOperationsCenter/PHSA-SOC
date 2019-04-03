@@ -27,13 +27,11 @@ from libnmap.process import NmapProcess
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
 
-from .db_helper import insert_into_certs_data
 from .lib import Email, expires_in, has_expired, is_not_yet_valid
 from .models import Subscription, SslProbePort, SslCertificate
 from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
 )
-from .utils import process_xml_cert
 
 
 LOG = get_task_logger(__name__)
@@ -154,68 +152,6 @@ def _email_report(
         return email_report.send()
     except Exception as err:
         raise err
-
-
-@shared_task(
-    rate_limit='0.5/s', queue='nmap', autoretry_for=(NmapError,),
-    max_retries=3, retry_backoff=True)
-def go_node(node_id, node_address):
-    """
-    collect SSL certificate data as returned by nmap and save it to the
-    database
-    """
-    try:
-        nmap_task = NmapProcess(node_address, options=SSL_PROBE_OPTIONS)
-        nmap_task.run()
-    except MaxRetriesExceededError as error:
-        LOG.error(
-            'nmap retry limit exceeded for node address %s', node_address)
-        raise error
-    except Exception as ex:
-        raise NmapError(
-            'nmap error for node address %s: %s' % (node_address, str(ex)))
-
-    try:
-        json = process_xml_cert(
-            node_id, xml.dom.minidom.parseString(nmap_task.stdout))
-    except Exception as error:  # pylint: disable=broad-except
-        LOG.error(
-            'cannot process nmap XML report for node address %s: %s',
-            node_address, str(error))
-
-    if json["md5"] is None:
-        LOG.error(
-            'could not retrieve SSL certificate from node address %s',
-            node_address)
-        return (
-            'could not retrieve SSL certificate from node address %s'
-            % node_address)
-
-    try:
-        insert_into_certs_data(json)
-    except Exception as error:
-        raise SSLDatabaseError(
-            'cannot insert/update SSL information collected from node'
-            ' address %s: %s' % (node_address, str(error)))
-
-    return 'successful SSL nmap probe on node address %s' % node_address
-
-
-@shared_task(queue='shared')
-def getnmapdata():
-    """
-    get the orion node information that will be used for nmap probes
-
-    """
-    nodes = OrionSslNode.nodes()
-    if not nodes:
-        raise OrionDataError(
-            'there are no Orion nodes available for SSL nmap probing')
-
-    for node in nodes:
-        go_node.delay(node.id, node.ip_address)
-
-    return 'queued SSL nmap probes for %s Orion nodes' % len(nodes)
 
 
 @shared_task(task_serializer='pickle', rate_limit='10/s', queue='shared')

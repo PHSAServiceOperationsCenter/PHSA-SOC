@@ -8,28 +8,60 @@ def update_subscriptions(apps, schema_editor):
 
     subscriptions = [
         {
-            'enabled': True,
             'subscription': 'SSL Report',
-            'emails_list':
-                'TSCST-Support@hssbc.ca,TSCST-Shiftmanager@hssbc.ca',
+            'enabled': True,
+            'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
             'template_name': 'ssl_cert_email',
             'template_prefix': 'email/',
             'email_subject': '',
             'alternate_email_subject': '',
-            'headers':
-                ('common_name,issuer__is_trusted,issuer__common_name,'
-                 'port__port,hostnames,expires_in_x_days,not_before,not_after'),
+            'headers': (
+                'common_name,issuer__is_trusted,issuer__common_name,'
+                'port__port,hostnames,expires_in_x_days,not_before,not_after'),
+        },
+        {
+            'subscription': 'Expired SSL Report',
+            'enabled': True,
+            'emails_list': to_emails,
+            'from_email': 'TSCST-Support@hssbc.ca',
+            'template_dir': 'ssl_cert_tracker/templates',
+            'template_name': 'ssl_cert_email',
+            'template_prefix': 'email/',
+            'email_subject': '',
+            'alternate_email_subject': '',
+            'headers': (
+                'common_name,issuer__is_trusted,issuer__common_name,'
+                'port__port,hostnames,has_expired_x_days_ago,'
+                'not_before,not_after'),
+        },
+        {
+            'subscription': 'Invalid SSL Report', 'enabled': True,
+            'emails_list': to_emails,
+            'from_email': 'TSCST-Support@hssbc.ca',
+            'template_dir': 'ssl_cert_tracker/templates',
+            'template_name': 'ssl_cert_email',
+            'template_prefix': 'email/',
+            'email_subject': '',
+            'alternate_email_subject': '',
+            'headers': (
+                'common_name,issuer__is_trusted,issuer__common_name,'
+                'port__port,hostnames,will_become_valid_in_x_days,'
+                'not_before,not_after'),
         },
     ]
+
     subscription_model = apps.get_model('ssl_cert_tracker', 'subscription')
 
     subscription_model.objects.filter(subscription__icontains='ssl').\
         filter(subscription__icontains=', enhanced').all().delete()
 
-    subscription_model.objects.filter(
-        subscription__icontains='ssl').update(emails_list=to_emails)
+    for subscription in subscriptions:
+        subscription_instance = subscription_model.objects.filter(
+            subscription=subscription.get('subscription'))
+        subscription.pop('subscription')
+        subscription_instance.update(**subscription)
 
 
 class Migration(migrations.Migration):
@@ -39,4 +71,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(update_subscriptions,
+                             reverse_code=migrations.RunPython.noop)
     ]

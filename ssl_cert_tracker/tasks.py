@@ -119,7 +119,7 @@ def email_expired_ssl_report():
         return _email_report(
             data=has_expired(),
             subscription_obj=Subscription.objects.get(
-                subscription='Expired SSl Report'), logger=LOG)
+                subscription='Expired SSl Report'), logger=LOG, expired=True)
     except Exception as err:
         raise err
 
@@ -136,7 +136,7 @@ def email_invalid_ssl_report():
         return _email_report(
             data=is_not_yet_valid(),
             subscription_obj=Subscription.objects.get(
-                subscription='Invalid SSl Report'), logger=LOG)
+                subscription='Invalid SSl Report'), logger=LOG, invalid=True)
     except Exception as err:
         raise err
 

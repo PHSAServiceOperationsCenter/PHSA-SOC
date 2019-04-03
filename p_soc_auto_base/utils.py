@@ -15,6 +15,7 @@ utility classes and functions for the p_soc_auto project
 :update:    Feb. 1, 2019
 
 """
+from django.utils import timezone
 
 
 def remove_duplicates(sequence=None):
@@ -77,3 +78,14 @@ def get_pk_list(queryset, pk_field_name='id'):
     :returns: a ``list`` of primary key values
     """
     return list(queryset.values_list(pk_field_name, flat=True))
+
+
+def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
+    """
+    make datetime objects to timezone aware if needed
+    """
+    if timezone.is_aware(datetime_input):
+        return datetime_input
+
+    return timezone.make_aware(
+        datetime_input, timezone=use_timezone, is_dst=is_dst)

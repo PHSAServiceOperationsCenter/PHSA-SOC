@@ -1,8 +1,12 @@
 {% block subject %}
 {% if expires_in_less_than %}
-{{ tags }}SSL Certificates that will expire in less than {{expires_in_less_than}} days Report as of {{report_date_time|date:"D, M d Y"}}
+{{ tags }}SSL Certificates that will expire in less than {{expires_in_less_than}} days (report as of {{report_date_time|date:"D, M d Y"}})
+{% elif expired %}
+{{ tags }}Expired SSL Certificates (report as of {{report_date_time|date:"D, M d Y"}})
+{% elif invalid %}
+{{tags}}Not yet valid SSL Certificates (report as of {{report_date_time|date:"D, M d Y"}})
 {% else %}
-{{ tags }}SSL Certificates Report as of {{report_date_time|date:"D, M d Y"}}
+{{ tags }}Valid SSL Certificates (report as of {{report_date_time|date:"D, M d Y"}})
 {% endif %}
 {% endblock %}
 
@@ -27,8 +31,17 @@
 
 <div>
 <p>More details available at
+{% if expired %}
+<a href="{{ source_host_name }}{% url 'admin:ssl_cert_tracker_sslhasexpired_changelist' %}">
+{{ source_host }}{% url 'admin:ssl_cert_tracker_sslhasexpired_changelist' %}</a>
+{% elif invalid %}
+<a href="{{source_host_name}}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}">
+{{ source_host }}{% url 'admin:ssl_cert_tracker_sslnotyetvalid_changelist' %}</a>
+{% else %}
 <a href="{{ source_host_name }}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}">
-{{ source_host }}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}</a></p>
+{{ source_host }}{% url 'admin:ssl_cert_tracker_sslexpiresin_changelist' %}</a>
+{% endif %}
+</p>
 </div>
 
 

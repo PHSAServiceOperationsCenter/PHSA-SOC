@@ -32,6 +32,8 @@ from django.utils import timezone
 
 from templated_email import get_templated_mail
 
+from citrus_borg.dynamic_preferences_registry import get_preference
+
 
 LOG = getLogger('ssl_cert_tracker')
 
@@ -279,7 +281,7 @@ class NoSubscriptionEmailError(Exception):
     """
 
 
-class Email():  # pylint: disable=too-few-public-methods
+class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
     a (more or less) subclass of
     :class:`<django.core.mail.EmailMultiAlternatives>` with a body prepared
@@ -420,8 +422,11 @@ class Email():  # pylint: disable=too-few-public-methods
                 template_name=subscription_obj.template_name,
                 template_dir=subscription_obj.template_dir,
                 template_prefix=subscription_obj.template_prefix,
-                from_email=subscription_obj.from_email,
-                to=subscription_obj.emails_list.split(','),
+                from_email=get_preference('emailprefs__from_email')
+                if settings.DEBUG else subscription_obj.from_email,
+                to=get_preference('emailprefs__to_emails').split(',')
+                if settings.DEBUG
+                else subscription_obj.emails_list.split(','),
                 context=self.context, create_link=True)
         except Exception as err:
             self.logger.error(str(err))

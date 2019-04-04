@@ -66,86 +66,6 @@ class NotYetValid(models.Manager):
         return is_not_yet_valid()
 
 
-class NmapCertsData(BaseModel, models.Model):
-    """
-    SSL certificate data class
-
-    #TODO:DONE: change all xml.dom objects to something readable by humans, see
-    :module:`<ssl_cert_tracker.nmap>`
-
-    #TODO: refactor SSL certificate reports and email alarms to use
-    :class:`<SSLCertificate>`
-    """
-    node_id = models.BigIntegerField(
-        'orion node local id', blank=False, null=False, db_index=True,
-        help_text='this is the primary keyof the orion node instance as'
-        ' defined in the orion_integration application')
-    addresses = models.CharField(max_length=100, blank=False, null=False)
-    not_before = models.DateTimeField(
-        'not valid before', db_index=True, null=False, blank=False,
-        help_text='certificate not valid before this date')
-    not_after = models.DateTimeField(
-        'expires on', db_index=True, null=False, blank=False,
-        help_text='certificate not valid after this date')
-    xml_data = models.TextField()
-    common_name = models.CharField(
-        'common name', db_index=True, max_length=100, blank=False, null=False,
-        help_text='the CN part of an SSL certificate')
-    organization_name = models.CharField(
-        'organization', db_index=True, max_length=100, blank=True, null=True,
-        help_text='the O part of the SSL certificate')
-    country_name = models.CharField(max_length=100, blank=True, null=True)
-    sig_algo = models.CharField(max_length=100, blank=True, null=True)
-    name = models.CharField(max_length=100, blank=True, null=True)
-    bits = models.CharField(max_length=100, blank=True, null=True)
-    md5 = models.CharField(
-        'md5', unique=True, db_index=True, max_length=100, blank=False,
-        null=False)
-    sha1 = models.CharField(
-        'sha1', unique=True, db_index=True, max_length=100, blank=False,
-        null=False)
-    history = HistoricalRecords()
-
-    @property
-    @mark_safe
-    def node_admin_url(self):
-        """
-        admin link to the Orion node where the certificate resides
-        """
-        orion_node = OrionNode.objects.filter(pk=self.node_id)
-        if orion_node.exists():
-            orion_node = orion_node.get()
-            return '<a href="%s">%s on django</>' % (
-                reverse('admin:orion_integration_orionnode_change',
-                        args=(orion_node.id,)),
-                orion_node.node_caption)
-
-        return 'acquired outside the Orion infrastructure'
-
-    @property
-    @mark_safe
-    def orion_node_url(self):
-        """
-        link to the Orion Node object on the Orion server
-        """
-        orion_node = OrionNode.objects.filter(pk=self.node_id)
-        if orion_node.exists():
-            orion_node = orion_node.values('node_caption', 'details_url')[0]
-            return '<a href="%s%s">%s on Orion</>' % (
-                get_preference('orionserverconn__orion_server_url'),
-                orion_node.get('details_url'), orion_node.get('node_caption')
-            )
-
-        return 'acquired outside the Orion infrastructure'
-
-    def __str__(self):
-        return 'O: %s, CN: %s' % (self.organization_name, self.common_name)
-
-    class Meta:
-        verbose_name = 'SSL Certificate'
-        verbose_name_plural = 'SSL Certificates'
-
-
 class SslCertificateBase(BaseModel, models.Model):
     """
     base model for SSL certificate models
@@ -380,7 +300,7 @@ class SslCertificate(SslCertificateBase, models.Model):
         unique_together = (('orion_id', 'port'),)
 
 
-class SslExpiresIn(NmapCertsData):
+class SslExpiresIn(SslCertificate):
     """
     proxy model for valid SSL certificates sorted by expiration date
     """
@@ -392,7 +312,7 @@ class SslExpiresIn(NmapCertsData):
         verbose_name_plural = 'Valid SSL Certificates by expiration date'
 
 
-class SslHasExpired(NmapCertsData):
+class SslHasExpired(SslCertificate):
     """
     proxy model for valid SSL certificates sorted by expiration date
     """
@@ -404,7 +324,7 @@ class SslHasExpired(NmapCertsData):
         verbose_name_plural = 'SSL Certificates: expired'
 
 
-class SslNotYetValid(NmapCertsData):
+class SslNotYetValid(SslCertificate):
     """
     proxy model for not yet valid SSL certificates
    """

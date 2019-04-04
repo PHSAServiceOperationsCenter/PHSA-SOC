@@ -18,6 +18,7 @@ from django.apps import AppConfig
 from django.db.models.signals import post_save
 from django.utils.translation import gettext_lazy as _
 
+
 class NotificationsConfig(AppConfig):
     """
     App class for the notifications django app
@@ -31,5 +32,4 @@ class NotificationsConfig(AppConfig):
         in case of circular imports or app not ready place imports
         in this method
         """
-        import notifications.signals
-
+        pass

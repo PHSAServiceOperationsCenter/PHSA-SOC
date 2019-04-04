@@ -24,7 +24,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from p_soc_auto_base.admin import BaseAdmin
 
 from .models import (
-    NmapCertsData, SslExpiresIn, SslHasExpired, SslNotYetValid, Subscription,
+    SslExpiresIn, SslHasExpired, SslNotYetValid, Subscription,
     SslCertificate, SslCertificateIssuer, SslProbePort,
 )
 
@@ -299,29 +299,14 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
     readonly_fields = ('created_on', 'updated_on', )
 
 
-@admin.register(NmapCertsData)
-class NmapCertsDataAdmin(SSLCertTrackerBaseAdmin, SimpleHistoryAdmin):
-    """
-    SSL certificate data admin pages
-    """
-    list_display = ['common_name', 'organization_name', 'not_before',
-                    'not_after', 'node_admin_url', 'orion_node_url',
-                    'updated_on']
-    history_list_display = ['updated_on', ]
-    list_filter = [('not_after', DateRangeFilter),
-                   ('not_before', DateRangeFilter),
-                   ('updated_on', DateRangeFilter)]
-    search_fields = ['common_name', 'organization_name']
-    readonly_fields = ('node_admin_url', 'orion_node_url', )
-
-
 @admin.register(SslExpiresIn)
-class SslExpiresInAdmin(NmapCertsDataAdmin):
+class SslExpiresInAdmin(SslCertificateAdmin):
     """
     only valid SSL certificates sorted by expiration date ascending
     """
     readonly_fields = ('expires_in_days',)
-    list_display = ['common_name', 'organization_name', 'expires_in_days',
+    list_display = ['common_name', 'organization_name', 'enabled',
+                    'expires_in_days',
                     'not_before', 'not_after', 'node_admin_url',
                     'orion_node_url', 'updated_on']
 
@@ -331,12 +316,12 @@ class SslExpiresInAdmin(NmapCertsDataAdmin):
 
 
 @admin.register(SslHasExpired)
-class SslHasExpiredAdmin(NmapCertsDataAdmin):
+class SslHasExpiredAdmin(SslCertificateAdmin):
     """
     only expired SSL certificates sorted by expiration date ascending
     """
     readonly_fields = ('has_expired_days_ago',)
-    list_display = ['common_name', 'organization_name',
+    list_display = ['common_name', 'organization_name', 'enabled',
                     'has_expired_days_ago',
                     'not_before', 'not_after', 'node_admin_url',
                     'orion_node_url', 'updated_on']
@@ -347,12 +332,12 @@ class SslHasExpiredAdmin(NmapCertsDataAdmin):
 
 
 @admin.register(SslNotYetValid)
-class SslNotYetValiddAdmin(NmapCertsDataAdmin):
+class SslNotYetValiddAdmin(SslCertificateAdmin):
     """
     only not yet valid SSL certificates sorted by expiration date ascending
     """
     readonly_fields = ('valid_in_days',)
-    list_display = ['common_name', 'organization_name',
+    list_display = ['common_name', 'organization_name', 'enabled',
                     'valid_in_days',
                     'not_before', 'not_after', 'node_admin_url',
                     'orion_node_url', 'updated_on']

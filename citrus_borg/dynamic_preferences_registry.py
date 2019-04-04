@@ -64,10 +64,37 @@ orion_probe_defaults = Section(
     'orionprobe',
     verbose_name=_('Filters used for Orion data probes').title())
 
+email_prefs = Section('emailprefs', verbose_name=_(
+    'Email preferences').title())
+
 
 # pylint: enable=C0103
 
 # pylint: disable=too-few-public-methods
+@global_preferences_registry.register
+class EmailFromWhenDebug(StringPreference):
+    """
+    Use this when sending emails in the debug mode as the from_email
+    """
+    section = email_prefs
+    name = 'from_email'
+    default = 'serban.teodorescu@phsa.ca'
+    required = True
+    verbose_name = _('originating email address when in DEBUG mode').title()
+
+
+@global_preferences_registry.register
+class EmailToWhenDebug(StringPreference):
+    """
+    Use this when sending emails in the debug mode as the from_email
+    """
+    section = email_prefs
+    name = 'to_emails'
+    default = 'serban.teodorescu@phsa.ca,james.reilly@phsa.ca'
+    required = True
+    verbose_name = _('destination email addresses when in DEBUG mode').title()
+
+
 @global_preferences_registry.register
 class OrionProbeCSTOnly(BooleanPreference):
     """

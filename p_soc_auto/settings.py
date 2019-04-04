@@ -132,6 +132,7 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     'orion_flash.apps.OrionFlashConfig',
+    'task_journal.apps.TaskJournalConfig',
     'simple_history',
     'dal',
     'dal_select2',

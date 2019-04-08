@@ -27,6 +27,7 @@ django-celery-results==1.0.4
 django-celerybeat-status==0.0.10
 django-dynamic-preferences==1.7
 django-grappelli==2.12.1
+django-mysql==3.0.0.post1
 django-phonenumber-field==2.1.0
 django-pyodbc-azure==2.1.0.0
 django-queryset-csv==1.0.1

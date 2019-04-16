@@ -23,8 +23,12 @@ DEFAULT = {
 
     'domain': 'PHSABC',
     'username': 'serban.teodorescu',
-    'password': '',
+    'password': '$sapte#5340?na#5340',
     'send_to': ['serban.teodorescu@phsa.ca', ],
+    'app_name': 'BorgExchangeMonitor',
+    'log_type': 'Application',
+    'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
+    'msg_dll': None,
 }
 
 

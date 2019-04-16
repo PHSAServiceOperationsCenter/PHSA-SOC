@@ -23,7 +23,7 @@ DEFAULT = {
 
     'domain': 'PHSABC',
     'username': 'serban.teodorescu',
-    'password': '$sapte#5340?na#5340',
+    'password': '',
     'send_to': ['serban.teodorescu@phsa.ca', ],
     'app_name': 'BorgExchangeMonitor',
     'log_type': 'Application',

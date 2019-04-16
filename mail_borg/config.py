@@ -15,26 +15,64 @@ configuration module for exchange monitoring borg bots
 :updated:    apr. 12, 2019
 
 """
-USE_SERVER_SIDE = False
 
-USE_CACHED_CONFIG = True
+USE_SERVER_SIDE = False
+"""
+:var bool USER_SERVER_SIDE:
+
+    load the configuration values from the PHSA automation server?
+"""
 
 DEFAULT = {
-
     'domain': 'PHSABC',
     'username': 'serban.teodorescu',
-    'password': '',
-    'send_to': ['serban.teodorescu@phsa.ca', ],
+    'password': None,
+    'email_addresses': ['serban.teodorescu@phsa.ca', ],
     'app_name': 'BorgExchangeMonitor',
     'log_type': 'Application',
     'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
     'msg_dll': None,
 }
+"""
+:var dict DEFAULT: the default configuration
+
+    don't change the password entry, it will be over written anyway and
+    it will just create a security risk by placing password in github
+
+    msg_dll is the file containing the messages required by the windows
+    events log. if set to ``None``, the default provided by the pywin32
+    python package is provided
+"""
 
 
 def get_config():
+    """
+    return the ``dict`` with the current configuration
+    """
     if USE_SERVER_SIDE:
-        raise NotImplementedError('loading configuration from the server has'
-                                  ' not yet been implemented')
+        return get_config_from_server()
 
-    return DEFAULT
+    default = dict(DEFAULT)
+    default['password'] = _get_password()
+    return default
+
+
+def get_config_from_server():
+    """
+    return the configuration from the server
+    """
+    raise NotImplementedError('loading configuration from the server has'
+                              ' not yet been implemented')
+
+
+def _get_password(password_file='passwd'):
+    """
+    absolutely not a safe way to deal with passwords but at least with
+    this we can keep the damned passwords from showing in the github history
+
+    mea culpa, mea culpa, mea maxima culpa
+    """
+    with open(password_file, 'r') as fhandle:
+        passwd = fhandle.readline()
+
+    return passwd

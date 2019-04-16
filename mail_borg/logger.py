@@ -23,7 +23,7 @@ import win32evtlog
 import win32api
 import win32security
 
-from .config import get_config
+from config import get_config
 
 
 class LogWinEvent():

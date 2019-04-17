@@ -14,14 +14,87 @@ mail module for exchange monitoring borg bots
 
 :updated:    apr. 10, 2019
 
+notes
+=====
+
+we will avoid the use of list comprehensions because of the way we want to
+handle exceptions in this module.
+in most cases, if there is a problem with a list item, we want to log the
+problem and continue processing. that is not supported with list
+comprehensions; if an exception occurs, processing will be stopped even if
+we catch the error.
+
 """
 import collections
 
 from uuid import uuid4
+
 from exchangelib import ServiceAccount, Message, Account
+from email_validator import (
+    validate_email, EmailSyntaxError, EmailUndeliverableError,
+)
+from timeout_decorator import timeout, TimeoutError
 
 from config import get_config
 from logger import LogWinEvent
+
+
+@timeout(get_config().get('check_mx_timeout', 15))
+def validate_email_to_ascii(  # pylint: disable=too-many-arguments
+        email_address, to_ascii=True, allow_smtputf8=False,
+        check_deliverability=True, logger=None):
+    """
+    validate, normalize, and return an email address
+    optionally also convert it to ascii
+
+    the timeout decorator is required because the current pypi version
+    of the :module:`<email_validator>` doesn't implement a timeout when
+    checking the MX record for an email address
+
+    :arg bool to_ascii: default ``True``
+
+        see below for SMTPUTF8 support. i am pretty sure that any recent
+        Exchange version will support characters like è but this is
+        British Columbia and they don't always play nice with the feds or
+        with Québec
+
+    :arg bool allow_smtputf8: default ``False``
+
+        it is unclear whether Exchange supports SMTPUTF8 in versions 2016
+        or lower so let's stay away from all that nonsense
+
+    :arg bool check_deliverability: default True
+
+        does the domain part of the email address resolve? this should be
+        checked because it may show us DNS errors on some borg nodes
+
+    :returns:
+
+        a valid, normalized email address value or ``None`` if the
+        validation fails. see the :raises: section for a discussion about this
+
+    :raises:
+
+        this function doesn't raise any exceptions because it does its own
+        error handling by logging specific failures to the windows events log
+    """
+    if logger is None:
+        logger = LogWinEvent()
+
+    try:
+        email_dict = validate_email(
+            email_address, allow_smtputf8=allow_smtputf8,
+            allow_empty_local=False, check_deliverability=check_deliverability)
+    except (EmailSyntaxError, EmailUndeliverableError) as error:
+        logger.err(strings=[
+            'message: bad email address %s' % email_address,
+            'exception: %s' % str(error)])
+        return None
+
+    if to_ascii:
+        return email_dict.get('email_ascii')
+
+    return email_dict.get('email')
 
 
 def get_accounts(domain=None, username=None, password=None,
@@ -47,6 +120,9 @@ def get_accounts(domain=None, username=None, password=None,
     :argtype logger: :class:`<logger.WinLogEvent>`
 
     """
+    if logger is None:
+        logger = LogWinEvent()
+
     if domain is None:
         domain = get_config().get('domain')
 
@@ -62,28 +138,44 @@ def get_accounts(domain=None, username=None, password=None,
     if not isinstance(email_addresses, (list, tuple)):
         email_addresses = [email_addresses]
 
-    if logger is None:
-        logger = LogWinEvent()
+    emails = []
+    for email_address in email_addresses:
+        emails.append(validate_email_to_ascii(email_address, logger=logger))
+
+    if not emails:
+        logger.error(strings=[
+            'message: none of the %s email addresses are valid.'
+            'please update your configuration for this node',
+            'invalid or unknown email addresses: %s'
+            % ', '.join(email_addresses), ])
+        return None
 
     credentials = ServiceAccount(
         username='{}\\{}'.format(domain, username), password=password)
 
     accounts = []
-    for address in email_addresses:
+    for email in emails:
         try:
-            accounts.append(Account(primary_smtp_address=address,
+            accounts.append(Account(primary_smtp_address=email,
                                     credentials=credentials,
                                     autodiscover=True))
             logger.info(
                 strings=[
                     'message: "connected to the exchange server"',
-                    'account: %s\\%s, %s' % (domain, username, address), ])
+                    'account: %s\\%s, %s' % (domain, username, email), ])
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 strings=[
                     'message: "cannot connect to the exchange server"',
-                    'account: %s\\%s, %s' % (domain, username, address),
+                    'account: %s\\%s, %s' % (domain, username, email),
                     'exception: %s' % str(err), ])
+
+    if not accounts:
+        logger.error(strings=[
+            'message: no valid exchange accounts were created',
+            'account: %s\\%s' % (domain, username),
+            'email addresses: %s' % ', '.join(email_addresses), ])
+        return None
 
     return accounts
 
@@ -134,7 +226,9 @@ class WitnessMessages():
 
     """
 
-    def __init__(self, accounts=None, email_addresses=None, logger=None):
+    def __init__(
+            self,
+            subject=None, accounts=None, email_addresses=None, logger=None):
         """
         constructor
 
@@ -148,16 +242,56 @@ class WitnessMessages():
         :arg logger: windows events log writer
         :argtype logger: :class:`<logger.WinLogEvent>`
         """
+        if subject is None:
+            subject = get_config().get('email_subject')
         self.messages = []
+
+        if logger is None:
+            logger = LogWinEvent()
+
+        self.logger = logger
+
+        if accounts is None:
+            accounts = get_accounts(logger=self.logger)
+
+        self.accounts = accounts
+
+        if not self.accounts:
+            # stop wasting time
+            return
+
+        if not isinstance(accounts, list):
+            raise TypeError(
+                'bad object type %s. must be a list' % type(accounts))
+
+        if email_addresses is None:
+            email_addresses = get_config().get('email_addresses')
+
+        self.emails = []
+        for email_address in email_addresses:
+            self.emails.append(
+                validate_email_to_ascii(email_address, logger=self.logger))
+
+        if not self.emails:
+            return
+
         for account in accounts:
-            message_body = uuid4()
+            if not isinstance(account, Account):
+                raise TypeError(
+                    'bad object type %s for %s. must be exchangelib.Account' %
+                    (type(account), str(account)))
+
+        self.accounts = accounts
+
+        for account in self.accounts:
+            message_body = str(uuid4())
             self.messages.append(
                 WitnessMessage(
                     message_uuid=message_body,
                     account_for_message=Message(account=account,
-                                                subject='exchange monitoring message',
+                                                subject=subject,
                                                 body=message_body,
-                                                to_recipients=email_addresses)
+                                                to_recipients=self.emails)
                 )
             )
 

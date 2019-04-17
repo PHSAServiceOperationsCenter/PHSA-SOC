@@ -28,10 +28,12 @@ DEFAULT = {
     'username': 'serban.teodorescu',
     'password': None,
     'email_addresses': ['serban.teodorescu@phsa.ca', ],
+    'email_subject': 'exchange monitoring message',
     'app_name': 'BorgExchangeMonitor',
     'log_type': 'Application',
     'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
     'msg_dll': None,
+    'check_mx_timeout': 5,
 }
 """
 :var dict DEFAULT: the default configuration

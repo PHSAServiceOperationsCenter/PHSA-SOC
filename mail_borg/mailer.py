@@ -26,6 +26,7 @@ we catch the error.
 
 """
 import collections
+import time
 
 from uuid import uuid4
 
@@ -33,16 +34,15 @@ from exchangelib import ServiceAccount, Message, Account
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
-from timeout_decorator import timeout, TimeoutError
 
 from config import get_config
 from logger import LogWinEvent
 
 
-@timeout(get_config().get('check_mx_timeout', 15))
 def validate_email_to_ascii(  # pylint: disable=too-many-arguments
         email_address, to_ascii=True, allow_smtputf8=False,
-        check_deliverability=True, logger=None):
+        check_deliverability=True,
+        timeout=get_config().get('check_mx_timeout', 15), logger=None):
     """
     validate, normalize, and return an email address
     optionally also convert it to ascii
@@ -68,6 +68,10 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
         does the domain part of the email address resolve? this should be
         checked because it may show us DNS errors on some borg nodes
 
+    :arg int timeout: seconds, default picked from config, fallback 15
+
+        timeout value for verifying the MX record of the email address
+
     :returns:
 
         a valid, normalized email address value or ``None`` if the
@@ -83,10 +87,12 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
 
     try:
         email_dict = validate_email(
-            email_address, allow_smtputf8=allow_smtputf8,
+            email_address, allow_smtputf8=allow_smtputf8, timeout=timeout,
             allow_empty_local=False, check_deliverability=check_deliverability)
     except (EmailSyntaxError, EmailUndeliverableError) as error:
-        logger.err(strings=[
+        logger.warn(strings=[
+            'type: verify configuration',
+            'status: FAIL',
             'message: bad email address %s' % email_address,
             'exception: %s' % str(error)])
         return None
@@ -143,11 +149,14 @@ def get_accounts(domain=None, username=None, password=None,
         emails.append(validate_email_to_ascii(email_address, logger=logger))
 
     if not emails:
-        logger.error(strings=[
-            'message: none of the %s email addresses are valid.'
-            'please update your configuration for this node',
-            'invalid or unknown email addresses: %s'
-            % ', '.join(email_addresses), ])
+        logger.err(
+            strings=[
+                'type: verify configuration',
+                'status: FAIL',
+                'message: none of the %s email addresses is valid.'
+                'please update your configuration for this node',
+                'invalid or unknown email addresses: %s'
+                % ', '.join(email_addresses), ])
         return None
 
     credentials = ServiceAccount(
@@ -161,19 +170,25 @@ def get_accounts(domain=None, username=None, password=None,
                                     autodiscover=True))
             logger.info(
                 strings=[
-                    'message: "connected to the exchange server"',
-                    'account: %s\\%s, %s' % (domain, username, email), ])
+                    'type: verify connection',
+                    'status: PASS',
+                    'message: connected to exchange with'
+                    ' account %s\\%s, %s' % (domain, username, email), ])
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 strings=[
-                    'message: "cannot connect to the exchange server"',
-                    'account: %s\\%s, %s' % (domain, username, email),
+                    'type: verify connection',
+                    'status: FAIL',
+                    'message: cannot connect to exchange with'
+                    'account %s\\%s, %s' % (domain, username, email),
                     'exception: %s' % str(err), ])
 
     if not accounts:
         logger.error(strings=[
-            'message: no valid exchange accounts were created',
-            'account: %s\\%s' % (domain, username),
+            'type: verify configuration',
+            'status: FAIL',
+            'message: invalid exchange configuration for all'
+            'accounts in %s\\%s' % (domain, username),
             'email addresses: %s' % ', '.join(email_addresses), ])
         return None
 
@@ -181,7 +196,7 @@ def get_accounts(domain=None, username=None, password=None,
 
 
 WitnessMessage = collections.namedtuple(
-    'WitnessMessage', ['message_uuid', 'account_for_message'])
+    'WitnessMessage', ['message_uuid', 'message', 'account_for_message'])
 """
 :var WitnessMessage: name tuple class describing an exchange message
 
@@ -189,6 +204,8 @@ WitnessMessage = collections.namedtuple(
                         used for retrieving the message from the inbox
                         so as to verify that it was received
 
+    *    :message: the message itself
+    
     *    :account_for_message: the exchange account used to send the
                                message
 
@@ -242,6 +259,8 @@ class WitnessMessages():
         :arg logger: windows events log writer
         :argtype logger: :class:`<logger.WinLogEvent>`
         """
+        self._sent = False
+
         if subject is None:
             subject = get_config().get('email_subject')
         self.messages = []
@@ -273,6 +292,7 @@ class WitnessMessages():
                 validate_email_to_ascii(email_address, logger=self.logger))
 
         if not self.emails:
+            # again, stop wasting time
             return
 
         for account in accounts:
@@ -284,23 +304,123 @@ class WitnessMessages():
         self.accounts = accounts
 
         for account in self.accounts:
-            message_body = str(uuid4())
+            message_body = uuid4()
             self.messages.append(
                 WitnessMessage(
                     message_uuid=message_body,
-                    account_for_message=Message(account=account,
-                                                subject=subject,
-                                                body=message_body,
-                                                to_recipients=self.emails)
+                    message=Message(account=account,
+                                    subject=subject,
+                                    body=message_body,
+                                    to_recipients=self.emails),
+                    account_for_message=account
                 )
             )
 
     def send(self):
-        for message in self.messages:
-            message.account_for_message.send()
+        """
+        send out the exchange monitoring messages
 
-    def verify_receive(self):
-        for message in self.messages:
-            if message.account_for_message.inbox.filter(body__icontains=str(message.message_uuid)).count() == len(self.messages):
-                # log ok
-                continue
+        if there are no messages, log an error
+
+        if sending a particular message raises an error,
+        log it and keep sending
+        """
+        if not self.messages:
+            self.logger.err(
+                strings=[
+                    'type: verify configuration',
+                    'status: FAIL',
+                    'message: it was not possible to create any monitoring'
+                    ' messages. please double-check the exchange configuration'
+                    ' for this node.', ])
+            return
+
+        # we need to purge the messages that we cannot send, thus
+        messages = self.messages
+        for message in messages:
+            try:
+                message.message.send()
+            except Exception as error:  # pylint: disable=broad-except
+                self.logger.err(
+                    strings=[
+                        'type: verify send',
+                        'status: FAIL',
+                        'message: cannot send monitoring message %s'
+                        % message.message_uuid,
+                        'account: %s'
+                        % message.account_for_message.primary_smtp_address,
+                        'to: %s'
+                        % ', '.join(
+                            message.account_for_message.to_recipients),
+                        'error: %s' % str(error), ])
+                self.messages.remove(message)
+
+        self._sent = True
+
+    def verify_receive(self,
+                       wait_receive=get_config().get('wait_receive', 60)):
+        """
+        look for all the messages that were sent in the inbox of each account
+        used to send them
+
+        each message is sent from the account associated with said message
+        to each address in the send_to attribute.
+        additionally, each address in the send_to attribute is associated
+        with an account that is being monitored.
+        thus we wait a while, then
+
+        * for each account:
+
+          * open the account.inbox and search for each message by uuid
+
+            * if found log the sent_at, received_at for further analysis
+
+            * if not found log an error:
+              cannot communicate from message.account.smtp_address
+              to account.inboc.smtp_adddress
+
+        :arg int wait_receive: seconds, default picked from config
+
+            fallback 60 seconds;
+            time to wait before looking for the messages since exchange is not
+            all that fast
+        """
+        if not self._sent:
+            return
+
+        time.sleep(wait_receive)
+        for account in self.accounts:
+            for message in self.messages:
+                found_message = account.inbox.filter(
+                    body__contains=str(message.message_uuid))
+                if found_message.exists():
+                    found_message = found_message.get()
+                    self.logger.info(
+                        strings=[
+                            'type: transmission verification',
+                            'status: PASS',
+                            'from domain: %s'
+                            % found_message.author.
+                            email_address.split('@')[1],
+                            'to domains: %s'
+                            % ', '.join(
+                                [
+                                    mailbox.email_address.split('@')[1] for
+                                    mailbox in found_message.to_recipients
+                                ]),
+                            'created: %s' % found_message.datetime_created,
+                            'sent: %s' % found_message.datetime_sent,
+                            'received: %s' % found_message.datetime_received,
+                            'wait_receive: %s' % wait_receive, ])
+                    continue
+
+                self.logger.err(
+                    strings=[
+                        'type: transmission verification',
+                        'status: FAIL',
+                        'from: %s'
+                        % message.account_for_message.
+                        primary_smtp_address.split('@')[1],
+                        'to: %s'
+                        % account.primary_smtp_address.split('@')[1],
+                        'wait_receive: %s' % wait_receive, ])

@@ -34,6 +34,7 @@ DEFAULT = {
     'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
     'msg_dll': None,
     'check_mx_timeout': 5,
+    'wait_receive': 60,
 }
 """
 :var dict DEFAULT: the default configuration

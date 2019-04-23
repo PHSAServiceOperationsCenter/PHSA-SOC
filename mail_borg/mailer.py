@@ -403,6 +403,12 @@ class WitnessMessages():
             for message in self.messages:
                 found_message = account.inbox.filter(
                     body__contains=str(message.message_uuid))
+
+                _wait_receive = wait_receive
+
+                # while not found_message.exists():
+                #    if _wait_receive == get_config().get('max_wait_receive'):
+
                 if found_message.exists():
                     found_message = found_message.get()
                     self.logger.info(

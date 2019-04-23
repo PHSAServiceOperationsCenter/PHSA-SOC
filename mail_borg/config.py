@@ -15,6 +15,9 @@ configuration module for exchange monitoring borg bots
 :updated:    apr. 12, 2019
 
 """
+import socket
+
+DEBUG = True
 
 USE_SERVER_SIDE = False
 """
@@ -35,6 +38,8 @@ DEFAULT = {
     'msg_dll': None,
     'check_mx_timeout': 5,
     'wait_receive': 60,
+    'witness_addresses': ['james.reilly@phsa.ca', ],
+    'site': 'willingdon',
 }
 """
 :var dict DEFAULT: the default configuration
@@ -56,8 +61,30 @@ def get_config():
         return get_config_from_server()
 
     default = dict(DEFAULT)
+    default['email_subject'] = set_subject(default.get('email_subject'),
+                                           default.get('site'))
     default['password'] = _get_password()
     return default
+
+
+def set_subject(subject, site=None):
+    """
+    tag the subject line with the fqdn, site information if available,
+    and debug information
+
+    this is mostly useful when cc'ing human email addresses for manual
+    monitoring. the tags will make it easy to create exchange rules for the
+    monitoring messages
+    """
+    tags = '[DEBUG]' if DEBUG else None
+    tags += '[{}]'.format(socket.getfqdn())
+
+    subject = '{}{}'.format(tags, subject)
+
+    if site:
+        return '{} originating from {}'.format(subject, site)
+
+    return subject
 
 
 def get_config_from_server():

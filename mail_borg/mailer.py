@@ -245,7 +245,8 @@ class WitnessMessages():
 
     def __init__(
             self,
-            subject=None, accounts=None, email_addresses=None, logger=None):
+            subject=None, accounts=None, email_addresses=None,
+            witness_addresses=None, logger=None):
         """
         constructor
 
@@ -295,6 +296,14 @@ class WitnessMessages():
             # again, stop wasting time
             return
 
+        if witness_addresses is None:
+            witness_addresses = get_config().get('witness_addresses')
+
+        self.witness_emails = []
+        for witness_address in witness_addresses:
+            self.witness_emails.append(
+                validate_email_to_ascii(witness_address, logger=self.logger))
+
         for account in accounts:
             if not isinstance(account, Account):
                 raise TypeError(
@@ -311,7 +320,8 @@ class WitnessMessages():
                     message=Message(account=account,
                                     subject=subject,
                                     body=message_body,
-                                    to_recipients=self.emails),
+                                    to_recipients=self.emails,
+                                    cc_recipients=self.witness_emails),
                     account_for_message=account
                 )
             )

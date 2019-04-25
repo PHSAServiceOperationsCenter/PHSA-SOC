@@ -27,13 +27,12 @@ we catch the error.
 """
 import collections
 import time
-
 from uuid import uuid4
 
-from exchangelib import ServiceAccount, Message, Account
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
+from exchangelib import ServiceAccount, Message, Account
 
 from config import get_config
 from logger import LogWinEvent
@@ -93,7 +92,7 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
         logger.warn(strings=[
             'type: verify configuration',
             'status: FAIL',
-            'message: bad email address %s' % email_address,
+            'status message: bad email address %s' % email_address,
             'exception: %s' % str(error)])
         return None
 
@@ -153,7 +152,7 @@ def get_accounts(domain=None, username=None, password=None,
             strings=[
                 'type: verify configuration',
                 'status: FAIL',
-                'message: none of the %s email addresses is valid.'
+                'status message: none of the %s email addresses is valid.'
                 'please update your configuration for this node',
                 'invalid or unknown email addresses: %s'
                 % ', '.join(email_addresses), ])
@@ -172,7 +171,7 @@ def get_accounts(domain=None, username=None, password=None,
                 strings=[
                     'type: verify connection',
                     'status: PASS',
-                    'message: connected to exchange with'
+                    'status message: connected to exchange with'
                     ' account %s\\%s, %s' % (domain, username, email), ])
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
@@ -187,7 +186,7 @@ def get_accounts(domain=None, username=None, password=None,
         logger.error(strings=[
             'type: verify configuration',
             'status: FAIL',
-            'message: invalid exchange configuration for all'
+            'status message: invalid exchange configuration for all'
             'accounts in %s\\%s' % (domain, username),
             'email addresses: %s' % ', '.join(email_addresses), ])
         return None
@@ -211,6 +210,12 @@ WitnessMessage = collections.namedtuple(
 
 :vartype WitnessMessage: :class:`<collections.namedtuple>`
 """
+
+
+def _get_logger(logger):
+    if logger is None:
+        logger = LogWinEvent()
+    return logger
 
 
 class WitnessMessages():
@@ -243,7 +248,7 @@ class WitnessMessages():
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
             self,
             subject=None, accounts=None, email_addresses=None,
             witness_addresses=None, logger=None):
@@ -266,10 +271,7 @@ class WitnessMessages():
             subject = get_config().get('email_subject')
         self.messages = []
 
-        if logger is None:
-            logger = LogWinEvent()
-
-        self.logger = logger
+        self.logger = _get_logger(logger)
 
         if accounts is None:
             accounts = get_accounts(logger=self.logger)
@@ -340,7 +342,8 @@ class WitnessMessages():
                 strings=[
                     'type: verify configuration',
                     'status: FAIL',
-                    'message: it was not possible to create any monitoring'
+                    'status message:'
+                    ' it was not possible to create any monitoring'
                     ' messages. please double-check the exchange configuration'
                     ' for this node.', ])
             return
@@ -355,8 +358,8 @@ class WitnessMessages():
                     strings=[
                         'type: verify send',
                         'status: FAIL',
-                        'message: cannot send monitoring message %s'
-                        % message.message_uuid,
+                        'status message: cannot send monitoring message',
+                        'message_uuid: %s' % message.message_uuid,
                         'account: %s'
                         % message.account_for_message.primary_smtp_address,
                         'to: %s'
@@ -394,9 +397,13 @@ class WitnessMessages():
             fallback 60 seconds;
             time to wait before looking for the messages since exchange is not
             all that fast
+
+        #TODO: see https://github.com/ecederstrand/exchangelib/issues/581
+        # maybe some poor soul will come up with a solution to make the
+        # wait dynamic
         """
         if not self._sent:
-            return
+            self.send()
 
         time.sleep(wait_receive)
         for account in self.accounts:
@@ -404,17 +411,15 @@ class WitnessMessages():
                 found_message = account.inbox.filter(
                     body__contains=str(message.message_uuid))
 
-                _wait_receive = wait_receive
-
-                # while not found_message.exists():
-                #    if _wait_receive == get_config().get('max_wait_receive'):
-
                 if found_message.exists():
                     found_message = found_message.get()
                     self.logger.info(
                         strings=[
                             'type: transmission verification',
                             'status: PASS',
+                            'status message:'
+                            ' email message successfully sent and received',
+                            'message_uuid: %s' % message.message_uuid,
                             'from domain: %s'
                             % found_message.author.
                             email_address.split('@')[1],
@@ -434,6 +439,8 @@ class WitnessMessages():
                     strings=[
                         'type: transmission verification',
                         'status: FAIL',
+                        'status message: message was not received',
+                        'message_uuid: %s' % message.message_uuid,
                         'from: %s'
                         % message.account_for_message.
                         primary_smtp_address.split('@')[1],

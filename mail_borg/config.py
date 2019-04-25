@@ -45,7 +45,8 @@ DEFAULT = {
 :var dict DEFAULT: the default configuration
 
     don't change the password entry, it will be over written anyway and
-    it will just create a security risk by placing password in github
+    it will just create a security risk by placing a domain account
+    password in github
 
     msg_dll is the file containing the messages required by the windows
     events log. if set to ``None``, the default provided by the pywin32

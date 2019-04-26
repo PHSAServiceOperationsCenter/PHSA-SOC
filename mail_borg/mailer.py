@@ -320,7 +320,8 @@ class WitnessMessages():
                 WitnessMessage(
                     message_uuid=message_body,
                     message=Message(account=account,
-                                    subject=subject,
+                                    subject='{} with identifier {}'.format(
+                                        subject, message_body),
                                     body=message_body,
                                     to_recipients=self.emails,
                                     cc_recipients=self.witness_emails),
@@ -353,6 +354,18 @@ class WitnessMessages():
         for message in messages:
             try:
                 message.message.send()
+                self.logger.info(
+                    strings=[
+                        'type: verify send',
+                        'status: PASS',
+                        'status message: monitoring message sent',
+                        'message_uuid: %s' % message.message_uuid,
+                        'account: %s'
+                        % message.account_for_message.primary_smtp_address,
+                        'to: %s'
+                        % ', '.join(
+                            message.account_for_message.to_recipients), ])
+                self.messages.remove(message)
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
                     strings=[
@@ -409,7 +422,7 @@ class WitnessMessages():
         for account in self.accounts:
             for message in self.messages:
                 found_message = account.inbox.filter(
-                    body__contains=str(message.message_uuid))
+                    subject__icontains=str(message.message_uuid))
 
                 if found_message.exists():
                     found_message = found_message.get()

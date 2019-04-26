@@ -354,6 +354,7 @@ class WitnessMessages():
         for message in messages:
             try:
                 message.message.send()
+
                 self.logger.info(
                     strings=[
                         'type: verify send',
@@ -364,8 +365,8 @@ class WitnessMessages():
                         % message.account_for_message.primary_smtp_address,
                         'to: %s'
                         % ', '.join(
-                            message.account_for_message.to_recipients), ])
-                self.messages.remove(message)
+                            [r.email_address for r in message.message.to_recipients]), ])
+
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
                     strings=[
@@ -377,14 +378,18 @@ class WitnessMessages():
                         % message.account_for_message.primary_smtp_address,
                         'to: %s'
                         % ', '.join(
-                            message.account_for_message.to_recipients),
+                            [r.email_address for r in message.message.to_recipients]),
                         'error: %s' % str(error), ])
+
                 self.messages.remove(message)
 
         self._sent = True
 
-    def verify_receive(self,
-                       wait_receive=get_config().get('wait_receive', 60)):
+    def verify_receive(
+        self,
+            min_wait_receive=get_config().get('min_wait_receive', 3),
+            step_wait_receive=get_config().get('step_wait_receive', 3),
+            max_wait_receive=get_config().get('max_wait_receive', 120)):
         """
         look for all the messages that were sent in the inbox of each account
         used to send them
@@ -418,45 +423,60 @@ class WitnessMessages():
         if not self._sent:
             self.send()
 
-        time.sleep(wait_receive)
+        time.sleep(min_wait_receive)
+
         for account in self.accounts:
             for message in self.messages:
+
+                _wait_receive = min_wait_receive
+
                 found_message = account.inbox.filter(
                     subject__icontains=str(message.message_uuid))
 
-                if found_message.exists():
-                    found_message = found_message.get()
-                    self.logger.info(
+                while _wait_receive < max_wait_receive:
+
+                    if found_message.exists():
+
+                        found_message = found_message.get()
+                        self.logger.info(
+                            strings=[
+                                'type: transmission verification',
+                                'status: PASS',
+                                'status message:'
+                                ' email message successfully sent and received',
+                                'message_uuid: %s' % message.message_uuid,
+                                'from domain: %s'
+                                % found_message.author.
+                                email_address.split('@')[1],
+                                'to domains: %s'
+                                % ', '.join(
+                                    [
+                                        mailbox.email_address.split('@')[1] for
+                                        mailbox in found_message.to_recipients
+                                    ]),
+                                'created: %s' % found_message.datetime_created,
+                                'sent: %s' % found_message.datetime_sent,
+                                'received: %s'
+                                % found_message.datetime_received,
+                                'wait_receive: %s' % _wait_receive, ])
+
+                        found_message.delete()
+
+                        break
+
+                    time.sleep(step_wait_receive)
+                    _wait_receive = _wait_receive + step_wait_receive
+
+                else:
+                    self.logger.err(
                         strings=[
                             'type: transmission verification',
-                            'status: PASS',
-                            'status message:'
-                            ' email message successfully sent and received',
+                            'status: FAIL',
+                            'status message: message was not received',
                             'message_uuid: %s' % message.message_uuid,
-                            'from domain: %s'
-                            % found_message.author.
-                            email_address.split('@')[1],
-                            'to domains: %s'
-                            % ', '.join(
-                                [
-                                    mailbox.email_address.split('@')[1] for
-                                    mailbox in found_message.to_recipients
-                                ]),
-                            'created: %s' % found_message.datetime_created,
-                            'sent: %s' % found_message.datetime_sent,
-                            'received: %s' % found_message.datetime_received,
-                            'wait_receive: %s' % wait_receive, ])
-                    continue
-
-                self.logger.err(
-                    strings=[
-                        'type: transmission verification',
-                        'status: FAIL',
-                        'status message: message was not received',
-                        'message_uuid: %s' % message.message_uuid,
-                        'from: %s'
-                        % message.account_for_message.
-                        primary_smtp_address.split('@')[1],
-                        'to: %s'
-                        % account.primary_smtp_address.split('@')[1],
-                        'wait_receive: %s' % wait_receive, ])
+                            'from: %s'
+                            % message.account_for_message.
+                            primary_smtp_address.split('@')[1],
+                            'to: %s'
+                            % account.primary_smtp_address.split('@')[1],
+                            'wait_receive: %s' % _wait_receive, ])

@@ -37,7 +37,9 @@ DEFAULT = {
     'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
     'msg_dll': None,
     'check_mx_timeout': 5,
-    'wait_receive': 60,
+    'min_wait_receive': 3,
+    'step_wait_receive': 3,
+    'max_wait_receive': 120,
     'witness_addresses': ['james.reilly@phsa.ca', ],
     'site': 'willingdon',
 }

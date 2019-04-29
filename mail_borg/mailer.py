@@ -204,7 +204,7 @@ WitnessMessage = collections.namedtuple(
                         so as to verify that it was received
 
     *    :message: the message itself
-    
+
     *    :account_for_message: the exchange account used to send the
                                message
 
@@ -365,7 +365,8 @@ class WitnessMessages():
                         % message.account_for_message.primary_smtp_address,
                         'to: %s'
                         % ', '.join(
-                            [r.email_address for r in message.message.to_recipients]), ])
+                            [r.email_address for r in
+                             message.message.to_recipients]), ])
 
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
@@ -378,7 +379,8 @@ class WitnessMessages():
                         % message.account_for_message.primary_smtp_address,
                         'to: %s'
                         % ', '.join(
-                            [r.email_address for r in message.message.to_recipients]),
+                            [r.email_address for r in
+                             message.message.to_recipients]),
                         'error: %s' % str(error), ])
 
                 self.messages.remove(message)

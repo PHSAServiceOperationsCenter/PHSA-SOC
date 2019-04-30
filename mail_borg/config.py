@@ -15,62 +15,57 @@ configuration module for exchange monitoring borg bots
 :updated:    apr. 12, 2019
 
 """
+import configparser
 import socket
 
-DEBUG = True
-
-USE_SERVER_SIDE = False
-"""
-:var bool USER_SERVER_SIDE:
-
-    load the configuration values from the PHSA automation server?
-"""
-
-DEFAULT = {
-    'domain': 'PHSABC',
-    'username': 'serban.teodorescu',
-    'password': None,
-    'email_addresses': ['serban.teodorescu@phsa.ca', ],
-    'email_subject': 'exchange monitoring message',
-    'app_name': 'BorgExchangeMonitor',
-    'log_type': 'Application',
-    'evt_log_key': '\\SYSTEM\\CurentControlSet\\Service\\EventLog',
-    'msg_dll': None,
-    'check_mx_timeout': 5,
-    'min_wait_receive': 3,
-    'step_wait_receive': 3,
-    'max_wait_receive': 120,
-    'witness_addresses': ['james.reilly@phsa.ca', ],
-    'site': 'willingdon',
-}
-"""
-:var dict DEFAULT: the default configuration
-
-    don't change the password entry, it will be over written anyway and
-    it will just create a security risk by placing a domain account
-    password in github
-
-    msg_dll is the file containing the messages required by the windows
-    events log. if set to ``None``, the default provided by the pywin32
-    python package is provided
-"""
+CONFIG = configparser.ConfigParser(
+    allow_no_value=True, empty_lines_in_values=False)
 
 
-def get_config():
+def load_config(config_file='mail_borg.ini'):
     """
     return the ``dict`` with the current configuration
     """
-    if USE_SERVER_SIDE:
+    CONFIG.read(config_file)
+
+    config = dict()
+    config['use_server_config'] = CONFIG.getboolean('SITE',
+                                                    'use_server_config')
+
+    if config['use_server_config']:
         return get_config_from_server()
 
-    default = dict(DEFAULT)
-    default['email_subject'] = set_subject(default.get('email_subject'),
-                                           default.get('site'))
-    default['password'] = _get_password()
-    return default
+    config['debug'] = CONFIG.getboolean('SITE', 'debug')
+    config['domain'] = CONFIG.get('SITE', 'domain')
+    config['username'] = CONFIG.get('SITE', 'username')
+
+    config['password'] = _get_password(
+        password_file=CONFIG.get('SITE', 'password_file'))
+
+    config['email_addresses'] = CONFIG.get(
+        'SITE', 'email_addresses').split(',')
+    config['witness_addresses'] = CONFIG.get(
+        'SITE', 'witness_addresses').split(',')
+    config['email_subject'] = CONFIG.get('SITE', 'email_subject')
+
+    config['app_name'] = CONFIG.get('SITE', 'app_name')
+    config['log_type'] = CONFIG.get('SITE', 'log_type')
+    config['evt_log_key'] = CONFIG.get('SITE', 'evt_log_key')
+
+    config['msg_dll'] = CONFIG.get('SITE', 'msg_dll')
+
+    config['check_mx_timeout'] = CONFIG.getint('SITE', 'check_mx_timeout')
+    config['min_wait_receive'] = CONFIG.getint('SITE', 'min_wait_receive')
+    config['step_wait_receive'] = CONFIG.getint('SITE', 'step_wait_receive')
+    config['max_wait_receive'] = CONFIG.getint('SITE', 'max_wait_receive')
+
+    config['site'] = CONFIG.get('SITE', 'site')
+    config['tags'] = CONFIG.get('SITE', 'tags')
+
+    return config
 
 
-def set_subject(subject, site=None):
+def set_subject(subject, site=None, debug=False):
     """
     tag the subject line with the fqdn, site information if available,
     and debug information
@@ -79,7 +74,7 @@ def set_subject(subject, site=None):
     monitoring. the tags will make it easy to create exchange rules for the
     monitoring messages
     """
-    tags = '[DEBUG]' if DEBUG else None
+    tags = '[DEBUG]' if debug else None
     tags += '[{}]'.format(socket.getfqdn())
 
     subject = '{}{}'.format(tags, subject)

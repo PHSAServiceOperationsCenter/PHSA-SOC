@@ -14,7 +14,7 @@ from config import load_config
 # good for applications with an loop that polls hardware
 
 
-gui.SetOptions(element_padding=(1, 1))
+gui.SetOptions(font='Any 12')
 
 
 def get_window():
@@ -24,25 +24,96 @@ def get_window():
     config = load_config()
 
     window = gui.Window(
-        config.get('app_name'), auto_size_buttons=True)
+        config.get('app_name'),
+        auto_size_buttons=True, use_default_focus=False)
+
+    left_frame = [
+        [gui.Button('Run Mail Check', key='mailcheck', font='Any 10'),
+         gui.Button('Start Auto-run', key='run', font='Any 10'),
+         gui.Button('Pause Auto-run', key='pause', font='Any 10'), ],
+        [gui.Text('',  key='status',
+                  size=(40, 1),  justification='left'), ],
+        [gui.Multiline(size=(40, 20), disabled=True, autoscroll=True), ], ]
+
+    conf_labels_col = [
+        [gui.Text('Check Email Every:', justification='left', font='Any 10'), ],
+        [gui.Text('Domain:', justification='left', font='Any 10'), ],
+        [gui.Text('User Name:', justification='left', font='Any 10'), ],
+        [gui.Text('Password:', justification='left', font='Any 10'), ],
+        [gui.Text('Mail Addresses:', size=(None, 3),
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Witness Addresses:',
+                  size=(None, 3), justification='left', font='Any 10'), ],
+        [gui.Text('Mail Subject', size=(None, 3),
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Application Name:', justification='left', font='Any 10'), ],
+        [gui.Text('Verify Email MX Address Timeout:',
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Minimum Wait for Check Receive:',
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Increment Wait for Check Receive:',
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Check Receive Timeout:',
+                  justification='left', font='Any 10'), ],
+        [gui.Text('Originating Site:', justification='left', font='Any 10'), ],
+        [gui.Text('Additional Email Tags:',
+                  size=(None, 3), justification='left', font='Any 10'), ], ]
+
+    conf_values_col = [
+        [gui.InputText(config.get('mail_every_minutes'),
+                       key='mail_every_minutes', size=(30, 1),
+                       do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('domain'), key='domain',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('username'), key='username',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('password'), key='password',
+                       size=(30, 1), do_not_clear=True, password_char='*', font='Any 10'), ],
+        [gui.Listbox(config.get('email_addresses'),
+                     size=(30, 3), auto_size_text=True,
+                     key='email_addresses', font='Any 10'), ],
+        [gui.Listbox(config.get('witness_addresses'),
+                     key='witness_addresses',
+                     size=(30, 3), auto_size_text=True, font='Any 10'), ],
+        [gui.Multiline(config.get('email_subject'), key='email_subject',
+                       size=(30, 3), auto_size_text=True,
+                       do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('app_name'), key='app_name',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('check_mx_timeout'), key='check_mx_timeout',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('app_name'), key='app_name',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('app_name'), key='app_name',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('app_name'), key='app_name',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.InputText(config.get('app_name'), key='app_name',
+                       size=(30, 1), do_not_clear=True, font='Any 10'), ],
+        [gui.Multiline(config.get('tags'), key='tags',
+                       size=(30, 3), auto_size_text=True,
+                       do_not_clear=True, font='Any 10'), ],
+    ]
+
+    right_frame = [
+        [
+            gui.Checkbox('Load Configuration from Server',
+                         default=config.get(
+                             'use_server_config'),
+                         key='use_server_config', font='Any 10'),
+            gui.Checkbox('Debug', default=config.get(
+                'debug'), key='debug', font='Any 10'),
+            gui.Checkbox('Auto-run',
+                         default=config.get('autorun'), key='autorun', font='Any 10'), ],
+        [gui.Column(conf_labels_col), gui.Column(conf_values_col)]
+    ]
 
     layout = [
         [
-            gui.Text(
-                '',  key='status',
-                size=(30, 1), font=('Helvetica', 20), justification='left'),
-            gui.Button('Pause',  font=('Helvetica', 10), pad=(1, 1)),
-            gui.Text('Check Email Every:', font=('Helvetica', 20),
-                     justification='left'),
-            gui.InputText(
-                config.get('mail_every_minutes'),
-                do_not_clear=True, key='mail_every_minutes'),
+            gui.Frame('Execution', left_frame, title_color='darkblue'),
+            gui.Frame('Configuration', right_frame, title_color='darkblue'),
 
         ],
-        [
-            gui.CloseButton(button_text='Exit',
-                            button_color=('white', 'firebrick4')),
-        ]
     ]
     window.Layout(layout).Finalize()
 
@@ -75,13 +146,21 @@ def main():
 
     paused = False
     while True:
-        event, values = window.Read(timeout=1)
+        event, values = window.Read(timeout=0)
 
         if values is None or event == 'Exit':
             break
 
-        if event is 'Pause':
-            paused = not paused
+        if event == 'pause':
+            paused = True
+            window.FindElement('status').Update('mail check is paused')
+            window.FindElement('pause').Update(disabled=True)
+            window.FindElement('run').Update(disabled=False)
+
+        if event == 'run':
+            paused = False
+            window.FindElement('run').Update(disabled=True)
+            window.FindElement('pause').Update(disabled=False)
 
         if not paused:
             window.FindElement('status').Update(

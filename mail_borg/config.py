@@ -36,6 +36,7 @@ def load_config(config_file='mail_borg.ini'):
         return get_config_from_server()
 
     config['debug'] = CONFIG.getboolean('SITE', 'debug')
+    config['autorun'] = CONFIG.getboolean('SITE', 'autorun')
     config['domain'] = CONFIG.get('SITE', 'domain')
     config['username'] = CONFIG.get('SITE', 'username')
 

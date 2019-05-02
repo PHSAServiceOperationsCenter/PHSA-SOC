@@ -54,6 +54,7 @@ def load_config(config_file='mail_borg.ini'):
 
     config['msg_dll'] = CONFIG.get('SITE', 'msg_dll')
 
+    config['mail_every_minutes'] = CONFIG.getint('SITE', 'mail_every_minutes')
     config['check_mx_timeout'] = CONFIG.getint('SITE', 'check_mx_timeout')
     config['min_wait_receive'] = CONFIG.getint('SITE', 'min_wait_receive')
     config['step_wait_receive'] = CONFIG.getint('SITE', 'step_wait_receive')

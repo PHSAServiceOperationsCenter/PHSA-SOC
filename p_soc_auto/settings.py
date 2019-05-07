@@ -132,6 +132,8 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     'orion_flash.apps.OrionFlashConfig',
+    'task_journal.apps.TaskJournalConfig',
+    'django_mysql',
     'simple_history',
     'dal',
     'dal_select2',
@@ -194,6 +196,10 @@ DATABASES = {
         'HOST': '',
         'PASSWORD': 'phsa_db_password',
         'USER': 'phsa_db_user',
+        'OPTIONS': {
+            # Tell MySQLdb to connect with 'utf8mb4' character set
+            'charset': 'utf8mb4',
+        },
     },
     'orion_aux_db': {
         'ENGINE': 'sql_server.pyodbc',
@@ -213,6 +219,7 @@ DATABASES = {
 
 DATABASE_ROUTERS = ['orion_flash.router.OrionAuxRouter', ]
 
+SILENCED_SYSTEM_CHECKS = ['django_mysql.W001', 'django_mysql.W002', ]
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 

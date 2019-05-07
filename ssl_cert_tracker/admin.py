@@ -200,13 +200,14 @@ class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
 
 
 @admin.register(SslProbePort)
-class SslProbePortAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
+class SslProbePortAdmin(admin.ModelAdmin):
     """
     admin forms for SSL scanning ports
     """
     list_display = ['port', 'enabled', 'updated_on', 'updated_by', ]
     list_edit = ['enabled', ]
     list_filter = ('enabled', ('updated_on', DateTimeRangeFilter),)
+    readonly_fields = ('created_on', 'updated_on')
 
     fieldsets = (
         ('Identification', {

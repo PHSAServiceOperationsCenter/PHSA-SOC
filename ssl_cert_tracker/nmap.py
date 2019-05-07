@@ -17,6 +17,7 @@ nmap functions and classes for the ssl_certificates app
 """
 import csv
 import logging
+import socket
 
 from django.conf import settings
 from django.utils.dateparse import parse_datetime
@@ -325,6 +326,56 @@ def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
         datetime_input, timezone=use_timezone, is_dst=is_dst)
 
 
+def probe_for_state(dns_list=None):
+    if dns_list is None:
+        dns_list = []
+        with open('no_certs/no_certs.csv') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                common_name = row['dns']
+                if not common_name:
+                    continue
+                dns_list.append(common_name)
+
+    hosts_up = []
+    hosts_down = []
+    hosts_unresolved = []
+    for dns in dns_list:
+        try:
+            socket.gethostbyname(dns)
+        except:
+            hosts_unresolved.append(dict(dns=dns))
+            print('unresolved host: ', dns)
+            continue
+
+        try:
+            probe = NmapProbe(address=dns, opts='-A -T4 -Pn')
+            hosts_up.append(dict(
+                dns=dns,
+                open_ports=', '.join(
+                    [str(service.port) for service in probe.host.services])))
+            print(dns, 'open ports: ', ', '.join(
+                [str(service.port) for service in probe.host.services]))
+
+        except Exception as err:
+            hosts_down.append(dict(dns=dns, err=str(err)))
+            print('!!!', dns, str(err))
+
+    write_csv('unresolved.csv', hosts_unresolved, ['dns'])
+    write_csv('hosts_open_ports.csv', hosts_up, ['dns', 'open_ports'])
+    write_csv('hosts_down.csv', hosts_down, ['dns', 'err'])
+
+
+def write_csv(file_name, source, fieldnames):
+    with open(file_name, 'w', newline='') as csv_file:
+        csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+        csv_writer.writeheader()
+
+        for item in source:
+            csv_writer.writerow(item)
+
+
 def probe_for_certs(dns_list=None, port_list=None):
     """
     prepare a file with common name, port, expiration date;
@@ -333,7 +384,7 @@ def probe_for_certs(dns_list=None, port_list=None):
     and a file with nmap errors (may or may not be useful
 
     """
-    field_names = ['dns', 'port', 'common_name', 'expires_on']
+    field_names = ['dns', 'port', 'common_name', 'not_before', 'expires_on']
     """
     :var field_names: use for the output csv file header row
     """
@@ -363,6 +414,7 @@ def probe_for_certs(dns_list=None, port_list=None):
                 certs.append(dict(
                     dns=dns, port=str(port),
                     common_name=cert.ssl_subject.get('commonName'),
+                    not_before=cert.ssl_not_before,
                     expires_on=cert.ssl_not_after))
                 print('found', cert.ssl_subject.get(
                     'commonName'), ': ', str(port), ', ', cert.ssl_not_after)

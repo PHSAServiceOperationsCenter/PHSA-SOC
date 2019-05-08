@@ -33,7 +33,8 @@ def get_window():
          gui.Button('Pause Auto-run', key='pause', font='Any 10'), ],
         [gui.Text('',  key='status',
                   size=(40, 1),  justification='left'), ],
-        [gui.Multiline(size=(40, 20), disabled=True, autoscroll=True), ], ]
+        [gui.Multiline(size=(40, 20), key='output', disabled=True,
+                       autoscroll=True), ], ]
 
     conf_labels_col = [
         [gui.Text('Check Email Every:', justification='left', font='Any 10'), ],
@@ -68,7 +69,8 @@ def get_window():
         [gui.InputText(config.get('username'), key='username',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
         [gui.InputText(config.get('password'), key='password',
-                       size=(30, 1), do_not_clear=True, password_char='*', font='Any 10'), ],
+                       size=(30, 1), do_not_clear=True, password_char='*',
+                       font='Any 10'), ],
         [gui.Listbox(config.get('email_addresses'),
                      size=(30, 3), auto_size_text=True,
                      key='email_addresses', font='Any 10'), ],
@@ -82,13 +84,14 @@ def get_window():
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
         [gui.InputText(config.get('check_mx_timeout'), key='check_mx_timeout',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
-        [gui.InputText(config.get('app_name'), key='app_name',
+        [gui.InputText(config.get('min_wait_receive'), key='min_wait_receive',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
-        [gui.InputText(config.get('app_name'), key='app_name',
+        [gui.InputText(config.get('step_wait_receive'),
+                       key='step_wait_receive',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
-        [gui.InputText(config.get('app_name'), key='app_name',
+        [gui.InputText(config.get('max_wait_receive'), key='max_wait_receive',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
-        [gui.InputText(config.get('app_name'), key='app_name',
+        [gui.InputText(config.get('site'), key='site',
                        size=(30, 1), do_not_clear=True, font='Any 10'), ],
         [gui.Multiline(config.get('tags'), key='tags',
                        size=(30, 3), auto_size_text=True,
@@ -135,6 +138,13 @@ def next_run_in(next_run_at):
     return '{} minutes, {} seconds'.format(int(mins), int(secs))
 
 
+def mail_check(window):
+    window.FindElement('output').Update(disabled=False)
+    window.FindElement('output').Update('{}\n'.format(datetime.now()),
+                                        append=True)
+    window.FindElement('output').Update(disabled=True)
+
+
 def main():
     """
     the main function
@@ -148,32 +158,57 @@ def main():
     while True:
         event, values = window.Read(timeout=0)
 
+        autorun = window.FindElement('autorun').Get()
+
         if values is None or event == 'Exit':
             break
 
+        if not paused and autorun:
+            window.FindElement('status').Update(
+                'next mail check run in {}'.format(next_run_in(next_run_at)))
+
+            if next_run_at <= datetime.now():
+                window.FindElement('pause').Update(disabled=True)
+                window.FindElement('mailcheck').Update(disabled=True)
+                window.FindElement('status').Update('running mail check')
+                mail_check(window)
+                next_run_at = datetime.now() + \
+                    timedelta(minutes=int(window.FindElement(
+                        'mail_every_minutes').Get()))
+                window.FindElement('pause').Update(disabled=False)
+                window.FindElement('mailcheck').Update(disabled=False)
+
+            time.sleep(1)
+
+        if event == 'mailcheck':
+            window.FindElement('run').Update(disabled=True)
+            window.FindElement('pause').Update(disabled=True)
+            window.FindElement('status').Update('running manual mail check')
+            mail_check(window)
+            next_run_at = datetime.now() + \
+                timedelta(minutes=int(window.FindElement(
+                    'mail_every_minutes').Get()))
+            if autorun:
+                window.FindElement('run').Update(disabled=True)
+                window.FindElement('pause').Update(disabled=False)
+            if paused:
+                window.FindElement('run').Update(disabled=False)
+                window.FindElement('pause').Update(disabled=True)
+
         if event == 'pause':
             paused = True
-            window.FindElement('status').Update('mail check is paused')
+            window.FindElement('status').Update(
+                'automated mail check execution is paused')
             window.FindElement('pause').Update(disabled=True)
             window.FindElement('run').Update(disabled=False)
 
         if event == 'run':
             paused = False
+            autorun = True
             window.FindElement('run').Update(disabled=True)
             window.FindElement('pause').Update(disabled=False)
-
-        if not paused:
             window.FindElement('status').Update(
                 'next mail check run in {}'.format(next_run_in(next_run_at)))
-
-            if next_run_at <= datetime.now():
-                window.FindElement('status').Update('running mail check')
-                time.sleep(10)
-                next_run_at = datetime.now() + \
-                    timedelta(minutes=int(window.FindElement(
-                        'mail_every_minutes').Get()))
-
-            time.sleep(1)
 
     # Broke out of main loop. Close the window.
     window.Close()

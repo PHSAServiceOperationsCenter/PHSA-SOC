@@ -269,7 +269,6 @@ def main():
         window.FindElement('pause').Update(disabled=True)
         window.FindElement('run').Update(disabled=False)
 
-    paused = False
     while True:
         event, values = window.Read(timeout=0)
 
@@ -279,7 +278,7 @@ def main():
         if event in editable:
             config_is_dirty = True
 
-        if not paused and autorun:
+        if autorun:
             window.FindElement('pause').Update(disabled=False)
             window.FindElement('status').Update(
                 'next mail check run in {}'.format(next_run_in(next_run_at)))
@@ -306,19 +305,18 @@ def main():
             if autorun:
                 window.FindElement('run').Update(disabled=True)
                 window.FindElement('pause').Update(disabled=False)
-            if paused:
+            else:
                 window.FindElement('run').Update(disabled=False)
                 window.FindElement('pause').Update(disabled=True)
 
         if event == 'pause':
-            paused = True
+            autorun = False
             window.FindElement('status').Update(
                 'automated mail check execution is paused')
             window.FindElement('pause').Update(disabled=True)
             window.FindElement('run').Update(disabled=False)
 
         if event == 'run':
-            paused = False
             autorun = True
             window.FindElement('run').Update(disabled=True)
             window.FindElement('pause').Update(disabled=False)

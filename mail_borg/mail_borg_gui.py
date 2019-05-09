@@ -3,18 +3,17 @@ Created on Apr 30, 2019
 
 @author: serban
 '''
-import PySimpleGUI as gui
+from datetime import datetime, timedelta
 import time
 
-from datetime import datetime, timedelta
-
-from config import load_config
 from celery.worker.control import enable_events
+
+import PySimpleGUI as gui
+from config import load_config
+
 
 # form that doen't block
 # good for applications with an loop that polls hardware
-
-
 gui.SetOptions(font='Any 12')
 
 
@@ -34,12 +33,18 @@ def get_window():
             gui.Button('Pause Auto-run', key='pause', font='Any 10'),
         ],
         [
-            gui.Text('',  key='status', size=(40, 1),  justification='left'),
+            gui.Text('',  key='status', size=(52, 1),  justification='left'),
         ],
         [
             gui.Multiline(
-                size=(40, 20), key='output', disabled=True, autoscroll=True),
+                size=(52, 26), key='output', disabled=True, autoscroll=True),
         ],
+        [
+            gui.Text(''),
+        ],
+        [
+            gui.Text('', size=(38, 1)),
+            gui.Button('Clear execution data', key='clear', font='Any 10'), ]
     ]
 
     conf_labels_col = [
@@ -98,83 +103,98 @@ def get_window():
 
     conf_values_col = [
         [
-            gui.InputText(config.get('mail_every_minutes'),
-                          key='mail_every_minutes',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
-                          enable_events=True),
+            gui.Spin([i for i in range(1, 60)],
+                     initial_value=config.get('mail_every_minutes'),
+                     key='mail_every_minutes',
+                     auto_size_text=True, font='Any 10', enable_events=True),
+            gui.Text('minutes'),
         ],
         [
             gui.InputText(config.get('domain'), key='domain',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
+                          size=(32, 1), do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
         [
             gui.InputText(config.get('username'), key='username',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
+                          size=(32, 1), do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
         [
             gui.InputText(config.get('password'), key='password',
-                          size=(30, 1), do_not_clear=True, password_char='*',
+                          size=(32, 1), do_not_clear=True, password_char='*',
                           font='Any 10', enable_events=True),
         ],
         [
             gui.Listbox(config.get('email_addresses'), key='email_addresses',
-                        size=(30, 3), auto_size_text=True, font='Any 10',
+                        size=(32, 3), auto_size_text=True, font='Any 10',
                         enable_events=True),
         ],
         [
             gui.Listbox(config.get('witness_addresses'),
                         key='witness_addresses',
-                        size=(30, 3), auto_size_text=True, font='Any 10',
+                        size=(32, 3), auto_size_text=True, font='Any 10',
                         enable_events=True),
         ],
         [
             gui.Multiline(config.get('email_subject'), key='email_subject',
-                          size=(30, 3), auto_size_text=True,
+                          size=(32, 3), auto_size_text=True,
                           do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
         [
             gui.InputText(config.get('app_name'), key='app_name',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
+                          size=(32, 1), do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
         [
-            gui.InputText(config.get('check_mx_timeout'),
-                          key='check_mx_timeout',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
-                          enable_events=True),
+            gui.Spin([i for i in range(1, 20)],
+                     initial_value=config.get('check_mx_timeout'),
+                     key='check_mx_timeout',
+                     auto_size_text=True, font='Any 10', enable_events=True),
+            gui.Text('seconds'),
         ],
         [
-            gui.InputText(config.get('min_wait_receive'),
-                          key='min_wait_receive',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
-                          enable_events=True),
+            gui.Spin([i for i in range(1, 30)],
+                     initial_value=config.get('min_wait_receive'),
+                     key='min_wait_receive',
+                     auto_size_text=True, font='Any 10',
+                     enable_events=True),
+            gui.Text('seconds'),
         ],
         [
-            gui.InputText(config.get('step_wait_receive'),
-                          key='step_wait_receive',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
-                          enable_events=True),
+            gui.Spin([i for i in range(1, 10)],
+                     initial_value=config.get('step_wait_receive'),
+                     key='step_wait_receive',
+                     auto_size_text=True, font='Any 10',
+                     enable_events=True),
+            gui.Text('seconds'),
         ],
         [
-            gui.InputText(config.get('max_wait_receive'),
-                          key='max_wait_receive',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
-                          enable_events=True),
+            gui.Spin([i for i in range(30, 120)],
+                     initial_value=config.get('max_wait_receive'),
+                     key='max_wait_receive',
+                     auto_size_text=True, font='Any 10',
+                     enable_events=True),
+            gui.Text('seconds'),
         ],
         [
             gui.InputText(config.get('site'), key='site',
-                          size=(30, 1), do_not_clear=True, font='Any 10',
+                          size=(32, 1), do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
         [
             gui.Multiline(config.get('tags'), key='tags',
-                          size=(30, 3), auto_size_text=True,
+                          size=(32, 3), auto_size_text=True,
                           do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
+        [gui.Text('')],
+        [
+            gui.Button('Save configuration', key='save_config',
+                       disabled=True, font='Any 10'),
+            gui.Button('Reset configuration', key='reset_config',
+                       disabled=True, font='Any 10'),
+        ]
     ]
 
     right_frame = [
@@ -229,6 +249,10 @@ def mail_check(window):
 
     #TODO: implement it, tight now it's just a place-holder
     """
+    window.FindElement('run').Update(disabled=True)
+    window.FindElement('pause').Update(disabled=True)
+    window.FindElement('status').Update('running manual mail check')
+    # TODO: here run
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update('{}\n'.format(datetime.now()),
                                         append=True)
@@ -243,6 +267,36 @@ def save_config(window):
     #TODO: right now it's just a place holder
     """
     gui.PopupTimed('save config', auto_close_duration=5)
+    window.FindElement('save_config').Update(disabled=True)
+
+
+def reset_config(window):
+    """
+    reload the default configuration
+
+    #TODO: right now it's just a place holder
+    """
+    gui.PopupTimed('reset config', auto_close_duration=5)
+    save_config(window)
+    window.FindElement('reset_config').Update(disabled=True)
+
+
+def _set_autorun(window):
+    autorun = window.FindElement('autorun').Get()
+    if autorun:
+        window.FindElement('pause').Update(disabled=False)
+        window.FindElement('run').Update(disabled=True)
+    else:
+        window.FindElement('pause').Update(disabled=True)
+        window.FindElement('run').Update(disabled=False)
+        window.FindElement('status').Update(
+            'automated mail check execution is paused')
+    return autorun
+
+
+def _dirty_window(window):
+    window.FindElement('save_config').Update(disabled=False)
+    window.FindElement('reset_config').Update(disabled=False)
 
 
 def main():
@@ -261,13 +315,7 @@ def main():
     next_run_at = datetime.now() + \
         timedelta(minutes=int(window.FindElement('mail_every_minutes').Get()))
 
-    autorun = window.FindElement('autorun').Get()
-    if autorun:
-        window.FindElement('pause').Update(disabled=False)
-        window.FindElement('run').Update(disabled=True)
-    else:
-        window.FindElement('pause').Update(disabled=True)
-        window.FindElement('run').Update(disabled=False)
+    autorun = _set_autorun(window)
 
     while True:
         event, values = window.Read(timeout=0)
@@ -277,6 +325,24 @@ def main():
 
         if event in editable:
             config_is_dirty = True
+            _dirty_window(window)
+
+            if event == 'autorun':
+                autorun = _set_autorun(window)
+
+            if event == 'mail_every_minutes':
+                next_run_at = datetime.now() + \
+                    timedelta(
+                        minutes=int(
+                            window.FindElement('mail_every_minutes').Get()))
+
+        if event == 'save_config':
+            config_is_dirty = False
+            save_config(window)
+
+        if event == 'reset_config':
+            config_is_dirty = False
+            reset_config(window)
 
         if autorun:
             window.FindElement('pause').Update(disabled=False)
@@ -295,9 +361,6 @@ def main():
                 window.FindElement('mailcheck').Update(disabled=False)
 
         if event == 'mailcheck':
-            window.FindElement('run').Update(disabled=True)
-            window.FindElement('pause').Update(disabled=True)
-            window.FindElement('status').Update('running manual mail check')
             mail_check(window)
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
@@ -326,6 +389,15 @@ def main():
         time.sleep(1)
 
     # Broke out of main loop. Close the window.
+    if config_is_dirty:
+        save = gui.PopupYesNo(
+            'Save configuration?',
+            'There are unsaved changes in the application configuration.'
+            ' Do you wish to save them?')
+
+        if save == 'Yes':
+            save_config(window)
+
     window.Close()
 
 

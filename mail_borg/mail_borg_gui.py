@@ -9,7 +9,7 @@ import time
 from celery.worker.control import enable_events
 
 import PySimpleGUI as gui
-from config import load_config
+from config import load_config, save_config, load_default_config
 
 
 # form that doen't block
@@ -225,7 +225,7 @@ def get_window():
 
     window.Layout(layout).Finalize()
 
-    return window
+    return config, window
 
 
 def next_run_in(next_run_at):
@@ -243,7 +243,7 @@ def next_run_in(next_run_at):
     return '{} minutes, {} seconds'.format(int(mins), int(secs))
 
 
-def mail_check(window):
+def mail_check(config, window):
     """
     invoke the mail check functionality
 
@@ -259,7 +259,7 @@ def mail_check(window):
     window.FindElement('output').Update(disabled=True)
 
 
-def save_config(window):
+def do_save_config(window):
     """
     save modified configuration to the ini file and, later on,
     to both the configuration file and the server
@@ -270,14 +270,20 @@ def save_config(window):
     window.FindElement('save_config').Update(disabled=True)
 
 
-def reset_config(window):
+def do_reload_config(window):
+    """
+    abandon live configuration and reload from file or server
+    """
+
+
+def do_reset_config(window):
     """
     reload the default configuration
 
     #TODO: right now it's just a place holder
     """
     gui.PopupTimed('reset config', auto_close_duration=5)
-    save_config(window)
+    do_save_config(window)
     window.FindElement('reset_config').Update(disabled=True)
 
 
@@ -292,6 +298,13 @@ def _set_autorun(window):
         window.FindElement('status').Update(
             'automated mail check execution is paused')
     return autorun
+
+
+def _do_pause(window):
+    window.FindElement('status').Update(
+        'automated mail check execution is paused')
+    window.FindElement('pause').Update(disabled=True)
+    window.FindElement('run').Update(disabled=False)
 
 
 def _dirty_window(window):
@@ -310,7 +323,7 @@ def main():
                 'check_mx_timeout', 'min_wait_receive', 'step_wait_receive',
                 'max_wait_receive', 'site', 'tags']
 
-    window = get_window()
+    config, window = get_window()
 
     next_run_at = datetime.now() + \
         timedelta(minutes=int(window.FindElement('mail_every_minutes').Get()))
@@ -325,6 +338,7 @@ def main():
 
         if event in editable:
             config_is_dirty = True
+            config[event] = window.FindElement(event).Get()
             _dirty_window(window)
 
             if event == 'autorun':
@@ -338,11 +352,11 @@ def main():
 
         if event == 'save_config':
             config_is_dirty = False
-            save_config(window)
+            do_save_config(window)
 
         if event == 'reset_config':
             config_is_dirty = False
-            reset_config(window)
+            do_reset_config(window)
 
         if autorun:
             window.FindElement('pause').Update(disabled=False)
@@ -374,10 +388,7 @@ def main():
 
         if event == 'pause':
             autorun = False
-            window.FindElement('status').Update(
-                'automated mail check execution is paused')
-            window.FindElement('pause').Update(disabled=True)
-            window.FindElement('run').Update(disabled=False)
+            _do_pause(window)
 
         if event == 'run':
             autorun = True
@@ -396,7 +407,7 @@ def main():
             ' Do you wish to save them?')
 
         if save == 'Yes':
-            save_config(window)
+            do_save_config(window)
 
     window.Close()
 

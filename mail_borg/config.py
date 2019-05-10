@@ -15,56 +15,94 @@ configuration module for exchange monitoring borg bots
 :updated:    apr. 12, 2019
 
 """
+import collections
 import configparser
 import socket
 
-CONFIG = configparser.ConfigParser(
-    allow_no_value=True, empty_lines_in_values=False)
+PASSWD = 'passwd'
 
 
-def load_config(config_file='mail_borg.ini'):
+def load_config(config_file='mail_borg.ini', section='SITE'):
     """
     return the ``dict`` with the current configuration
     """
-    CONFIG.read(config_file)
+    config_parser = configparser.ConfigParser(
+        allow_no_value=True, empty_lines_in_values=False)
+    config_parser.read(config_file)
 
     config = dict()
-    config['use_server_config'] = CONFIG.getboolean('SITE',
-                                                    'use_server_config')
+    config['use_server_config'] = config_parser.getboolean(section,
+                                                           'use_server_config')
 
     if config['use_server_config']:
         return get_config_from_server()
 
-    config['debug'] = CONFIG.getboolean('SITE', 'debug')
-    config['autorun'] = CONFIG.getboolean('SITE', 'autorun')
-    config['domain'] = CONFIG.get('SITE', 'domain')
-    config['username'] = CONFIG.get('SITE', 'username')
+    config['debug'] = config_parser.getboolean(section, 'debug')
+    config['autorun'] = config_parser.getboolean(section, 'autorun')
+    config['domain'] = config_parser.get(section, 'domain')
+    config['username'] = config_parser.get(section, 'username')
 
     config['password'] = _get_password(
-        password_file=CONFIG.get('SITE', 'password_file'))
+        password_file=config_parser.get(section, 'password_file'))
 
-    config['email_addresses'] = CONFIG.get(
-        'SITE', 'email_addresses').split(',')
-    config['witness_addresses'] = CONFIG.get(
-        'SITE', 'witness_addresses').split(',')
-    config['email_subject'] = CONFIG.get('SITE', 'email_subject')
+    config['email_addresses'] = config_parser.get(
+        section, 'email_addresses').split(',')
+    config['witness_addresses'] = config_parser.get(
+        section, 'witness_addresses').split(',')
+    config['email_subject'] = config_parser.get(section, 'email_subject')
 
-    config['app_name'] = CONFIG.get('SITE', 'app_name')
-    config['log_type'] = CONFIG.get('SITE', 'log_type')
-    config['evt_log_key'] = CONFIG.get('SITE', 'evt_log_key')
+    config['app_name'] = config_parser.get(section, 'app_name')
+    config['log_type'] = config_parser.get(section, 'log_type')
+    config['evt_log_key'] = config_parser.get(section, 'evt_log_key')
 
-    config['msg_dll'] = CONFIG.get('SITE', 'msg_dll')
+    config['msg_dll'] = config_parser.get(section, 'msg_dll')
 
-    config['mail_every_minutes'] = CONFIG.getint('SITE', 'mail_every_minutes')
-    config['check_mx_timeout'] = CONFIG.getint('SITE', 'check_mx_timeout')
-    config['min_wait_receive'] = CONFIG.getint('SITE', 'min_wait_receive')
-    config['step_wait_receive'] = CONFIG.getint('SITE', 'step_wait_receive')
-    config['max_wait_receive'] = CONFIG.getint('SITE', 'max_wait_receive')
+    config['mail_every_minutes'] = config_parser.getint(
+        section, 'mail_every_minutes')
+    config['force_ascii_email'] = config_parser.getboolean(
+        section, 'force_ascii_email')
+    config['allow_utf8_email'] = config_parser.getboolean(
+        section, 'allow_utf8_email')
+    config['check_email_mx'] = config_parser.getboolean(
+        section, 'check_email_mx')
+    config['check_mx_timeout'] = config_parser.getint(
+        section, 'check_mx_timeout')
+    config['min_wait_receive'] = config_parser.getint(
+        section, 'min_wait_receive')
+    config['step_wait_receive'] = config_parser.getint(
+        section, 'step_wait_receive')
+    config['max_wait_receive'] = config_parser.getint(
+        section, 'max_wait_receive')
 
-    config['site'] = CONFIG.get('SITE', 'site')
-    config['tags'] = CONFIG.get('SITE', 'tags')
+    config['site'] = config_parser.get(section, 'site')
+    config['tags'] = config_parser.get(section, 'tags')
 
     return config
+
+
+def save_config(dict_config, config_file='mail_borg.ini'):
+    """
+    save configuration file
+    """
+
+    # password is a special case, we must save the password to a file
+    # and save the file name to the configuration
+    dict_config['password'] = _set_passwd(dict_config.get('password'))
+
+    config_parser = configparser.ConfigParser(
+        allow_no_value=True, empty_lines_in_values=False)
+    config_parser.read_dict(
+        collections.OrderedDict(
+            [('SITE', dict_config)]), source='<collections.OrderedDict>')
+    with open(config_file, 'w') as file_handle:
+        config_parser.write(file_handle, space_around_delimiters=True)
+
+
+def load_default_config():
+    """
+    load the default configuration
+    """
+    return load_config(config_file='default_mail_borg.ini', section='DEFAULT')
 
 
 def set_subject(subject, site=None, debug=False):
@@ -95,7 +133,7 @@ def get_config_from_server():
                               ' not yet been implemented')
 
 
-def _get_password(password_file='passwd'):
+def _get_password(password_file=PASSWD):
     """
     absolutely not a safe way to deal with passwords but at least with
     this we can keep the damned passwords from showing in the github history
@@ -106,3 +144,10 @@ def _get_password(password_file='passwd'):
         passwd = fhandle.readline()
 
     return passwd
+
+
+def _set_passwd(password, password_file=PASSWD):
+    with open(password_file, 'w') as file_handle:
+        file_handle.write(password)
+
+    return password_file

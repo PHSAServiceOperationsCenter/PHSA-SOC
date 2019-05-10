@@ -27,6 +27,8 @@ we catch the error.
 """
 import collections
 import time
+
+from datetime import datetime
 from uuid import uuid4
 
 from email_validator import (
@@ -34,14 +36,44 @@ from email_validator import (
 )
 from exchangelib import ServiceAccount, Message, Account
 
-from config import get_config
+from config import load_config
 from logger import LogWinEvent
 
 
-def validate_email_to_ascii(  # pylint: disable=too-many-arguments
-        email_address, to_ascii=True, allow_smtputf8=False,
-        check_deliverability=True,
-        timeout=get_config().get('check_mx_timeout', 15), logger=None):
+class _Logger():
+    def __init__(self, console_logger=None, event_logger=None):
+        self.console_logger = console_logger
+        if event_logger is None:
+            event_logger = LogWinEvent()
+
+        self.event_logger = event_logger
+
+    def info(self, strings):
+        self.event_logger.info(strings)
+        self.update_console(strings, level='INFO')
+
+    def warn(self, strings):
+        self.event_logger.warn(strings)
+        self.update_console(strings, level='WARN')
+
+    def err(self, strings):
+        self.event_logger.err(strings)
+        self.update_console(strings, level='ERROR')
+
+    def update_console(self, strings, level=None):
+        if self.console_logger is None:
+            return
+
+        if level is None:
+            level = 'INFO'
+
+        self.console_logger.Update('[{}] {}:\n'.format(level, datetime.now()),
+                                   append=True)
+        for item in strings:
+            self.console_logger.Update('\t{}\n'.format(item), append=True)
+
+
+def validate_email_to_ascii(email_address, config=None, logger=None):
     """
     validate, normalize, and return an email address
     optionally also convert it to ascii
@@ -50,26 +82,34 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
     of the :module:`<email_validator>` doesn't implement a timeout when
     checking the MX record for an email address
 
-    :arg bool to_ascii: default ``True``
+    :arg dict config:
 
-        see below for SMTPUTF8 support. i am pretty sure that any recent
-        Exchange version will support characters like è but this is
-        British Columbia and they don't always play nice with the feds or
-        with Québec
+        put all the required args in a ``dict`` to pass it around. life
+        is so much simpler with on arg instead of 4.
 
-    :arg bool allow_smtputf8: default ``False``
+        :arg bool to_ascii: default ``True``
 
-        it is unclear whether Exchange supports SMTPUTF8 in versions 2016
-        or lower so let's stay away from all that nonsense
+            see below for SMTPUTF8 support. i am pretty sure that any recent
+            Exchange version will support characters like è but this is
+            British Columbia and they don't always play nice with the feds or
+            with Québec
 
-    :arg bool check_deliverability: default True
+        :arg bool allow_smtputf8: default ``False``
 
-        does the domain part of the email address resolve? this should be
-        checked because it may show us DNS errors on some borg nodes
+            it is unclear whether Exchange supports SMTPUTF8 in versions 2016
+            or lower so let's stay away from all that nonsense
 
-    :arg int timeout: seconds, default picked from config, fallback 15
+        :arg bool check_deliverability: default True
 
-        timeout value for verifying the MX record of the email address
+            does the domain part of the email address resolve? this should be
+            checked because it may show us DNS errors on some borg nodes
+
+        :arg int timeout: seconds, default picked from config, fallback 15
+
+            timeout value for verifying the MX record of the email address
+
+    :arg logger: log all problems
+    :argtype logger: :class:`<_Logger>`
 
     :returns:
 
@@ -81,13 +121,18 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
         this function doesn't raise any exceptions because it does its own
         error handling by logging specific failures to the windows events log
     """
+    if config is None:
+        config = load_config()
+
     if logger is None:
-        logger = LogWinEvent()
+        logger = _Logger()
 
     try:
         email_dict = validate_email(
-            email_address, allow_smtputf8=allow_smtputf8, timeout=timeout,
-            allow_empty_local=False, check_deliverability=check_deliverability)
+            email_address, allow_smtputf8=config.get('allow_utf8_email'),
+            timeout=config.get('check_mx_timeout'),
+            allow_empty_local=False,
+            check_deliverability=config.get('check_email_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
         logger.warn(strings=[
             'type: verify configuration',
@@ -96,14 +141,13 @@ def validate_email_to_ascii(  # pylint: disable=too-many-arguments
             'exception: %s' % str(error)])
         return None
 
-    if to_ascii:
+    if config.get('force_ascii_email'):
         return email_dict.get('email_ascii')
 
     return email_dict.get('email')
 
 
-def get_accounts(domain=None, username=None, password=None,
-                 email_addresses=None, logger=None):
+def get_accounts(config=None, logger=None):
     """
     get a list of Exchange accounts
 
@@ -125,26 +169,17 @@ def get_accounts(domain=None, username=None, password=None,
     :argtype logger: :class:`<logger.WinLogEvent>`
 
     """
+    if config is None:
+        config = load_config()
+
     if logger is None:
-        logger = LogWinEvent()
+        logger = _Logger()
 
-    if domain is None:
-        domain = get_config().get('domain')
-
-    if username is None:
-        username = get_config().get('username')
-
-    if password is None:
-        password = get_config().get('password')
-
-    if email_addresses is None:
-        email_addresses = get_config().get('email_addresses')
-
-    if not isinstance(email_addresses, (list, tuple)):
-        email_addresses = [email_addresses]
+    if not isinstance(config.get('email_addresses'), (list, tuple)):
+        config['email_addresses'] = [config.get('email_addresses')]
 
     emails = []
-    for email_address in email_addresses:
+    for email_address in config.get('email_addresses'):
         emails.append(validate_email_to_ascii(email_address, logger=logger))
 
     if not emails:
@@ -155,11 +190,12 @@ def get_accounts(domain=None, username=None, password=None,
                 'status message: none of the %s email addresses is valid.'
                 'please update your configuration for this node',
                 'invalid or unknown email addresses: %s'
-                % ', '.join(email_addresses), ])
+                % ', '.join(config.get('email_addresses')), ])
         return None
 
     credentials = ServiceAccount(
-        username='{}\\{}'.format(domain, username), password=password)
+        username='{}\\{}'.format(config.get('domain'), config.get('username')),
+        password=config.get('password'))
 
     accounts = []
     for email in emails:
@@ -172,14 +208,16 @@ def get_accounts(domain=None, username=None, password=None,
                     'type: verify connection',
                     'status: PASS',
                     'status message: connected to exchange with'
-                    ' account %s\\%s, %s' % (domain, username, email), ])
+                    ' account %s\\%s, %s' % (config.get('domain'),
+                                             config.get('username'), email), ])
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 strings=[
                     'type: verify connection',
                     'status: FAIL',
                     'message: cannot connect to exchange with'
-                    'account %s\\%s, %s' % (domain, username, email),
+                    'account %s\\%s, %s' % (config.get('domain'),
+                                            config.get('username'), email),
                     'exception: %s' % str(err), ])
 
     if not accounts:
@@ -187,8 +225,10 @@ def get_accounts(domain=None, username=None, password=None,
             'type: verify configuration',
             'status: FAIL',
             'status message: invalid exchange configuration for all'
-            'accounts in %s\\%s' % (domain, username),
-            'email addresses: %s' % ', '.join(email_addresses), ])
+            'accounts in %s\\%s' % (config.get('domain'),
+                                    config.get('username')),
+            'email addresses: %s' % ', '.join(config.get('email_addresses')),
+        ])
         return None
 
     return accounts
@@ -210,12 +250,6 @@ WitnessMessage = collections.namedtuple(
 
 :vartype WitnessMessage: :class:`<collections.namedtuple>`
 """
-
-
-def _get_logger(logger):
-    if logger is None:
-        logger = LogWinEvent()
-    return logger
 
 
 class WitnessMessages():
@@ -249,9 +283,7 @@ class WitnessMessages():
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-            self,
-            subject=None, accounts=None, email_addresses=None,
-            witness_addresses=None, logger=None):
+            self, config=None, accounts=None, logger=None, console_logger=None):
         """
         constructor
 
@@ -267,14 +299,19 @@ class WitnessMessages():
         """
         self._sent = False
 
-        if subject is None:
-            subject = get_config().get('email_subject')
+        if config is None:
+            config = load_config()
+
+        self.config = config
+
+        subject = config.get('email_subject')
         self.messages = []
 
-        self.logger = _get_logger(logger)
+        self.logger = _Logger(
+            console_logger=console_logger, event_logger=logger)
 
         if accounts is None:
-            accounts = get_accounts(logger=self.logger)
+            accounts = get_accounts(config=self.config, logger=self.logger)
 
         self.accounts = accounts
 
@@ -286,25 +323,21 @@ class WitnessMessages():
             raise TypeError(
                 'bad object type %s. must be a list' % type(accounts))
 
-        if email_addresses is None:
-            email_addresses = get_config().get('email_addresses')
-
         self.emails = []
-        for email_address in email_addresses:
+        for email_address in self.config.get('email_addresses'):
             self.emails.append(
-                validate_email_to_ascii(email_address, logger=self.logger))
+                validate_email_to_ascii(
+                    email_address, config=self.config, logger=self.logger))
 
         if not self.emails:
             # again, stop wasting time
             return
 
-        if witness_addresses is None:
-            witness_addresses = get_config().get('witness_addresses')
-
         self.witness_emails = []
-        for witness_address in witness_addresses:
+        for witness_address in self.config.get('witness_addresses'):
             self.witness_emails.append(
-                validate_email_to_ascii(witness_address, logger=self.logger))
+                validate_email_to_ascii(
+                    witness_address, config=self.config, logger=self.logger))
 
         for account in accounts:
             if not isinstance(account, Account):
@@ -389,9 +422,9 @@ class WitnessMessages():
 
     def verify_receive(
         self,
-            min_wait_receive=get_config().get('min_wait_receive', 3),
-            step_wait_receive=get_config().get('step_wait_receive', 3),
-            max_wait_receive=get_config().get('max_wait_receive', 120)):
+            min_wait_receive=load_config().get('min_wait_receive', 3),
+            step_wait_receive=load_config().get('step_wait_receive', 3),
+            max_wait_receive=load_config().get('max_wait_receive', 120)):
         """
         look for all the messages that were sent in the inbox of each account
         used to send them

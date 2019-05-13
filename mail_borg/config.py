@@ -46,10 +46,9 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
         password_file=config_parser.get(section, 'password_file'))
 
     config['email_addresses'] = config_parser.get(
-        section, 'email_addresses').split(',')
+        section, 'email_addresses')
     config['witness_addresses'] = config_parser.get(
-        section, 'witness_addresses').split(',')
-    config['email_subject'] = config_parser.get(section, 'email_subject')
+        section, 'witness_addresses')
 
     config['app_name'] = config_parser.get(section, 'app_name')
     config['log_type'] = config_parser.get(section, 'log_type')
@@ -77,6 +76,10 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
     config['site'] = config_parser.get(section, 'site')
     config['tags'] = config_parser.get(section, 'tags')
 
+    config['email_subject'] = set_subject(
+        config_parser.get(section, 'email_subject'),
+        tags=config['tags'], site=config['site'], debug=config['debug'])
+
     return config
 
 
@@ -85,9 +88,16 @@ def save_config(dict_config, config_file='mail_borg.ini'):
     save configuration file
     """
 
-    # password is a special case, we must save the password to a file
+    # password is a special case, we must save the password to a file,
+    # pop the password from the configuration dictionary (otherwise it will
+    # be saved in clear in a file thatmay end up in github),
     # and save the file name to the configuration
-    dict_config['password'] = _set_passwd(dict_config.get('password'))
+    dict_config['password_file'] = _set_passwd(dict_config.get('password'))
+    dict_config.pop('password')
+
+    # email subject is also a special case, we need to trim all the tags
+    dict_config['email_subject'] = dict_config.get('email_subject').\
+        split(']')[-1]
 
     config_parser = configparser.ConfigParser(
         allow_no_value=True, empty_lines_in_values=False)
@@ -105,7 +115,7 @@ def load_default_config():
     return load_config(config_file='default_mail_borg.ini', section='DEFAULT')
 
 
-def set_subject(subject, site=None, debug=False):
+def set_subject(subject, tags=None, site=None, debug=False):
     """
     tag the subject line with the fqdn, site information if available,
     and debug information
@@ -114,10 +124,11 @@ def set_subject(subject, site=None, debug=False):
     monitoring. the tags will make it easy to create exchange rules for the
     monitoring messages
     """
-    tags = '[DEBUG]' if debug else None
-    tags += '[{}]'.format(socket.getfqdn())
+    _tags = '[DEBUG]' if debug else ''
+    _tags += '[{}]'.format(socket.getfqdn())
+    _tags += tags
 
-    subject = '{}{}'.format(tags, subject)
+    subject = '{}{}'.format(_tags, subject)
 
     if site:
         return '{} originating from {}'.format(subject, site)

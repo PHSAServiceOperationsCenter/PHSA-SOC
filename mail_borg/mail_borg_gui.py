@@ -1,15 +1,28 @@
-'''
-Created on Apr 30, 2019
+"""
+.. _mail_borg_gui:
 
-@author: serban
-'''
-from datetime import datetime, timedelta
+GUI module for exchange monitoring borg bot software
+
+:module:    mail_borg.mail_borg_gui
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    apr. 30, 2019
+
+"""
+import collections
 import time
 
-from celery.worker.control import enable_events
+from datetime import datetime, timedelta
 
 import PySimpleGUI as gui
 from config import load_config, save_config, load_default_config
+from mailer import WitnessMessages
 
 
 # form that doen't block
@@ -28,7 +41,7 @@ def get_window():
 
     left_frame = [
         [
-            gui.Button('Run Mail Check', key='mailcheck', font='Any 10'),
+            gui.Button('Run Mail Check Now', key='mailcheck', font='Any 10'),
             gui.Button('Start Auto-run', key='run', font='Any 10'),
             gui.Button('Pause Auto-run', key='pause', font='Any 10'),
         ],
@@ -125,15 +138,15 @@ def get_window():
                           font='Any 10', enable_events=True),
         ],
         [
-            gui.Listbox(config.get('email_addresses'), key='email_addresses',
-                        size=(32, 3), auto_size_text=True, font='Any 10',
-                        enable_events=True),
+            gui.Multiline(config.get('email_addresses'), key='email_addresses',
+                          size=(32, 3), auto_size_text=True, font='Any 10',
+                          do_not_clear=True,  enable_events=True),
         ],
         [
-            gui.Listbox(config.get('witness_addresses'),
-                        key='witness_addresses',
-                        size=(32, 3), auto_size_text=True, font='Any 10',
-                        enable_events=True),
+            gui.Multiline(config.get('witness_addresses'),
+                          key='witness_addresses',
+                          size=(32, 3), auto_size_text=True, font='Any 10',
+                          do_not_clear=True,  enable_events=True),
         ],
         [
             gui.Multiline(config.get('email_subject'), key='email_subject',
@@ -188,13 +201,7 @@ def get_window():
                           do_not_clear=True, font='Any 10',
                           enable_events=True),
         ],
-        [gui.Text('')],
-        [
-            gui.Button('Save configuration', key='save_config',
-                       disabled=True, font='Any 10'),
-            gui.Button('Reset configuration', key='reset_config',
-                       disabled=True, font='Any 10'),
-        ]
+
     ]
 
     right_frame = [
@@ -206,13 +213,37 @@ def get_window():
             gui.Checkbox('Debug',
                          default=config.get('debug'), key='debug',
                          font='Any 10', enable_events=True),
-            gui.Checkbox('Auto-run',
+            gui.Checkbox('Enable Auto-run on startup',
                          default=config.get('autorun'), key='autorun',
+                         font='Any 10', enable_events=True),
+        ],
+        [
+            gui.Checkbox('Use ASCII from of email addresses',
+                         default=config.get('force_ascii_email'),
+                         key='force_ascii_email', font='Any 10',
+                         enable_events=True),
+            gui.Checkbox('Allow UTF-8 characters in email addresses',
+                         default=config.get('allow_utf8_email'),
+                         key='allow_utf8_email',
+                         font='Any 10', enable_events=True),
+        ],
+        [
+            gui.Checkbox('Verify email address domain for deliverability',
+                         default=config.get('check_email_mx'),
+                         key='check_email_mx',
                          font='Any 10', enable_events=True),
         ],
         [
             gui.Column(conf_labels_col), gui.Column(conf_values_col),
         ],
+        [
+            gui.Button('Save configuration to file', key='save_config',
+                       disabled=True, font='Any 10'),
+            gui.Button('Reload configuration from file', key='reload_config',
+                       disabled=True, font='Any 10'),
+            gui.Button('Use default configuration', key='reset_config',
+                       disabled=False, font='Any 10'),
+        ]
     ]
 
     layout = [
@@ -247,44 +278,64 @@ def mail_check(config, window):
     """
     invoke the mail check functionality
 
-    #TODO: implement it, tight now it's just a place-holder
     """
-    window.FindElement('run').Update(disabled=True)
-    window.FindElement('pause').Update(disabled=True)
-    window.FindElement('status').Update('running manual mail check')
-    # TODO: here run
+    window.FindElement('mailcheck').Update(disabled=True)
+    window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
-    window.FindElement('output').Update('{}\n'.format(datetime.now()),
-                                        append=True)
+    window.FindElement('output').Update(
+        '{}: running mail check\n'.format(datetime.now()), append=True)
+
+    witness_messages = WitnessMessages(config=config, console_logger=window)
+    witness_messages.verify_receive()
+
     window.FindElement('output').Update(disabled=True)
+    window.FindElement('mailcheck').Update(disabled=False)
 
 
-def do_save_config(window):
+def do_save_config(config, window):
     """
     save modified configuration to the ini file and, later on,
     to both the configuration file and the server
 
-    #TODO: right now it's just a place holder
     """
-    gui.PopupTimed('save config', auto_close_duration=5)
     window.FindElement('save_config').Update(disabled=True)
+
+    items = []
+    for key, val in config.items():
+        items.append((key, val))
+
+    save_config(dict_config=collections.OrderedDict(items))
+
+    window.FindElement('save_config').Update(disabled=False)
 
 
 def do_reload_config(window):
     """
     abandon live configuration and reload from file or server
     """
+    config = load_config()
+    for key, value in config.items():
+        if key in ['log_type', 'evt_log_key', 'msg_dll']:
+            # these are not configurable from the GUI
+            continue
+        window.FindElement(key).Update(value)
+
+    window.FindElement('reload_config').Update(disabled=True)
 
 
 def do_reset_config(window):
     """
     reload the default configuration
 
-    #TODO: right now it's just a place holder
     """
-    gui.PopupTimed('reset config', auto_close_duration=5)
-    do_save_config(window)
-    window.FindElement('reset_config').Update(disabled=True)
+    config = load_default_config()
+    for key, value in config.items():
+        if key in ['log_type', 'evt_log_key', 'msg_dll']:
+            # these are not configurable from the GUI
+            continue
+        window.FindElement(key).Update(value)
+
+    _dirty_window(window)
 
 
 def _set_autorun(window):
@@ -310,14 +361,21 @@ def _do_pause(window):
 def _dirty_window(window):
     window.FindElement('save_config').Update(disabled=False)
     window.FindElement('reset_config').Update(disabled=False)
+    window.FindElement('reload_config').Update(disabled=False)
 
 
-def main():
+def _do_clear(window):
+    window.FindElement('output').Update(disabled=False)
+    window.FindElement('output').Update('')
+    window.FindElement('output').Update(disabled=True)
+
+
+def main():  # pylint: disable=too-many-branches
     """
     the main function
     """
     config_is_dirty = False
-    editable = ['use_server_cconfig', 'debug', 'autorun', 'mail_every_minutes',
+    editable = ['use_server_config', 'debug', 'autorun', 'mail_every_minutes',
                 'domain', 'username', 'password', 'email_addresses',
                 'witness_addresses', 'email_subject', 'app_name',
                 'check_mx_timeout', 'min_wait_receive', 'step_wait_receive',
@@ -339,6 +397,7 @@ def main():
         if event in editable:
             config_is_dirty = True
             config[event] = window.FindElement(event).Get()
+
             _dirty_window(window)
 
             if event == 'autorun':
@@ -352,11 +411,18 @@ def main():
 
         if event == 'save_config':
             config_is_dirty = False
-            do_save_config(window)
+            do_save_config(config, window)
 
         if event == 'reset_config':
-            config_is_dirty = False
+            config_is_dirty = True
             do_reset_config(window)
+
+        if event == 'reload_config':
+            config_is_dirty = False
+            do_reload_config(window)
+
+        if event == 'clear':
+            _do_clear(window)
 
         if autorun:
             window.FindElement('pause').Update(disabled=False)
@@ -364,18 +430,13 @@ def main():
                 'next mail check run in {}'.format(next_run_in(next_run_at)))
 
             if next_run_at <= datetime.now():
-                window.FindElement('pause').Update(disabled=True)
-                window.FindElement('mailcheck').Update(disabled=True)
-                window.FindElement('status').Update('running mail check')
-                mail_check(window)
+                mail_check(config=config, window=window)
                 next_run_at = datetime.now() + \
                     timedelta(minutes=int(window.FindElement(
                         'mail_every_minutes').Get()))
-                window.FindElement('pause').Update(disabled=False)
-                window.FindElement('mailcheck').Update(disabled=False)
 
         if event == 'mailcheck':
-            mail_check(window)
+            mail_check(config=config, window=window)
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
                     'mail_every_minutes').Get()))

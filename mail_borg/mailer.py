@@ -67,10 +67,11 @@ class _Logger():
         if level is None:
             level = 'INFO'
 
-        self.console_logger.Update('[{}] {}:\n'.format(level, datetime.now()),
-                                   append=True)
+        self.console_logger.FindElement('output').Update(
+            '[{}] {}:\n'.format(level, datetime.now()), append=True)
         for item in strings:
-            self.console_logger.Update('\t{}\n'.format(item), append=True)
+            self.console_logger.FindElement('output').Update(
+                '\t{}\n'.format(item), append=True)
 
 
 def validate_email_to_ascii(email_address, config=None, logger=None):
@@ -175,11 +176,8 @@ def get_accounts(config=None, logger=None):
     if logger is None:
         logger = _Logger()
 
-    if not isinstance(config.get('email_addresses'), (list, tuple)):
-        config['email_addresses'] = [config.get('email_addresses')]
-
     emails = []
-    for email_address in config.get('email_addresses'):
+    for email_address in config.get('email_addresses').split(','):
         emails.append(validate_email_to_ascii(email_address, logger=logger))
 
     if not emails:
@@ -190,7 +188,7 @@ def get_accounts(config=None, logger=None):
                 'status message: none of the %s email addresses is valid.'
                 'please update your configuration for this node',
                 'invalid or unknown email addresses: %s'
-                % ', '.join(config.get('email_addresses')), ])
+                % config.get('email_addresses'), ])
         return None
 
     credentials = ServiceAccount(
@@ -227,7 +225,7 @@ def get_accounts(config=None, logger=None):
             'status message: invalid exchange configuration for all'
             'accounts in %s\\%s' % (config.get('domain'),
                                     config.get('username')),
-            'email addresses: %s' % ', '.join(config.get('email_addresses')),
+            'email addresses: %s' % config.get('email_addresses'),
         ])
         return None
 
@@ -282,8 +280,8 @@ class WitnessMessages():
 
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
-            self, config=None, accounts=None, logger=None, console_logger=None):
+    def __init__(self,
+                 config=None, accounts=None, logger=None, console_logger=None):
         """
         constructor
 
@@ -324,7 +322,7 @@ class WitnessMessages():
                 'bad object type %s. must be a list' % type(accounts))
 
         self.emails = []
-        for email_address in self.config.get('email_addresses'):
+        for email_address in self.config.get('email_addresses').split(','):
             self.emails.append(
                 validate_email_to_ascii(
                     email_address, config=self.config, logger=self.logger))
@@ -334,7 +332,7 @@ class WitnessMessages():
             return
 
         self.witness_emails = []
-        for witness_address in self.config.get('witness_addresses'):
+        for witness_address in self.config.get('witness_addresses').split(','):
             self.witness_emails.append(
                 validate_email_to_ascii(
                     witness_address, config=self.config, logger=self.logger))
@@ -420,11 +418,8 @@ class WitnessMessages():
 
         self._sent = True
 
-    def verify_receive(
-        self,
-            min_wait_receive=load_config().get('min_wait_receive', 3),
-            step_wait_receive=load_config().get('step_wait_receive', 3),
-            max_wait_receive=load_config().get('max_wait_receive', 120)):
+    def verify_receive(self, min_wait_receive=None, step_wait_receive=None,
+                       max_wait_receive=None):
         """
         look for all the messages that were sent in the inbox of each account
         used to send them
@@ -451,10 +446,25 @@ class WitnessMessages():
             time to wait before looking for the messages since exchange is not
             all that fast
 
-        #TODO: see https://github.com/ecederstrand/exchangelib/issues/581
-        # maybe some poor soul will come up with a solution to make the
-        # wait dynamic
         """
+        if min_wait_receive is None:
+            min_wait_receive = int(
+                self.config.get('min_wait_receive',
+                                load_config().get('min_wait_receive', 3))
+            )
+
+        if step_wait_receive is None:
+            step_wait_receive = int(
+                self.config.get('step_wait_receive',
+                                load_config().get('step_wait_receive', 3))
+            )
+
+        if max_wait_receive is None:
+            max_wait_receive = int(
+                self.config.get('max_wait_receive',
+                                load_config().get('max_wait_receive', 120))
+            )
+
         if not self._sent:
             self.send()
 
@@ -495,7 +505,10 @@ class WitnessMessages():
                                 % found_message.datetime_received,
                                 'wait_receive: %s' % _wait_receive, ])
 
-                        found_message.delete()
+                        if not self.config.get(
+                                'debug',
+                                load_config().get('debug', True)):
+                            found_message.delete()
 
                         break
 

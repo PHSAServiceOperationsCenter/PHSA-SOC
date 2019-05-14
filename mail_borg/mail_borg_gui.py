@@ -24,9 +24,6 @@ import PySimpleGUI as gui
 from config import load_config, save_config, load_default_config
 from mailer import WitnessMessages
 
-
-# form that doen't block
-# good for applications with an loop that polls hardware
 gui.SetOptions(font='Any 12')
 
 
@@ -279,6 +276,7 @@ def mail_check(config, window):
     invoke the mail check functionality
 
     """
+    print(config.get('email_subject'))
     window.FindElement('mailcheck').Update(disabled=True)
     window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
@@ -370,7 +368,7 @@ def _do_clear(window):
     window.FindElement('output').Update(disabled=True)
 
 
-def main():  # pylint: disable=too-many-branches
+def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
     """
@@ -440,12 +438,17 @@ def main():  # pylint: disable=too-many-branches
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
                     'mail_every_minutes').Get()))
+
             if autorun:
                 window.FindElement('run').Update(disabled=True)
                 window.FindElement('pause').Update(disabled=False)
+                window.FindElement('status').Update(
+                    'next mail check run in {}'.format(next_run_in(next_run_at)))
             else:
                 window.FindElement('run').Update(disabled=False)
                 window.FindElement('pause').Update(disabled=True)
+                window.FindElement('status').Update(
+                    'automated mail check execution is paused')
 
         if event == 'pause':
             autorun = False
@@ -468,7 +471,7 @@ def main():  # pylint: disable=too-many-branches
             ' Do you wish to save them?')
 
         if save == 'Yes':
-            do_save_config(window)
+            do_save_config(config, window)
 
     window.Close()
 

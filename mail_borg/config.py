@@ -12,7 +12,7 @@ configuration module for exchange monitoring borg bots
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    apr. 12, 2019
+:updated:    may 14, 2019
 
 """
 import collections

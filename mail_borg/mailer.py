@@ -12,7 +12,7 @@ mail module for exchange monitoring borg bots
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    apr. 10, 2019
+:updated:    may 14, 2019
 
 notes
 =====
@@ -42,7 +42,28 @@ from logger import LogWinEvent
 
 
 class _Logger():
+    """
+    custom logger class that will write to the windows event log and to
+    a GUI window text control if one is provided
+    """
+
     def __init__(self, console_logger=None, event_logger=None):
+        """
+        :arg console_logger:
+
+            the handle for the window where the information must be written
+
+            the current implementation assumes a PySimpleGUI Multiline
+            control named 'output'.
+
+            this argument is not mandatory.
+
+        :arg event_logger:
+
+            an instance of the :class:`<logger.LogWinEvent>`
+
+            if one is not provided the constructor will create it
+        """
         self.console_logger = console_logger
         if event_logger is None:
             event_logger = LogWinEvent()
@@ -50,18 +71,30 @@ class _Logger():
         self.event_logger = event_logger
 
     def info(self, strings):
+        """
+        write info level events
+        """
         self.event_logger.info(strings)
         self.update_console(strings, level='INFO')
 
     def warn(self, strings):
+        """
+        write warn level events
+        """
         self.event_logger.warn(strings)
         self.update_console(strings, level='WARN')
 
     def err(self, strings):
+        """
+        write error level events
+        """
         self.event_logger.err(strings)
         self.update_console(strings, level='ERROR')
 
     def update_console(self, strings, level=None):
+        """
+        update the GUI window control with the logged message
+        """
         if self.console_logger is None:
             return
 
@@ -110,7 +143,7 @@ def validate_email_to_ascii(email_address, config=None, logger=None):
 
             timeout value for verifying the MX record of the email address
 
-    :arg logger: log all problems
+    :arg logger: log all problems; usually provided by the caller
     :argtype logger: :class:`<_Logger>`
 
     :returns:
@@ -156,18 +189,24 @@ def get_accounts(config=None, logger=None):
     the assumption is that the same domain account has multiple
     Exchange accounts and that we want to verify all these accounts
 
-    :arg str domain: the windows domain
+    :arg dict config: 
 
-    :arg str username: the domain user name
+        we are passing the arguments as a dictionary to make life easier.
+        i know we could use the **kwargs style approach but this makes it
+        a little less confusing
 
-    :arg str password: the password
+        :arg str domain: the windows domain
 
-    :arg list email_addresses:
+        :arg str username: the domain user name
 
-        the list SMTP aliases,  i.e. the Exchange accounts for this
-        particular user
+        :arg str password: the password
 
-    :arg logger: windows events log writer
+        :arg list email_addresses:
+
+            the list SMTP aliases,  i.e. the Exchange accounts for this
+            particular user
+
+    :arg logger: logger; usually provided by the caller
     :argtype logger: :class:`<logger.WinLogEvent>`
 
     """
@@ -256,8 +295,9 @@ class WitnessMessages():
     class for sent and received messages
 
     a message is an ``uuid`` instance generated via : method:`<uuid.uuid4>`.
-    this way each message is its own unique identifier and can be searched
-    for in the inbox
+    this way each message has/is its own unique identifier and can be searched
+    for in the inbox. the identifier must be aprt of the message subject;
+    there is a problem with fuzzy searching in the body on the Exchange side
 
     an exchange account is defined by the domain account and by all the
     SMPT aliases associated with the account. for example:
@@ -288,10 +328,38 @@ class WitnessMessages():
 
         :arg list accounts: a list of :class:`<exchangelib.Account>` objects
 
-        :arg list email_addresses:
+        :arg dict config:
 
-            the list SMTP aliases,  i.e. the Exchange accounts for this
-            particular user
+
+            we are passing the arguments as a dictionary to make life easier.
+            i know we could use the **kwargs style approach but this makes it
+            a little less confusing
+
+            :arg str domain: the windows domain
+
+            :arg str username: the domain user name
+
+            :arg str password: the password
+
+            :arg list email_addresses:
+
+                the list SMTP aliases,  i.e. the Exchange accounts for this
+                particular user. also used as the list of send to emails.
+                this may have to change
+
+            :arg list witness_addresses:
+
+                cc the message(s) to human monitored mailboxes if desired
+
+            :arg str email_subject:
+
+            :arg str site:
+
+            :arg str tags:
+
+            :arg bool debug:
+
+            all the args required for the :function:`<validate_email_to_ascii>`
 
         :arg logger: windows events log writer
         :argtype logger: :class:`<logger.WinLogEvent>`
@@ -303,7 +371,6 @@ class WitnessMessages():
 
         self.config = config
 
-        subject = config.get('email_subject')
         self.messages = []
 
         self.logger = _Logger(
@@ -362,6 +429,9 @@ class WitnessMessages():
             )
 
     def _set_subject(self):
+        """
+        add various tags as well as site and bot info to the email subject
+        """
         tags = '[DEBUG]' if self.config.get('debug') else ''
         tags += '[{}]'.format(
             self.config.get('site')) if self.config.get('site') else ''

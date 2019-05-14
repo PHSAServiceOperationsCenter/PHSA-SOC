@@ -26,6 +26,7 @@ we catch the error.
 
 """
 import collections
+import socket
 import time
 
 from datetime import datetime
@@ -352,13 +353,22 @@ class WitnessMessages():
                     message_uuid=message_body,
                     message=Message(account=account,
                                     subject='{} with identifier {}'.format(
-                                        subject, message_body),
+                                        self._set_subject(), message_body),
                                     body=message_body,
                                     to_recipients=self.emails,
                                     cc_recipients=self.witness_emails),
                     account_for_message=account
                 )
             )
+
+    def _set_subject(self):
+        tags = '[DEBUG]' if self.config.get('debug') else ''
+        tags += '[{}]'.format(
+            self.config.get('site')) if self.config.get('site') else ''
+        tags = '{}[{}]'.format(tags, socket.getfqdn())
+
+        return '{}{}'.format(tags, self.config.get('email_subject',
+                                                   'email canary'))
 
     def send(self):
         """

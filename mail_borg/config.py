@@ -17,7 +17,6 @@ configuration module for exchange monitoring borg bots
 """
 import collections
 import configparser
-import socket
 
 PASSWD = 'passwd'
 
@@ -76,9 +75,7 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
     config['site'] = config_parser.get(section, 'site')
     config['tags'] = config_parser.get(section, 'tags')
 
-    config['email_subject'] = set_subject(
-        config_parser.get(section, 'email_subject'),
-        tags=config['tags'], site=config['site'], debug=config['debug'])
+    config['email_subject'] = config_parser.get(section, 'email_subject')
 
     return config
 
@@ -95,10 +92,6 @@ def save_config(dict_config, config_file='mail_borg.ini'):
     dict_config['password_file'] = _set_passwd(dict_config.get('password'))
     dict_config.pop('password')
 
-    # email subject is also a special case, we need to trim all the tags
-    dict_config['email_subject'] = dict_config.get('email_subject').\
-        split(']')[-1]
-
     config_parser = configparser.ConfigParser(
         allow_no_value=True, empty_lines_in_values=False)
     config_parser.read_dict(
@@ -113,27 +106,6 @@ def load_default_config():
     load the default configuration
     """
     return load_config(config_file='default_mail_borg.ini', section='DEFAULT')
-
-
-def set_subject(subject, tags=None, site=None, debug=False):
-    """
-    tag the subject line with the fqdn, site information if available,
-    and debug information
-
-    this is mostly useful when cc'ing human email addresses for manual
-    monitoring. the tags will make it easy to create exchange rules for the
-    monitoring messages
-    """
-    _tags = '[DEBUG]' if debug else ''
-    _tags += '[{}]'.format(socket.getfqdn())
-    _tags += tags
-
-    subject = '{}{}'.format(_tags, subject)
-
-    if site:
-        return '{} originating from {}'.format(subject, site)
-
-    return subject
 
 
 def get_config_from_server():

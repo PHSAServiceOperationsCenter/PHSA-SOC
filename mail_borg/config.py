@@ -17,19 +17,53 @@ configuration module for exchange monitoring borg bots
 """
 import collections
 import configparser
+import sys
+
 
 PASSWD = 'passwd'
+
+DEFAULTS = dict(autorun=False,
+                use_server_config=False,
+                debug=False,
+                domain='PHSABC',
+                username='serban.teodorescu',
+                password_file=PASSWD,
+                email_addresses='serban.teodorescu@phsa.ca',
+                witness_addresses='james.reilly@phsa.ca',
+                email_subject='exchange monitoring message',
+                app_name='BorgExchangeMonitor',
+                log_type='Application',
+                evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
+                msg_dll=None,
+                mail_every_minutes=15,
+                force_ascii_email=True,
+                allow_utf8_email=False,
+                check_email_mx=True,
+                check_mx_timeout=5,
+                min_wait_receive=3,
+                step_wait_receive=3,
+                max_wait_receive=120,
+                site='noname',
+                tags='[default config]')
 
 
 def load_config(config_file='mail_borg.ini', section='SITE'):
     """
     return the ``dict`` with the current configuration
     """
+    config = dict()
+
     config_parser = configparser.ConfigParser(
         allow_no_value=True, empty_lines_in_values=False)
-    config_parser.read(config_file)
+    loaded = config_parser.read(config_file)
 
-    config = dict()
+    if not loaded:
+        config = dict(DEFAULTS)
+        if config['use_server_config']:
+            return get_config_from_server()
+
+        return config
+
     config['use_server_config'] = config_parser.getboolean(section,
                                                            'use_server_config')
 
@@ -123,8 +157,12 @@ def _get_password(password_file=PASSWD):
 
     mea culpa, mea culpa, mea maxima culpa
     """
-    with open(password_file, 'r') as fhandle:
-        passwd = fhandle.readline()
+    try:
+        with open(password_file, 'r') as fhandle:
+            passwd = fhandle.readline()
+    except FileNotFoundError as err:
+        sys.exit(['you must specify the account password in file %s'
+                  % password_file])
 
     return passwd
 

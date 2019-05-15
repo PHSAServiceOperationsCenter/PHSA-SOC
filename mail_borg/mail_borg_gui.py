@@ -36,15 +36,18 @@ def get_window():
     window = gui.Window(config.get('app_name'),
                         auto_size_buttons=True, use_default_focus=False)
 
-    left_frame = [
-        [gui.Button('Run Mail Check Now', key='mailcheck'),
+    control_frame = [
+        [gui.Text('',  key='status', size=(116, 1),  justification='left'),
+         gui.Button('Run Mail Check Now', key='mailcheck'),
             gui.Button('Start Auto-run', key='run'),
             gui.Button('Pause Auto-run', key='pause'), ],
-        [gui.Text('',  key='status', size=(52, 1),  justification='left'), ],
-        [gui.Multiline(size=(52, 31), key='output', disabled=True,
+
+    ]
+
+    output_frame = [
+        [gui.Multiline(size=(181, 19), key='output', disabled=True,
                        autoscroll=True, enable_events=True), ],
-        [gui.Text(''), ],
-        [gui.Text('', size=(38, 1)),
+        [gui.Text('', size=(142, 1)),
          gui.Button('Clear execution data', key='clear'), ]
     ]
 
@@ -53,9 +56,6 @@ def get_window():
         [gui.Text('Domain:', justification='left'), ],
         [gui.Text('User Name:', justification='left'), ],
         [gui.Text('Password:', justification='left'), ],
-        [gui.Text('Mail Addresses:', size=(None, 3), justification='left'), ],
-        [gui.Text('Witness Addresses:',
-                  size=(None, 3), justification='left'), ],
         [gui.Text('Mail Subject', size=(None, 3), justification='left'), ],
         [gui.Text('Application Name:', justification='left'), ],
         [gui.Text('Verify Email MX Address Timeout:', justification='left'), ],
@@ -80,13 +80,7 @@ def get_window():
         [gui.InputText(config.get('password'), key='password',
                        size=(32, 1), do_not_clear=True, password_char='*',
                        enable_events=True), ],
-        [gui.Multiline(config.get('email_addresses'), key='email_addresses',
-                       size=(32, 3), auto_size_text=True,
-                       do_not_clear=True,  enable_events=True), ],
-        [gui.Multiline(config.get('witness_addresses'),
-                       key='witness_addresses',
-                       size=(32, 3), auto_size_text=True,
-                       do_not_clear=True,  enable_events=True), ],
+
         [gui.Multiline(config.get('email_subject'), key='email_subject',
                        size=(32, 3), auto_size_text=True,
                        do_not_clear=True,  enable_events=True), ],
@@ -114,36 +108,52 @@ def get_window():
                        auto_size_text=True, do_not_clear=True,
                        enable_events=True), ], ]
 
+    conf_emails_col = [
+        [gui.Text('Mail Addresses:',  justification='left'), ],
+        [gui.Multiline(config.get('email_addresses'), key='email_addresses',
+                       size=(46, 21), auto_size_text=True,
+                       do_not_clear=True,  enable_events=True), ], ]
+    conf_witness_col = [
+        [gui.Text('Witness Addresses:', justification='left'), ],
+        [gui.Multiline(config.get('witness_addresses'), size=(46, 21),
+                       key='witness_addresses', auto_size_text=True,
+                       do_not_clear=True,  enable_events=True), ],
+    ]
+
     right_frame = [
+        [gui.Text('', size=(96, 1)),
+         gui.Button('Save configuration to file', key='save_config',
+                    disabled=True),
+         gui.Button('Reload configuration from file', key='reload_config',
+                    disabled=True),
+         gui.Button('Use default configuration', key='reset_config',
+                    disabled=False), ],
         [gui.Checkbox('Load Configuration from Server',
                       default=config.get('use_server_config'),
                       key='use_server_config', enable_events=True),
          gui.Checkbox('Debug', default=config.get('debug'),
                       key='debug', enable_events=True),
          gui.Checkbox('Enable Auto-run on startup', key='autorun',
-                      default=config.get('autorun'),  enable_events=True), ],
-        [gui.Checkbox('Use ASCII from of email addresses',
+                      default=config.get('autorun'),  enable_events=True),
+         gui.Checkbox('Use ASCII from of email addresses',
                       default=config.get('force_ascii_email'),
                       key='force_ascii_email',  enable_events=True),
          gui.Checkbox('Allow UTF-8 characters in email addresses',
                       default=config.get('allow_utf8_email'),
-                      key='allow_utf8_email', enable_events=True), ],
-        [gui.Checkbox('Verify email address domain for deliverability',
+                      key='allow_utf8_email', enable_events=True),
+         gui.Checkbox('Verify email address domain for deliverability',
                       default=config.get('check_email_mx'),
                       key='check_email_mx', enable_events=True), ],
-        [gui.Column(conf_labels_col), gui.Column(conf_values_col), ],
-        [gui.Button('Save configuration to file', key='save_config',
-                    disabled=True),
-         gui.Button('Reload configuration from file', key='reload_config',
-                    disabled=True),
-         gui.Button('Use default configuration', key='reset_config',
-                    disabled=False), ], ]
+        [gui.Column(conf_labels_col), gui.Column(conf_values_col),
+         gui.Column(conf_emails_col), gui.Column(conf_witness_col), ], ]
 
     layout = [
-        [gui.Frame('Execution',
-                   left_frame, title_color='darkblue', font='Any 12'),
-         gui.Frame('Configuration',
-                   right_frame, title_color='darkblue', font='Any 12'), ], ]
+        [gui.Frame('Control',
+                   control_frame, title_color='darkblue', font='Any 12'), ],
+        [gui.Frame('Configuration',
+                   right_frame, title_color='darkblue', font='Any 12'), ],
+        [gui.Frame('Output',
+                   output_frame, title_color='darkblue', font='Any 12'), ]]
 
     window.Layout(layout).Finalize()
 

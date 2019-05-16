@@ -35,7 +35,7 @@ from uuid import uuid4
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
-from exchangelib import ServiceAccount, Message, Account
+from exchangelib import ServiceAccount, Message, Account, Configuration
 
 from config import load_config
 from logger import LogWinEvent
@@ -108,19 +108,12 @@ class _Logger():
                 '\t{}\n'.format(item), append=True)
 
 
-def validate_email_to_ascii(email_address, config=None, logger=None):
+def validate_email_to_ascii(email_address, logger=None, **config):
     """
     validate, normalize, and return an email address
     optionally also convert it to ascii
 
-    the timeout decorator is required because the current pypi version
-    of the :module:`<email_validator>` doesn't implement a timeout when
-    checking the MX record for an email address
-
     :arg dict config:
-
-        put all the required args in a ``dict`` to pass it around. life
-        is so much simpler with on arg instead of 4.
 
         :arg bool to_ascii: default ``True``
 
@@ -156,7 +149,7 @@ def validate_email_to_ascii(email_address, config=None, logger=None):
         this function doesn't raise any exceptions because it does its own
         error handling by logging specific failures to the windows events log
     """
-    if config is None:
+    if not config:
         config = load_config()
 
     if logger is None:
@@ -182,18 +175,14 @@ def validate_email_to_ascii(email_address, config=None, logger=None):
     return email_dict.get('email')
 
 
-def get_accounts(config=None, logger=None):
+def get_accounts(logger=None, **config):
     """
     get a list of Exchange accounts
 
     the assumption is that the same domain account has multiple
     Exchange accounts and that we want to verify all these accounts
 
-    :arg dict config: 
-
-        we are passing the arguments as a dictionary to make life easier.
-        i know we could use the **kwargs style approach but this makes it
-        a little less confusing
+    :arg dict config:
 
         :arg str domain: the windows domain
 
@@ -210,7 +199,7 @@ def get_accounts(config=None, logger=None):
     :argtype logger: :class:`<logger.WinLogEvent>`
 
     """
-    if config is None:
+    if not config:
         config = load_config()
 
     if logger is None:
@@ -218,7 +207,8 @@ def get_accounts(config=None, logger=None):
 
     emails = []
     for email_address in config.get('email_addresses').split(','):
-        emails.append(validate_email_to_ascii(email_address, logger=logger))
+        emails.append(validate_email_to_ascii(
+            email_address, logger=logger, **config))
 
     if not emails:
         logger.err(
@@ -321,8 +311,8 @@ class WitnessMessages():
 
     """
 
-    def __init__(self,
-                 config=None, accounts=None, logger=None, console_logger=None):
+    def __init__(
+            self, accounts=None, logger=None, console_logger=None, **config):
         """
         constructor
 
@@ -330,10 +320,6 @@ class WitnessMessages():
 
         :arg dict config:
 
-
-            we are passing the arguments as a dictionary to make life easier.
-            i know we could use the **kwargs style approach but this makes it
-            a little less confusing
 
             :arg str domain: the windows domain
 
@@ -366,7 +352,7 @@ class WitnessMessages():
         """
         self._sent = False
 
-        if config is None:
+        if not config:
             config = load_config()
 
         self.config = config
@@ -377,7 +363,7 @@ class WitnessMessages():
             console_logger=console_logger, event_logger=logger)
 
         if accounts is None:
-            accounts = get_accounts(config=self.config, logger=self.logger)
+            accounts = get_accounts(logger=self.logger, **config)
 
         self.accounts = accounts
 
@@ -393,7 +379,7 @@ class WitnessMessages():
         for email_address in self.config.get('email_addresses').split(','):
             self.emails.append(
                 validate_email_to_ascii(
-                    email_address, config=self.config, logger=self.logger))
+                    email_address, logger=self.logger, **config))
 
         if not self.emails:
             # again, stop wasting time
@@ -403,7 +389,7 @@ class WitnessMessages():
         for witness_address in self.config.get('witness_addresses').split(','):
             self.witness_emails.append(
                 validate_email_to_ascii(
-                    witness_address, config=self.config, logger=self.logger))
+                    witness_address, logger=self.logger, **config))
 
         for account in accounts:
             if not isinstance(account, Account):

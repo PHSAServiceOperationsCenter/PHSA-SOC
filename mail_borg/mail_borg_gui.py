@@ -187,7 +187,7 @@ def mail_check(config, window):
     window.FindElement('output').Update(
         '{}: running mail check\n'.format(datetime.now()), append=True)
 
-    witness_messages = WitnessMessages(config=config, console_logger=window)
+    witness_messages = WitnessMessages(console_logger=window, **config)
     witness_messages.verify_receive()
 
     window.FindElement('output').Update(disabled=True)

@@ -21,7 +21,8 @@ import time
 from datetime import datetime, timedelta
 
 import PySimpleGUI as gui
-from config import load_config, save_config, load_default_config
+from config import (
+    load_config, save_config, load_default_config, NOT_A_PASSWORD)
 from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
@@ -271,11 +272,25 @@ def _do_clear(window):
     window.FindElement('output').Update(disabled=True)
 
 
+def _check_password(window):
+    if window.FindElement('password').Get() in [NOT_A_PASSWORD]:
+        window.FindElement('password').Update(
+            gui.PopupGetText(
+                'Please enter the password for the domain account.\n'
+                ' Do not forget to save the configuration after providing'
+                ' the passwword',
+                'Invalid or Unconfigured Password Detected!',
+                password_char='*'))
+        _dirty_window(window)
+        return True
+
+    return False
+
+
 def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
     """
-    config_is_dirty = False
     editable = ['use_server_config', 'debug', 'autorun', 'mail_every_minutes',
                 'domain', 'username', 'password', 'email_addresses',
                 'witness_addresses', 'email_subject', 'app_name',
@@ -283,10 +298,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'max_wait_receive', 'site', 'tags']
 
     config, window = get_window()
-
+    config_is_dirty = _check_password(window)
     next_run_at = datetime.now() + \
         timedelta(minutes=int(window.FindElement('mail_every_minutes').Get()))
-
     autorun = _set_autorun(window)
 
     while True:

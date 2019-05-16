@@ -22,6 +22,8 @@ import sys
 
 PASSWD = 'passwd'
 
+NOT_A_PASSWORD = 'not a password'
+
 DEFAULTS = dict(autorun=False,
                 use_server_config=False,
                 debug=False,
@@ -161,8 +163,8 @@ def _get_password(password_file=PASSWD):
         with open(password_file, 'r') as fhandle:
             passwd = fhandle.readline()
     except FileNotFoundError as err:
-        sys.exit(['you must specify the account password in file %s'
-                  % password_file])
+        _set_passwd(NOT_A_PASSWORD)
+        return NOT_A_PASSWORD
 
     return passwd
 

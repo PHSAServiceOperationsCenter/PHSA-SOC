@@ -29,6 +29,8 @@ DEFAULTS = dict(autorun=False,
                 debug=False,
                 domain='PHSABC',
                 username='serban.teodorescu',
+                autodiscover=True,
+                exchange_server=None,
                 password_file=PASSWD,
                 email_addresses='serban.teodorescu@phsa.ca',
                 witness_addresses='james.reilly@phsa.ca',
@@ -76,6 +78,9 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
     config['autorun'] = config_parser.getboolean(section, 'autorun')
     config['domain'] = config_parser.get(section, 'domain')
     config['username'] = config_parser.get(section, 'username')
+
+    config['autodiscover'] = config_parser.getboolean(section, 'autodiscover')
+    config['exchange_server'] = config_parser.get(section, 'exchange_server')
 
     config['password'] = _get_password(
         password_file=config_parser.get(section, 'password_file'))

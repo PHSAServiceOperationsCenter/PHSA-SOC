@@ -53,7 +53,8 @@ def get_window():
     ]
 
     conf_labels_col = [
-        [gui.Text('Check Email Every:', justification='left'), ],
+        [gui.Text('Exchange Server Address', justification='left'), ],
+        [gui.Text('Check Email Every', justification='left'), ],
         [gui.Text('Domain:', justification='left'), ],
         [gui.Text('User Name:', justification='left'), ],
         [gui.Text('Password:', justification='left'), ],
@@ -70,6 +71,8 @@ def get_window():
     ]
 
     conf_values_col = [
+        [gui.InputText(config.get('exchange_server'), key='exchange_server',
+                       size=(32, 1), do_not_clear=True, enable_events=True), ],
         [gui.Spin([i for i in range(1, 60)], key='mail_every_minutes',
                   initial_value=config.get('mail_every_minutes'),
                   auto_size_text=True, enable_events=True),
@@ -112,11 +115,11 @@ def get_window():
     conf_emails_col = [
         [gui.Text('Mail Addresses:',  justification='left'), ],
         [gui.Multiline(config.get('email_addresses'), key='email_addresses',
-                       size=(46, 21), auto_size_text=True,
+                       size=(46, 22), auto_size_text=True,
                        do_not_clear=True,  enable_events=True), ], ]
     conf_witness_col = [
         [gui.Text('Witness Addresses:', justification='left'), ],
-        [gui.Multiline(config.get('witness_addresses'), size=(46, 21),
+        [gui.Multiline(config.get('witness_addresses'), size=(46, 22),
                        key='witness_addresses', auto_size_text=True,
                        do_not_clear=True,  enable_events=True), ],
     ]
@@ -145,6 +148,9 @@ def get_window():
          gui.Checkbox('Verify email address domain for deliverability',
                       default=config.get('check_email_mx'),
                       key='check_email_mx', enable_events=True), ],
+        [gui.Checkbox('Autodiscover the Exchange Server',
+                      default=config.get('autodiscover'), key='autodiscover',
+                      enable_events=True), ],
         [gui.Column(conf_labels_col), gui.Column(conf_values_col),
          gui.Column(conf_emails_col), gui.Column(conf_witness_col), ], ]
 
@@ -295,7 +301,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'domain', 'username', 'password', 'email_addresses',
                 'witness_addresses', 'email_subject', 'app_name',
                 'check_mx_timeout', 'min_wait_receive', 'step_wait_receive',
-                'max_wait_receive', 'site', 'tags']
+                'max_wait_receive', 'site', 'tags', 'autodiscover',
+                'exchange_server', ]
 
     config, window = get_window()
     config_is_dirty = _check_password(window)

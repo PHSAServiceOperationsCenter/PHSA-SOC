@@ -225,12 +225,22 @@ def get_accounts(logger=None, **config):
         username='{}\\{}'.format(config.get('domain'), config.get('username')),
         password=config.get('password'))
 
+    exc_config = None
+    if not config.get('autodiscover', True):
+        exc_config = Configuration(server=config.get('exchange_server'),
+                                   credentials=credentials)
+
     accounts = []
     for email in emails:
         try:
-            accounts.append(Account(primary_smtp_address=email,
-                                    credentials=credentials,
-                                    autodiscover=True))
+            if config.get('autodiscover', True):
+                accounts.append(Account(primary_smtp_address=email,
+                                        credentials=credentials,
+                                        autodiscover=True))
+            else:
+                accounts.append(Account(primary_smtp_address=email,
+                                        config=exc_config,
+                                        autodiscover=False))
             logger.info(
                 strings=[
                     'type: verify connection',

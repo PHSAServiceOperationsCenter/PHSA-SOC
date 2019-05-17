@@ -24,6 +24,7 @@ from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
     BorgSiteNotSeen, WinlogbeatHostNotSeen, KnownBrokeringDeviceNotSeen,
+    AllowedEventSource,
 )
 
 
@@ -80,6 +81,17 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
                 ('created_by', 'created_on', 'updated_on')
 
         return self.readonly_fields
+
+
+@admin.register(AllowedEventSource)
+class AllowedEventSourceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for event sources
+    """
+    list_display = ('source_name', 'enabled', 'notes',
+                    'updated_on', 'updated_by')
+    list_editable = ('notes', 'enabled',)
+    list_filter = ('enabled',)
 
 
 @admin.register(BorgSite)

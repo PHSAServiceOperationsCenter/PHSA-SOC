@@ -26,6 +26,7 @@ we catch the error.
 
 """
 import collections
+import json
 import socket
 import time
 
@@ -70,25 +71,25 @@ class _Logger():
 
         self.event_logger = event_logger
 
-    def info(self, strings):
+    def info(self, **strings):
         """
         write info level events
         """
-        self.event_logger.info(strings)
+        self.event_logger.info(strings=[json.dumps(strings)])
         self.update_console(strings, level='INFO')
 
-    def warn(self, strings):
+    def warn(self, **strings):
         """
         write warn level events
         """
-        self.event_logger.warn(strings)
+        self.event_logger.warn(strings=[json.dumps(strings)])
         self.update_console(strings, level='WARN')
 
-    def err(self, strings):
+    def err(self, **strings):
         """
         write error level events
         """
-        self.event_logger.err(strings)
+        self.event_logger.err(strings=[json.dumps(strings)])
         self.update_console(strings, level='ERROR')
 
     def update_console(self, strings, level=None):
@@ -162,11 +163,10 @@ def validate_email_to_ascii(email_address, logger=None, **config):
             allow_empty_local=False,
             check_deliverability=config.get('check_email_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
-        logger.warn(strings=[
-            'type: verify configuration',
-            'status: FAIL',
-            'status message: bad email address %s' % email_address,
-            'exception: %s' % str(error)])
+        logger.warn(**dict(
+            type='verify configuration', status='FAIL',
+            message='bad email address %s' % email_address,
+            exception=str(error)))
         return None
 
     if config.get('force_ascii_email'):

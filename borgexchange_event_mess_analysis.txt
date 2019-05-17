@@ -1,0 +1,27 @@
+'event_data': 
+    {'param3': 'status message: monitoring message sent', 
+     'param4': 'message_uuid: 4ac00166-629b-4e95-96de-c0b71a761e52', 
+     'param5': 'account: serban.teodorescu@phsa.ca', 
+     'param1': 'type: verify send', 
+     'param6': 'to: serban.teodorescu@phsa.ca', 
+     'param2': 'status: PASS'}, 
+'host': {}, 
+
+'event_data': 
+    {'param3': 'status message: connected to exchange with account PHSABC\\serban.teodorescu, serban.teodorescu@phsa.ca', 
+     'param1': 'type: verify connection', 
+     'param2': 'status: PASS'}, 
+'host': {},
+
+'event_data': 
+    {'param3': 'status message: email message successfully sent and received', 
+     'param10': 'wait_receive: 5', 
+     'param4': 'message_uuid: 4ac00166-629b-4e95-96de-c0b71a761e52', 
+     'param5': 'from domain: phsa.ca', 
+     'param1': 'type: transmission verification', 
+     'param9': 'received: 2019-05-17 19:05:13+00:00', 
+     'param6': 'to domains: phsa.ca', 
+     'param8': 'sent: 2019-05-17 19:05:12+00:00', 
+     'param7': 'created: 2019-05-17 19:05:13+00:00', 
+     'param2': 'status: PASS'}, 
+'host': {}

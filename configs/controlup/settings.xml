@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <storefronturl>https://internalapps.healthbc.org/</storefronturl>
+  <resourcename>PMOffice - CST</resourcename>
+  <username>Loginpi18</username>
+  <password>TG9naW5QSTEh</password>
+  <LogSuccessConnectionsToEventLog>true</LogSuccessConnectionsToEventLog>
+  <WarnOnConcurrentFailures>5</WarnOnConcurrentFailures>
+  <domain>VCH</domain>
+  <repeattest>true</repeattest>
+  <repeatinterval>180</repeatinterval>
+  <logoffdelay>60</logoffdelay>
+  <BalloonTipOnSuccess>false</BalloonTipOnSuccess>
+  <LibraryTracing>false</LibraryTracing>
+</ApplicationSettings>

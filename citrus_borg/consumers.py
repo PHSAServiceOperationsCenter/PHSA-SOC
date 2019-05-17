@@ -133,4 +133,8 @@ def process_win_event(body):
                      borg.get('source_name', None))
         return
 
-    store_borg_data.delay(borg)
+    if borg.get('source_name', None) in ['ControlUp Logon Monitor']:
+        store_borg_data.delay(borg)
+
+    elif borg.get('source_name', None) in ['BorgExchangeMonitor']:
+        _logger.info(borg)

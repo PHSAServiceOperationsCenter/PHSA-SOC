@@ -193,7 +193,7 @@ def mail_check(config, window, update_window_queue):
     window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update(
-        '{}: running mail check\n'.format(datetime.now()), append=True)
+        '{:%c}: running mail check\n'.format(datetime.now()), append=True)
 
     # witness_messages = WitnessMessages(console_logger=window, **config)
     # witness_messages.verify_receive()
@@ -329,9 +329,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
             break
 
         while not update_window_queue.empty():
-            msg = update_window_queue.get_nowait()
             window.FindElement('output').Update(disabled=False)
-            window.FindElement('output').Update(msg, append=True)
+            window.FindElement('output').Update(
+                update_window_queue.get_nowait(), append=True)
             window.FindElement('output').Update(disabled=True)
 
         if event in editable:
@@ -387,7 +387,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 window.FindElement('run').Update(disabled=True)
                 window.FindElement('pause').Update(disabled=False)
                 window.FindElement('status').Update(
-                    'next mail check run in {}'.format(next_run_in(next_run_at)))
+                    'next mail check run in {}'.format(
+                        next_run_in(next_run_at)))
             else:
                 window.FindElement('run').Update(disabled=False)
                 window.FindElement('pause').Update(disabled=True)

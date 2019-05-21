@@ -48,7 +48,7 @@ class _Logger():
     a GUI window text control if one is provided
     """
 
-    def __init__(self, console_logger=None, event_logger=None):
+    def __init__(self, update_window_queue=None, event_logger=None):
         """
         :arg console_logger:
 
@@ -65,7 +65,7 @@ class _Logger():
 
             if one is not provided the constructor will create it
         """
-        self.console_logger = console_logger
+        self.console_logger = update_window_queue
         if event_logger is None:
             event_logger = LogWinEvent()
 
@@ -99,14 +99,15 @@ class _Logger():
         if self.console_logger is None:
             return
 
+        if self.console_logger.full():
+            return
+
         if level is None:
             level = 'INFO'
 
-        self.console_logger.FindElement('output').Update(
-            '[{}] {}:\n'.format(level, datetime.now()), append=True)
-        for item in strings:
-            self.console_logger.FindElement('output').Update(
-                '\t{}\n'.format(item), append=True)
+        self.console_logger.put_nowait(
+            '[{}] {}:\n'.format(level, datetime.now()))
+        self.console_logger.put_nowait('\t{}\n'.format(strings))
 
 
 def validate_email_to_ascii(email_address, logger=None, **config):
@@ -370,7 +371,7 @@ class WitnessMessages():
         self.messages = []
 
         self.logger = _Logger(
-            console_logger=console_logger, event_logger=logger)
+            update_window_queue=console_logger, event_logger=logger)
 
         if accounts is None:
             accounts = get_accounts(logger=self.logger, **config)

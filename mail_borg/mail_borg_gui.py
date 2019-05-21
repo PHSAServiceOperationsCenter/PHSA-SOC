@@ -16,9 +16,11 @@ GUI module for exchange monitoring borg bot software
 
 """
 import collections
+import threading
 import time
 
 from datetime import datetime, timedelta
+from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
@@ -46,7 +48,7 @@ def get_window():
     ]
 
     output_frame = [
-        [gui.Multiline(size=(181, 19), key='output', disabled=True,
+        [gui.Multiline(size=(181, 15), key='output', disabled=True,
                        autoscroll=True, enable_events=True), ],
         [gui.Text('', size=(142, 1)),
          gui.Button('Clear execution data', key='clear'), ]
@@ -182,7 +184,7 @@ def next_run_in(next_run_at):
     return '{} minutes, {} seconds'.format(int(mins), int(secs))
 
 
-def mail_check(config, window):
+def mail_check(config, window, update_window_queue):
     """
     invoke the mail check functionality
 
@@ -193,11 +195,20 @@ def mail_check(config, window):
     window.FindElement('output').Update(
         '{}: running mail check\n'.format(datetime.now()), append=True)
 
-    witness_messages = WitnessMessages(console_logger=window, **config)
-    witness_messages.verify_receive()
+    # witness_messages = WitnessMessages(console_logger=window, **config)
+    # witness_messages.verify_receive()
+    thr = threading.Thread(target=_mail_check, args=(
+        update_window_queue, dict(config)))
+    thr.start()
 
     window.FindElement('output').Update(disabled=True)
     window.FindElement('mailcheck').Update(disabled=False)
+
+
+def _mail_check(update_window_queue, config):
+    witness_messages = WitnessMessages(
+        console_logger=update_window_queue, **config)
+    witness_messages.verify_receive()
 
 
 def do_save_config(config, window):
@@ -304,6 +315,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'max_wait_receive', 'site', 'tags', 'autodiscover',
                 'exchange_server', ]
 
+    update_window_queue = Queue(maxsize=500)
     config, window = get_window()
     config_is_dirty = _check_password(window)
     next_run_at = datetime.now() + \
@@ -315,6 +327,12 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if values is None or event == 'Exit':
             break
+
+        while not update_window_queue.empty():
+            msg = update_window_queue.get_nowait()
+            window.FindElement('output').Update(disabled=False)
+            window.FindElement('output').Update(msg, append=True)
+            window.FindElement('output').Update(disabled=True)
 
         if event in editable:
             config_is_dirty = True
@@ -352,13 +370,15 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'next mail check run in {}'.format(next_run_in(next_run_at)))
 
             if next_run_at <= datetime.now():
-                mail_check(config=config, window=window)
+                mail_check(config=config, window=window,
+                           update_window_queue=update_window_queue)
                 next_run_at = datetime.now() + \
                     timedelta(minutes=int(window.FindElement(
                         'mail_every_minutes').Get()))
 
         if event == 'mailcheck':
-            mail_check(config=config, window=window)
+            mail_check(config=config, window=window,
+                       update_window_queue=update_window_queue)
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
                     'mail_every_minutes').Get()))

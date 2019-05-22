@@ -141,7 +141,7 @@ def get_window():
                       key='debug', enable_events=True),
          gui.Checkbox('Enable Auto-run on startup', key='autorun',
                       default=config.get('autorun'),  enable_events=True),
-         gui.Checkbox('Use ASCII from of email addresses',
+         gui.Checkbox('Use ASCII form of email addresses',
                       default=config.get('force_ascii_email'),
                       key='force_ascii_email',  enable_events=True),
          gui.Checkbox('Allow UTF-8 characters in email addresses',
@@ -241,6 +241,8 @@ def do_reload_config(window):
 
     window.FindElement('reload_config').Update(disabled=True)
 
+    return config
+
 
 def do_reset_config(window):
     """
@@ -255,6 +257,7 @@ def do_reset_config(window):
         window.FindElement(key).Update(value)
 
     _dirty_window(window)
+    return config
 
 
 def _set_autorun(window):
@@ -326,6 +329,17 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
         event, values = window.Read(timeout=0)
 
         if values is None or event == 'Exit':
+            if config_is_dirty:
+                save = gui.PopupYesNo(
+                    'Save configuration?',
+                    'There are unsaved changes'
+                    ' in the application configuration.'
+                    ' Do you wish to save them?')
+
+                if save == 'Yes':
+                    do_save_config(config, window)
+                    continue
+
             break
 
         while not update_window_queue.empty():
@@ -355,11 +369,11 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event == 'reset_config':
             config_is_dirty = True
-            do_reset_config(window)
+            config = do_reset_config(window)
 
         if event == 'reload_config':
             config_is_dirty = False
-            do_reload_config(window)
+            config = do_reload_config(window)
 
         if event == 'clear':
             _do_clear(window)
@@ -409,14 +423,6 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
         time.sleep(1)
 
     # Broke out of main loop. Close the window.
-    if config_is_dirty:
-        save = gui.PopupYesNo(
-            'Save configuration?',
-            'There are unsaved changes in the application configuration.'
-            ' Do you wish to save them?')
-
-        if save == 'Yes':
-            do_save_config(config, window)
 
     window.Close()
 

@@ -17,10 +17,10 @@ configuration module for exchange monitoring borg bots
 """
 import collections
 import configparser
-import sys
 
 
 PASSWD = 'passwd'
+EMAILS = 'emails.txt'
 
 NOT_A_PASSWORD = 'not a password'
 
@@ -28,18 +28,18 @@ DEFAULTS = dict(autorun=False,
                 use_server_config=False,
                 debug=False,
                 domain='PHSABC',
-                username='serban.teodorescu',
+                username='svc_SOCmailbox',
                 autodiscover=True,
                 exchange_server=None,
                 password_file=PASSWD,
-                email_addresses='serban.teodorescu@phsa.ca',
-                witness_addresses='james.reilly@phsa.ca',
+                email_addresses_file=EMAILS,
+                witness_addresses='',
                 email_subject='exchange monitoring message',
                 app_name='BorgExchangeMonitor',
                 log_type='Application',
                 evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
                 msg_dll=None,
-                mail_every_minutes=15,
+                mail_every_minutes=20,
                 force_ascii_email=True,
                 allow_utf8_email=False,
                 check_email_mx=True,
@@ -63,6 +63,16 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
 
     if not loaded:
         config = dict(DEFAULTS)
+
+        # password and email addresses come from files
+        config['password'] = _get_password(
+            password_file=config.get('password_file'))
+        config.pop('password_file')
+
+        config['email_addresses'] = _get_emails(
+            config.get('email_addresses_file'))
+        config.pop('email_addresses_file')
+
         if config['use_server_config']:
             return get_config_from_server()
 
@@ -85,8 +95,8 @@ def load_config(config_file='mail_borg.ini', section='SITE'):
     config['password'] = _get_password(
         password_file=config_parser.get(section, 'password_file'))
 
-    config['email_addresses'] = config_parser.get(
-        section, 'email_addresses')
+    config['email_addresses'] = _get_emails(config_parser.get(
+        section, 'email_addresses_file'))
     config['witness_addresses'] = config_parser.get(
         section, 'witness_addresses')
 
@@ -133,6 +143,10 @@ def save_config(dict_config, config_file='mail_borg.ini'):
     dict_config['password_file'] = _set_passwd(dict_config.get('password'))
     dict_config.pop('password')
 
+    dict_config['email_addresses_file'] = _set_emails(
+        dict_config.get('email_addresses'))
+    dict_config.pop('email_addresses')
+
     config_parser = configparser.ConfigParser(
         allow_no_value=True, empty_lines_in_values=False)
     config_parser.read_dict(
@@ -167,11 +181,20 @@ def _get_password(password_file=PASSWD):
     try:
         with open(password_file, 'r') as fhandle:
             passwd = fhandle.readline()
-    except FileNotFoundError as err:
+    except FileNotFoundError:
         _set_passwd(NOT_A_PASSWORD)
         return NOT_A_PASSWORD
 
     return passwd
+
+
+def _get_emails(emails_file=EMAILS):
+    try:
+        with open(emails_file, 'r') as file_handle:
+            emails = file_handle.read().replace('\n', ',')
+        return emails
+    except FileNotFoundError:
+        return ''
 
 
 def _set_passwd(password, password_file=PASSWD):
@@ -179,3 +202,10 @@ def _set_passwd(password, password_file=PASSWD):
         file_handle.write(password)
 
     return password_file
+
+
+def _set_emails(emails, emails_file=EMAILS):
+    with open(emails_file, 'w') as file_handle:
+        file_handle.write(emails.replace(',', '\n'))
+
+    return emails_file

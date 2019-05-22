@@ -399,7 +399,6 @@ class WitnessMessages():
                     (type(account), str(account)))
 
         self.accounts = accounts
-
         for account in self.accounts:
             message_body = uuid4()
             self.messages.append(

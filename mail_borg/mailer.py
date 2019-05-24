@@ -101,8 +101,10 @@ class _Logger():
         if level is None:
             level = 'INFO'
 
-        self.console_logger.put_nowait('[{}] {:%X}: {}\n'.format(
-            level, datetime.now(), strings))
+        self.console_logger.put_nowait(
+            ('output', '[{}] {:%X}: {}\n'.format(level,
+                                                 datetime.now(), strings))
+        )
 
 
 def validate_email_to_ascii(email_address, logger=None, **config):
@@ -360,6 +362,8 @@ class WitnessMessages():
 
         self.messages = []
 
+        self.update_window_queue = console_logger
+
         self.logger = _Logger(
             update_window_queue=console_logger, event_logger=logger)
 
@@ -387,10 +391,11 @@ class WitnessMessages():
             return
 
         self.witness_emails = []
-        for witness_address in self.config.get('witness_addresses').split(','):
-            self.witness_emails.append(
-                validate_email_to_ascii(
-                    witness_address, logger=self.logger, **config))
+        if self.config.get('witness_addresses'):
+            for witness_address in self.config.get('witness_addresses').split(','):
+                self.witness_emails.append(
+                    validate_email_to_ascii(
+                        witness_address, logger=self.logger, **config))
 
         for account in accounts:
             if not isinstance(account, Account):
@@ -404,12 +409,14 @@ class WitnessMessages():
             self.messages.append(
                 WitnessMessage(
                     message_uuid=message_body,
-                    message=Message(account=account,
-                                    subject='{} with identifier {}'.format(
-                                        self._set_subject(), message_body),
-                                    body=message_body,
-                                    to_recipients=self.emails,
-                                    cc_recipients=self.witness_emails),
+                    message=Message(
+                        account=account,
+                        subject='{} with identifier {}'.format(
+                            self._set_subject(), message_body),
+                        body=message_body,
+                        to_recipients=[
+                            account.primary_smtp_address],
+                        cc_recipients=self.witness_emails),
                     account_for_message=account
                 )
             )
@@ -524,53 +531,52 @@ class WitnessMessages():
         if not self._sent:
             self.send()
 
-        time.sleep(min_wait_receive)
+        for message in self.messages:
+            time.sleep(min_wait_receive)
+            _wait_receive = min_wait_receive
 
-        for account in self.accounts:
-            for message in self.messages:
+            found_message = message.account_for_message.inbox.filter(
+                subject__icontains=str(message.message_uuid))
 
-                _wait_receive = min_wait_receive
+            while _wait_receive < max_wait_receive:
 
-                found_message = account.inbox.filter(
-                    subject__icontains=str(message.message_uuid))
-
-                while _wait_receive < max_wait_receive:
-
-                    if found_message.exists():
-
-                        found_message = found_message.get()
-                        self.logger.info(
-                            dict(type='receive', status='PASS',
-                                 message='message received',
-                                 message_uuid=str(message.message_uuid),
-                                 from_address=found_message.author.
-                                 email_address,
-                                 to_addresses=', '.join(
-                                     [mailbox.email_address for
-                                      mailbox in found_message.to_recipients]),
-                                 created=str(found_message.datetime_created),
-                                 sent=str(found_message.datetime_sent),
-                                 received=str(found_message.datetime_received))
-                        )
-
-                        if not self.config.get(
-                                'debug',
-                                load_config().get('debug', True)):
-                            found_message.delete()
-
-                        break
-
-                    time.sleep(step_wait_receive)
-                    _wait_receive = _wait_receive + step_wait_receive
-
-                else:
-                    self.logger.err(
-                        dict(type='receive', status='FAIL',
+                if found_message.exists():
+                    found_message = found_message.get()
+                    self.logger.info(
+                        dict(type='receive', status='PASS',
                              message='message received',
                              message_uuid=str(message.message_uuid),
                              from_address=found_message.author.
                              email_address,
                              to_addresses=', '.join(
-                                     [mailbox.email_address for
-                                      mailbox in found_message.to_recipients]))
+                                 [mailbox.email_address for
+                                  mailbox in found_message.to_recipients]),
+                             created=str(found_message.datetime_created),
+                             sent=str(found_message.datetime_sent),
+                             received=str(found_message.datetime_received))
                     )
+
+                    if not self.config.get(
+                            'debug',
+                            load_config().get('debug', True)):
+                        found_message.delete()
+
+                    break
+
+                time.sleep(step_wait_receive)
+                _wait_receive = _wait_receive + step_wait_receive
+
+            else:
+                self.logger.err(
+                    dict(type='receive', status='FAIL',
+                         message='message received',
+                         message_uuid=str(message.message_uuid),
+                         from_address=found_message.author.
+                         email_address,
+                         to_addresses=', '.join(
+                                 [mailbox.email_address for
+                                  mailbox in found_message.to_recipients]))
+                )
+
+        if self.update_window_queue:
+            self.update_window_queue.put_nowait(('control',))

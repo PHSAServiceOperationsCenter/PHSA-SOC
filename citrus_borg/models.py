@@ -21,7 +21,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models.deletion import SET_NULL
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from simple_history.models import HistoricalRecords
 
@@ -60,6 +60,36 @@ class BorgSiteNotSeenManager(models.Manager):
             exclude(winlogbeathost__last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
+
+class WinlogbeatHostNotSeenManager(models.Manager):
+    """
+    model manager for bot hosts not seen for a while
+    """
+
+    def get_queryset(self):
+        """
+        oerloaded method for custom model magers
+        """
+        return WinlogbeatHost.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
+class KnownBrokeringDeviceNotSeenManager(models.Manager):
+    """
+    model manager for citrix app servers
+
+    yes, i know the class name is misleading
+    """
+
+    def get_queryset(self):
+        """
+        overloaded method for custom model managers
+        """
+        return KnownBrokeringDevice.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
 # pylint: enable=too-few-public-methods,no-self-use
 
 
@@ -77,26 +107,21 @@ class BorgSite(BaseModel, models.Model):
 
     class Meta:
         app_label = 'citrus_borg'
-        verbose_name = _('Citrix Bot Site')
-        verbose_name_plural = _('Citrix Bot Sites')
+        verbose_name = _('Bot Site')
+        verbose_name_plural = _('Bot Sites')
 
 
 class BorgSiteNotSeen(BorgSite):
+    """
+    sites not seen for a while
+    """
     objects = BorgSiteNotSeenManager()
 
     class Meta:
         proxy = True
         ordering = ('-winlogbeathost__last_seen',)
-        verbose_name = _('Citrix Bot Site')
-        verbose_name_plural = _(
-            'Citrix Bot Sites not seen for at least 72 hours')
-
-
-class WinlogbeatHostNotSeenManager(models.Manager):
-    def get_queryset(self):
-        return WinlogbeatHost.objects.\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+        verbose_name = _('Bot Site')
+        verbose_name_plural = _('Bot Sites not seen for a while')
 
 
 class WinlogbeatHost(BaseModel, models.Model):
@@ -146,7 +171,9 @@ class WinlogbeatHost(BaseModel, models.Model):
             return
 
         if self.resolved_fqdn is None and self.ip_address is None:
-            # there is no way to identity the node in orion
+            # there is no way to identify the node in orion
+            # how does orion handle unamanaged nodes? is it possible
+            # to ignore network identification?
 
             # TODO: this is an error condition, must integrate with
             # https://trello.com/c/1Aadwukn
@@ -208,17 +235,20 @@ class WinlogbeatHost(BaseModel, models.Model):
         return winloghost
 
     class Meta:
-        verbose_name = _('Citrix Bot')
-        verbose_name_plural = _('Citrix Bots')
+        verbose_name = _('Remote Monitoring Bot')
+        verbose_name_plural = _('Remote Monitoring Bots')
 
 
 class WinlogbeatHostNotSeen(WinlogbeatHost):
+    """
+    bots not seen for a while
+    """
     objects = WinlogbeatHostNotSeenManager()
 
     class Meta:
         proxy = True
-        verbose_name = _('Citrix Bot')
-        verbose_name_plural = _('Citrix Bots not seen for at least 72 hours')
+        verbose_name = _('Remote Monitoring Bot')
+        verbose_name_plural = _('Remote Monitoring Bots not seen for a while')
 
 
 class AllowedEventSource(BaseModel, models.Model):
@@ -258,13 +288,6 @@ class WindowsLog(BaseModel, models.Model):
         verbose_name_plural = _('Supported Windows Logs')
 
 
-class KnownBrokeringDeviceNotSeenManager(models.Manager):
-    def get_queryset(self):
-        return KnownBrokeringDevice.objects.\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
-
-
 class KnownBrokeringDevice(BaseModel, models.Model):
     """
     keep a list of brokers returned by the logon simulator
@@ -277,7 +300,6 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     )
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
-    history = HistoricalRecords()
 
     def __str__(self):
         return self.broker_name
@@ -317,13 +339,15 @@ class KnownBrokeringDevice(BaseModel, models.Model):
 
 
 class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
+    """
+    citrix app servers not seen for a while
+    """
     objects = KnownBrokeringDeviceNotSeenManager()
 
     class Meta:
         proxy = True
         verbose_name = _('Citrix App Server')
-        verbose_name_plural = _(
-            'Citrix App Servers not seen for at least 24 hours')
+        verbose_name_plural = _('Citrix App Servers not seen for a while')
 
 
 class WinlogEvent(BaseModel, models.Model):
@@ -378,3 +402,8 @@ class WinlogEvent(BaseModel, models.Model):
 
     def __str__(self):
         return str(self.uuid)
+
+    class Meta:
+        app_label = 'citrus_borg'
+        verbose_name = _('Citrix Bot Windows Log Event')
+        verbose_name_plural = _('Citrix Bot Windows Log Events')

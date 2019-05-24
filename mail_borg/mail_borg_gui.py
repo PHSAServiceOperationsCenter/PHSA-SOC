@@ -194,15 +194,11 @@ def mail_check(config, window, update_window_queue):
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update(
         '{:%c}: running mail check\n'.format(datetime.now()), append=True)
+    window.FindElement('output').Update(disabled=True)
 
-    # witness_messages = WitnessMessages(console_logger=window, **config)
-    # witness_messages.verify_receive()
     thr = threading.Thread(target=_mail_check, args=(
         update_window_queue, dict(config)))
     thr.start()
-
-    window.FindElement('output').Update(disabled=True)
-    window.FindElement('mailcheck').Update(disabled=False)
 
 
 def _mail_check(update_window_queue, config):
@@ -343,14 +339,30 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
             break
 
         while not update_window_queue.empty():
-            window.FindElement('output').Update(disabled=False)
-            window.FindElement('output').Update(
-                update_window_queue.get_nowait(), append=True)
-            window.FindElement('output').Update(disabled=True)
+            msg = update_window_queue.get_nowait()
+            if msg[0] in ['output']:
+                window.FindElement('output').Update(disabled=False)
+                window.FindElement('output').Update(msg[1], append=True)
+                window.FindElement('output').Update(disabled=True)
+                window.FindElement('status').Update('mail check in progress')
+            if msg[0] in ['control']:
+                window.FindElement('output').Update(disabled=False)
+                window.FindElement('output').Update('\nmail check complete\n',
+                                                    append=True)
+                window.FindElement('output').Update(disabled=True)
+                window.FindElement('mailcheck').Update(disabled=False)
+                if autorun:
+                    window.FindElement('status').Update(
+                        'next mail check run in {}'.format(
+                            next_run_in(next_run_at))
+                    )
+                else:
+                    window.FindElement('status').Update(
+                        'automated mail check execution is paused')
 
         if event in editable:
             config_is_dirty = True
-            config[event] = window.FindElement(event).Get()
+            config[event] = window.FindElement(event).Get().replace('\n', '')
 
             _dirty_window(window)
 

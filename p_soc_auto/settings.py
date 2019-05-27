@@ -295,6 +295,8 @@ CELERY_QUEUES = (
     Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
     Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
     Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
+    Queue('mail_collector', Exchange('mail_collector'),
+          routing_key='mail_collector'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'

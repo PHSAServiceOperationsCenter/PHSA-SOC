@@ -123,6 +123,7 @@ def process_win_event(body):
     """
     from .models import AllowedEventSource
     from .tasks import store_borg_data
+    from mail_collector.tasks import store_mail_data
 
     _logger.debug('resistance is futile... now processing %s' % body)
 
@@ -138,3 +139,4 @@ def process_win_event(body):
 
     elif borg.get('source_name', None) in ['BorgExchangeMonitor']:
         _logger.info(borg)
+        store_mail_data.delay(borg)

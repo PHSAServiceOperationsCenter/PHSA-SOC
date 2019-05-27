@@ -17,9 +17,9 @@ django admin module for the citrus_borg app
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 
 from p_soc_auto_base.admin import BaseAdmin
-from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
@@ -91,7 +91,10 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('last_seen',)
 
     def last_seen(self, obj):
-        return obj.winlogbeathost_set.first().last_seen
+        first_bot = obj.winlogbeathost_set.first()
+        if first_bot:
+            return first_bot.last_seen
+        return 'Please allocate at least one bot to this site ASAP'
     last_seen.short_description = 'last seen'
 
 

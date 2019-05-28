@@ -138,5 +138,4 @@ def process_win_event(body):
         store_borg_data.delay(borg)
 
     elif borg.get('source_name', None) in ['BorgExchangeMonitor']:
-        _logger.info(borg)
         store_mail_data.delay(borg)

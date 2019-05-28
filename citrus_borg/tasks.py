@@ -67,7 +67,7 @@ def store_borg_data(body):
         raise error
 
     try:
-        borg = process_borg(body)
+        borg = process_borg(body, LOGGER)
     except Exception as error:
         reraise('cannot save event data from event', body, error)
 

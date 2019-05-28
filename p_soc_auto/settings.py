@@ -84,6 +84,20 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'citrus_borg_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'citrus_borg.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'mail_collector_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'mail_collector.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -108,6 +122,16 @@ LOGGING = {
         },
         'orion_flash': {
             'handlers': ['orion_flash_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'citrus_borg': {
+            'handlers': ['citrus_borg_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'mail_collector': {
+            'handlers': ['mail_collector_log', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },

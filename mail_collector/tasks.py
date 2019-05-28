@@ -19,11 +19,27 @@ import json
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
+from citrus_borg.locutus.assimilation import process_borg
+from citrus_borg.models import WinlogbeatHost
+
 LOGGER = get_task_logger(__name__)
 
 
 @shared_task(queue='mail_collector')
 def store_mail_data(body):
-    LOGGER.debug('HORSEY %s', body.get('event_data')['param1'])
-    super_horsey = json.loads(body.get('event_data')['param1'])
-    LOGGER.debug('HORSEY %s', super_horsey.keys())
+    """
+    grab the exchange events from rabbitmq and dump it to the database
+    """
+    def reraise(msg, body, error):
+        LOGGER.error('%s %s: %s', msg, body, str(error))
+        raise error
+
+    try:
+        exchange_data = process_borg(body, LOGGER)
+    except Exception as error:
+        reraise('cannot extract exchange data from this event', body, error)
+
+    try:
+        event_host = (WinlogbeatHost.get_or_create_from_borg(exchange_data))
+    except Exception as error:
+        reraise('cannot retrieve bot info from event', body, error)

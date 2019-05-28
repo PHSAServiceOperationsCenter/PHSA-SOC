@@ -72,8 +72,10 @@ class MailBotMessage(models.Model):
     mail_message_identifier = models.CharField(
         _('Exchange Message Identifier'), max_length=36, db_index=True,
         unique=True, blank=False, null=False)
-    mail_message_from = models.TextField(_('From'), blank=True, null=True)
-    mail_message_to = models.TextField(_('To'), blank=True, null=True)
+    sent_from = models.TextField(_('Sent From'), blank=True, null=True)
+    sent_to = models.TextField(_('Sent To'), blank=True, null=True)
+    received_from = models.TextField(_('Received From'), blank=True, null=True)
+    received_by = models.TextField(_('Received By'), blank=True, null=True)
     mail_message_created = models.DateTimeField(
         _('Created'), db_index=True, blank=True, null=True)
     mail_message_sent = models.DateTimeField(
@@ -85,8 +87,8 @@ class MailBotMessage(models.Model):
 
     def __str__(self):
         return 'message %s from %s to %s' % (self.mail_message_identifier,
-                                             self.mail_message_from,
-                                             self.mail_message_to)
+                                             self.sent_from,
+                                             self.sent_to)
 
     class Meta:
         app_label = 'mail_collector'

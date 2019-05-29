@@ -136,7 +136,9 @@ def process_borg(body=None, logger=None):
 
     if borg.event_source in ['ControlUp Logon Monitor']:
         borg.borg_message = process_borg_message(body.get('message', None))
+        borg.mail_borg_message = None
     elif borg.event_source in ['BorgExchangeMonitor']:
+        borg.borg_message = None
         borg.mail_borg_message = process_exchange_message(
             json.loads(body.get('event_data')['param1']), logger)
 
@@ -301,15 +303,17 @@ def process_exchange_message(message=None, logger=None):
         event_body=str(message))
     logger.debug('exchange event: %s', exchange_event)
 
-    exchange_message = ExchangeMessage(
-        sent_from=message.get('from_email'),
-        sent_to=message.get('to_emails'),
-        mail_message_identifier=message.get('message_uuid'),
-        received_from=message.get('from_address'),
-        received_by=message.get('to_addresses'),
-        mail_message_created=parse_datetime(message.get('created')),
-        mail_message_sent=parse_datetime(message.get('sent')),
-        mail_message_received=parse_datetime(message.get('received')))
-    logger.debug('exchange message %s', exchange_message)
+    exchange_message = None
+    if message.get('message_uuid', None):
+        exchange_message = ExchangeMessage(
+            sent_from=message.get('from_email'),
+            sent_to=message.get('to_emails'),
+            mail_message_identifier=message.get('message_uuid'),
+            received_from=message.get('from_address'),
+            received_by=message.get('to_addresses'),
+            mail_message_created=parse_datetime(message.get('created')),
+            mail_message_sent=parse_datetime(message.get('sent')),
+            mail_message_received=parse_datetime(message.get('received')))
+        logger.debug('exchange message %s', exchange_message)
 
     return exchange_event, exchange_message

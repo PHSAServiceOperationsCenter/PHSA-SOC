@@ -31,7 +31,9 @@ class MailBotLogEvent(models.Model):
         default=get_uuid)
     source_host = models.ForeignKey(
         'citrus_borg.WinlogbeatHost', db_index=True, blank=False, null=False,
-        on_delete=models.PROTECT, verbose_name=_('Event Source Host'))
+        on_delete=models.PROTECT,
+        limit_choices_to={'exch_last_seen__isnull': False},
+        verbose_name=_('Event Source Host'))
     event_status = models.CharField(
         _('Status'), max_length=16, db_index=True, blank=False, null=False,
         default='TBD', help_text=_(

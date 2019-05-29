@@ -132,7 +132,10 @@ class WinlogbeatHost(BaseModel, models.Model):
     ip_address = models.GenericIPAddressField(
         _('IP address'), protocol='IPv4', blank=True, null=True)
     last_seen = models.DateTimeField(
-        _('last seen'), db_index=True, blank=False, null=False)
+        _('Citrix bot last seen'), db_index=True, blank=True, null=True)
+    excgh_last_seen = models.DateTimeField(
+        _('Exchange client bot last seen'),
+        db_index=True, blank=True, null=True)
     site = models.ForeignKey(
         BorgSite, db_index=True, blank=True, null=True,
         on_delete=models.SET_NULL)
@@ -216,18 +219,24 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         :returns: a host object
         """
+        last_seen = now() \
+            if borg.event_source in ['ControlUp Logon Monitor'] else None
+        exch_last_seen = now() \
+            if borg.event_source in ['BorgExchangeMonitor'] else None
+
         winloghost = cls.objects.filter(
             host_name__iexact=borg.source_host.host_name)
 
         if winloghost.exists():
             winloghost = winloghost.get()
-            winloghost.last_seen = now()
+            winloghost.last_seen = last_seen
+            winloghost.excgh_last_seen = exch_last_seen
         else:
             user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(
-                host_name=borg.source_host.host_name, last_seen=now(),
+                host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
-                updated_by=user)
+                exch_last_seen=exch_last_seen, updated_by=user)
 
         winloghost.save()
         return winloghost
@@ -356,7 +365,9 @@ class WinlogEvent(BaseModel, models.Model):
         default=get_uuid)
     source_host = models.ForeignKey(
         WinlogbeatHost, db_index=True, blank=False, null=False,
-        on_delete=models.PROTECT, verbose_name=_('Event Source Host'))
+        on_delete=models.PROTECT,
+        limit_choices_to={'last_seen__isnull': False},
+        verbose_name=_('Event Source Host'))
     record_number = models.BigIntegerField(
         _('Record Number'), db_index=True, blank=False, null=False,
         help_text=_('event record external identifier'))

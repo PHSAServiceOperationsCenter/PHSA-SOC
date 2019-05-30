@@ -111,7 +111,7 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         ordered descending
         """
         return obj.winlogbeathost_set.first().last_seen
-    last_seen.short_description = 'last seen'
+    last_seen.short_description = 'Citrix bot last seen'
 
 
 @admin.register(BorgSiteNotSeen)

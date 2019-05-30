@@ -32,7 +32,7 @@ class MailBotLogEvent(models.Model):
     source_host = models.ForeignKey(
         'citrus_borg.WinlogbeatHost', db_index=True, blank=False, null=False,
         on_delete=models.PROTECT,
-        limit_choices_to={'exch_last_seen__isnull': False},
+        limit_choices_to={'excgh_last_seen__isnull': False},
         verbose_name=_('Event Source Host'))
     event_status = models.CharField(
         _('Status'), max_length=16, db_index=True, blank=False, null=False,
@@ -73,7 +73,7 @@ class MailBotMessage(models.Model):
     """
     mail_message_identifier = models.CharField(
         _('Exchange Message Identifier'), max_length=36, db_index=True,
-        unique=True, blank=False, null=False)
+        blank=False, null=False)
     sent_from = models.TextField(_('Sent From'), blank=True, null=True)
     sent_to = models.TextField(_('Sent To'), blank=True, null=True)
     received_from = models.TextField(_('Received From'), blank=True, null=True)

@@ -311,9 +311,15 @@ def process_exchange_message(message=None, logger=None):
             mail_message_identifier=message.get('message_uuid'),
             received_from=message.get('from_address'),
             received_by=message.get('to_addresses'),
-            mail_message_created=parse_datetime(message.get('created')),
-            mail_message_sent=parse_datetime(message.get('sent')),
-            mail_message_received=parse_datetime(message.get('received')))
+            mail_message_created=_parse_datetime(message.get('created')),
+            mail_message_sent=_parse_datetime(message.get('sent')),
+            mail_message_received=_parse_datetime(message.get('received')))
         logger.debug('exchange message %s', exchange_message)
 
     return exchange_event, exchange_message
+
+
+def _parse_datetime(date_time):
+    if date_time:
+        return parse_datetime(date_time)
+    return None

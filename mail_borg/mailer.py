@@ -31,12 +31,14 @@ import socket
 import time
 
 from datetime import datetime
+from tzlocal import get_localzone
 from uuid import uuid4
 
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import ServiceAccount, Message, Account, Configuration
+from tzlocal import get_localzone
 
 from config import load_config
 from logger import LogWinEvent
@@ -360,11 +362,10 @@ class WitnessMessages():
 
         self.config = config
 
-        self.wm_id = '{}{}{}'.format(self.config.get('site', 'no_site'),
-                                     socket.gethostname(),
-                                     datetime.now())
-        # see https://pypi.org/project/tzlocal/ for providing the tzinfo arg to
-        # now()
+        self.config['wm_id'] = '{}-{}-{}'.format(
+            self.config.get('site', 'no_site'), socket.gethostname(),
+            datetime.now(tz=get_localzone())
+        )
 
         self.messages = []
 
@@ -398,7 +399,8 @@ class WitnessMessages():
 
         self.witness_emails = []
         if self.config.get('witness_addresses'):
-            for witness_address in self.config.get('witness_addresses').split(','):
+            for witness_address in \
+                    self.config.get('witness_addresses').split(','):
                 self.witness_emails.append(
                     validate_email_to_ascii(
                         witness_address, logger=self.logger, **config))
@@ -411,7 +413,8 @@ class WitnessMessages():
 
         self.accounts = accounts
         for account in self.accounts:
-            message_body = uuid4()
+            message_body = 'message_group_id: {}, message_id: {}'.\
+                format(self.wm_id, str(uuid4()))
             self.messages.append(
                 WitnessMessage(
                     message_uuid=message_body,
@@ -434,7 +437,7 @@ class WitnessMessages():
         tags = '[DEBUG]' if self.config.get('debug') else ''
         tags += '[{}]'.format(
             self.config.get('site')) if self.config.get('site') else ''
-        tags = '{}[{}]'.format(tags, socket.getfqdn())
+        tags = '{}[{}]'.format(tags, socket.gethostname())
 
         return '{}{}'.format(tags, self.config.get('email_subject',
                                                    'email canary'))
@@ -462,7 +465,7 @@ class WitnessMessages():
                 message.message.send()
 
                 self.logger.info(
-                    dict(type='send', status='PASS',
+                    dict(type='send', status='PASS', wm_id=self.wm_id,
                          message='monitoring message sent',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -473,7 +476,7 @@ class WitnessMessages():
 
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
-                    dict(type='send', status='FAIL',
+                    dict(type='send', status='FAIL', wm_id=self.wm_id,
                          message='cannot send message',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -549,7 +552,7 @@ class WitnessMessages():
                 if found_message.exists():
                     found_message = found_message.get()
                     self.logger.info(
-                        dict(type='receive', status='PASS',
+                        dict(type='receive', status='PASS', wm_id=self.wm_id,
                              message='message received',
                              message_uuid=str(message.message_uuid),
                              from_address=found_message.author.
@@ -574,7 +577,7 @@ class WitnessMessages():
 
             else:
                 self.logger.err(
-                    dict(type='receive', status='FAIL',
+                    dict(type='receive', status='FAIL', wm_id=self.wm_id,
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_address=found_message.author.

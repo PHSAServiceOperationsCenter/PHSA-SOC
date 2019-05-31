@@ -19,7 +19,33 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
-from citrus_borg.models import get_uuid
+from citrus_borg.models import get_uuid, WinlogbeatHost
+
+
+class MailHostManager(models.Manager):
+    """
+    only show bots with exchange monitoring clients
+    """
+
+    def get_queryset(self):
+        """
+        override get_queryset
+        """
+        return WinlogbeatHost.objects.exclude(excgh_last_seen__isnull=True)
+
+
+class MailHost(WinlogbeatHost):
+    """
+    proxy model for exchange client bots
+    """
+    objects = MailHostManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Exchange Monitoring Bot')
+        verbose_name_plural = _('Exchange Monitoring Bots')
+        get_latest_by = '-excgh_last_seen'
+        ordering = ['-excgh_last_seen', ]
 
 
 class MailBotLogEvent(models.Model):
@@ -59,12 +85,14 @@ class MailBotLogEvent(models.Model):
                     ' this event to the application'))
 
     def __str__(self):
-        return str(self.uuid)
+        return '%s: %s' % (str(self.uuid), self.event_message)
 
     class Meta:
         app_label = 'mail_collector'
         verbose_name = _('Mail Monitoring Event')
         verbose_name_plural = _('Mail Monitoring Events')
+        ordering = ['-event_registered_on', ]
+        get_latest_by = '-event_registered_on'
 
 
 class MailBotMessage(models.Model):
@@ -88,11 +116,11 @@ class MailBotMessage(models.Model):
         MailBotLogEvent, primary_key=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return 'message %s from %s to %s' % (self.mail_message_identifier,
-                                             self.sent_from,
-                                             self.sent_to)
+        return '%s: %s' % (str(self.event.uuid), self.event.event_message)
 
     class Meta:
         app_label = 'mail_collector'
         verbose_name = _('Mail Monitoring Message')
         verbose_name_plural = _('Mail Monitoring Messages')
+        ordering = ['-event__event_registered_on', ]
+        get_latest_by = '-event__event_registered_on'

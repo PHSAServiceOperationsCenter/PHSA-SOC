@@ -29,3 +29,15 @@ class BadHostDataFromEventError(Exception):
     raise when the host information contained in an event cannot be
     saved to :class:`<citrus_borg.models.WinlogbeatHost>`
     """
+
+
+class SaveExchangeEventError(Exception):
+    """
+    raise when one cannot save event data with no message information
+    """
+
+
+class SaveExchangeMailEventError(Exception):
+    """
+    raise when one cannot save event data with message information
+    """

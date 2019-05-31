@@ -26,23 +26,25 @@ from mail_collector import exceptions, models
 LOGGER = get_task_logger(__name__)
 
 
-@shared_task(queue='mail_collector', task_serializer='pickle')
+@shared_task(queue='mail_collector')
 def store_mail_data(body):
     """
     grab the exchange events from rabbitmq and dump it to the database
     """
     try:
         exchange_borg = process_borg(body, LOGGER)
-    except:  # @IgnorePep8
+    except Exception as error:
         raise exceptions.BadEventDataError(
-            'cannot process event data from %s' % body)
+            'cannot process event data from %s, error: %s'
+            % (body, str(error)))
 
     try:
         source_host = WinlogbeatHost.get_or_create_from_borg(
             exchange_borg)
-    except:  # @IgnorePep8
+    except Exception as error:
         raise exceptions.BadHostDataFromEventError(
-            'cannot update borg host info from %s' % str(exchange_borg))
+            'cannot update borg host info from %s, error: %s'
+            % str(exchange_borg, str(error)))
 
     event_data = exchange_borg.mail_borg_message[0]
 
@@ -56,7 +58,8 @@ def store_mail_data(body):
             event_exception=event_data.event_exception)
         event.save()
     except Exception as error:
-        raise error
+        raise exceptions.SaveExchangeEventError(
+            'cannot save event %s, error: %s' % (str(event_data), str(error)))
 
     if exchange_borg.mail_borg_message[1]:
         mail_data = exchange_borg.mail_borg_message[1]
@@ -72,7 +75,9 @@ def store_mail_data(body):
                 mail_message_received=mail_data.mail_message_received)
             event.save()
         except Exception as error:
-            raise error
+            raise exceptions.SaveExchangeMailEventError(
+                'cannot save event %s, error: %s' % (str(event_data),
+                                                     str(error)))
 
         return ('created exchange monitoring event from email message %s'
                 % event.mail_message_identifier)

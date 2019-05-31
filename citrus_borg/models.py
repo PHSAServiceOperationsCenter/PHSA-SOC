@@ -67,7 +67,7 @@ class WinlogbeatHostNotSeenManager(models.Manager):
 
     def get_queryset(self):
         """
-        oerloaded method for custom model magers
+        override method for custom model managers
         """
         return WinlogbeatHost.objects.\
             exclude(last_seen__gt=now() -
@@ -88,6 +88,18 @@ class KnownBrokeringDeviceNotSeenManager(models.Manager):
         return KnownBrokeringDevice.objects.\
             exclude(last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
+class CitrixHostManager(models.Manager):
+    """
+    get only citrix bots
+    """
+
+    def get_queryset(self):
+        """
+        override get_queryset to return only citrix bots
+        """
+        return WinlogbeatHost.objects.exclude(last_seen__isnull=True)
 
 # pylint: enable=too-few-public-methods,no-self-use
 
@@ -244,6 +256,20 @@ class WinlogbeatHost(BaseModel, models.Model):
     class Meta:
         verbose_name = _('Remote Monitoring Bot')
         verbose_name_plural = _('Remote Monitoring Bots')
+
+
+class CitrixHost(WinlogbeatHost):
+    """
+    only citrix bots
+    """
+    objects = CitrixHostManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Citrix Bot')
+        verbose_name_plural = _('Citrix Bots')
+        get_latest_by = '-last_seen'
+        ordering = ['-last_seen', ]
 
 
 class WinlogbeatHostNotSeen(WinlogbeatHost):
@@ -415,3 +441,5 @@ class WinlogEvent(BaseModel, models.Model):
         app_label = 'citrus_borg'
         verbose_name = _('Citrix Bot Windows Log Event')
         verbose_name_plural = _('Citrix Bot Windows Log Events')
+        get_latest_by = '-created_on'
+        ordering = ['-created_on']

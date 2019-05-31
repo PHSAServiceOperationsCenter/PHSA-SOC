@@ -24,7 +24,7 @@ from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
     BorgSiteNotSeen, WinlogbeatHostNotSeen, KnownBrokeringDeviceNotSeen,
-    AllowedEventSource,
+    AllowedEventSource, CitrixHost
 )
 
 
@@ -32,6 +32,7 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
     base admin class for the citrus_borg application
     """
+    list_per_page = 50
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -139,15 +140,26 @@ class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
     pass
 
 
-@admin.register(WinlogbeatHost)
+@admin.register(CitrixHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
-
+    """
+    admin forms for citrix bots
+    """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'resolved_fqdn', 'last_seen', 'created_on',)
     list_editable = ('site', 'enabled',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on', 'orion_id',)
-    list_filter = ('site__site', 'enabled',)
+    list_filter = ('site__site', 'enabled',
+                   ('last_seen', DateTimeRangeFilter),)
+    search_fields = ('site__site', 'host_name', 'ip_address')
+
+    def has_add_permission(self, request):
+        """
+        these bots are created from data collected via logstash.
+        adding manually will just add more noise to the database
+        """
+        return False
 
 
 @admin.register(WinlogbeatHostNotSeen)

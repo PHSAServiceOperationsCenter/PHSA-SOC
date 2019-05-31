@@ -360,6 +360,12 @@ class WitnessMessages():
 
         self.config = config
 
+        self.wm_id = '{}{}{}'.format(self.config.get('site', 'no_site'),
+                                     socket.gethostname(),
+                                     datetime.now())
+        # see https://pypi.org/project/tzlocal/ for providing the tzinfo arg to
+        # now()
+
         self.messages = []
 
         self.update_window_queue = console_logger

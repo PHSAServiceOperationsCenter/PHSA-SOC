@@ -18,11 +18,10 @@ django models for the mail_collector app
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from p_soc_auto_base.models import BaseModel
 from citrus_borg.models import get_uuid, WinlogbeatHost
 
 
-class MailHostManager(models.Manager):
+class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     only show bots with exchange monitoring clients
     """
@@ -52,6 +51,10 @@ class MailBotLogEvent(models.Model):
     """
     model for events sent by mail monitoring bots
     """
+    event_group_id = models.CharField(
+        _('Session Id'), max_length=128, db_index=True, blank=False, null=False,
+        help_text=_(
+            'Identifier for a group of related exchange client events'))
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,
         default=get_uuid)
@@ -91,7 +94,7 @@ class MailBotLogEvent(models.Model):
         app_label = 'mail_collector'
         verbose_name = _('Mail Monitoring Event')
         verbose_name_plural = _('Mail Monitoring Events')
-        ordering = ['-event_registered_on', ]
+        ordering = ['-event_group_id', '-event_type']
         get_latest_by = '-event_registered_on'
 
 
@@ -122,5 +125,6 @@ class MailBotMessage(models.Model):
         app_label = 'mail_collector'
         verbose_name = _('Mail Monitoring Message')
         verbose_name_plural = _('Mail Monitoring Messages')
-        ordering = ['-event__event_registered_on', ]
+        ordering = ['-event__event_group_id',
+                    'mail_message_identifier', '-event__event_type', ]
         get_latest_by = '-event__event_registered_on'

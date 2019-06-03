@@ -28,6 +28,7 @@ class MailBotAdmin(admin.ModelAdmin):
     """
     base class
     """
+    list_per_page = 50
 
     def has_add_permission(self, request):
         return False

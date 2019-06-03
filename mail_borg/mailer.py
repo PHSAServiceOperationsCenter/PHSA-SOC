@@ -262,9 +262,8 @@ def get_accounts(logger=None, **config):
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
                  message='no valid exchange account found',
-                 domain_account='{}\\{}'.format(
-                     config.get('domain'), config.get('username')),
-                 exchange_accounts=config.get('email_addresses'))
+                 account='{}\\{}'.format(
+                     config.get('domain'), config.get('username')))
         )
         return None
 

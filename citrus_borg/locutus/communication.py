@@ -110,7 +110,8 @@ def get_dead_bots(now=None, time_delta=None):
 
     dead_bots = set(all_bots).symmetric_difference(set(live_bots))
 
-    dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
+    dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots),
+                                              last_seen__isnull=False)
 
     dead_bots = dead_bots.\
         annotate(measured_now=Value(now, output_field=CharField())).\

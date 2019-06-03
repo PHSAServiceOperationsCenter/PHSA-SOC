@@ -242,6 +242,7 @@ def get_accounts(logger=None, **config):
                                         autodiscover=False))
             logger.info(
                 dict(type='connection', status='PASS',
+                     wm_id=config.get('wm_id'),
                      message='connected to exchange',
                      account='{}\\{}, {}'.format(
                          config.get('domain'), config.get('username'), email))

@@ -417,11 +417,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         self.accounts = accounts
         for account in self.accounts:
+            message_uuid = str(uuid4())
             message_body = 'message_group_id: {}, message_id: {}'.\
-                format(self.config.get('wm_id'), str(uuid4()))
+                format(self.config.get('wm_id'), message_uuid)
             self.messages.append(
                 WitnessMessage(
-                    message_uuid=message_body,
+                    message_uuid=message_uuid,
                     message=Message(
                         account=account,
                         subject='{} {}'.format(
@@ -570,7 +571,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                                   mailbox in found_message.to_recipients]),
                              created=str(found_message.datetime_created),
                              sent=str(found_message.datetime_sent),
-                             received=str(found_message.datetime_received))
+                             received=str(found_message.datetime_received),
+                             from_email=message.
+                             account_for_message.primary_smtp_address,
+                             to_emails=', '.join(
+                                 [r.email_address for r in
+                                  message.message.to_recipients]))
                     )
 
                     if not self.config.get(

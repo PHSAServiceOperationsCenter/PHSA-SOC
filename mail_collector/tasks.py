@@ -51,8 +51,10 @@ def store_mail_data(body):
     try:
         event = models.MailBotLogEvent(
             source_host=source_host,
+            event_group_id=event_data.event_group_id,
             event_status=event_data.event_status,
             event_type=event_data.event_type,
+            mail_account=event_data.mail_account,
             event_message=event_data.event_message,
             event_body=event_data.event_body,
             event_exception=event_data.event_exception)

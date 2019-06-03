@@ -283,8 +283,8 @@ def process_exchange_message(message=None, logger=None):
 
     ExchangeEvent = collections.namedtuple(
         'ExchangeEvent',
-        ['event_type', 'event_status', 'event_message', 'event_exception',
-         'mail_account', 'event_body']
+        ['event_group_id', 'event_type', 'event_status', 'event_message',
+         'event_exception', 'mail_account', 'event_body']
     )
 
     ExchangeMessage = collections.namedtuple(
@@ -295,6 +295,7 @@ def process_exchange_message(message=None, logger=None):
     )
 
     exchange_event = ExchangeEvent(
+        event_group_id=message.get('wm_id'),
         event_type=message.get('type'),
         event_status=message.get('status'),
         event_message=message.get('message'),

@@ -31,14 +31,13 @@ import socket
 import time
 
 from datetime import datetime
-from tzlocal import get_localzone
 from uuid import uuid4
 
+from tzlocal import get_localzone
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import ServiceAccount, Message, Account, Configuration
-from tzlocal import get_localzone
 
 from config import load_config
 from logger import LogWinEvent
@@ -165,6 +164,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
     except (EmailSyntaxError, EmailUndeliverableError) as error:
         logger.warn(
             dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
                  message='bad email address %s' % email_address,
                  exception=str(error))
         )
@@ -214,6 +214,7 @@ def get_accounts(logger=None, **config):
     if not emails:
         logger.err(
             dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
                  message='no valid email addresses found in %s'
                  % config.get('email_addresses'))
         )
@@ -248,6 +249,7 @@ def get_accounts(logger=None, **config):
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 dict(type='connection', status='PASS',
+                     wm_id=config.get('wm_id'),
                      message='cannot connect to exchange',
                      account='{}\\{}, {}'.format(
                          config.get('domain'), config.get('username'), email),
@@ -257,6 +259,7 @@ def get_accounts(logger=None, **config):
     if not accounts:
         logger.error(
             dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
                  message='no valid exchange account found',
                  domain_account='{}\\{}'.format(
                      config.get('domain'), config.get('username')),
@@ -285,7 +288,7 @@ WitnessMessage = collections.namedtuple(
 """
 
 
-class WitnessMessages():
+class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     """
     class for sent and received messages
 
@@ -414,13 +417,13 @@ class WitnessMessages():
         self.accounts = accounts
         for account in self.accounts:
             message_body = 'message_group_id: {}, message_id: {}'.\
-                format(self.wm_id, str(uuid4()))
+                format(self.config.get('wm_id'), str(uuid4()))
             self.messages.append(
                 WitnessMessage(
                     message_uuid=message_body,
                     message=Message(
                         account=account,
-                        subject='{} with identifier {}'.format(
+                        subject='{} {}'.format(
                             self._set_subject(), message_body),
                         body=message_body,
                         to_recipients=[
@@ -454,6 +457,7 @@ class WitnessMessages():
         if not self.messages:
             self.logger.err(
                 dict(type='create', status='FAIL',
+                     wm_id=self.config.get('wm_id'),
                      message='could not create any messages')
             )
             return
@@ -465,7 +469,8 @@ class WitnessMessages():
                 message.message.send()
 
                 self.logger.info(
-                    dict(type='send', status='PASS', wm_id=self.wm_id,
+                    dict(type='send', status='PASS',
+                         wm_id=self.config.get('wm_id'),
                          message='monitoring message sent',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -476,7 +481,8 @@ class WitnessMessages():
 
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
-                    dict(type='send', status='FAIL', wm_id=self.wm_id,
+                    dict(type='send', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
                          message='cannot send message',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -552,7 +558,8 @@ class WitnessMessages():
                 if found_message.exists():
                     found_message = found_message.get()
                     self.logger.info(
-                        dict(type='receive', status='PASS', wm_id=self.wm_id,
+                        dict(type='receive', status='PASS',
+                             wm_id=self.config.get('wm_id'),
                              message='message received',
                              message_uuid=str(message.message_uuid),
                              from_address=found_message.author.
@@ -577,7 +584,8 @@ class WitnessMessages():
 
             else:
                 self.logger.err(
-                    dict(type='receive', status='FAIL', wm_id=self.wm_id,
+                    dict(type='receive', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_address=found_message.author.

@@ -108,6 +108,10 @@ class _Logger():
         )
 
 
+def _get_account(config):
+    return '{}\\{}'.format(config.get('domain'), config.get('username'))
+
+
 def validate_email_to_ascii(email_address, logger=None, **config):
     """
     validate, normalize, and return an email address
@@ -165,6 +169,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
         logger.warn(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
+                 account=_get_account(config),
                  message='bad email address %s' % email_address,
                  exception=str(error))
         )
@@ -215,6 +220,7 @@ def get_accounts(logger=None, **config):
         logger.err(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
+                 account=_get_account(config),
                  message='no valid email addresses found in %s'
                  % config.get('email_addresses'))
         )
@@ -262,8 +268,7 @@ def get_accounts(logger=None, **config):
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
                  message='no valid exchange account found',
-                 account='{}\\{}'.format(
-                     config.get('domain'), config.get('username')))
+                 account=_get_account(config))
         )
         return None
 
@@ -459,6 +464,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             self.logger.err(
                 dict(type='create', status='FAIL',
                      wm_id=self.config.get('wm_id'),
+                     account=_get_account(self.config),
                      message='could not create any messages')
             )
             return
@@ -472,6 +478,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.info(
                     dict(type='send', status='PASS',
                          wm_id=self.config.get('wm_id'),
+                         account=_get_account(self.config),
                          message='monitoring message sent',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -484,6 +491,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='send', status='FAIL',
                          wm_id=self.config.get('wm_id'),
+                         account=_get_account(self.config),
                          message='cannot send message',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -561,6 +569,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                     self.logger.info(
                         dict(type='receive', status='PASS',
                              wm_id=self.config.get('wm_id'),
+                             account=_get_account(self.config),
                              message='message received',
                              message_uuid=str(message.message_uuid),
                              from_address=found_message.author.
@@ -592,6 +601,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='receive', status='FAIL',
                          wm_id=self.config.get('wm_id'),
+                         account=_get_account(self.config),
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_address=found_message.author.

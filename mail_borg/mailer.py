@@ -38,6 +38,7 @@ from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import ServiceAccount, Message, Account, Configuration
+from exchangelib.errors import ErrorTooManyObjectsOpened
 
 from config import load_config
 from logger import LogWinEvent
@@ -563,8 +564,23 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 subject__icontains=str(message.message_uuid))
 
             while _wait_receive < max_wait_receive:
+                try:
+                    _found = found_message.exists()
+                except ErrorTooManyObjectsOpened as error:
+                    self.logger.err(
+                        dict(type='receive', status='FAIL',
+                             wm_id=self.config.get('wm_id'),
+                             account=_get_account(self.config),
+                             message=(
+                                 'message search failed, backing off'
+                                 ' and retrying'),
+                             message_uuid=str(message.message_uuid),
+                             exception=str(error))
+                    )
+                    time.sleep(20 * min_wait_receive)
+                    _found = found_message.exists()
 
-                if found_message.exists():
+                if _found:
                     found_message = found_message.get()
                     self.logger.info(
                         dict(type='receive', status='PASS',

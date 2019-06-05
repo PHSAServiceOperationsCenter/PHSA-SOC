@@ -64,7 +64,7 @@ def get_window():
         [gui.Text('Application Name:', justification='left'), ],
         [gui.Text('Verify Email MX Address Timeout:', justification='left'), ],
         [gui.Text('Minimum Wait for Check Receive:', justification='left'), ],
-        [gui.Text('Increment Wait for Check Receive:',
+        [gui.Text('Multiply Factor for Check Receive:',
                   justification='left'), ],
         [gui.Text('Check Receive Timeout:', justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
@@ -77,7 +77,7 @@ def get_window():
                        size=(32, 1), do_not_clear=True, enable_events=True), ],
         [gui.Spin([i for i in range(1, 60)], key='mail_every_minutes',
                   initial_value=config.get('mail_every_minutes'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
         [gui.InputText(config.get('domain'), key='domain',
                        size=(32, 1), do_not_clear=True, enable_events=True), ],
@@ -94,19 +94,18 @@ def get_window():
                        do_not_clear=True,  enable_events=True), ],
         [gui.Spin([i for i in range(1, 20)], key='check_mx_timeout',
                   initial_value=config.get('check_mx_timeout'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
-        [gui.Spin([i for i in range(1, 30)], key='min_wait_receive',
+        [gui.Spin([i for i in range(1, 120)], key='min_wait_receive',
                   initial_value=config.get('min_wait_receive'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin([i for i in range(1, 10)], key='step_wait_receive',
                   initial_value=config.get('step_wait_receive'),
-                  auto_size_text=True, enable_events=True),
-         gui.Text('seconds'), ],
-        [gui.Spin([i for i in range(30, 120)], key='max_wait_receive',
+                  size=(3, 1), enable_events=True), ],
+        [gui.Spin([i for i in range(1, 600)], key='max_wait_receive',
                   initial_value=config.get('max_wait_receive'),
-                  auto_size_text=True,  enable_events=True),
+                  size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
         [gui.InputText(config.get('site'), key='site', size=(32, 1),
                        do_not_clear=True, enable_events=True), ],
@@ -352,6 +351,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 window.FindElement('output').Update(disabled=True)
                 window.FindElement('mailcheck').Update(disabled=False)
                 if autorun:
+                    next_run_at = datetime.now() + \
+                        timedelta(minutes=int(window.FindElement(
+                            'mail_every_minutes').Get()))
                     window.FindElement('status').Update(
                         'next mail check run in {}'.format(
                             next_run_in(next_run_at))
@@ -361,6 +363,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                         'automated mail check execution is paused')
 
         if event in editable:
+            print(event)
             config_is_dirty = True
             config[event] = window.FindElement(event).Get().replace('\n', '')
 

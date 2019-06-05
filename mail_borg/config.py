@@ -44,9 +44,9 @@ DEFAULTS = dict(autorun=False,
                 allow_utf8_email=False,
                 check_email_mx=True,
                 check_mx_timeout=5,
-                min_wait_receive=12,
-                step_wait_receive=3,
-                max_wait_receive=120,
+                min_wait_receive=1,
+                step_wait_receive=2,
+                max_wait_receive=240,
                 site='noname',
                 tags='[default config]')
 

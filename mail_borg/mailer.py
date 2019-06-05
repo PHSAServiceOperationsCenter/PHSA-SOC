@@ -39,6 +39,7 @@ from email_validator import (
 )
 from exchangelib import ServiceAccount, Message, Account, Configuration
 from exchangelib.errors import ErrorTooManyObjectsOpened
+from retry import retry
 
 from config import load_config
 from logger import LogWinEvent
@@ -536,82 +537,109 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         """
         if min_wait_receive is None:
-            min_wait_receive = int(
-                self.config.get('min_wait_receive',
-                                load_config().get('min_wait_receive', 3))
-            )
+            min_wait_receive = int(self.config.get('min_wait_receive'))
 
         if step_wait_receive is None:
-            step_wait_receive = int(
-                self.config.get('step_wait_receive',
-                                load_config().get('step_wait_receive', 3))
-            )
+            step_wait_receive = int(self.config.get('step_wait_receive'))
 
         if max_wait_receive is None:
-            max_wait_receive = int(
-                self.config.get('max_wait_receive',
-                                load_config().get('max_wait_receive', 120))
-            )
+            max_wait_receive = int(self.config.get('max_wait_receive'))
+
+        class ErrorMessageNotFound(Exception):
+            """
+            custom exception to be raised in case a message is not found
+            """
+
+        self.logger.info(
+            dict(min_wait_receive=min_wait_receive,
+                 step_wait_receive=step_wait_receive,
+                 max_wait_receive=max_wait_receive))
+
+        @retry((ErrorTooManyObjectsOpened, ErrorMessageNotFound),
+               delay=int(min_wait_receive), max_delay=int(max_wait_receive),
+               backoff=int(step_wait_receive))
+        def get_from_inbox(message):
+            found_message = message.account_for_message.inbox.filter(
+                subject__icontains=str(message.message_uuid))
+
+            if found_message.exists():
+                return found_message.get()
+
+            raise ErrorMessageNotFound()
 
         if not self._sent:
             self.send()
 
+        time.sleep(min_wait_receive)
         for message in self.messages:
-            time.sleep(min_wait_receive)
-            _wait_receive = min_wait_receive
 
-            found_message = message.account_for_message.inbox.filter(
-                subject__icontains=str(message.message_uuid))
+            try:
+                found_message = get_from_inbox(message)
+            except ErrorTooManyObjectsOpened as error:
+                self.logger.err(
+                    dict(type='receive', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
+                         account=_get_account(self.config),
+                         message=(
+                             'too many objects opened on the server,'
+                             ' please increase the Check Receive Timeout'
+                             ' value'),
+                         message_uuid=str(message.message_uuid),
+                         exception=str(error),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
+                )
+                continue
+            except ErrorMessageNotFound:
+                found_message = None
+            except Exception as error:
+                self.logger.err(dict(type='receive', status='FAIL',
+                                     wm_id=self.config.get('wm_id'),
+                                     account=_get_account(self.config),
+                                     message=(
+                                         'unexcpected error while checking for'
+                                         ' message received'),
+                                     message_uuid=str(message.message_uuid),
+                                     exception=str(error),
+                                     from_email=message.
+                                     account_for_message.primary_smtp_address,
+                                     to_emails=', '.join(
+                                         [r.email_address for r in
+                                          message.message.to_recipients]))
+                                )
+                continue
 
-            while _wait_receive < max_wait_receive:
-                try:
-                    _found = found_message.exists()
-                except ErrorTooManyObjectsOpened as error:
-                    self.logger.err(
-                        dict(type='receive', status='FAIL',
-                             wm_id=self.config.get('wm_id'),
-                             account=_get_account(self.config),
-                             message=(
-                                 'message search failed, backing off'
-                                 ' and retrying'),
-                             message_uuid=str(message.message_uuid),
-                             exception=str(error))
-                    )
-                    time.sleep(20 * min_wait_receive)
-                    _found = found_message.exists()
+            if found_message:
+                self.logger.info(
+                    dict(type='receive', status='PASS',
+                         wm_id=self.config.get('wm_id'),
+                         account=_get_account(self.config),
+                         message='message received',
+                         message_uuid=str(message.message_uuid),
+                         from_address=found_message.author.
+                         email_address,
+                         to_addresses=', '.join(
+                             [mailbox.email_address for
+                                      mailbox in found_message.to_recipients]),
+                         created=str(found_message.datetime_created),
+                         sent=str(found_message.datetime_sent),
+                         received=str(found_message.datetime_received),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
+                )
 
-                if _found:
-                    found_message = found_message.get()
-                    self.logger.info(
-                        dict(type='receive', status='PASS',
-                             wm_id=self.config.get('wm_id'),
-                             account=_get_account(self.config),
-                             message='message received',
-                             message_uuid=str(message.message_uuid),
-                             from_address=found_message.author.
-                             email_address,
-                             to_addresses=', '.join(
-                                 [mailbox.email_address for
-                                  mailbox in found_message.to_recipients]),
-                             created=str(found_message.datetime_created),
-                             sent=str(found_message.datetime_sent),
-                             received=str(found_message.datetime_received),
-                             from_email=message.
-                             account_for_message.primary_smtp_address,
-                             to_emails=', '.join(
-                                 [r.email_address for r in
-                                  message.message.to_recipients]))
-                    )
+                if not self.config.get(
+                        'debug',
+                        load_config().get('debug', True)):
+                    found_message.delete()
 
-                    if not self.config.get(
-                            'debug',
-                            load_config().get('debug', True)):
-                        found_message.delete()
-
-                    break
-
-                time.sleep(step_wait_receive)
-                _wait_receive = _wait_receive + step_wait_receive
+                continue
 
             else:
                 self.logger.err(
@@ -620,11 +648,11 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                          account=_get_account(self.config),
                          message='message received',
                          message_uuid=str(message.message_uuid),
-                         from_address=found_message.author.
-                         email_address,
-                         to_addresses=', '.join(
-                                 [mailbox.email_address for
-                                  mailbox in found_message.to_recipients]))
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
                 )
 
         if self.update_window_queue:

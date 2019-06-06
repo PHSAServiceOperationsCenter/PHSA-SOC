@@ -59,7 +59,7 @@ class MailBotLogEventAdmin(MailBotAdmin, admin.ModelAdmin):
                    'source_host__host_name', 'source_host__site__site',
                    ('event_registered_on', DateTimeRangeFilter),)
 
-    def show_site(self, obj):
+    def show_site(self, obj):  # pylint: disable=no-self-use
         """
         show the site
         """

@@ -171,7 +171,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
         logger.warn(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
-                 account=_get_account(config),
+                 account='{}, {}'.format(_get_account(config), email_address),
                  message='bad email address %s' % email_address,
                  exception=str(error))
         )
@@ -480,7 +480,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.info(
                     dict(type='send', status='PASS',
                          wm_id=self.config.get('wm_id'),
-                         account=_get_account(self.config),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
                          message='monitoring message sent',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -493,7 +495,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='send', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account=_get_account(self.config),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
                          message='cannot send message',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -574,7 +578,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='receive', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account=_get_account(self.config),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
                          message=(
                              'too many objects opened on the server,'
                              ' please increase the Check Receive Timeout'
@@ -593,7 +599,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(dict(type='receive', status='FAIL',
                                      wm_id=self.config.get('wm_id'),
-                                     account=_get_account(self.config),
+                                     account='{}, {}'.format(
+                                         _get_account(self.config),
+                                         message.account_for_message.primary_smtp_address),
                                      message=(
                                          'unexpected error while checking for'
                                          ' message received'),
@@ -611,7 +619,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.info(
                     dict(type='receive', status='PASS',
                          wm_id=self.config.get('wm_id'),
-                         account=_get_account(self.config),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_address=found_message.author.
@@ -640,7 +650,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='receive', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account=_get_account(self.config),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_email=message.

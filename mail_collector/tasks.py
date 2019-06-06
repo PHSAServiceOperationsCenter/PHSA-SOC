@@ -18,6 +18,8 @@ celery tasks for the mail_collector application
 from celery import shared_task, chain
 from celery.utils.log import get_task_logger
 
+from django.conf import settings
+
 from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.models import WinlogbeatHost
 
@@ -54,6 +56,7 @@ def store_mail_data(body):
             event_group_id=event_data.event_group_id,
             event_status=event_data.event_status,
             event_type=event_data.event_type,
+            event_type_sort=event_sort_code(event_data.event_type),
             mail_account=event_data.mail_account,
             event_message=event_data.event_message,
             event_body=event_data.event_body,
@@ -84,4 +87,11 @@ def store_mail_data(body):
         return ('created exchange monitoring event from email message %s'
                 % event.mail_message_identifier)
 
-    return ('created exchange monitoring event %s' % event.uuid)
+    return 'created exchange monitoring event %s' % event.uuid
+
+
+def event_sort_code(event_type):
+    mapper = settings.EVENT_TYPE_SORT
+    if event_type in mapper:
+        return mapper.get(event_type)
+    return mapper.get('unknown')

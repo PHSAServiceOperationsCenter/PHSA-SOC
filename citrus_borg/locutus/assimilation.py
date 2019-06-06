@@ -22,6 +22,8 @@ import socket
 
 from django.utils.dateparse import parse_duration, parse_datetime
 
+from citrus_borg.dynamic_preferences_registry import get_preference
+
 
 def _get_logger():
     return logging.getLogger('citrus_borg')
@@ -134,10 +136,10 @@ def process_borg(body=None, logger=None):
     borg.event_source = body.get('source_name', None)
     borg.windows_log = body.get('log_name', None)
 
-    if borg.event_source in ['ControlUp Logon Monitor']:
+    if borg.event_source in get_preference('citrusborgevents__source').split(','):
         borg.borg_message = process_borg_message(body.get('message', None))
         borg.mail_borg_message = None
-    elif borg.event_source in ['BorgExchangeMonitor']:
+    elif borg.event_source in get_preference('exchange__source').split(','):
         borg.borg_message = None
         borg.mail_borg_message = process_exchange_message(
             json.loads(body.get('event_data')['param1']), logger)

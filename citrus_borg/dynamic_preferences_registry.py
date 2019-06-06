@@ -67,10 +67,42 @@ orion_probe_defaults = Section(
 email_prefs = Section('emailprefs', verbose_name=_(
     'Email preferences').title())
 
+exchange = Section('exchange',
+                   verbose_name=_('Options for the PHSA Service Operations Center'
+                                  ' Exchange Monitoring Application'))
+
 
 # pylint: enable=C0103
 
 # pylint: disable=too-few-public-methods
+@global_preferences_registry.register
+class ExchangeEventSource(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    sectio = exchange
+    name = 'source'
+    default = 'BorgExchangeMonitor'
+    required = True
+    verbose_name = _('Windows Logs Source for Exchange Monitoring Events ')
+    help_text = _(
+        'This is a list of values. Use "," to separate the list items')
+
+
+@global_preferences_registry.register
+class CitrusBorgEventSource(StringPreference):
+    """
+    configure consumer for Citrix events
+    """
+    section = citrus_borg_events
+    name = 'source'
+    default = 'ControlUp Logon Monitor'
+    required = True
+    verbose_name = _('Windows Logs Source for Citrix Events ').title()
+    help_text = _(
+        'This is a list of values. Use "," to separate the list items')
+
+
 @global_preferences_registry.register
 class EmailFromWhenDebug(StringPreference):
     """
@@ -290,7 +322,8 @@ class OrionServerRetryBackoff(FloatPreference):
     verbose_name = _('Orion Server Retry Backoff Factor')
     help_text = format_html(
         "See 'backoff_factor' at <a href={}>{}</a>",
-        'https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#module-urllib3.util.retry',
+        'https://urllib3.readthedocs.io/en/latest/reference/'
+        'urllib3.util.html#module-urllib3.util.retry',
         _('Retry connection backoff factor'))
 
 

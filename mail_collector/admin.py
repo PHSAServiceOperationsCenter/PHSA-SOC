@@ -93,7 +93,7 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
                    ('excgh_last_seen', DateTimeRangeFilter),)
     search_fields = ('site__site', 'host_name', 'ip_address')
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request):  # @UnusedVariable
         """
         these bots are created from data collected via logstash.
         adding manually will just add more noise to the database
@@ -109,20 +109,22 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     list_display_links = ('event_uuid',)
     list_display = ('event_uuid', 'event_group_id', 'mail_message_identifier',
                     'event_type', 'event_status', 'mail_account', 'event_message',
-                    'source_host', 'show_site', )
+                    'sent_from', 'sent_to', 'source_host', 'show_site', )
     readonly_fields = ('event_uuid', 'event_group_id', 'event_type',
                        'event_status', 'mail_message_identifier', 'show_site',
                        'event_message', 'source_host', 'event_body',
                        'sent_from', 'sent_to', 'received_from', 'received_by',
                        'mail_message_created', 'mail_message_sent',
-                       'mail_message_received', 'mail_account')
+                       'mail_message_received', 'mail_account',
+                       'sent_from', 'sent_to',)
 
     list_filter = ('event__event_status', 'event__event_type',
                    'event__source_host__host_name',
                    'event__source_host__site__site',
                    ('event__event_registered_on', DateTimeRangeFilter),)
 
-    def show_site(self, obj):
+# pylint: disable=no-self-use
+    def show_site(self, obj):  # pylint: disable=no-self-use
         """
         show the site
         """
@@ -130,36 +132,61 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     show_site.short_description = 'site'
 
     def event_uuid(self, obj):
+        """
+        show the event UUID, it is after all the primary key here
+        """
         return obj.event.uuid
     event_uuid.short_description = 'UUID'
 
     def event_group_id(self, obj):
+        """
+        show the event group id
+        """
         return obj.event.event_group_id
     event_group_id.short_description = 'Session ID'
 
     def event_type(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.event_type
     event_type.short_description = 'Event Type'
 
     def event_status(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.event_status
     event_status.short_description = 'Event Status'
 
     def event_message(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.event_message
     event_message.short_description = 'Event Message'
 
     def source_host(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.source_host
     source_host.short_description = 'Event Source Host'
 
     def event_body(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.event_body
     event_body.short_description = 'Raw Event Data'
 
     def mail_account(self, obj):
+        """
+        show field from related model
+        """
         return obj.event.mail_account
     mail_account.short_description = 'Mail Account'
+# pylint: enable=no-self-use
 
     def get_actions(self, request):
         """

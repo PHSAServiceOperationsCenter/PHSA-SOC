@@ -106,7 +106,7 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_filter = ('enabled',)
     readonly_fields = ('last_seen',)
 
-    def last_seen(self, obj):
+    def last_seen(self, obj):  # pylint: disable=no-self-use
         """
         last seen is based on when the borgs on the site were last seen
         ordered descending
@@ -117,16 +117,21 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
 @admin.register(BorgSiteNotSeen)
 class BorgSiteNotSeenAdmin(BorgSiteAdmin):
-    pass
+    """
+    admin forms for sites that have not been seen for a while
+    """
 
 
 @admin.register(KnownBrokeringDevice)
 class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for citrix session hosts
+    """
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request):  # @UnusedVariable
         return False
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
         return False
 
     list_display = ('broker_name',  'enabled', 'last_seen', 'created_on',)
@@ -137,7 +142,9 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
 @admin.register(KnownBrokeringDeviceNotSeen)
 class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
-    pass
+    """
+    admin class for citrix session hosts that have not been seen for a while
+    """
 
 
 @admin.register(CitrixHost)
@@ -154,7 +161,7 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
                    ('last_seen', DateTimeRangeFilter),)
     search_fields = ('site__site', 'host_name', 'ip_address')
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request):  # @UnusedVariable
         """
         these bots are created from data collected via logstash.
         adding manually will just add more noise to the database

@@ -26,7 +26,7 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     only show bots with exchange monitoring clients
     """
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=no-self-use
         """
         override get_queryset
         """
@@ -70,6 +70,11 @@ class MailBotLogEvent(models.Model):
     event_type = models.CharField(
         _('Type'), max_length=32, db_index=True, blank=False, null=False,
         default='TBD', help_text=_('Type of this event'))
+    event_type_sort = models.IntegerField(
+        _('Sort Value for Type'), db_index=True, blank=False, null=False,
+        default=999,
+        help_text=(
+            'connect (1) before sent (2) before received (3) and so on'))
     event_message = models.TextField(_('Message'), blank=True, null=True)
     event_exception = models.TextField(_('Exception'), blank=True, null=True)
     event_body = models.TextField(
@@ -94,7 +99,7 @@ class MailBotLogEvent(models.Model):
         app_label = 'mail_collector'
         verbose_name = _('Mail Monitoring Event')
         verbose_name_plural = _('Mail Monitoring Events')
-        ordering = ['-event_group_id', '-event_type']
+        ordering = ['-event_group_id', 'mail_account', 'event_type_sort']
         get_latest_by = '-event_registered_on'
 
 
@@ -126,5 +131,5 @@ class MailBotMessage(models.Model):
         verbose_name = _('Mail Monitoring Message')
         verbose_name_plural = _('Mail Monitoring Messages')
         ordering = ['-event__event_group_id',
-                    'mail_message_identifier', '-event__event_type', ]
+                    'mail_message_identifier', 'event__event_type_sort', ]
         get_latest_by = '-event__event_registered_on'

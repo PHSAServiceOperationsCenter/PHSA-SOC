@@ -80,7 +80,7 @@ class ExchangeEventSource(StringPreference):
     """
     configure the consumer for exchange monitoring events
     """
-    sectio = exchange
+    section = exchange
     name = 'source'
     default = 'BorgExchangeMonitor'
     required = True

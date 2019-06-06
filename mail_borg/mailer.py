@@ -550,11 +550,6 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             custom exception to be raised in case a message is not found
             """
 
-        self.logger.info(
-            dict(min_wait_receive=min_wait_receive,
-                 step_wait_receive=step_wait_receive,
-                 max_wait_receive=max_wait_receive))
-
         @retry((ErrorTooManyObjectsOpened, ErrorMessageNotFound),
                delay=int(min_wait_receive), max_delay=int(max_wait_receive),
                backoff=int(step_wait_receive))
@@ -595,12 +590,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 continue
             except ErrorMessageNotFound:
                 found_message = None
-            except Exception as error:
+            except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(dict(type='receive', status='FAIL',
                                      wm_id=self.config.get('wm_id'),
                                      account=_get_account(self.config),
                                      message=(
-                                         'unexcpected error while checking for'
+                                         'unexpected error while checking for'
                                          ' message received'),
                                      message_uuid=str(message.message_uuid),
                                      exception=str(error),

@@ -31,4 +31,4 @@ class MailCollectorConfig(AppConfig):
         """
         this is where imports must happen for django applications
         """
-        # import signals
+        import mail_collector.signals

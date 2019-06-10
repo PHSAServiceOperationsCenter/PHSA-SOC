@@ -109,14 +109,15 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     list_display_links = ('event_uuid',)
     list_display = ('event_uuid', 'event_group_id', 'mail_message_identifier',
                     'event_type', 'event_status', 'mail_account', 'event_message',
-                    'sent_from', 'sent_to', 'source_host', 'show_site', )
+                    'sent_from', 'sent_to', 'source_host', 'show_site',
+                    'event_registered_on', )
     readonly_fields = ('event_uuid', 'event_group_id', 'event_type',
                        'event_status', 'mail_message_identifier', 'show_site',
                        'event_message', 'source_host', 'event_body',
                        'sent_from', 'sent_to', 'received_from', 'received_by',
                        'mail_message_created', 'mail_message_sent',
                        'mail_message_received', 'mail_account',
-                       'sent_from', 'sent_to',)
+                       'sent_from', 'sent_to', 'event_registered_on')
 
     list_filter = ('event__event_status', 'event__event_type',
                    'event__source_host__host_name',
@@ -186,6 +187,14 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
         """
         return obj.event.mail_account
     mail_account.short_description = 'Mail Account'
+
+    def event_registered_on(self, obj):
+        """
+        show the event date and time
+        """
+        return obj.event.event_registered_on
+    event_registered_on.short_description = 'Event Registered On'
+
 # pylint: enable=no-self-use
 
     def get_actions(self, request):

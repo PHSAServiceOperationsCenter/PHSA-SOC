@@ -131,5 +131,59 @@ class MailBotMessage(models.Model):
         verbose_name = _('Mail Monitoring Message')
         verbose_name_plural = _('Mail Monitoring Messages')
         ordering = ['-event__event_group_id',
-                    'mail_message_identifier', 'event__event_type_sort', ]
+                    'sent_from', 'event__event_type_sort', ]
         get_latest_by = '-event__event_registered_on'
+
+
+class ExchangeServer(models.Model):
+    """
+    the exchange servers being monitored
+    """
+    exchange_server = models.CharField(
+        _('Exchange Server'), max_length=16, db_index=True, unique=True, blank=False,
+        null=False)
+    last_connection = models.DateTimeField(
+        _('Last Connected'), db_index=True, blank=True, null=True,
+        help_text=_('Last time an account connected successfully to this server'))
+    last_send = models.DateTimeField(
+        _('Last Send'), db_index=True, blank=True, null=True,
+        help_text=_('Last time a message was send via this server'))
+    last_inbox_access = models.DateTimeField(
+        _('Last Inbox Access'), db_index=True, blank=True, null=True,
+        help_text=_('Can also be considered as last received'))
+    last_updated = models.DateTimeField(
+        _('Last Updated'), db_index=True, blank=False, null=False, auto_now=True)
+
+    def __str__(self):
+        return self.exchange_server
+
+    class Meta:
+        app_label = 'mail_collector'
+        verbose_name = _('Exchange Server')
+        verbose_name_plural = _('Exchange Servers')
+        ordering = ['-last_updated']
+        get_latest_by = '-last_updated'
+
+
+class ExchangeDatabase(models.Model):
+    """
+    exchange database instances
+    """
+    database = models.CharField(
+        _('Database'), max_length=16, db_index=True, unique=True, blank=False,
+        null=False)
+    exchange_server = models.ForeignKey(
+        ExchangeServer, db_index=True, blank=False, null=False,
+        on_delete=models.CASCADE, verbose_name=_('Exchange Server'))
+    last_access = models.DateTimeField(
+        _('Last Access'), db_index=True, blank=False, null=False)
+
+    def __str__(self):
+        return self.database
+
+    class Meta:
+        app_label = 'mail_collector'
+        verbose_name = _('Exchange Database')
+        verbose_name_plural = _('Exchange Databases')
+        ordering = ['-last_access']
+        get_latest_by = '-last_access'

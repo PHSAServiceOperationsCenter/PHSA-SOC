@@ -32,7 +32,7 @@ from p_soc_auto_base.utils import RelativeTimeDelta
 
 
 def dead_bodies(data_source, filter_exp,
-                not_before=None, url_annotate=False):
+                not_seen_after=None, url_annotate=False):
     """
     return instances not seen before a moment in time
 
@@ -48,18 +48,18 @@ def dead_bodies(data_source, filter_exp,
     :param url_annotate: do we also add the absolute url for each object?
     :type url_annotate: bool
     """
-    if not_before is None:
-        not_before = RelativeTimeDelta.time_delta(
+    if not_seen_after is None:
+        not_seen_after = RelativeTimeDelta.time_delta(
             time_delta=get_preference('exchange__server_error'))
 
-    if not isinstance(not_before, datetime.datetime):
+    if not isinstance(not_seen_after, datetime.datetime):
         raise TypeError(
             'Invalid object type %s, was expecting datetime'
-            % type(not_before))
+            % type(not_seen_after))
 
     queryset = apps.get_model(data_source).objects.filter(enabled=True)
 
-    queryset = queryset.filter(**{filter_exp: not_before})
+    queryset = queryset.filter(**{filter_exp: not_seen_after})
 
     if url_annotate:
         queryset = _url_annotate(queryset)

@@ -140,11 +140,12 @@ class ExchangeServer(models.Model):
     the exchange servers being monitored
     """
     exchange_server = models.CharField(
-        _('Exchange Server'), max_length=16, db_index=True, unique=True, blank=False,
-        null=False)
+        _('Exchange Server'), max_length=16, db_index=True, unique=True,
+        blank=False, null=False)
     last_connection = models.DateTimeField(
         _('Last Connected'), db_index=True, blank=True, null=True,
-        help_text=_('Last time an account connected successfully to this server'))
+        help_text=_(
+            'Last time an account connected successfully to this server'))
     last_send = models.DateTimeField(
         _('Last Send'), db_index=True, blank=True, null=True,
         help_text=_('Last time a message was send via this server'))
@@ -152,7 +153,10 @@ class ExchangeServer(models.Model):
         _('Last Inbox Access'), db_index=True, blank=True, null=True,
         help_text=_('Can also be considered as last received'))
     last_updated = models.DateTimeField(
-        _('Last Updated'), db_index=True, blank=False, null=False, auto_now=True)
+        _('Last Updated'), db_index=True, blank=False, null=False,
+        auto_now=True)
+    enabled = models.BooleanField(
+        _('Enabled'), db_index=True, blank=False, null=False, default=True)
 
     def __str__(self):
         return self.exchange_server
@@ -177,6 +181,8 @@ class ExchangeDatabase(models.Model):
         on_delete=models.CASCADE, verbose_name=_('Exchange Server'))
     last_access = models.DateTimeField(
         _('Last Access'), db_index=True, blank=False, null=False)
+    enabled = models.BooleanField(
+        _('Enabled'), db_index=True, blank=False, null=False, default=True)
 
     def __str__(self):
         return self.database

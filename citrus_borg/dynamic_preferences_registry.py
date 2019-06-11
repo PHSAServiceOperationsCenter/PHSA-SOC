@@ -16,6 +16,7 @@ dynamic preferences for the citrus_borg app
 
 """
 from django.conf import settings
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -87,6 +88,36 @@ class ExchangeEventSource(StringPreference):
     verbose_name = _('Windows Logs Source for Exchange Monitoring Events ')
     help_text = _(
         'This is a list of values. Use "," to separate the list items')
+
+
+@global_preferences_registry.register
+class ExchangeServerWarn(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'server_warn'
+    default = timezone.timedelta(hours=6)
+    required = True
+    verbose_name = _('exchange server warnings after').title()
+    help_text = format_html(
+        "{}", _('raise warning about an Exchange server if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeServerError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'server_error'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange server errors after').title()
+    help_text = format_html(
+        "{}", _('raise error about an Exchange server if it has not been'
+                ' seen for longer than this time period'))
 
 
 @global_preferences_registry.register

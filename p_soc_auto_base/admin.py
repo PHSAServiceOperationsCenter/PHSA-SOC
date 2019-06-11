@@ -81,6 +81,7 @@ class BaseAdmin(admin.ModelAdmin):
     actions_on_bottom = True
     actions_selection_counter = True
     save_on_top = True
+    list_per_page = 50
 
     def get_actions(self, request):
         """

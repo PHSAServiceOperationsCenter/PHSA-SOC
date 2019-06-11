@@ -19,24 +19,49 @@ from django.contrib import admin
 
 from rangefilter.filter import DateTimeRangeFilter
 
-from mail_collector.models import MailBotLogEvent, MailBotMessage, MailHost
+from mail_collector.models import (
+    MailBotLogEvent, MailBotMessage, MailHost, ExchangeServer,
+    ExchangeDatabase,
+)
 from citrus_borg.models import BorgSite
 from citrus_borg.admin import CitrusBorgBaseAdmin
+from p_soc_auto_base.admin import BaseAdmin
 
 
-class MailBotAdmin(admin.ModelAdmin):
+class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
     """
-    base class
+    base class fro admin classes in this module
     """
-    list_per_page = 50
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request):  # @UnusedVariable
+        """
+        remove add permissions
+
+        :param request:
+        :type request:
+        """
         return False
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
+        """
+        remove delete permissions
+
+        :param request:
+        :type request:
+        :param obj:
+        :type obj:
+        """
         return False
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        override to provide dedicated lookup for site fields
+
+        :param db_field:
+        :type db_field:
+        :param request:
+        :type request:
+        """
         if db_field.name in ['site', ]:
             kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
 
@@ -108,7 +133,8 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     """
     list_display_links = ('event_uuid',)
     list_display = ('event_uuid', 'event_group_id', 'mail_message_identifier',
-                    'event_type', 'event_status', 'mail_account', 'event_message',
+                    'event_type', 'event_status', 'mail_account',
+                    'event_message',
                     'sent_from', 'sent_to', 'source_host', 'show_site',
                     'event_registered_on', )
     readonly_fields = ('event_uuid', 'event_group_id', 'event_type',
@@ -208,3 +234,56 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
         if 'disable_selected' in actions:
             del actions['disable_selected']
         return actions
+
+
+@admin.register(ExchangeServer)
+class ExchangeServerAdmin(MailBotAdmin, admin.ModelAdmin):
+    """
+    admin forms for exchange servers
+    """
+
+    def has_add_permission(self, request):  # @UnusedVariable
+        return True
+
+    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
+        return True
+
+    list_display = ('exchange_server', 'enabled', 'last_connection',
+                    'last_send', 'last_inbox_access', 'last_updated')
+    list_editable = ('enabled',)
+    readonly_fields = ('last_connection',
+                       'last_send', 'last_inbox_access', 'last_updated')
+    list_filter = ('enabled',
+                   ('last_connection', DateTimeRangeFilter),
+                   ('last_send', DateTimeRangeFilter),
+                   ('last_inbox_access', DateTimeRangeFilter),
+                   ('last_updated', DateTimeRangeFilter),)
+    search_fields = ('exchange_server',)
+
+
+@admin.register(ExchangeDatabase)
+class ExchangeDatabaseAdmin(ExchangeServerAdmin, admin.ModelAdmin):
+    """
+    admin class for exchange databases
+    """
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        override to provide lookups for exchange_server field
+
+        :param db_field:
+        :type db_field:
+        :param request:
+        :type request:
+        """
+        if db_field.name in ['exchange_server', ]:
+            kwargs['queryset'] = ExchangeServer.objects.filter(enabled=True)
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    list_display = ('database', 'exchange_server', 'enabled', 'last_access', )
+    list_editable = ('enabled',)
+    readonly_fields = ('last_access',)
+    list_filter = ('enabled', 'exchange_server__exchange_server',
+                   ('last_access', DateTimeRangeFilter),)
+    search_fields = ('database', 'exchange_server__exchange_server',)

@@ -18,7 +18,7 @@ django models for the mail_collector app
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from citrus_borg.models import get_uuid, WinlogbeatHost
+from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
 
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -31,6 +31,32 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
         override get_queryset
         """
         return WinlogbeatHost.objects.exclude(excgh_last_seen__isnull=True)
+
+
+class MailSiteManager(models.Manager):
+    """
+    only the sites that have exchange monitoring clients
+    """
+
+    def get_queryset(self):
+        """
+        override get_queryset
+        """
+        return BorgSite.objects.exclude(winlogbeathost__excgh_last_seen__isnull=True)
+
+
+class MailSite(BorgSite):
+    """
+    model for exchnage client sites
+    """
+    objects = MailSiteManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Exchange Monitoring Site')
+        verbose_name_plural = _('Exchange Monitoring Sitess')
+        get_latest_by = '-winlogbeathost__excgh_last_seen'
+        ordering = ['-winlogbeathost__excgh_last_seen', ]
 
 
 class MailHost(WinlogbeatHost):
@@ -193,3 +219,42 @@ class ExchangeDatabase(models.Model):
         verbose_name_plural = _('Exchange Databases')
         ordering = ['-last_access']
         get_latest_by = '-last_access'
+
+
+class MailBetweenDomains(models.Model):
+    """
+    track user side email functionality between specific email domains for each
+    site
+    """
+    from_domain = models.CharField(
+        _('Sent from email domain'), max_length=63, db_index=True, blank=False,
+        null=False)
+    to_domain = models.CharField(
+        _('Received by email domain'), max_length=63, db_index=True, blank=False,
+        null=False)
+    site = models.ForeignKey(
+        MailSite, db_index=True, null=True, blank=True, on_delete=models.SET_NULL,
+        verbose_name=_('Verified from mail site'))
+    is_expired = models.BooleanField(
+        _('event has expired'), db_index=True, blank=False, null=False,
+        default=False)
+    enabled = models.BooleanField(
+        _('Enabled'), db_index=True, blank=False, null=False, default=True)
+    last_verified = models.DateTimeField(
+        _('Last Verified'), db_index=True, blank=False, null=False)
+
+    def __str__(self):
+        return '{}: from {} to {}'.format(
+            self.site.site, self.from_domain, self.to_domain)
+
+    class Meta:
+        app_label = 'mail_collector'
+        verbose_name = _('Domain to Domain Mail Verification')
+        verbose_name_plural = _('Domain to Domain Mail Verifications')
+        indexes = [
+            models.Index(fields=['site', 'from_domain', 'to_domain'],
+                         name='mailbetweendomains_idx'),
+        ]
+        unique_together = ['site', 'from_domain', 'to_domain']
+        ordering = ['site', 'from_domain', 'to_domain', '-last_verified']
+        get_latest_by = '-last_verified'

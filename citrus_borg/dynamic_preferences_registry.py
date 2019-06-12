@@ -72,10 +72,35 @@ exchange = Section('exchange',
                    verbose_name=_('Options for the PHSA Service Operations Center'
                                   ' Exchange Monitoring Application'))
 
-
 # pylint: enable=C0103
 
+
 # pylint: disable=too-few-public-methods
+
+@global_preferences_registry.register
+class ExchangeExpireEvents(DurationPreference):
+    """
+    expire events older than preference
+    """
+    section = exchange
+    name = 'expire_events'
+    default = timezone.timedelta(hours=36)
+    required = True
+    verbose_name = _('Exchange events older than')
+
+
+@global_preferences_registry.register
+class ExchangeDeleteExpired(BooleanPreference):
+    """
+    delete expired eventss preference
+    """
+    section = exchange
+    name = 'delete_expired'
+    default = True
+    required = False
+    verbose_name = _('Delete expired Exchange events')
+
+
 @global_preferences_registry.register
 class ExchangeEventSource(StringPreference):
     """

@@ -33,11 +33,11 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     """
     if instance.event_status not in ['PASS']:
         # only interested in successful events
-        return
+        return None
 
     if instance.event_type not in ['connection']:
         # and only connections in this function
-        return
+        return None
 
     exchange_server = instance.mail_account.split(',')[1].split('-')[1]
 
@@ -59,10 +59,10 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     """
     if instance.event.event_status not in ['PASS']:
         # only interested in successful events
-        return
+        return None
 
     if instance.event.event_type not in ['send', 'receive']:
-        return
+        return None
 
     exchange_server, database = instance.event.mail_account.split(',')[1].\
         split('-')[1:3]

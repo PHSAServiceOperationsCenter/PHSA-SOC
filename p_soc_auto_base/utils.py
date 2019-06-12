@@ -15,6 +15,8 @@ utility classes and functions for the p_soc_auto project
 :update:    Feb. 1, 2019
 
 """
+from django.apps import apps
+from django.core.exceptions import FieldError
 from django.utils import timezone
 
 
@@ -168,3 +170,43 @@ class RelativeTimeDelta():
 
         return RelativeTimeDelta._now(now) \
             - RelativeTimeDelta._time_delta(**kw_time_delta)
+
+
+def get_base_queryset(data_source, **base_filters):
+    """
+    return a queryset associated with a given django model. if the filters optional
+    arguments are provide the queryset will be filtered accordingly
+
+    :arg str data_source: a model name in the format 'app_label.model_name'
+    :returns: the queryset associated with the data source
+
+    :arg **base_filters: django filters to be applied to the queryset
+
+        example: if something like enabled=True is part of :arg:**base_filters,
+        the queryset returned will have .filter(enabled=True) applied
+
+    :raises:
+
+        :exception:`<exceptions.LookupError>` if the model cannot be found.
+        either the app_label is not present in the INSTALLED_APPS section
+        in the settings, or the model doesn't exist in the app
+
+    :raises:
+
+        :exception:`<django.core.exceptions.FieldError>` if there are invalid
+        filter specifications in the base_filters optional arguments
+    """
+    try:
+        model = apps.get_model(data_source)
+    except LookupError as error:
+        raise error
+
+    queryset = model.objects.all()
+
+    if base_filters:
+        try:
+            queryset = queryset.filter(**base_filters)
+        except FieldError as error:
+            raise error
+
+    return queryset

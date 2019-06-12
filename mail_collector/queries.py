@@ -28,11 +28,11 @@ from orion_flash.api import (
     url_annotate as _url_annotate,
     details_url_annotate as _details_url_annotate,
 )
-from p_soc_auto_base.utils import RelativeTimeDelta
+from p_soc_auto_base.utils import RelativeTimeDelta, get_base_queryset
 
 
 def dead_bodies(data_source, filter_exp,
-                not_seen_after=None, url_annotate=False):
+                not_seen_after=None, url_annotate=False, **base_filters):
     """
     return instances not seen before a moment in time
 
@@ -57,7 +57,7 @@ def dead_bodies(data_source, filter_exp,
             'Invalid object type %s, was expecting datetime'
             % type(not_seen_after))
 
-    queryset = apps.get_model(data_source).objects.filter(enabled=True)
+    queryset = get_base_queryset(data_source, **base_filters)
 
     queryset = queryset.filter(**{filter_exp: not_seen_after})
 

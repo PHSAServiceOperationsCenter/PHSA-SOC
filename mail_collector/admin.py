@@ -21,10 +21,9 @@ from rangefilter.filter import DateTimeRangeFilter
 
 from mail_collector.models import (
     MailBotLogEvent, MailBotMessage, MailHost, ExchangeServer,
-    ExchangeDatabase,
+    ExchangeDatabase, MailSite, MailBetweenDomains,
 )
-from citrus_borg.models import BorgSite
-from citrus_borg.admin import CitrusBorgBaseAdmin
+from citrus_borg.admin import CitrusBorgBaseAdmin, BorgSiteAdmin
 from p_soc_auto_base.admin import BaseAdmin
 
 
@@ -63,9 +62,33 @@ class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
         :type request:
         """
         if db_field.name in ['site', ]:
-            kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
+            kwargs['queryset'] = MailSite.objects.filter(enabled=True)
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(MailSite)
+class MailSiteAdmin(BorgSiteAdmin):
+    """
+    admin forms for the exchange client sites
+    """
+
+
+@admin.register(MailBetweenDomains)
+class MailBetweenDomainsAdmin(MailBotAdmin, admin.ModelAdmin):
+    """
+    admin forms for mail between domains
+    """
+    list_display_link = ('show_link')
+    list_display = ('show_link', 'enabled', 'from_domain', 'to_domain',
+                    'site', 'last_verified', 'status', 'is_expired',)
+    list_editable = ('enabled', 'is_expired',)
+    readonly_fields = ('show_link', 'from_domain', 'to_domain',
+                       'site', 'last_verified', 'status')
+
+    def show_link(self, obj):
+        return '{}: {} -> {}'.format(obj.site.site, obj.from_domain, obj.to_domain)
+    show_link.short_description = 'Verification'
 
 
 @admin.register(MailBotLogEvent)

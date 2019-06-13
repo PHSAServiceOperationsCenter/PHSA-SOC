@@ -21,9 +21,61 @@ from django.utils import timezone
 
 from .models import (
     MailBotLogEvent, MailBotMessage, ExchangeServer, ExchangeDatabase,
+    MailBetweenDomains, MailSite,
 )
 
 # pylint: disable=unused-argument
+
+
+@receiver(post_save, sender=MailBotMessage)
+def update_mail_between_domains(sender, instance, *args, **kwargs):
+    """
+    create or update entries in :class:`<mail_collector.models.MailBetweenDomains>`
+
+    an entry in the domain to domain verification requires a send and a receive
+    event for the same message identifier.
+
+    the domain to domain verification status depends on the event_status of
+    the send and receive events. if either event_status is FAIL the verification
+    status is FAIL as well.
+
+    the site entry in the domain to domain verification is extracted from the
+    event_group_id value.
+    the from domain is extracted from the sent_from field in the instance.
+    the to domain is extracted from the received_by field of the received event
+
+    """
+    if not sender.objects.filter(
+            mail_message_identifier__exact=instance.mail_message_identifier).\
+            count() == 2:
+        # we don't have a quorum, go away
+        return None
+
+    if instance.event.event_status not in ['received']:
+        # only received event have all the info that we need. skip others
+        return None
+
+    site = MailSite.objects.get(
+        site=instance.event.event_group_id.split('+')[0])
+    from_domain = instance.sent_from.split('@')[1]
+    to_domain = instance.received_by.split('@')[1]
+
+    verified_mail = MailBetweenDomains.objects.filter(
+        site=site, from_domain__iexact=from_domain, to_domain__iexact=to_domain)
+    if verified_mail.exists():
+        verified_mail = verified_mail.get()
+    else:
+        verified_mail = MailBetweenDomains(site=site,
+                                           from_domain=from_domain,
+                                           to_domain=to_domain)
+
+    verified_mail.status = 'PASS'
+    if 'FAIL' in sender.objects.filter(
+            mail_message_identifier__equals=instance.mail_message_identifier).\
+            values_list('event__event_status', flat=True):
+        verified_mail.status = 'FAIL'
+
+    verified_mail.save()
 
 
 @receiver(post_save, sender=MailBotLogEvent)

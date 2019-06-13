@@ -372,7 +372,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         self.config = config
 
-        self.config['wm_id'] = '{}-{}-{}'.format(
+        self.config['wm_id'] = '{}+{}+{}'.format(
             self.config.get('site', 'no_site'), socket.gethostname(),
             datetime.now(tz=get_localzone())
         )

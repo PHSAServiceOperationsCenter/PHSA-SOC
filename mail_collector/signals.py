@@ -15,6 +15,8 @@ django models for the mail_collector app
 :updated:    jun. 10, 2019
 
 """
+import logging
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -51,7 +53,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
         # we don't have a quorum, go away
         return None
 
-    if instance.event.event_status not in ['received']:
+    if instance.event.event_type not in ['receive']:
         # only received event have all the info that we need. skip others
         return None
 
@@ -76,10 +78,11 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     verified_mail.status = 'PASS'
     if 'FAIL' in sender.objects.filter(
-            mail_message_identifier__equals=instance.mail_message_identifier).\
+            mail_message_identifier__iexact=instance.mail_message_identifier).\
             values_list('event__event_status', flat=True):
         verified_mail.status = 'FAIL'
 
+    verified_mail.last_verified = timezone.now()
     verified_mail.save()
 
 

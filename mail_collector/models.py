@@ -33,12 +33,12 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
         return WinlogbeatHost.objects.exclude(excgh_last_seen__isnull=True)
 
 
-class MailSiteManager(models.Manager):
+class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     only the sites that have exchange monitoring clients
     """
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=no-self-use
         """
         override get_queryset
         """
@@ -242,6 +242,9 @@ class MailBetweenDomains(models.Model):
         _('Enabled'), db_index=True, blank=False, null=False, default=True)
     last_verified = models.DateTimeField(
         _('Last Verified'), db_index=True, blank=False, null=False)
+    status = models.CharField(
+        _('Status'), max_length=16, db_index=True, blank=False, null=False,
+        default='TBD')
 
     def __str__(self):
         return '{}: from {} to {}'.format(

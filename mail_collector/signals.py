@@ -55,8 +55,13 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
         # only received event have all the info that we need. skip others
         return None
 
-    site = MailSite.objects.get(
-        site=instance.event.event_group_id.split('+')[0])
+    try:
+        site = MailSite.objects.get(
+            site=instance.event.event_group_id.split('+')[0])
+    except MailSite.DoesNotExist:
+        site = MailSite(site=site)
+        site.save()
+
     from_domain = instance.sent_from.split('@')[1]
     to_domain = instance.received_by.split('@')[1]
 

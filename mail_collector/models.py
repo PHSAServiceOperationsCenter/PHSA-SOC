@@ -42,7 +42,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         """
         override get_queryset
         """
-        return BorgSite.objects.exclude(winlogbeathost__excgh_last_seen__isnull=True)
+        return BorgSite.objects.filter(winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 
 class MailSite(BorgSite):
@@ -54,7 +54,7 @@ class MailSite(BorgSite):
     class Meta:
         proxy = True
         verbose_name = _('Exchange Monitoring Site')
-        verbose_name_plural = _('Exchange Monitoring Sitess')
+        verbose_name_plural = _('Exchange Monitoring Sites')
         get_latest_by = '-winlogbeathost__excgh_last_seen'
         ordering = ['-winlogbeathost__excgh_last_seen', ]
 
@@ -259,5 +259,7 @@ class MailBetweenDomains(models.Model):
                          name='mailbetweendomains_idx'),
         ]
         unique_together = ['site', 'from_domain', 'to_domain']
-        ordering = ['site', 'from_domain', 'to_domain', '-last_verified']
+        ordering = [
+            #'site',
+            'from_domain', 'to_domain', '-last_verified']
         get_latest_by = '-last_verified'

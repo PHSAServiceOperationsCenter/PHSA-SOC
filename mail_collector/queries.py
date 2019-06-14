@@ -28,7 +28,7 @@ from orion_flash.api import (
     url_annotate as _url_annotate,
     details_url_annotate as _details_url_annotate,
 )
-from p_soc_auto_base.utils import RelativeTimeDelta, get_base_queryset
+from p_soc_auto_base.utils import MomentOfTime, get_base_queryset
 
 
 def dead_bodies(data_source, filter_exp,
@@ -49,8 +49,11 @@ def dead_bodies(data_source, filter_exp,
     :type url_annotate: bool
     """
     if not_seen_after is None:
-        not_seen_after = RelativeTimeDelta.time_delta(
+        not_seen_after = MomentOfTime.past(
             time_delta=get_preference('exchange__server_error'))
+
+    if isinstance(not_seen_after, dict):
+        not_seen_after = MomentOfTime.past(**not_seen_after)
 
     if not isinstance(not_seen_after, datetime.datetime):
         raise TypeError(

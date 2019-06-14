@@ -25,8 +25,8 @@ from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.models import WinlogbeatHost
 from citrus_borg.dynamic_preferences_registry import get_preference
 
-from mail_collector import exceptions, models, lib
-from p_soc_auto_base.utils import get_base_queryset
+from mail_collector import exceptions, models, lib, queries
+from p_soc_auto_base.utils import get_base_queryset, MomentOfTime
 
 LOGGER = get_task_logger(__name__)
 
@@ -94,21 +94,50 @@ def store_mail_data(body):
 
 
 @shared_task(queue='mail_collector')
-def expire_events():
+def expire_events(data_source, moment=None):
     """
     expire and/or delete events
-    """
-    moment = timezone.now() - get_preference('exchange__expire_events')
-    queryset = get_base_queryset(
-        'mail_collector.mailbotlogevent', event_registered_on__lte=moment)
 
-    queryset.update(is_expired=True)
+    expired events are deleted based on
+    :class:`<citru_borg.dynamic_preferences_registry.ExchangeDeleteExpired>`
+
+    :arg str data_source:
+
+        'app_label.model_name' info for the model that needs purging
+
+    :arg ``datetime.datetime``:
+
+        the cutoff moment of time; all row older than this will be expired.
+        default: ``None``
+        when ``Nne`` it will be calculated based on
+        :class:`<citru_borg.dynamic_preferences_registry.ExchangeExpireEvents>`
+        relative to :method:`<datetime.datetime.now>`
+    """
+    if moment is None:
+        moment = MomentOfTime(
+            time_delta=get_preference('exchange__expire_events'))
+
+    if not isinstance(moment, timezone.datetime):
+        error = TypeError(
+            'Invalid object type %s, was expecting datetime'
+            % type(moment))
+        LOGGER.error(error)
+        raise error
+
+    try:
+        queryset = get_base_queryset(
+            data_source, event_registered_on__lte=moment)
+    except Exception as error:
+        LOGGER.error(error)
+        raise error
+
+    count, operation = queryset.update(is_expired=True), 'expired'
 
     if get_preference('exchange__delete_expired'):
-        queryset.all().delete()
+        count, operation = queryset.all().delete(), 'deleted'
 
-    return ('exchange events older than %s have expired'
-            % get_preference('exchange__expire_events'))
+    return '{} {} older than {:%c} have been {}'.format(
+        count, queryset.model._meta.verbose_name_plural, moment, operation)
 
 
 @shared_task(queue='mail_collector')
@@ -117,3 +146,21 @@ def raise_exchange_server_alarms():
     raise alarms for exchange servers
     """
     pass
+
+
+@shared_task(queue='mail_collector')
+def bring_out_the_dead():
+    """
+    example::
+
+        queries.dead_bodies(exc_servers, last_connected, not_seen_for_warn,
+        enabled=True)
+
+        do it for all the fields in exc_servers and ofr each of those for
+        both warn and critical
+
+        same thing for exc_databases
+
+        same thing for exchange clients. see if it can be done for exchange
+        sites
+    """

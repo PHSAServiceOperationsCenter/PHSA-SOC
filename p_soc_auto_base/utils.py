@@ -19,6 +19,8 @@ from django.apps import apps
 from django.core.exceptions import FieldError
 from django.utils import timezone
 
+from ssl_cert_tracker.models import Subscription
+
 
 def remove_duplicates(sequence=None):
     """
@@ -93,17 +95,17 @@ def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
         datetime_input, timezone=use_timezone, is_dst=is_dst)
 
 
-class RelativeTimeDelta():
+class MomentOfTime():
     """
-    quick and dirty way of calculating a ``datetime.datetime`` object in the
-    past relative to another ``datetime.datetime`` object (the reference
-    moment).
+    quick and dirty way of calculating a ``datetime.datetime`` object
+    relative to another ``datetime.datetime`` object (the reference
+    moment) when a ``dateime.timedelta`` is provided.
 
     in most cases the reference moment is the value returned by
     :method:`<datetime.dateime.now>` but sometimes we need something else
     """
     @staticmethod
-    def _now(now):
+    def now(now):
         """
         static method for the now reference moment
         """
@@ -117,7 +119,7 @@ class RelativeTimeDelta():
         return now
 
     @staticmethod
-    def _time_delta(time_delta=None, **kw_time_delta):
+    def time_delta(time_delta, **kw_time_delta):
         """
         return a proper ``datetime.timedelta`` object. if a dictionary is
         provided instead, try to build the object from the dictionary
@@ -146,36 +148,29 @@ class RelativeTimeDelta():
         return time_delta
 
     @classmethod
-    def time_delta(cls, time_delta=None, now=None):
+    def past(cls, **moment):
         """
-        return a relative moment in the past when the interval is specified
-        as a ``datetime.timedelta`` object
+        moment in the past
         """
-        if time_delta is None:
-            raise TypeError(
-                'Invalid object type %s, was expecting timedelta'
-                % type(time_delta))
-
-        return RelativeTimeDelta._now(now) \
-            - RelativeTimeDelta._time_delta(time_delta)
+        return MomentOfTime.now(now=moment.pop('now', None)) \
+            - MomentOfTime.time_delta(
+                time_delta=moment.pop('time_delta', None), **moment)
 
     @classmethod
-    def time_delta_from_dict(cls, now=None, **kw_time_delta):
+    def future(cls, **moment):
         """
-        return a relative moment in the past when the interval is specified
-        as a dictionary suitable for ``datetime.timedelta`` objects
+        future moment
         """
-        if not kw_time_delta:
-            raise ValueError('you must specify the tiem interval')
-
-        return RelativeTimeDelta._now(now) \
-            - RelativeTimeDelta._time_delta(**kw_time_delta)
+        return MomentOfTime.now(now=moment.pop('now', None)) \
+            + MomentOfTime.time_delta(
+                time_delta=moment.pop('time_delta', None), **moment)
 
 
 def get_base_queryset(data_source, **base_filters):
     """
-    return a queryset associated with a given django model. if the filters optional
-    arguments are provide the queryset will be filtered accordingly
+    return a queryset associated with a given django model.
+    if the filters optional arguments are provide the queryset
+    will be filtered accordingly
 
     :arg str data_source: a model name in the format 'app_label.model_name'
     :returns: the queryset associated with the data source
@@ -210,3 +205,14 @@ def get_base_queryset(data_source, **base_filters):
             raise error
 
     return queryset
+
+
+def get_subscription(subscription):
+    """
+    :returns: a :class:`<ssl_cert_tracker.models.Subscription>` instance
+    """
+    try:
+        return Subscription.objects.\
+            get(subscription=subscription)
+    except Exception as error:
+        raise error

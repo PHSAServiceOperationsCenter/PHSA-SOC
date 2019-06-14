@@ -69,8 +69,9 @@ email_prefs = Section('emailprefs', verbose_name=_(
     'Email preferences').title())
 
 exchange = Section('exchange',
-                   verbose_name=_('Options for the PHSA Service Operations Center'
-                                  ' Exchange Monitoring Application'))
+                   verbose_name=_(
+                       'Options for the PHSA Service Operations Center'
+                       ' Exchange Monitoring Application'))
 
 # pylint: enable=C0103
 

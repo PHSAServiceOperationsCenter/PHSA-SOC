@@ -15,11 +15,16 @@ utility classes and functions for the p_soc_auto project
 :update:    Feb. 1, 2019
 
 """
+import logging
+
 from django.apps import apps
 from django.core.exceptions import FieldError
 from django.utils import timezone
 
 from ssl_cert_tracker.models import Subscription
+from ssl_cert_tracker.lib import Email
+
+LOGGER = logging.getLogger('django')
 
 
 def remove_duplicates(sequence=None):
@@ -215,4 +220,23 @@ def get_subscription(subscription):
         return Subscription.objects.\
             get(subscription=subscription)
     except Exception as error:
+        raise error
+
+
+def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
+    """
+    prepare and send emails from the citrus_borg application
+    """
+    try:
+        email_alert = Email(
+            data=data, subscription_obj=subscription, logger=logger,
+            **extra_context)
+    except Exception as error:
+        logger.error('cannot initialize email object: %s', str(error))
+        return 'cannot initialize email object: %s' % str(error)
+
+    try:
+        return email_alert.send()
+    except Exception as error:
+        logger.error(str(error))
         raise error

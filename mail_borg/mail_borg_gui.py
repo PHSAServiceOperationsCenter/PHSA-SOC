@@ -212,15 +212,11 @@ def do_save_config(config, window):
     to both the configuration file and the server
 
     """
-    window.FindElement('save_config').Update(disabled=True)
-
     items = []
     for key, val in config.items():
         items.append((key, val))
 
     save_config(dict_config=collections.OrderedDict(items))
-
-    window.FindElement('save_config').Update(disabled=False)
 
 
 def do_reload_config(window):

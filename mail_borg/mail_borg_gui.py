@@ -363,7 +363,6 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                         'automated mail check execution is paused')
 
         if event in editable:
-            print(event)
             config_is_dirty = True
             config[event] = window.FindElement(event).Get().replace('\n', '')
 

@@ -103,6 +103,32 @@ class ExchangeDeleteExpired(BooleanPreference):
 
 
 @global_preferences_registry.register
+class ExchangeSendEmptyAlerts(BooleanPreference):
+    """
+    delete expired eventss preference
+    """
+    section = exchange
+    name = 'empty_alerts'
+    default = False
+    required = False
+    verbose_name = _('Always Send Email Alerts')
+    help_text = format_html(
+        "{}", _('send email notifications even when there are no alerts'))
+
+
+@global_preferences_registry.register
+class ExchangeDefaultErrorLevel(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    section = exchange
+    name = 'default_level'
+    default = 'WARNING'
+    required = True
+    verbose_name = _('Default error level for Exchange alerts')
+
+
+@global_preferences_registry.register
 class ExchangeEventSource(StringPreference):
     """
     configure the consumer for exchange monitoring events
@@ -144,6 +170,20 @@ class ExchangeServerError(DurationPreference):
     help_text = format_html(
         "{}", _('raise error about an Exchange server if it has not been'
                 ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeDefaultError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'default_error'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange errors after').title()
+    help_text = format_html(
+        "{}", _('fallback error configuration for all exchange entities'))
 
 
 @global_preferences_registry.register

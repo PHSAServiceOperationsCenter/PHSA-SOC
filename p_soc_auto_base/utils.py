@@ -231,7 +231,7 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
         email_alert = Email(
             data=data, subscription_obj=subscription, logger=logger,
             **extra_context)
-    except Exception as error:
+    except Exception as error:  # pylint: disable=broad-except
         logger.error('cannot initialize email object: %s', str(error))
         return 'cannot initialize email object: %s' % str(error)
 

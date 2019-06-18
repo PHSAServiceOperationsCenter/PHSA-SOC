@@ -28,7 +28,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'mail_collector/templates',
-            'template_name': 'exc_serv_alert_all',
+            'template_name': 'mail_verify_fail',
             'template_prefix': 'email/',
             'email_subject':
             'Site where email services verification failed',

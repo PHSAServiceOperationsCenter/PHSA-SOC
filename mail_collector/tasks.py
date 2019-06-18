@@ -145,9 +145,10 @@ def expire_events(data_source, moment=None):
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
              serializer='pickle', retry_backoff=True,
              autoretry_for=(SMTPConnectError,))
-def raise_the_dead_alert(
-        data_source, filter_exp, subscription,
-        level=None, filter_pref=None, **base_filters):
+def bring_out_your_dead(
+        data_source, filter_exp, subscription, url_annotate=False,
+        level=None, filter_pref=None, by_mail=True, to_orion=False,
+        **base_filters):
     """
     example::
 
@@ -165,6 +166,8 @@ def raise_the_dead_alert(
 
     extra_context: filter_pref, level
     """
+    task_returns = 'data dispatched:'
+
     if level is None:
         level = get_preference('exchange__default_level')
 
@@ -178,14 +181,41 @@ def raise_the_dead_alert(
     not_seen_after = base_utils.MomentOfTime.past(time_delta=filter_pref)
 
     data = queries.dead_bodies(
-        data_source, filter_exp, not_seen_after=not_seen_after, **base_filters)
+        data_source, filter_exp, not_seen_after=not_seen_after,
+        url_annotate=url_annotate, **base_filters)
 
     if not data and not get_preference('exchange__empty_alerts'):
         return 'no %s data found for %s' % (level, subscription.subscription)
 
+    if by_mail:
+        send_mail.s(data=data, subscription=subscription, logger=LOGGER,
+                    time_delta=filter_pref, level=level).apply_async()
+        task_returns = '{} {}'.format(task_returns, 'by mail')
+
+    if to_orion:
+        raise NotImplementedError
+        # task_returns = '{}, {}'.format(task_returns, 'to orion')
+
+    return task_returns
+
+
+@shared_task(queue='email', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def send_mail(data=None, subscription=None, logger=LOGGER, **extra_context):
+    """
+    task wrapper for calling
+    :method:`<p_soc_auto_base.utils.borgs_are_hailing>`
+    """
+    if data is None:
+        raise ValueError('cannot send email without data')
+
+    if subscription is None:
+        raise ValueError('cannot send email without subscription info')
+
     try:
         return base_utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOGGER,
-            time_delta=filter_pref, level=level)
+            data=data, subscription=subscription, logger=logger,
+            **extra_context)
     except Exception as error:
         raise error

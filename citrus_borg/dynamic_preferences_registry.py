@@ -181,7 +181,7 @@ class ExchangeDefaultError(DurationPreference):
     name = 'default_error'
     default = timezone.timedelta(hours=2)
     required = True
-    verbose_name = _('exchange errors after').title()
+    verbose_name = _('exchange errors after (default)').title()
     help_text = format_html(
         "{}", _('fallback error configuration for all exchange entities'))
 

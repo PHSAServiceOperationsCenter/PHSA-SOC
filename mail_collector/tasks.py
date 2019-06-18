@@ -142,10 +142,8 @@ def expire_events(data_source, moment=None):
         count, queryset.model._meta.verbose_name_plural, moment, operation)
 
 
-@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
-             serializer='pickle', retry_backoff=True,
-             autoretry_for=(SMTPConnectError,))
-def bring_out_your_dead(
+@shared_task(queue='mail_collector', rate_limit='10/s', serializer='pickle')
+def bring_out_your_dead(  # pylint: disable=too-many-arguments
         data_source, filter_exp, subscription, url_annotate=False,
         level=None, filter_pref=None, by_mail=True, to_orion=False,
         **base_filters):
@@ -166,7 +164,6 @@ def bring_out_your_dead(
 
     extra_context: filter_pref, level
     """
-    task_returns = 'data dispatched:'
 
     if level is None:
         level = get_preference('exchange__default_level')
@@ -187,9 +184,37 @@ def bring_out_your_dead(
     if not data and not get_preference('exchange__empty_alerts'):
         return 'no %s data found for %s' % (level, subscription.subscription)
 
-    if by_mail:
-        send_mail.s(data=data, subscription=subscription, logger=LOGGER,
+    dispatch_data.s(data, subscription,
+                    by_mail=True, to_orion=False,
                     time_delta=filter_pref, level=level).apply_async()
+
+    return ('started processing data for %s'
+            % data.model._meta.verbose_name_plural)
+
+
+@shared_task(queue='mail_collector', serializer='pickle')
+def dispatch_data(
+    data, subscription,
+        logger=LOGGER, by_mail=True, to_orion=False, **extra_context):
+    """
+    pass around the data as determined by the destination args
+
+    :param data:
+    :type data:
+    :param subscription:
+    :type subscription: str
+    :param logger:
+    :type logger: ``logging.logger``
+    :param by_mail:
+    :type by_mail: ``bool``
+    :param to_orion:
+    :type to_orion: ``bool``
+    """
+    task_returns = 'data dispatched:'
+
+    if by_mail:
+        send_mail.s(data=data, subscription=subscription, logger=logger,
+                    **extra_context).apply_async()
         task_returns = '{} {}'.format(task_returns, 'by mail')
 
     if to_orion:

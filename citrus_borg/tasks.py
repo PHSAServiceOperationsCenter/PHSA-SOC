@@ -37,9 +37,6 @@ from citrus_borg.models import (
 
 from p_soc_auto_base import utils as base_utils
 
-from ssl_cert_tracker.lib import Email
-from ssl_cert_tracker.models import Subscription
-
 
 LOGGER = get_task_logger(__name__)
 
@@ -214,7 +211,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Dead Citrix monitoring bots'),
@@ -261,7 +258,7 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Dead Citrix monitoring bots'),
@@ -319,7 +316,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Dead Citrix client sites'),
@@ -353,7 +350,7 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Dead Citrix client sites'),
@@ -387,7 +384,7 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Missing Citrix farm hosts'),
@@ -430,7 +427,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Missing Citrix farm hosts'),
@@ -454,7 +451,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
         time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=get_logins_by_event_state_borg_hour(
                 now=base_utils.MomentOfTime.now(now), time_delta=time_delta),
             subscription=base_utils.get_subscription(
@@ -520,7 +517,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
     email a login event state count and ux evaluation for a given site and host
     """
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=login_states_by_site_host_hour(
                 now=now, time_delta=time_delta,
                 site=site_host_args[0], host_name=site_host_args[1]),
@@ -630,7 +627,7 @@ def email_ux_alarm(
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data, subscription=base_utils.get_subscription(
                 'Citrix UX Alert'),
             logger=LOGGER, time_delta=time_delta,
@@ -671,7 +668,7 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data, subscription=base_utils.get_subscription(
                 'Citrix logon alert'),
             logger=LOGGER, time_delta=time_delta,
@@ -704,7 +701,7 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Citrix Failed Logins Report'),
@@ -749,7 +746,7 @@ def email_failed_ux_report(now=None, send_no_news=False,
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Citrix Failed UX Event Components Report'),
@@ -829,32 +826,13 @@ def email_failed_login_site_report(
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
             subscription=base_utils.get_subscription(
                 'Citrix Failed Logins per Site Report'),
             logger=LOGGER,
             time_delta=time_delta, site=site, host_name=host_name)
     except Exception as error:
-        raise error
-
-
-def _borgs_are_hailing(data, subscription, logger, **extra_context):
-    """
-    prepare and send emails from the citrus_borg application
-    """
-    try:
-        email_alert = Email(
-            data=data, subscription_obj=subscription, logger=logger,
-            **extra_context)
-    except Exception as error:
-        logger.error('cannot initialize email object: %s', str(error))
-        return 'cannot initialize email object: %s' % str(error)
-
-    try:
-        return email_alert.send()
-    except Exception as error:
-        LOGGER.error(str(error))
         raise error
 
 

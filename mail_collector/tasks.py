@@ -15,6 +15,8 @@ celery tasks for the mail_collector application
 :updated:    May 27, 2019
 
 """
+from smtplib import SMTPConnectError
+
 from celery import shared_task, chain
 from celery.utils.log import get_task_logger
 
@@ -26,7 +28,7 @@ from citrus_borg.models import WinlogbeatHost
 from citrus_borg.dynamic_preferences_registry import get_preference
 
 from mail_collector import exceptions, models, lib, queries
-from p_soc_auto_base.utils import get_base_queryset, MomentOfTime
+from p_soc_auto_base import utils as base_utils
 
 LOGGER = get_task_logger(__name__)
 
@@ -114,7 +116,7 @@ def expire_events(data_source, moment=None):
         relative to :method:`<datetime.datetime.now>`
     """
     if moment is None:
-        moment = MomentOfTime(
+        moment = base_utils.MomentOfTime.past(
             time_delta=get_preference('exchange__expire_events'))
 
     if not isinstance(moment, timezone.datetime):
@@ -125,7 +127,7 @@ def expire_events(data_source, moment=None):
         raise error
 
     try:
-        queryset = get_base_queryset(
+        queryset = base_utils.get_base_queryset(
             data_source, event_registered_on__lte=moment)
     except Exception as error:
         LOGGER.error(error)
@@ -140,16 +142,11 @@ def expire_events(data_source, moment=None):
         count, queryset.model._meta.verbose_name_plural, moment, operation)
 
 
-@shared_task(queue='mail_collector')
-def raise_exchange_server_alarms():
-    """
-    raise alarms for exchange servers
-    """
-    pass
-
-
-@shared_task(queue='mail_collector')
-def bring_out_the_dead():
+@shared_task(queue='mail_collector', rate_limit='10/s', serializer='pickle')
+def bring_out_your_dead(  # pylint: disable=too-many-arguments
+        data_source, filter_exp, subscription, url_annotate=False,
+        level=None, filter_pref=None, by_mail=True, to_orion=False,
+        **base_filters):
     """
     example::
 
@@ -163,4 +160,87 @@ def bring_out_the_dead():
 
         same thing for exchange clients. see if it can be done for exchange
         sites
+
+
+    extra_context: filter_pref, level
     """
+
+    if level is None:
+        level = get_preference('exchange__default_level')
+
+    subscription = base_utils.get_subscription(subscription)
+
+    if filter_pref is None:
+        filter_pref = get_preference('exchange__default_error')
+    else:
+        filter_pref = get_preference(filter_pref)
+
+    not_seen_after = base_utils.MomentOfTime.past(time_delta=filter_pref)
+
+    data = queries.dead_bodies(
+        data_source, filter_exp, not_seen_after=not_seen_after,
+        url_annotate=url_annotate, **base_filters)
+
+    if not data and not get_preference('exchange__empty_alerts'):
+        return 'no %s data found for %s' % (level, subscription.subscription)
+
+    dispatch_data.s(data, subscription,
+                    by_mail=True, to_orion=False,
+                    time_delta=filter_pref, level=level).apply_async()
+
+    return ('started processing data for %s'
+            % data.model._meta.verbose_name_plural)
+
+
+@shared_task(queue='mail_collector', serializer='pickle')
+def dispatch_data(
+    data, subscription,
+        logger=LOGGER, by_mail=True, to_orion=False, **extra_context):
+    """
+    pass around the data as determined by the destination args
+
+    :param data:
+    :type data:
+    :param subscription:
+    :type subscription: str
+    :param logger:
+    :type logger: ``logging.logger``
+    :param by_mail:
+    :type by_mail: ``bool``
+    :param to_orion:
+    :type to_orion: ``bool``
+    """
+    task_returns = 'data dispatched:'
+
+    if by_mail:
+        send_mail.s(data=data, subscription=subscription, logger=logger,
+                    **extra_context).apply_async()
+        task_returns = '{} {}'.format(task_returns, 'by mail')
+
+    if to_orion:
+        raise NotImplementedError
+        # task_returns = '{}, {}'.format(task_returns, 'to orion')
+
+    return task_returns
+
+
+@shared_task(queue='email', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def send_mail(data=None, subscription=None, logger=LOGGER, **extra_context):
+    """
+    task wrapper for calling
+    :method:`<p_soc_auto_base.utils.borgs_are_hailing>`
+    """
+    if data is None:
+        raise ValueError('cannot send email without data')
+
+    if subscription is None:
+        raise ValueError('cannot send email without subscription info')
+
+    try:
+        return base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=logger,
+            **extra_context)
+    except Exception as error:
+        raise error

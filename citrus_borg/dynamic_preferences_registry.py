@@ -91,6 +91,18 @@ class ExchangeExpireEvents(DurationPreference):
 
 
 @global_preferences_registry.register
+class ExchangeReportingInterval(DurationPreference):
+    """
+    expire events older than preference
+    """
+    section = exchange
+    name = 'report_interval'
+    default = timezone.timedelta(hours=12)
+    required = True
+    verbose_name = _('exchange reporting interval')
+
+
+@global_preferences_registry.register
 class ExchangeDeleteExpired(BooleanPreference):
     """
     delete expired eventss preference

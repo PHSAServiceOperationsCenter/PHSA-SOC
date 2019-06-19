@@ -163,6 +163,17 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
 
 
     extra_context: filter_pref, level
+
+    some tasks to implement:
+
+    qs=dead_bodies('mail_collector.mailhost','excgh_last_seen__lte',
+                    not_seen_after={'minutes': 1}, enabled=True)
+
+    qs=dead_bodies('mail_collector.mailsite','winlogbeathost__excgh_last_seen__lte',
+                    not_seen_after={'minutes': 1}, enabled=True)
+
+    must raise the failed email verifications here; there is a bug that
+    doesn't allow doing it from signals
     """
 
     if level is None:
@@ -184,6 +195,8 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
     if not data and not get_preference('exchange__empty_alerts'):
         return 'no %s data found for %s' % (level, subscription.subscription)
 
+    # there is a problem with this call about pickling _thread.RLock
+    # i think it is solvable by doing the apply_async with no signature
     dispatch_data.s(data, subscription,
                     by_mail=True, to_orion=False,
                     time_delta=filter_pref, level=level).apply_async()
@@ -224,7 +237,7 @@ def dispatch_data(
     return task_returns
 
 
-@shared_task(queue='email', rate_limit='3/s', max_retries=3,
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
              serializer='pickle', retry_backoff=True,
              autoretry_for=(SMTPConnectError,))
 def send_mail(data=None, subscription=None, logger=LOGGER, **extra_context):

@@ -101,18 +101,27 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     admin class for borg sites
     """
     list_display = ('site', 'enabled', 'notes',
-                    'last_seen', 'updated_on', 'updated_by')
+                    'last_seen', 'excgh_last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)
     list_filter = ('enabled',)
-    readonly_fields = ('last_seen',)
+    readonly_fields = ('last_seen', 'excgh_last_seen',)
 
     def last_seen(self, obj):  # pylint: disable=no-self-use
         """
         last seen is based on when the borgs on the site were last seen
         ordered descending
         """
-        return obj.winlogbeathost_set.first().last_seen
+        return obj.winlogbeathost_set.filter(
+            last_seen__isnull=False).first().last_seen
     last_seen.short_description = 'Citrix bot last seen'
+
+    def excgh_last_seen(self, obj):
+        """
+        for those sites that have exchange client bots
+        """
+        return obj.winlogbeathost_set.filter(
+            excgh_last_seen__isnull=False).first().excgh_last_seen
+    excgh_last_seen.short_description = 'Exchange client bot last seen'
 
 
 @admin.register(BorgSiteNotSeen)

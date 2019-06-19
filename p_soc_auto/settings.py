@@ -149,13 +149,13 @@ CACHES = {
 
 # Application definition
 INSTALLED_APPS = [
+    'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     'orion_flash.apps.OrionFlashConfig',
     'task_journal.apps.TaskJournalConfig',
-    'mail_collector.apps.MailCollectorConfig',
     'django_mysql',
     'simple_history',
     'dal',

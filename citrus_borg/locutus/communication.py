@@ -467,8 +467,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
     if host_name:
         queryset = queryset.filter(host_name__iexact=host_name)
         queryset = queryset.values('host_name')
-
-    queryset = _group_by(queryset, group_by)
+    queryset = _group_by(queryset, group_by=group_by)
 
     if include_event_counts:
         queryset = _include_event_counts(queryset)

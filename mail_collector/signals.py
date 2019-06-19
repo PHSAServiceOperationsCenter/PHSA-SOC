@@ -25,7 +25,6 @@ from .models import (
     MailBotLogEvent, MailBotMessage, ExchangeServer, ExchangeDatabase,
     MailBetweenDomains, MailSite,
 )
-from .tasks import dispatch_data
 from p_soc_auto_base.utils import get_subscription
 
 # pylint: disable=unused-argument
@@ -88,11 +87,8 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
     verified_mail.last_verified = timezone.now()
     verified_mail.save()
 
-    if verified_mail.status in ['FAIL']:
-        dispatch_data.s(
-            data=MailBetweenDomains.objects.filter(id=verified_mail.id),
-            subscription=get_subscription('Mail Verification Failed'),
-            level='CRITICAL').apply_async()
+    return '{}: {}->{}, {}'.format(verified_mail.site, verified_mail.from_domain,
+                                   verified_mail.to_domain, verified_mail.status)
 
 
 @receiver(post_save, sender=MailBotLogEvent)

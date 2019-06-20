@@ -42,7 +42,8 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         """
         override get_queryset
         """
-        return BorgSite.objects.filter(winlogbeathost__excgh_last_seen__isnull=False).distinct()
+        return BorgSite.objects.filter(
+            winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 
 class MailSite(BorgSite):

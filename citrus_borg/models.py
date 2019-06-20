@@ -22,10 +22,13 @@ from django.conf import settings
 from django.db import models
 from django.db.models.deletion import SET_NULL
 from django.utils.timezone import now
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
 from orion_integration.orion import OrionClient
+from orion_integration.models import OrionNode
+from citrus_borg.dynamic_preferences_registry import get_preference
 
 
 def get_uuid():
@@ -156,6 +159,22 @@ class WinlogbeatHost(BaseModel, models.Model):
         null=True, default=0,
         help_text=_(
             'Use the value in this field to query the Orion server'))
+
+    @property
+    @mark_safe
+    def orion_node_url(self):
+        """
+        link to the Orion Node object on the Orion server
+        """
+        orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
+        if orion_node.exists():
+            orion_node = orion_node.values('node_caption', 'details_url')[0]
+            return '<a href="%s%s">%s on Orion</>' % (
+                get_preference('orionserverconn__orion_server_url'),
+                orion_node.get('details_url'), orion_node.get('node_caption')
+            )
+
+        return 'acquired outside the Orion infrastructure'
 
     @property
     def resolved_fqdn(self):

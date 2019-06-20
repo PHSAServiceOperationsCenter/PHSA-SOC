@@ -21,7 +21,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from simple_history.models import HistoricalRecords
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode

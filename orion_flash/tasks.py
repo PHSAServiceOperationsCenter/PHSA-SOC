@@ -80,7 +80,7 @@ def purge_ssl_alerts():
                     orion_id=alert['orion_node_id'],
                     port__port=alert['orion_node_port']).exists():
 
-                deleted = model.filter(
+                deleted = model.objects.filter(
                     orion_node_id=alert['orion_node_id'],
                     orion_node_port=alert['orion_node_port']
                 ).objects().all().delete()

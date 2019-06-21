@@ -142,11 +142,12 @@ def expire_events(data_source, moment=None):
         count, queryset.model._meta.verbose_name_plural, moment, operation)
 
 
-@shared_task(queue='mail_collector', rate_limit='10/s', serializer='pickle')
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
 def bring_out_your_dead(  # pylint: disable=too-many-arguments
         data_source, filter_exp, subscription, url_annotate=False,
-        level=None, filter_pref=None, by_mail=True, to_orion=False,
-        **base_filters):
+        level=None, filter_pref=None, **base_filters):
     """
     example::
 
@@ -195,62 +196,14 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
     if not data and not get_preference('exchange__empty_alerts'):
         return 'no %s data found for %s' % (level, subscription.subscription)
 
-    dispatch_data(
-        data, subscription,
-        by_mail=True, to_orion=False, time_delta=filter_pref, level=level)
-
-    return ('started processing data for %s'
-            % data.model._meta.verbose_name_plural)
-
-
-def dispatch_data(
-    data, subscription,
-        logger=LOGGER, by_mail=True, to_orion=False, **extra_context):
-    """
-    pass around the data as determined by the destination args
-
-    :param data:
-    :type data:
-    :param subscription:
-    :type subscription: str
-    :param logger:
-    :type logger: ``logging.logger``
-    :param by_mail:
-    :type by_mail: ``bool``
-    :param to_orion:
-    :type to_orion: ``bool``
-    """
-    task_returns = 'data dispatched:'
-
-    if by_mail:
-        send_mail.s(data=data, subscription=subscription, logger=logger,
-                    **extra_context).apply_async()
-        task_returns = '{} {}'.format(task_returns, 'by mail')
-
-    if to_orion:
-        raise NotImplementedError
-        # task_returns = '{}, {}'.format(task_returns, 'to orion')
-
-    return task_returns
-
-
-@shared_task(queue='email', rate_limit='3/s', max_retries=3,
-             serializer='pickle', retry_backoff=True,
-             autoretry_for=(SMTPConnectError,))
-def send_mail(data=None, subscription=None, logger=LOGGER, **extra_context):
-    """
-    task wrapper for calling
-    :method:`<p_soc_auto_base.utils.borgs_are_hailing>`
-    """
-    if data is None:
-        raise ValueError('cannot send email without data')
-
-    if subscription is None:
-        raise ValueError('cannot send email without subscription info')
-
     try:
-        return base_utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=logger,
-            **extra_context)
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=filter_pref, level=level)
     except Exception as error:
         raise error
+
+    if ret:
+        return 'emailed data for %s' % data.model._meta.verbose_name_plural
+
+    return 'could not email data for %s' % data.model._meta.verbose_name_plural

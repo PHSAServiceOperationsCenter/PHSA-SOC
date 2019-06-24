@@ -83,7 +83,7 @@ def purge_ssl_alerts():
                 deleted = model.objects.filter(
                     orion_node_id=alert['orion_node_id'],
                     orion_node_port=alert['orion_node_port']
-                ).objects().all().delete()
+                ).all().delete()
 
             delete_info.append(
                 'deleted orphaned %s alerts from %s' % (deleted, data_source))

@@ -273,6 +273,7 @@ class WinlogbeatHost(BaseModel, models.Model):
         return winloghost
 
     class Meta:
+        app_label = 'citrus_borg'
         verbose_name = _('Remote Monitoring Bot')
         verbose_name_plural = _('Remote Monitoring Bots')
 

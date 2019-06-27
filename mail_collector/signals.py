@@ -33,14 +33,15 @@ from p_soc_auto_base.utils import get_subscription
 @receiver(post_save, sender=MailBotMessage)
 def update_mail_between_domains(sender, instance, *args, **kwargs):
     """
-    create or update entries in :class:`<mail_collector.models.MailBetweenDomains>`
+    create or update entries in
+    :class:`<mail_collector.models.MailBetweenDomains>`
 
     an entry in the domain to domain verification requires a send and a receive
     event for the same message identifier.
 
     the domain to domain verification status depends on the event_status of
-    the send and receive events. if either event_status is FAIL the verification
-    status is FAIL as well.
+    the send and receive events. if either event_status is FAIL,
+    the verification status is FAIL as well.
 
     the site entry in the domain to domain verification is extracted from the
     event_group_id value.
@@ -67,6 +68,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     from_domain = instance.sent_from.split('@')[1]
     to_domain = instance.received_by.split('@')[1]
+    last_updated_from_node_id = instance.event.source_host.orion_id
 
     verified_mail = MailBetweenDomains.objects.filter(
         site=site,
@@ -85,6 +87,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
         verified_mail.status = 'FAIL'
 
     verified_mail.last_verified = timezone.now()
+    verified_mail.last_updated_from_node_id = last_updated_from_node_id
     verified_mail.save()
 
     return '{}: {}->{}, {}'.format(verified_mail.site, verified_mail.from_domain,
@@ -132,6 +135,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     exchange_server, database = instance.event.mail_account.split(',')[1].\
         split('-')[1:3]
     database = database.split('@')[0]
+    last_updated_from_node_id = instance.event.source_host.orion_id
 
     try:
         exchange_server = ExchangeServer.objects.get(
@@ -139,6 +143,8 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     except ExchangeServer.DoesNotExist:
         exchange_server = ExchangeServer(exchange_server=exchange_server)
         exchange_server.save()
+
+    exchange_server.last_updated_from_node_id = last_updated_from_node_id
 
     if instance.event.event_type in ['send']:
         exchange_server.last_send = instance.event.event_registered_on
@@ -158,6 +164,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
             database=database, exchange_server=exchange_server,
             last_access=instance.event.event_registered_on)
 
+    database.last_updated_from_node_id = last_updated_from_node_id
     database.save()
 
     return database, instance.event.event_type

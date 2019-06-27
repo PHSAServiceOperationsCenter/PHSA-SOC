@@ -115,6 +115,8 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
         raise UnknownDataTargetError(
             '%s is not known to this application' % destination)
 
+    deleted = get_model(destination).objects.all().delete()
+
     data_rows = get_data_for(destination, **kwargs).\
         values(*get_queryset_values_keys(get_model(destination)))
 

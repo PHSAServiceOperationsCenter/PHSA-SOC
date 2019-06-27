@@ -170,6 +170,7 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
     qs=dead_bodies('mail_collector.mailhost','excgh_last_seen__lte',
                     not_seen_after={'minutes': 1}, enabled=True)
 
+    the below is not correct; see the trick documented in queries
     qs=dead_bodies('mail_collector.mailsite','winlogbeathost__excgh_last_seen__lte',
                     not_seen_after={'minutes': 1}, enabled=True)
 

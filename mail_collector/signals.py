@@ -26,6 +26,7 @@ from .models import (
     MailBetweenDomains, MailSite,
 )
 from p_soc_auto_base.utils import get_subscription
+from orion_flash.tasks import refresh_exchange_alerts
 
 # pylint: disable=unused-argument
 
@@ -85,13 +86,15 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
             mail_message_identifier__iexact=instance.mail_message_identifier).\
             values_list('event__event_status', flat=True):
         verified_mail.status = 'FAIL'
+        refresh_exchange_alerts()
 
     verified_mail.last_verified = timezone.now()
     verified_mail.last_updated_from_node_id = last_updated_from_node_id
     verified_mail.save()
 
-    return '{}: {}->{}, {}'.format(verified_mail.site, verified_mail.from_domain,
-                                   verified_mail.to_domain, verified_mail.status)
+    return '{}: {}->{}, {}'.format(
+        verified_mail.site, verified_mail.from_domain,
+        verified_mail.to_domain, verified_mail.status)
 
 
 @receiver(post_save, sender=MailBotLogEvent)
@@ -101,6 +104,7 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     """
     if instance.event_status not in ['PASS']:
         # only interested in successful events
+        refresh_exchange_alerts()
         return None
 
     if instance.event_type not in ['connection']:
@@ -126,7 +130,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     update exchange entitities state from send or receive events
     """
     if instance.event.event_status not in ['PASS']:
-        # only interested in successful events
+        refresh_exchange_alerts()
         return None
 
     if instance.event.event_type not in ['send', 'receive']:

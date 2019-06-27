@@ -184,6 +184,11 @@ class ExchangeServer(models.Model):
         auto_now=True)
     enabled = models.BooleanField(
         _('Enabled'), db_index=True, blank=False, null=False, default=True)
+    last_updated_from_node_id = models.BigIntegerField(
+        _('Orion Node Id'), db_index=True, blank=False, null=False,
+        default=0,
+        help_text=_('this is the value in this field to'
+                    ' SQL join the Orion server database'))
 
     def __str__(self):
         return self.exchange_server
@@ -210,6 +215,11 @@ class ExchangeDatabase(models.Model):
         _('Last Access'), db_index=True, blank=False, null=False)
     enabled = models.BooleanField(
         _('Enabled'), db_index=True, blank=False, null=False, default=True)
+    last_updated_from_node_id = models.BigIntegerField(
+        _('Orion Node Id'), db_index=True, blank=False, null=False,
+        default=0,
+        help_text=_('this is the value in this field to'
+                    ' SQL join the Orion server database'))
 
     def __str__(self):
         return self.database
@@ -231,11 +241,11 @@ class MailBetweenDomains(models.Model):
         _('Sent from email domain'), max_length=63, db_index=True, blank=False,
         null=False)
     to_domain = models.CharField(
-        _('Received by email domain'), max_length=63, db_index=True, blank=False,
-        null=False)
+        _('Received by email domain'), max_length=63, db_index=True,
+        blank=False, null=False)
     site = models.ForeignKey(
-        MailSite, db_index=True, null=True, blank=True, on_delete=models.SET_NULL,
-        verbose_name=_('Verified from mail site'))
+        MailSite, db_index=True, null=True, blank=True,
+        on_delete=models.SET_NULL, verbose_name=_('Verified from mail site'))
     is_expired = models.BooleanField(
         _('event has expired'), db_index=True, blank=False, null=False,
         default=False)
@@ -246,6 +256,11 @@ class MailBetweenDomains(models.Model):
     status = models.CharField(
         _('Status'), max_length=16, db_index=True, blank=False, null=False,
         default='TBD')
+    last_updated_from_node_id = models.BigIntegerField(
+        _('Orion Node Id'), db_index=True, blank=False, null=False,
+        default=0,
+        help_text=_('this is the value in this field to'
+                    ' SQL join the Orion server database'))
 
     def __str__(self):
         return '{}: from {} to {}'.format(

@@ -200,7 +200,7 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         if not self.enabled:
             # it's disabled, we don't care so go away
-            return
+            return None
 
         if self.resolved_fqdn is None and self.ip_address is None:
             # there is no way to identify the node in orion
@@ -209,7 +209,7 @@ class WinlogbeatHost(BaseModel, models.Model):
 
             # TODO: this is an error condition, must integrate with
             # https://trello.com/c/1Aadwukn
-            return
+            return None
 
         if self.resolved_fqdn:
             # let's use the DNS property, these nodes are mostly DHCP'ed
@@ -220,7 +220,7 @@ class WinlogbeatHost(BaseModel, models.Model):
                 # but can we use the DNS property?
                 self.orion_id = orion_id[0].get('NodeID', None)
                 self.save()
-                return
+                return None
 
         # couldn't use DNS, falling back to IPAddress
         orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '

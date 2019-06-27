@@ -18,6 +18,8 @@ query classes and functions for the mail_collector app
 import datetime
 
 from django.apps import apps
+from django.db.models import Max
+from django.db.models.query import QuerySet
 
 from mail_collector.models import (
     ExchangeServer, ExchangeDatabase, MailBotLogEvent, MailBotMessage,)
@@ -36,8 +38,8 @@ def dead_bodies(data_source, filter_exp,
     """
     return instances not seen before a moment in time
 
-    :param data_source: the data source in 'app_label.modelname' format
-    :type data_source: str
+    :param data_source:
+        a queryset or the data source in 'app_label.modelname' format
     :param filter_exp: the field and lookup to use for filtering
 
         for example, 'last_updated__lte' will filter on a field named
@@ -60,7 +62,8 @@ def dead_bodies(data_source, filter_exp,
             'Invalid object type %s, was expecting datetime'
             % type(not_seen_after))
 
-    queryset = get_base_queryset(data_source, **base_filters)
+    if not isinstance(data_source, QuerySet):
+        queryset = get_base_queryset(data_source, **base_filters)
 
     queryset = queryset.filter(**{filter_exp: not_seen_after})
 
@@ -68,3 +71,12 @@ def dead_bodies(data_source, filter_exp,
         queryset = _url_annotate(queryset)
 
     return queryset
+
+
+"""
+for MailSite last seen do this trick:
+
+ MailHost.objects.annotate(most_recent=Max('excgh_last_seen')).\
+ filter(most_recent__lte=timezone.now()-get_preference('exchange__server_error')).\
+ values('site__site','most_recent')
+"""

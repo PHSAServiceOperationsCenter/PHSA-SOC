@@ -62,6 +62,11 @@ class DataTargetFieldsAttributeError(Exception):
 
 
 @shared_task(queue='orion_flash')
+def refresh_exchange_alerts():
+    raise NotImplementedError
+
+
+@shared_task(queue='orion_flash')
 def purge_ssl_alerts():
     """
     go through the model defined by :arg:`<source>` and verify that each

@@ -231,10 +231,9 @@ class WinlogbeatHost(BaseModel, models.Model):
         if orion_id:
             self.orion_id = orion_id[0].get('NodeID', None)
             self.save()
-            return
+            return 'updated Orion NodeID for %s' % self.host_name
 
-        raise OrionNodeIDError(
-            'cannot find Citrix bot %s on the Orion server' % self.host_name)
+        return 'cannot find bot %s on the Orion server' % self.host_name
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)

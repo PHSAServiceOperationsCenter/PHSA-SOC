@@ -30,7 +30,6 @@ class BaseAlertAdmin(admin.ModelAdmin):
     """
     parent class for all classes in this module
     """
-    actions = None
 
     list_editable = ('silenced',)
 
@@ -40,14 +39,6 @@ class BaseAlertAdmin(admin.ModelAdmin):
         based on data collected from various sources.
 
         therefore adding instances from the admin interface is not allowed
-        """
-        return False
-
-    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
-        """
-        instances of these models are maintained by background processes.
-
-        deleting from the admin interface is not allowed
         """
         return False
 

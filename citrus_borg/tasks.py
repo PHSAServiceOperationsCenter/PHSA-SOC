@@ -125,7 +125,7 @@ def get_orion_id(pk):  # pylint: disable=invalid-name
     instance = WinlogbeatHost.objects.get(pk=pk)
 
     try:
-        instance.get_orion_id()
+        return instance.get_orion_id()
     except Exception as error:
         raise error
 

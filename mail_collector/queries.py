@@ -80,3 +80,38 @@ for MailSite last seen do this trick:
  filter(most_recent__lte=timezone.now()-get_preference('exchange__server_error')).\
  values('site__site','most_recent')
 """
+
+
+def dead_mail_sites(not_seen_after=None):
+    """
+    :returns:
+
+        queryset based on :class:`<mail_collector.models.MailHost>` that
+        will be used to evaluate sites from where exchange requests have not
+        been observed for the duration specified in the argument
+
+    the special thing about this function is that it need to filter on
+    an aggregated annotation.
+    there may be multiple bots on any site and the site can only be
+    considered down if all its bots are down. we must filter against the
+    bot most recently seen for each site.
+    """
+    if not_seen_after is None:
+        not_seen_after = MomentOfTime.past(time_delta=not_seen_after)
+
+    if isinstance(not_seen_after, dict):
+        not_seen_after = MomentOfTime.past(**not_seen_after)
+
+    if not isinstance(not_seen_after, datetime.datetime):
+        raise TypeError(
+            'Invalid object type %s, was expecting datetime'
+            % type(not_seen_after))
+
+    queryset = get_base_queryset('mail_collector.mailhost', enabled=True)
+
+    queryset = queryset.annotate(most_recent=Max('excgh_last_seen')).\
+        filter(most_recent__lte=not_seen_after).\
+        values('site__site', 'most_recent').\
+        order_by('site__site', '-most_recent')
+
+    return queryset

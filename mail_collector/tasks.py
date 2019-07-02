@@ -33,7 +33,7 @@ from p_soc_auto_base import utils as base_utils
 LOGGER = get_task_logger(__name__)
 
 
-@shared_task(queue='mail_collector')
+@shared_task(queue='mail_collector', rate_limit='5/s')
 def store_mail_data(body):
     """
     grab the exchange events from rabbitmq and dump it to the database
@@ -208,3 +208,24 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
         return 'emailed data for %s' % data.model._meta.verbose_name_plural
 
     return 'could not email data for %s' % data.model._meta.verbose_name_plural
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def dead_mail_sites(subscription: str, time_delta_pref: str = None,
+                    level: str = None) -> str:
+    """
+    task for diseminating site related info via email
+    """
+    if level is None:
+        level = get_preference('exchange__default_level')
+
+    subscription = base_utils.get_subscription(subscription)
+
+    if time_delta_pref is None:
+        time_delta = get_preference('exchange__default_error')
+    else:
+        time_delta = get_preference(time_delta_pref)
+
+    not_seen_after = base_utils.MomentOfTime.past(time_delta=time_delta)

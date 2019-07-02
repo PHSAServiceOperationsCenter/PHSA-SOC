@@ -161,7 +161,7 @@ class ExchangeServerWarn(DurationPreference):
     """
     section = exchange
     name = 'server_warn'
-    default = timezone.timedelta(hours=6)
+    default = timezone.timedelta(hours=2)
     required = True
     verbose_name = _('exchange server warnings after').title()
     help_text = format_html(
@@ -176,11 +176,41 @@ class ExchangeServerError(DurationPreference):
     """
     section = exchange
     name = 'server_error'
-    default = timezone.timedelta(hours=2)
+    default = timezone.timedelta(hours=6)
     required = True
     verbose_name = _('exchange server errors after').title()
     help_text = format_html(
         "{}", _('raise error about an Exchange server if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeDeadBotWarn(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'bot_warn'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange client bot warnings after').title()
+    help_text = format_html(
+        "{}", _('raise warning about an Exchange client bot if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeDeadBotError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'bot_error'
+    default = timezone.timedelta(hours=6)
+    required = True
+    verbose_name = _('exchange client bot errors after').title()
+    help_text = format_html(
+        "{}", _('raise error about an Exchange client bot if it has not been'
                 ' seen for longer than this time period'))
 
 

@@ -18,11 +18,8 @@ celery tasks for the citrus_borg application
 import datetime
 from smtplib import SMTPConnectError
 
-from django.utils import timezone
-
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
-
 from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.locutus.communication import (
@@ -34,7 +31,7 @@ from citrus_borg.models import (
     WindowsLog, AllowedEventSource, WinlogbeatHost, KnownBrokeringDevice,
     WinlogEvent, BorgSite,
 )
-
+from django.utils import timezone
 from ssl_cert_tracker.lib import Email
 from ssl_cert_tracker.models import Subscription
 
@@ -46,7 +43,7 @@ LOGGER = get_task_logger(__name__)
 
 
 @shared_task(queue='citrus_borg')
-def store_borg_data(body):
+def store_borg_data(body, rate_limit='5/s'):
     """
     insert data collected from the logstash + rabbitmq combination into the
     django database. we assume that the :arg:`<body>` is JSON encoded and is

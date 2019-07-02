@@ -42,8 +42,8 @@ LOGGER = get_task_logger(__name__)
 # pylint: disable=W0703,R0914
 
 
-@shared_task(queue='citrus_borg')
-def store_borg_data(body, rate_limit='5/s'):
+@shared_task(queue='citrus_borg', rate_limit='5/s')
+def store_borg_data(body):
     """
     insert data collected from the logstash + rabbitmq combination into the
     django database. we assume that the :arg:`<body>` is JSON encoded and is

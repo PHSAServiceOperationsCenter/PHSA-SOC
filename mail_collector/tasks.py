@@ -229,3 +229,20 @@ def dead_mail_sites(subscription: str, time_delta_pref: str = None,
         time_delta = get_preference(time_delta_pref)
 
     not_seen_after = base_utils.MomentOfTime.past(time_delta=time_delta)
+
+    data = queries.dead_mail_sites(not_seen_after=not_seen_after)
+
+    if not data and not get_preference('exchange__empty_alerts'):
+        return 'no %s data found for %s' % (level, subscription.subscription)
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=time_delta, level=level)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'emailed data for %s' % data.model._meta.verbose_name_plural
+
+    return 'could not email data for %s' % data.model._meta.verbose_name_plural

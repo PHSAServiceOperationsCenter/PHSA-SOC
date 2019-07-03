@@ -200,6 +200,22 @@ class ExchangeDeadBotWarn(DurationPreference):
 
 
 @global_preferences_registry.register
+class ExchangeNilDuration(DurationPreference):
+    """
+    0 hours interval
+    """
+    section = exchange
+    name = 'nil_duration'
+    default = timezone.timedelta(hours=0)
+    required = True
+    verbose_name = _('nil duration').title()
+    help_text = format_html(
+        "{}", _('some filters will not work if there is no time interval'
+                ' baked in. if we want to reuse these filters without'
+                ' worrying about the time interval we can use this'))
+
+
+@global_preferences_registry.register
 class ExchangeDeadBotError(DurationPreference):
     """
     warn about exchange servers if not seen for the specified interval

@@ -103,6 +103,22 @@ class ExchangeReportingInterval(DurationPreference):
 
 
 @global_preferences_registry.register
+class ExchangeReportErrorLevel(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    section = exchange
+    name = 'report_level'
+    default = 'INFO'
+    required = True
+    verbose_name = _('Error level for all Exchange reports')
+    help_text = format_html(
+        "{}", _('a report does npt really have an error level but we need'
+                ' a value here than can be empty, i.e. no level in order'
+                ' to resue existing mail templates'))
+
+
+@global_preferences_registry.register
 class ExchangeDeleteExpired(BooleanPreference):
     """
     delete expired eventss preference

@@ -73,15 +73,6 @@ def dead_bodies(data_source, filter_exp,
     return queryset
 
 
-"""
-for MailSite last seen do this trick:
-
- MailHost.objects.annotate(most_recent=Max('excgh_last_seen')).\
- filter(most_recent__lte=timezone.now()-get_preference('exchange__server_error')).\
- values('site__site','most_recent')
-"""
-
-
 def dead_mail_sites(not_seen_after=None):
     """
     :returns:
@@ -115,3 +106,52 @@ def dead_mail_sites(not_seen_after=None):
         order_by('site__site', '-most_recent')
 
     return queryset
+
+
+"""
+core query for report:
+
+In [11]: MailBotMessage.objects.values('sent_from','sent_to','received_from','received_by','event__event_type',
+    ...: 'event__event_status','event__event_registered_on')[1]
+Out[11]:
+{'sent_from': 'z-spexcm001-db01001@phsa.ca',
+ 'sent_to': 'z-spexcm001-db01001@phsa.ca',
+ 'received_from': 'svc_SOCmailbox@phsa.ca',
+ 'received_by': 'z-spexcm001-db01001@phsa.ca',
+ 'event__event_type': 'receive',
+ 'event__event_status': 'PASS',
+ 'event__event_registered_on': datetime.datetime(2019, 6, 17, 21, 40, 49, 719579, tzinfo=<UTC>)}
+
+In [12]:
+
+using dead_bodies
+
+ qs=dead_bodies('mail_collector.mailbotmessage',
+                'event__event_registered_on__gte',
+                not_seen_after={'days': 30},
+                url_annotate=False,
+                event__event_type='receive')
+                
+                other filters to use:
+                event__event_source_host__site__site__iexact=site_to_search
+                event__event_source_host__host_name__iexact=host_to_search
+                sent_from__icontains=exchange_server
+                sent_from__icontains=exchange_database
+                event__event_status__iexact='fail'|'pass'
+
+
+ qs.values('sent_from',
+           'sent_to',
+           'received_from',
+           'received_by',
+           'event__event_status',
+           'event__event_registered_on','event__source_host__site__site')
+           
+which begs the question: how do we deal with log events intead of
+log mail messages?
+duh... use mailbotlogevent as the source and add a filter for
+mailbotmessage__isnull. it will also work with hasattr but then we need
+a different template for the output.
+we can use a qs.union() as well? nope, there is something that i am not
+understanding with the damn union.
+"""

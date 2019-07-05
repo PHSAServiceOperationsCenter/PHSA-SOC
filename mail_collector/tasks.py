@@ -17,7 +17,7 @@ celery tasks for the mail_collector application
 """
 from smtplib import SMTPConnectError
 
-from celery import shared_task, chain
+from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
 from django.utils import timezone
@@ -246,3 +246,75 @@ def dead_mail_sites(subscription: str, time_delta_pref: str = None,
         return 'emailed data for %s' % data.model._meta.verbose_name_plural
 
     return 'could not email data for %s' % data.model._meta.verbose_name_plural
+
+
+@shared_task(queue='mail_collector', serializer='pickle')
+def invoke_report_events_by_site(report_interval=None, report_level=None):
+    """
+    invoke the tasks for emailing events by site reports
+
+    #TODO: need a different one for connection events!!!
+
+    #DONE: need cronbeat for this thing
+    """
+    if report_interval is None:
+        report_interval = get_preference('exchange__report_interval')
+
+    if report_level is None:
+        report_level = get_preference('exchange__report_level')
+
+    sites = list(
+        base_utils.get_base_queryset('mail_collector.mailsite', enabled=True).
+        values_list('site', flat=True)
+    )
+
+    group(report_events_by_site.s(site, report_interval, report_level)
+          for site in sites)()
+
+    return ('launched report tasks for exchange events by site over the'
+            ' for sites: %s' % ', '.join(sites))
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def report_events_by_site(site, report_interval, report_level):
+    """
+    #DONE: create subscription with fields
+    ('sent_from',
+           'sent_to',
+           'received_from',
+           'received_by',
+           'event_-source_host__host_name',
+           'event__event_type',
+           'event__event_status',
+           'event__event_registered_on') and name 
+        'Exchange Send Receive By Site', template: mail_events_by_site
+
+    site and report_interval are args for the email call as well
+
+    and we need a template that accounts for the {{ site }}
+    """
+    subscription = base_utils.get_subscription('Exchange Send Receive By Site')
+
+    data = queries.dead_bodies(
+        data_source='mail_collector.mailbotmessage',
+        filter_exp='event__event_registered_on__gte',
+        not_seen_after=report_interval,
+        event__event_source_host__site__site=site).\
+        order_by('-mail_message_identifier', 'event_type_sort')
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=report_interval, level=report_level, site=site)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            'emailed exchange send receive events report for site %s' % site)
+
+    return (
+        'could not email exchange send receive events report for site %s'
+        % site)

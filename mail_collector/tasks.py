@@ -317,7 +317,6 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     :returns: the bots for which the report tasks have been invoked
     :rtype: str
 
-    #TODO: need cronbeat
     """
     if report_interval is None:
         report_interval = get_preference('exchange__report_interval')
@@ -333,6 +332,9 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     group(report_events_by_bot.s(bot, report_interval, report_level)
           for bot in bots)()
 
+    group(report_failed_events_by_bot.s(bot, report_interval)
+          for bot in bots)()
+
     return ('launched report tasks for exchange events by bot'
             ' for bots: %s' % ', '.join(bots))
 
@@ -344,19 +346,8 @@ def report_events_by_bot(bot, report_interval, report_level):
     """
     send out report for events for a bot via email
 
-    #TODO: create subscription with fields
-    ('sent_from',
-           'sent_to',
-           'received_from',
-           'received_by',
-           'event__event_type',
-           'event__event_status',
-           'event__event_registered_on') and named 
-        'Exchange Send Receive By Bote', template: mail_events_by_bot
-
-    #TODO: create the template; it must have a {{ bot }} variable
     """
-    subscription = base_utils.get_subscription('Exchange Send Receive By Site')
+    subscription = base_utils.get_subscription('Exchange Send Receive By Bot')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
@@ -378,4 +369,43 @@ def report_events_by_bot(bot, report_interval, report_level):
 
     return (
         'could not email exchange send receive events report for bot %s'
+        % bot)
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def report_failed_events_by_bot(bot, report_interval):
+    """
+    send out report for failed events for a bot via email
+
+    #TODO: template without the reds and subscription for this
+
+    """
+    subscription = base_utils.get_subscription(
+        'Exchange Failed Send Receive By Bot')
+
+    data = queries.dead_bodies(
+        data_source='mail_collector.mailbotmessage',
+        filter_exp='event__event_registered_on__gte',
+        not_seen_after=report_interval,
+        event__event_source_host__host_name=bot,
+        event__event_status__iexact='fail').\
+        order_by('-mail_message_identifier', 'event_type_sort')
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=report_interval,
+            level=get_preference('exchange__server_error'), bot=bot)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            'emailed exchange failed send receive events report for bot %s'
+            % bot)
+
+    return (
+        'could not email exchange failed send receive events report for bot %s'
         % bot)

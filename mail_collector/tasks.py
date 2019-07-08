@@ -253,9 +253,6 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     """
     invoke the tasks for emailing events by site reports
 
-    #TODO: need a different one for connection events!!!
-
-    #DONE: need cronbeat for this thing
     """
     if report_interval is None:
         report_interval = get_preference('exchange__report_interval')
@@ -271,7 +268,7 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     group(report_events_by_site.s(site, report_interval, report_level)
           for site in sites)()
 
-    return ('launched report tasks for exchange events by site over the'
+    return ('launched report tasks for exchange events by site'
             ' for sites: %s' % ', '.join(sites))
 
 
@@ -280,20 +277,7 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
              autoretry_for=(SMTPConnectError,))
 def report_events_by_site(site, report_interval, report_level):
     """
-    #DONE: create subscription with fields
-    ('sent_from',
-           'sent_to',
-           'received_from',
-           'received_by',
-           'event_-source_host__host_name',
-           'event__event_type',
-           'event__event_status',
-           'event__event_registered_on') and name 
-        'Exchange Send Receive By Site', template: mail_events_by_site
-
-    site and report_interval are args for the email call as well
-
-    and we need a template that accounts for the {{ site }}
+    send out report with events for a site via email
     """
     subscription = base_utils.get_subscription('Exchange Send Receive By Site')
 
@@ -318,3 +302,80 @@ def report_events_by_site(site, report_interval, report_level):
     return (
         'could not email exchange send receive events report for site %s'
         % site)
+
+
+@shared_task(queue='mail_collector', serializer='pickle')
+def invoke_report_events_by_bot(report_interval=None, report_level=None):
+    """
+    invoke tasks for mailing the events by bot reports
+
+    :arg report_interval: the reporting period going back from now()
+    :type report_interval: ``datetime.timedelta``
+
+    :arg str report_level: similar to a log level
+
+    :returns: the bots for which the report tasks have been invoked
+    :rtype: str
+
+    #TODO: need cronbeat
+    """
+    if report_interval is None:
+        report_interval = get_preference('exchange__report_interval')
+
+    if report_level is None:
+        report_level = get_preference('exchange__report_level')
+
+    bots = list(
+        base_utils.get_base_queryset('mail_collector.mailhost', enabled=True).
+        values_list('host_name', flat=True)
+    )
+
+    group(report_events_by_bot.s(bot, report_interval, report_level)
+          for bot in bots)()
+
+    return ('launched report tasks for exchange events by bot'
+            ' for bots: %s' % ', '.join(bots))
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def report_events_by_bot(bot, report_interval, report_level):
+    """
+    send out report for events for a bot via email
+
+    #TODO: create subscription with fields
+    ('sent_from',
+           'sent_to',
+           'received_from',
+           'received_by',
+           'event__event_type',
+           'event__event_status',
+           'event__event_registered_on') and named 
+        'Exchange Send Receive By Bote', template: mail_events_by_bot
+
+    #TODO: create the template; it must have a {{ bot }} variable
+    """
+    subscription = base_utils.get_subscription('Exchange Send Receive By Site')
+
+    data = queries.dead_bodies(
+        data_source='mail_collector.mailbotmessage',
+        filter_exp='event__event_registered_on__gte',
+        not_seen_after=report_interval,
+        event__event_source_host__host_name=bot).\
+        order_by('-mail_message_identifier', 'event_type_sort')
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=report_interval, level=report_level, bot=bot)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            'emailed exchange send receive events report for bot %s' % bot)
+
+    return (
+        'could not email exchange send receive events report for bot %s'
+        % bot)

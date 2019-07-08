@@ -86,7 +86,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
             mail_message_identifier__iexact=instance.mail_message_identifier).\
             values_list('event__event_status', flat=True):
         verified_mail.status = 'FAIL'
-        refresh_exchange_alerts()
+        # refresh_exchange_alerts()
 
     verified_mail.last_verified = timezone.now()
     verified_mail.last_updated_from_node_id = last_updated_from_node_id

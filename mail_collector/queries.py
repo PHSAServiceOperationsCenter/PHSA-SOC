@@ -100,9 +100,9 @@ def dead_mail_sites(not_seen_after=None):
 
     queryset = get_base_queryset('mail_collector.mailhost', enabled=True)
 
-    queryset = queryset.annotate(most_recent=Max('excgh_last_seen')).\
+    queryset = queryset.values('site__site').\
+        annotate(most_recent=Max('excgh_last_seen')).\
         filter(most_recent__lte=not_seen_after).\
-        values('site__site', 'most_recent').\
         order_by('site__site', '-most_recent')
 
     return queryset

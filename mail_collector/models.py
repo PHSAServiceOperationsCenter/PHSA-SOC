@@ -79,7 +79,8 @@ class MailBotLogEvent(models.Model):
     model for events sent by mail monitoring bots
     """
     event_group_id = models.CharField(
-        _('Session Id'), max_length=128, db_index=True, blank=False, null=False,
+        _('Session Id'), max_length=128, db_index=True, blank=False,
+        null=False,
         help_text=_(
             'Identifier for a group of related exchange client events'))
     uuid = models.UUIDField(

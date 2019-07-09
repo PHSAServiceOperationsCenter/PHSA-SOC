@@ -268,6 +268,9 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     group(report_events_by_site.s(site, report_interval, report_level)
           for site in sites)()
 
+    group(report_failed_events_by_site.s(site, report_interval)
+          for site in sites)()
+
     return ('launched report tasks for exchange events by site'
             ' for sites: %s' % ', '.join(sites))
 
@@ -286,7 +289,7 @@ def report_events_by_site(site, report_interval, report_level):
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
         event__event_source_host__site__site=site).\
-        order_by('-mail_message_identifier', 'event_type_sort')
+        order_by('-mail_message_identifier', 'event__event_type_sort')
 
     try:
         ret = base_utils.borgs_are_hailing(
@@ -301,6 +304,42 @@ def report_events_by_site(site, report_interval, report_level):
 
     return (
         'could not email exchange send receive events report for site %s'
+        % site)
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def report_failed_events_by_site(site, report_interval):
+    """
+    send out report with events for a site via email
+    """
+    subscription = base_utils.get_subscription(
+        'Exchange Failed Send Receive By Site')
+
+    data = queries.dead_bodies(
+        data_source='mail_collector.mailbotmessage',
+        filter_exp='event__event_registered_on__gte',
+        not_seen_after=report_interval,
+        event__event_source_host__site__site=site,
+        event__event_status__iexact='fail').\
+        order_by('-mail_message_identifier', 'event__event_type_sort')
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            time_delta=report_interval,
+            level=get_preference('exchange__server_error'), site=site)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            'emailed exchange failed send receive events report for site %s'
+            % site)
+
+    return (
+        'could not email exchange failed send receive events report for site %s'
         % site)
 
 
@@ -354,7 +393,7 @@ def report_events_by_bot(bot, report_interval, report_level):
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
         event__event_source_host__host_name=bot).\
-        order_by('-mail_message_identifier', 'event_type_sort')
+        order_by('-mail_message_identifier', 'event__event_type_sort')
 
     try:
         ret = base_utils.borgs_are_hailing(
@@ -379,8 +418,6 @@ def report_failed_events_by_bot(bot, report_interval):
     """
     send out report for failed events for a bot via email
 
-    #TODO: template without the reds and subscription for this
-
     """
     subscription = base_utils.get_subscription(
         'Exchange Failed Send Receive By Bot')
@@ -391,7 +428,7 @@ def report_failed_events_by_bot(bot, report_interval):
         not_seen_after=report_interval,
         event__event_source_host__host_name=bot,
         event__event_status__iexact='fail').\
-        order_by('-mail_message_identifier', 'event_type_sort')
+        order_by('-mail_message_identifier', 'event__event_type_sort')
 
     try:
         ret = base_utils.borgs_are_hailing(

@@ -15,18 +15,15 @@ django models for the mail_collector app
 :updated:    jun. 10, 2019
 
 """
-import logging
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from orion_flash.tasks import refresh_exchange_alerts
 from .models import (
     MailBotLogEvent, MailBotMessage, ExchangeServer, ExchangeDatabase,
     MailBetweenDomains, MailSite,
 )
-from p_soc_auto_base.utils import get_subscription
-from orion_flash.tasks import refresh_exchange_alerts
 
 # pylint: disable=unused-argument
 
@@ -86,7 +83,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
             mail_message_identifier__iexact=instance.mail_message_identifier).\
             values_list('event__event_status', flat=True):
         verified_mail.status = 'FAIL'
-        # refresh_exchange_alerts()
+        refresh_exchange_alerts()
 
     verified_mail.last_verified = timezone.now()
     verified_mail.last_updated_from_node_id = last_updated_from_node_id

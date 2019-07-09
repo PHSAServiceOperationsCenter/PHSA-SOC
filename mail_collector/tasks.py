@@ -67,6 +67,17 @@ def store_mail_data(body):
             event_body=event_data.event_body,
             event_exception=event_data.event_exception)
         event.save()
+
+        # is this a failed event? if so, raise the alarm
+        # TODO: also need to call something that updates the orion_flash
+        if event.event_status in ['FAIL']:
+            try:
+                raise_failed_event_by_mail(event_pk=event.pk)
+            except:  # pylint: disable=bare-except
+                # swallow the exception because we need to finish
+                # processing this event if it comes with a mail message
+                pass
+
     except Exception as error:
         raise exceptions.SaveExchangeEventError(
             'cannot save event %s, error: %s' % (str(event_data), str(error)))
@@ -93,6 +104,41 @@ def store_mail_data(body):
                 % event.mail_message_identifier)
 
     return 'created exchange monitoring event %s' % event.uuid
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def raise_failed_event_by_mail(event_pk):
+    """
+    send an alert email for failed events
+
+    # TODO: template and subscription
+    """
+    data = models.MailBotLogEvent.objects.filter(pk=event_pk)
+    subscription = base_utils.get_subscription('Exchange Client Error')
+
+    # let's cache some data to avoid evaluating the queryset multiple times
+    data_extract = data.values(
+        'uuid', 'event_type',
+        'source_0host__site__site', 'source_host__host_name')[0]
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOGGER,
+            level=get_preference('exchange__server_error'),
+            event_type=data_extract.get('event_type'),
+            site=data_extract.get('source_host__site__site'),
+            bot=data_extract('source_host__host_name'))
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'raised email alert for event %s' % str(
+            data_extract.get('uuid'))
+
+    return 'could not raise email alert for event %s' % str(
+        data_extract.get('uuid'))
 
 
 @shared_task(queue='mail_collector')

@@ -304,7 +304,8 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
         report_interval = get_preference('exchange__report_interval')
 
     if report_level is None:
-        report_level = get_preference('exchange__report_level')
+        report_interval = base_utils.MomentOfTime.past(
+            time_delta=get_preference('exchange__report_interval'))
 
     sites = list(
         base_utils.get_base_queryset('mail_collector.mailsite', enabled=True).
@@ -404,7 +405,8 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
 
     """
     if report_interval is None:
-        report_interval = get_preference('exchange__report_interval')
+        report_interval = base_utils.MomentOfTime.past(
+            time_delta=get_preference('exchange__report_interval'))
 
     if report_level is None:
         report_level = get_preference('exchange__report_level')

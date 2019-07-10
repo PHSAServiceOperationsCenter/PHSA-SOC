@@ -47,7 +47,7 @@ import datetime
 from enum import Enum
 
 from django.db.models import (
-    Count, Q, Min, Max, Avg, StdDev, DurationField, Value, DateTimeField,
+    Count, Q, Min, Max, Avg, StdDev, DurationField, Value,
     BigIntegerField, CharField,
 )
 from django.db.models.functions import TruncHour, TruncMinute
@@ -110,7 +110,8 @@ def get_dead_bots(now=None, time_delta=None):
 
     dead_bots = set(all_bots).symmetric_difference(set(live_bots))
 
-    dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots))
+    dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots),
+                                              last_seen__isnull=False)
 
     dead_bots = dead_bots.\
         annotate(measured_now=Value(now, output_field=CharField())).\
@@ -123,6 +124,10 @@ def get_dead_bots(now=None, time_delta=None):
 
 
 def get_dead_brokers(now=None, time_delta=None):
+    """
+    return a queryset with the Citrix session hosts that have not been
+    observed for a while
+    """
     if now is None:
         now = timezone.now()
 
@@ -155,6 +160,10 @@ def get_dead_brokers(now=None, time_delta=None):
 
 
 def get_dead_sites(now=None, time_delta=None):
+    """
+    return a queryset with the sites that are monitored but have not been
+    seen for the specified time interval
+    """
     if now is None:
         now = timezone.now()
 
@@ -458,8 +467,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
     if host_name:
         queryset = queryset.filter(host_name__iexact=host_name)
         queryset = queryset.values('host_name')
-
-    queryset = _group_by(queryset, group_by)
+    queryset = _group_by(queryset, group_by=group_by)
 
     if include_event_counts:
         queryset = _include_event_counts(queryset)
@@ -489,15 +497,25 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 # pylint: enable=too-many-arguments,too-many-branches
 
 
-def _group_by(queryset, group_by=GroupBy.NONE):
+def _group_by(queryset,
+              group_field='winlogevent__created_on', group_by=GroupBy.NONE):
+    """
+    group the rows in a queryset by time and annotate them with the grouping
+    interval. support group by hour or group by minute.
+
+    :arg queryset: a django queryset that contains a datetime field
+
+    :arg group_field: the dtaetime queryset field containing the data for grouping
+
+    :arg group-by: group by hour, by minute, or don't group
+    """
     if group_by == GroupBy.HOUR:
         return queryset.\
-            annotate(hour=TruncHour('winlogevent__created_on')).values('hour')
+            annotate(hour=TruncHour(group_field)).values('hour')
 
     if group_by == GroupBy.MINUTE:
         return queryset.\
-            annotate(minute=TruncMinute('winlogevent__created_on')).\
-            values('minute')
+            annotate(minute=TruncMinute(group_field)).values('minute')
 
     return queryset
 

@@ -62,6 +62,11 @@ class DataTargetFieldsAttributeError(Exception):
 
 
 @shared_task(queue='orion_flash')
+def refresh_exchange_alerts():
+    raise NotImplementedError
+
+
+@shared_task(queue='orion_flash')
 def purge_ssl_alerts():
     """
     go through the model defined by :arg:`<source>` and verify that each
@@ -80,10 +85,10 @@ def purge_ssl_alerts():
                     orion_id=alert['orion_node_id'],
                     port__port=alert['orion_node_port']).exists():
 
-                deleted = model.filter(
+                deleted = model.objects.filter(
                     orion_node_id=alert['orion_node_id'],
                     orion_node_port=alert['orion_node_port']
-                ).objects().all().delete()
+                ).all().delete()
 
             delete_info.append(
                 'deleted orphaned %s alerts from %s' % (deleted, data_source))
@@ -114,6 +119,8 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     if destination.lower() not in KNOWN_SSL_DESTINATIONS:
         raise UnknownDataTargetError(
             '%s is not known to this application' % destination)
+
+    deleted = get_model(destination).objects.all().delete()
 
     data_rows = get_data_for(destination, **kwargs).\
         values(*get_queryset_values_keys(get_model(destination)))

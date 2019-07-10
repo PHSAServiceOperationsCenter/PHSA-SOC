@@ -42,8 +42,8 @@ select the specific site(s), and disable it/them
 
 <li>
 Open the list of ControlUp Logon Monitoring Hosts a.k.a Citrix Bots  
-at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
-{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a>, 
+at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_citrixhost_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_citrixhost_changelist' %}</a>, 
 select the specific Citrix bot(s), and disable it/them
 </li></ul>
 

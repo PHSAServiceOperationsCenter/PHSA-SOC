@@ -29,6 +29,8 @@ from .models import (
 
 )
 
+# pylint: disable=unused-argument
+
 
 @receiver(post_save, sender=UntrustedSslAlert)
 @receiver(post_save, sender=ExpiredSslAlert)
@@ -37,7 +39,7 @@ from .models import (
 @receiver(post_save, sender=DeadCitrusBotAlert)
 @receiver(post_save, sender=CitrusBorgLoginAlert)
 @receiver(post_save, sender=CitrusBorgUxAlert)
-def update_local_url(sender, instance, created, *args, **kwargs):    # pylint: disable=unused-argument
+def update_local_url(sender, instance, created, *args, **kwargs):
     """
     add an URL to self in the instance
 
@@ -51,3 +53,5 @@ def update_local_url(sender, instance, created, *args, **kwargs):    # pylint: d
                 'admin:orion_flash_{}_change'.format(sender._meta.model_name),
                 args=(instance.id,)))
         instance.save()
+
+# pylint: enable=unused-argument

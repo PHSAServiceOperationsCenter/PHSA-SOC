@@ -104,6 +104,8 @@ import json
 from celery.utils.log import get_task_logger
 from event_consumer import message_handler
 
+from citrus_borg.dynamic_preferences_registry import get_preference
+
 _logger = get_task_logger(__name__)
 
 
@@ -123,6 +125,7 @@ def process_win_event(body):
     """
     from .models import AllowedEventSource
     from .tasks import store_borg_data
+    from mail_collector.tasks import store_mail_data
 
     _logger.debug('resistance is futile... now processing %s' % body)
 
@@ -133,4 +136,10 @@ def process_win_event(body):
                      borg.get('source_name', None))
         return
 
-    store_borg_data.delay(borg)
+    if borg.get('source_name', None) in \
+            get_preference('citrusborgevents__source').split(','):
+        store_borg_data.delay(borg)
+
+    elif borg.get('source_name', None) in \
+            get_preference('exchange__source').split(','):
+        store_mail_data.delay(borg)

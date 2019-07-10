@@ -1,0 +1,35 @@
+HORSEY body keys dict_keys(['computer_name', 'event_data', 'opcode', 'type', 'user', 'keywords', '@timestamp', 'log_name', 'host', 'message', 'record_number', '@version', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+HORSEY body keys dict_keys(['event_data', 'computer_name', 'opcode', 'type', 'log_name', 'host', 'keywords', '@timestamp', 'user', 'message', '@version', 'record_number', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+
+
+HORSEY event_data param1 {"type": "send", "status": "PASS", "message": "monitoring message sent", "message_uuid": "42dc6aa3-67fc-4430-afc5-db43edabf936", "from_email": "z-spexcm001-db01002@phsa.ca", "to_emails": "z-spexcm001-db01002@phsa.ca"}
+
+HORSEY event_data param1 {"type": "connection", "status": "PASS", "message": "connected to exchange", "account": "PHSABC\\svc_SOCmailbox, z-spexcm001-db01001@phsa.ca"}
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'message_uuid', 'from_email', 'to_emails'])
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'account'])
+
+HORSEY body keys dict_keys(['event_data', 'opcode', 'computer_name', 'type', 'user', 'keywords', '@timestamp', 'log_name', 'host', 'message', 'record_number', '@version', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+
+HORSEY event_data param1 {"type": "send", "status": "PASS", "message": "monitoring message sent", "message_uuid": "e215f202-dc6d-4686-b8ab-f2f205cfe3e4", "from_email": "z-spexcm001-db01001@phsa.ca", "to_emails": "z-spexcm001-db01001@phsa.ca"}
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'message_uuid', 'from_email', 'to_emails'])
+
+HORSEY body keys dict_keys(['computer_name', 'opcode', 'event_data', 'user', 'log_name', 'keywords', '@timestamp', 'type', 'host', 'message', 'record_number', '@version', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+
+HORSEY event_data param1 {"type": "connection", "status": "PASS", "message": "connected to exchange", "account": "PHSABC\\svc_SOCmailbox, z-spexcm001-db01002@phsa.ca"}
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'account'])
+
+HORSEY body keys dict_keys(['event_data', 'computer_name', 'opcode', 'user', 'type', 'keywords', '@timestamp', 'host', 'log_name', 'message', 'record_number', '@version', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+
+HORSEY event_data param1 {"type": "receive", "status": "PASS", "message": "message received", "message_uuid": "e215f202-dc6d-4686-b8ab-f2f205cfe3e4", "from_address": "svc_SOCmailbox@phsa.ca", "to_addresses": "z-spexcm001-db01001@phsa.ca", "created": "2019-05-28 16:41:13+00:00", "sent": "2019-05-28 16:41:12+00:00", "received": "2019-05-28 16:41:13+00:00"}
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'message_uuid', 'from_address', 'to_addresses', 'created', 'sent', 'received'])
+
+HORSEY body keys dict_keys(['computer_name', 'opcode', 'event_data', 'user', 'type', 'log_name', '@timestamp', 'keywords', 'host', 'message', 'record_number', '@version', 'tags', 'beat', 'event_id', 'source_name', 'level'])
+
+HORSEY event_data param1 {"type": "receive", "status": "PASS", "message": "message received", "message_uuid": "42dc6aa3-67fc-4430-afc5-db43edabf936", "from_address": "svc_SOCmailbox@phsa.ca", "to_addresses": "z-spexcm001-db01002@phsa.ca", "created": "2019-05-28 16:41:19+00:00", "sent": "2019-05-28 16:41:12+00:00", "received": "2019-05-28 16:41:19+00:00"}
+
+HORSEY jspn.loads param1 dict_keys(['type', 'status', 'message', 'message_uuid', 'from_address', 'to_addresses', 'created', 'sent', 'received'])

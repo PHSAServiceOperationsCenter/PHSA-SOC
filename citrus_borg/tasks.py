@@ -15,7 +15,6 @@ celery tasks for the citrus_borg application
 :updated: Nov. 22, 2018
 
 """
-import datetime
 from smtplib import SMTPConnectError
 
 from django.utils import timezone
@@ -36,10 +35,7 @@ from citrus_borg.models import (
     WinlogEvent, BorgSite,
 )
 
-from p_soc_auto_base.utils import get_pk_list
-
-from ssl_cert_tracker.lib import Email
-from ssl_cert_tracker.models import Subscription
+from p_soc_auto_base import utils as base_utils
 
 
 LOGGER = get_task_logger(__name__)
@@ -48,7 +44,7 @@ LOGGER = get_task_logger(__name__)
 # pylint: disable=W0703,R0914
 
 
-@shared_task(queue='citrus_borg')
+@shared_task(queue='citrus_borg', rate_limit='10/s')
 def store_borg_data(body):
     """
     insert data collected from the logstash + rabbitmq combination into the
@@ -67,7 +63,7 @@ def store_borg_data(body):
         raise error
 
     try:
-        borg = process_borg(body)
+        borg = process_borg(body, LOGGER)
     except Exception as error:
         reraise('cannot save event data from event', body, error)
 
@@ -129,7 +125,7 @@ def get_orion_id(pk):  # pylint: disable=invalid-name
     instance = WinlogbeatHost.objects.get(pk=pk)
 
     try:
-        instance.get_orion_id()
+        return instance.get_orion_id()
     except Exception as error:
         raise error
 
@@ -140,7 +136,8 @@ def get_orion_ids():
     launch :method:`<get_orion_id>` for each object in
     :class:`<models.WinlogbeatHost>`
     """
-    citrus_borg_pks = get_pk_list(WinlogbeatHost.objects.filter(enabled=True))
+    citrus_borg_pks = base_utils.get_pk_list(
+        WinlogbeatHost.objects.filter(enabled=True))
 
     group(get_orion_id.s(pk) for pk in citrus_borg_pks)()
 
@@ -188,12 +185,12 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__dead_bot_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     if send_no_news is None:
         send_no_news = get_preference('citrusborgcommon__send_no_news')
@@ -214,9 +211,10 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Dead Citrix monitoring bots'),
+            subscription=base_utils.get_subscription(
+                'Dead Citrix monitoring bots'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -243,12 +241,12 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     data = get_dead_bots(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -260,9 +258,10 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Dead Citrix monitoring bots'),
+            subscription=base_utils.get_subscription(
+                'Dead Citrix monitoring bots'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -291,12 +290,12 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
                      valid keys are days, hours, minutes, seconds and
                      valid values are ``float`` numbers
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__dead_site_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     if send_no_news is None:
         send_no_news = get_preference('citrusborgcommon__send_no_news')
@@ -317,9 +316,10 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Dead Citrix client sites'),
+            subscription=base_utils.get_subscription(
+                'Dead Citrix client sites'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -333,12 +333,12 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
 
     see other similar tasks for details
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     data = get_dead_sites(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -350,9 +350,10 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Dead Citrix client sites'),
+            subscription=base_utils.get_subscription(
+                'Dead Citrix client sites'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -366,12 +367,12 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
 
     see other similar tasks for details
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     data = get_dead_brokers(now=now, time_delta=time_delta)
     if not data and send_no_news:
@@ -383,9 +384,10 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Missing Citrix farm hosts'),
+            subscription=base_utils.get_subscription(
+                'Missing Citrix farm hosts'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -399,12 +401,12 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
 
     see other similar tasks for details
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not dead_for:
         time_delta = get_preference('citrusborgnode__node_forgotten_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     if send_no_news is None:
         send_no_news = get_preference('citrusborgcommon__send_no_news')
@@ -425,9 +427,10 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Missing Citrix farm hosts'),
+            subscription=base_utils.get_subscription(
+                'Missing Citrix farm hosts'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -445,13 +448,14 @@ def email_borg_login_summary_report(now=None, **dead_for):
         time_delta = get_preference(
             'citrusborgevents__ignore_events_older_than')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=get_logins_by_event_state_borg_hour(
-                now=_get_now(now), time_delta=time_delta),
-            subscription=_get_subscription('Citrix logon event summary'),
+                now=base_utils.MomentOfTime.now(now), time_delta=time_delta),
+            subscription=base_utils.get_subscription(
+                'Citrix logon event summary'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -469,7 +473,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     if not reporting_period:
         time_delta = get_preference('citrusborgux__ux_reporting_period')
     else:
-        time_delta = _get_timedelta(**reporting_period)
+        time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
     sites = BorgSite.objects.filter(enabled=True)
     if site:
@@ -513,11 +517,11 @@ def email_login_ux_summary(now, time_delta, site_host_args):
     email a login event state count and ux evaluation for a given site and host
     """
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=login_states_by_site_host_hour(
                 now=now, time_delta=time_delta,
                 site=site_host_args[0], host_name=site_host_args[1]),
-            subscription=_get_subscription(
+            subscription=base_utils.get_subscription(
                 'Citrix logon event and ux summary'),
             logger=LOGGER, time_delta=time_delta,
             site=site_host_args[0], host_name=site_host_args[1])
@@ -534,12 +538,12 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
     faults
 
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     if not reporting_period:
         time_delta = get_preference('citrusborgux__ux_alert_interval')
     else:
-        time_delta = _get_timedelta(**reporting_period)
+        time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
     if send_no_news is None:
         send_no_news = get_preference('citrusborgcommon__send_no_news')
@@ -559,7 +563,8 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
                 ' suitable for datetime.timedelta() arguments'.format(
                     ux_alert_threshold, type(ux_alert_threshold)))
 
-        ux_alert_threshold = _get_timedelta(**ux_alert_threshold)
+        ux_alert_threshold = base_utils.MomentOfTime.time_delta(
+            **ux_alert_threshold)
 
     # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
     sites = BorgSite.objects.filter(enabled=True)
@@ -605,7 +610,7 @@ def email_ux_alarm(
     """
     email an ux alarm for a given site and host
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
     site, host_name = site_host_args
 
     data = raise_ux_alarm(
@@ -622,8 +627,9 @@ def email_ux_alarm(
         )
 
     try:
-        return _borgs_are_hailing(
-            data=data, subscription=_get_subscription('Citrix UX Alert'),
+        return base_utils.borgs_are_hailing(
+            data=data, subscription=base_utils.get_subscription(
+                'Citrix UX Alert'),
             logger=LOGGER, time_delta=time_delta,
             ux_alert_threshold=ux_alert_threshold,
             site=site_host_args[0], host_name=site_host_args[1])
@@ -646,9 +652,9 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     if not dead_for:
         time_delta = get_preference('citrusborglogon__logon_alert_after')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
     data = raise_failed_logins_alarm(
         now=now, time_delta=time_delta,
         failed_threshold=failed_threshold)
@@ -662,8 +668,9 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
-            data=data, subscription=_get_subscription('Citrix logon alert'),
+        return base_utils.borgs_are_hailing(
+            data=data, subscription=base_utils.get_subscription(
+                'Citrix logon alert'),
             logger=LOGGER, time_delta=time_delta,
             failed_threshold=failed_threshold)
     except Exception as error:
@@ -679,9 +686,9 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
     if not dead_for:
         time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     data = get_failed_events(now=now, time_delta=time_delta)
 
@@ -694,9 +701,10 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription('Citrix Failed Logins Report'),
+            subscription=base_utils.get_subscription(
+                'Citrix Failed Logins Report'),
             logger=LOGGER, time_delta=time_delta)
     except Exception as error:
         raise error
@@ -713,15 +721,16 @@ def email_failed_ux_report(now=None, send_no_news=False,
     if not dead_for:
         time_delta = get_preference('citrusborgux__ux_reporting_period')
     else:
-        time_delta = _get_timedelta(**dead_for)
+        time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
     if ux_threshold_seconds is None:
         ux_alert_threshold = get_preference(
             'citrusborgux__ux_alert_threshold')
     else:
-        ux_alert_threshold = _get_timedelta(seconds=ux_threshold_seconds)
+        ux_alert_threshold = base_utils.MomentOfTime.time_delta(
+            time_delta=None, seconds=ux_threshold_seconds)
 
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
 
     data = get_failed_ux_events(
         now=now, time_delta=time_delta, ux_alert_threshold=ux_alert_threshold)
@@ -737,9 +746,9 @@ def email_failed_ux_report(now=None, send_no_news=False,
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription(
+            subscription=base_utils.get_subscription(
                 'Citrix Failed UX Event Components Report'),
             logger=LOGGER, time_delta=time_delta,
             ux_alert_threshold=ux_alert_threshold)
@@ -757,7 +766,7 @@ def email_failed_login_sites_report(
     if not reporting_period:
         time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
-        time_delta = _get_timedelta(**reporting_period)
+        time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
         # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
     sites = BorgSite.objects.filter(enabled=True)
@@ -803,7 +812,7 @@ def email_failed_login_site_report(
     """
     email a report with the failed logon events for a specific site, bot pair
     """
-    now = _get_now(now)
+    now = base_utils.MomentOfTime.now(now)
     site, host_name = site_host_args
 
     data = get_failed_events(
@@ -817,68 +826,14 @@ def email_failed_login_site_report(
         )
 
     try:
-        return _borgs_are_hailing(
+        return base_utils.borgs_are_hailing(
             data=data,
-            subscription=_get_subscription(
+            subscription=base_utils.get_subscription(
                 'Citrix Failed Logins per Site Report'),
             logger=LOGGER,
             time_delta=time_delta, site=site, host_name=host_name)
     except Exception as error:
         raise error
 
-
-def _get_now(now=None):
-    """
-    :returns: a valid ``datetime.datetime`` object or ``datetime.dateime.now``
-    """
-    if now is None:
-        now = timezone.now()
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError(
-            'invalid argument %s type %s, must be datetime.datetime'
-        ) % (now, type(now))
-
-    return now
-
-
-def _get_timedelta(**time_delta):
-    """
-    :returns: a valid ``datetime.timedelta`` objects
-    """
-    try:
-        return timezone.timedelta(**time_delta)
-    except Exception as error:
-        raise error
-
-
-def _borgs_are_hailing(data, subscription, logger, **extra_context):
-    """
-    prepare and send emails from the citrus_borg application
-    """
-    try:
-        email_alert = Email(
-            data=data, subscription_obj=subscription, logger=logger,
-            **extra_context)
-    except Exception as error:
-        logger.error('cannot initialize email object: %s', str(error))
-        return 'cannot initialize email object: %s' % str(error)
-
-    try:
-        return email_alert.send()
-    except Exception as error:
-        LOGGER.error(str(error))
-        raise error
-
-
-def _get_subscription(subscription):
-    """
-    :returns: a :class:`<ssl_cert_tracker.models.Subscription>` instance
-    """
-    try:
-        return Subscription.objects.\
-            get(subscription=subscription)
-    except Exception as error:
-        raise error
 
 # pylint: enable=W0703

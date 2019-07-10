@@ -24,6 +24,7 @@ from p_soc_auto_base.admin import BaseAdmin
 from .models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
     BorgSiteNotSeen, WinlogbeatHostNotSeen, KnownBrokeringDeviceNotSeen,
+    AllowedEventSource, CitrixHost
 )
 
 
@@ -31,6 +32,7 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
     base admin class for the citrus_borg application
     """
+    list_per_page = 50
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
@@ -82,37 +84,61 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         return self.readonly_fields
 
 
+@admin.register(AllowedEventSource)
+class AllowedEventSourceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for event sources
+    """
+    list_display = ('source_name', 'enabled', 'notes',
+                    'updated_on', 'updated_by')
+    list_editable = ('notes', 'enabled',)
+    list_filter = ('enabled',)
+
+
 @admin.register(BorgSite)
 class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     """
     admin class for borg sites
     """
     list_display = ('site', 'enabled', 'notes',
-                    'last_seen', 'updated_on', 'updated_by')
+                    'last_seen', 'excgh_last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)
     list_filter = ('enabled',)
-    readonly_fields = ('last_seen',)
+    readonly_fields = ('last_seen', 'excgh_last_seen',)
 
-    def last_seen(self, obj):
+    def last_seen(self, obj):  # pylint: disable=no-self-use
         first_bot = obj.winlogbeathost_set.first()
         if first_bot:
             return first_bot.last_seen
         return 'Please allocate at least one bot to this site ASAP'
     last_seen.short_description = 'last seen'
 
+    def excgh_last_seen(self, obj):
+        """
+        for those sites that have exchange client bots
+        """
+        return obj.winlogbeathost_set.filter(
+            excgh_last_seen__isnull=False).first().excgh_last_seen
+    excgh_last_seen.short_description = 'Exchange client bot last seen'
+
 
 @admin.register(BorgSiteNotSeen)
 class BorgSiteNotSeenAdmin(BorgSiteAdmin):
-    pass
+    """
+    admin forms for sites that have not been seen for a while
+    """
 
 
 @admin.register(KnownBrokeringDevice)
 class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    admin class for citrix session hosts
+    """
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request):  # @UnusedVariable
         return False
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
         return False
 
     list_display = ('broker_name',  'enabled', 'last_seen', 'created_on',)
@@ -123,18 +149,31 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
 @admin.register(KnownBrokeringDeviceNotSeen)
 class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
-    pass
+    """
+    admin class for citrix session hosts that have not been seen for a while
+    """
 
 
-@admin.register(WinlogbeatHost)
+@admin.register(CitrixHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
-
+    """
+    admin forms for citrix bots
+    """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'resolved_fqdn', 'last_seen', 'created_on',)
     list_editable = ('site', 'enabled',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on', 'orion_id',)
-    list_filter = ('site__site', 'enabled',)
+    list_filter = ('site__site', 'enabled',
+                   ('last_seen', DateTimeRangeFilter),)
+    search_fields = ('site__site', 'host_name', 'ip_address')
+
+    def has_add_permission(self, request):  # @UnusedVariable
+        """
+        these bots are created from data collected via logstash.
+        adding manually will just add more noise to the database
+        """
+        return False
 
 
 @admin.register(WinlogbeatHostNotSeen)

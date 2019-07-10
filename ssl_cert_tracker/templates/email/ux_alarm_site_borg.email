@@ -48,8 +48,8 @@ the Web interface opened by the link above.</p>
 
 <div>
 <p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available 
-at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}">
-{{ source_host }}{% url 'admin:citrus_borg_winlogbeathost_changelist' %}</a></p>
+at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_citrixhost_changelist' %}">
+{{ source_host }}{% url 'admin:citrus_borg_citrixhost_changelist' %}</a></p>
 <p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
 the Web interface opened by the link above.</p>
 </div>

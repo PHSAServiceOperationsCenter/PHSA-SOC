@@ -16,6 +16,7 @@ dynamic preferences for the citrus_borg app
 
 """
 from django.conf import settings
+from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -67,10 +68,212 @@ orion_probe_defaults = Section(
 email_prefs = Section('emailprefs', verbose_name=_(
     'Email preferences').title())
 
+exchange = Section('exchange',
+                   verbose_name=_(
+                       'Options for the PHSA Service Operations Center'
+                       ' Exchange Monitoring Application'))
 
 # pylint: enable=C0103
 
+
 # pylint: disable=too-few-public-methods
+
+@global_preferences_registry.register
+class ExchangeExpireEvents(DurationPreference):
+    """
+    expire events older than preference
+    """
+    section = exchange
+    name = 'expire_events'
+    default = timezone.timedelta(hours=36)
+    required = True
+    verbose_name = _('Exchange events older than')
+
+
+@global_preferences_registry.register
+class ExchangeReportingInterval(DurationPreference):
+    """
+    expire events older than preference
+    """
+    section = exchange
+    name = 'report_interval'
+    default = timezone.timedelta(hours=12)
+    required = True
+    verbose_name = _('exchange reporting interval')
+
+
+@global_preferences_registry.register
+class ExchangeReportErrorLevel(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    section = exchange
+    name = 'report_level'
+    default = 'INFO'
+    required = True
+    verbose_name = _('Error level for all Exchange reports')
+    help_text = format_html(
+        "{}", _('a report does npt really have an error level but we need'
+                ' a value here than can be empty, i.e. no level in order'
+                ' to resue existing mail templates'))
+
+
+@global_preferences_registry.register
+class ExchangeDeleteExpired(BooleanPreference):
+    """
+    delete expired eventss preference
+    """
+    section = exchange
+    name = 'delete_expired'
+    default = True
+    required = False
+    verbose_name = _('Delete expired Exchange events')
+
+
+@global_preferences_registry.register
+class ExchangeSendEmptyAlerts(BooleanPreference):
+    """
+    delete expired eventss preference
+    """
+    section = exchange
+    name = 'empty_alerts'
+    default = False
+    required = False
+    verbose_name = _('Always Send Email Alerts')
+    help_text = format_html(
+        "{}", _('send email notifications even when there are no alerts'))
+
+
+@global_preferences_registry.register
+class ExchangeDefaultErrorLevel(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    section = exchange
+    name = 'default_level'
+    default = 'WARNING'
+    required = True
+    verbose_name = _('Default error level for Exchange alerts')
+
+
+@global_preferences_registry.register
+class ExchangeEventSource(StringPreference):
+    """
+    configure the consumer for exchange monitoring events
+    """
+    section = exchange
+    name = 'source'
+    default = 'BorgExchangeMonitor'
+    required = True
+    verbose_name = _('Windows Logs Source for Exchange Monitoring Events ')
+    help_text = _(
+        'This is a list of values. Use "," to separate the list items')
+
+
+@global_preferences_registry.register
+class ExchangeServerWarn(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'server_warn'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange server warnings after').title()
+    help_text = format_html(
+        "{}", _('raise warning about an Exchange server if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeServerError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'server_error'
+    default = timezone.timedelta(hours=6)
+    required = True
+    verbose_name = _('exchange server errors after').title()
+    help_text = format_html(
+        "{}", _('raise error about an Exchange server if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeDeadBotWarn(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'bot_warn'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange client bot warnings after').title()
+    help_text = format_html(
+        "{}", _('raise warning about an Exchange client bot if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeNilDuration(DurationPreference):
+    """
+    0 hours interval
+    """
+    section = exchange
+    name = 'nil_duration'
+    default = timezone.timedelta(hours=0)
+    required = True
+    verbose_name = _('nil duration').title()
+    help_text = format_html(
+        "{}", _('some filters will not work if there is no time interval'
+                ' baked in. if we want to reuse these filters without'
+                ' worrying about the time interval we can use this'))
+
+
+@global_preferences_registry.register
+class ExchangeDeadBotError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'bot_error'
+    default = timezone.timedelta(hours=6)
+    required = True
+    verbose_name = _('exchange client bot errors after').title()
+    help_text = format_html(
+        "{}", _('raise error about an Exchange client bot if it has not been'
+                ' seen for longer than this time period'))
+
+
+@global_preferences_registry.register
+class ExchangeDefaultError(DurationPreference):
+    """
+    warn about exchange servers if not seen for the specified interval
+    """
+    section = exchange
+    name = 'default_error'
+    default = timezone.timedelta(hours=2)
+    required = True
+    verbose_name = _('exchange errors after (default)').title()
+    help_text = format_html(
+        "{}", _('fallback error configuration for all exchange entities'))
+
+
+@global_preferences_registry.register
+class CitrusBorgEventSource(StringPreference):
+    """
+    configure consumer for Citrix events
+    """
+    section = citrus_borg_events
+    name = 'source'
+    default = 'ControlUp Logon Monitor'
+    required = True
+    verbose_name = _('Windows Logs Source for Citrix Events ').title()
+    help_text = _(
+        'This is a list of values. Use "," to separate the list items')
+
+
 @global_preferences_registry.register
 class EmailFromWhenDebug(StringPreference):
     """
@@ -290,7 +493,8 @@ class OrionServerRetryBackoff(FloatPreference):
     verbose_name = _('Orion Server Retry Backoff Factor')
     help_text = format_html(
         "See 'backoff_factor' at <a href={}>{}</a>",
-        'https://urllib3.readthedocs.io/en/latest/reference/urllib3.util.html#module-urllib3.util.retry',
+        'https://urllib3.readthedocs.io/en/latest/reference/'
+        'urllib3.util.html#module-urllib3.util.retry',
         _('Retry connection backoff factor'))
 
 

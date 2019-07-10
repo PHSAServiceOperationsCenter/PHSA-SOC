@@ -16,9 +16,17 @@ functions and classes for uploading windows events to the citrus_borg app
 
 """
 import collections
+import json
+import logging
 import socket
 
-from django.utils.dateparse import parse_duration
+from django.utils.dateparse import parse_duration, parse_datetime
+
+from citrus_borg.dynamic_preferences_registry import get_preference
+
+
+def _get_logger():
+    return logging.getLogger('citrus_borg')
 
 
 def get_ip_for_host_name(host_name=None, ip_list=None):
@@ -103,18 +111,21 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
     return _gethostbyname()
 
 
-def process_borg(body=None):
+def process_borg(body=None, logger=None):
     """
     :returns; a ``colections.namedtuple`` object with all the properties of
     the event log body
     """
+    if logger is None:
+        logger = _get_logger()
+
     if body is None:
         raise ValueError('body argument is mandatory')
 
     borg = collections.namedtuple(
         'Borg', [
             'source_host', 'record_number', 'opcode', 'level',
-            'event_source', 'windows_log', 'borg_message'
+            'event_source', 'windows_log', 'borg_message', 'mail_borg_message'
         ]
     )
 
@@ -124,7 +135,14 @@ def process_borg(body=None):
     borg.level = body.get('level', None)
     borg.event_source = body.get('source_name', None)
     borg.windows_log = body.get('log_name', None)
-    borg.borg_message = process_borg_message(body.get('message', None))
+
+    if borg.event_source in get_preference('citrusborgevents__source').split(','):
+        borg.borg_message = process_borg_message(body.get('message', None))
+        borg.mail_borg_message = None
+    elif borg.event_source in get_preference('exchange__source').split(','):
+        borg.borg_message = None
+        borg.mail_borg_message = process_exchange_message(
+            json.loads(body.get('event_data')['param1']), logger)
 
     return borg
 
@@ -146,7 +164,7 @@ def process_borg_host(host=None):
     return borg_host
 
 
-def process_borg_message(message=None):
+def process_borg_message(message=None, logger=None):
     """
     this is the string when success
 
@@ -186,6 +204,9 @@ def process_borg_message(message=None):
 
 
     """
+    if logger is None:
+        logger = _get_logger()
+
     if message is None:
         raise ValueError('message argument is mandatory')
 
@@ -203,6 +224,7 @@ def process_borg_message(message=None):
     borg_message.state = message[0].split()[0]
 
     if borg_message.state.lower() in ['successful']:
+        logger.debug('citrus borg event state: successful')
         borg_message.broker = message[0].split()[-1]
         borg_message.test_result = bool(message[4].split()[-1])
         borg_message.storefront_connection_duration = \
@@ -219,6 +241,7 @@ def process_borg_message(message=None):
         borg_message.failure_details = None
 
     elif borg_message.state.lower() in ['failed']:
+        logger.debug('citrus borg event state: failed')
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])
         borg_message.broker = None
@@ -229,6 +252,8 @@ def process_borg_message(message=None):
         borg_message.logon_achieved_duration = None
         borg_message.logoff_achieved_duration = None
     else:
+        logger.error('citrus borg event state undetermined %s',
+                     borg_message.raw_message)
         borg_message.state = 'undetermined'
         borg_message.broker = None
         borg_message.test_result = False
@@ -241,3 +266,63 @@ def process_borg_message(message=None):
         borg_message.failure_details = None
 
     return borg_message
+
+
+def process_exchange_message(message=None, logger=None):
+    """
+    process event data from ExchangeMonitorEvents
+
+    dict_keys(['type', 'status', 'message', 'account',
+               'from_email', 'to_emails', 'message_uuid', exception,
+               'from_address', 'to_addresses', 'created', 'sent', 'received'])
+
+    """
+    if logger is None:
+        logger = _get_logger()
+
+    if message is None:
+        raise TypeError('%s object is not a valid argument' % type(message))
+
+    ExchangeEvent = collections.namedtuple(
+        'ExchangeEvent',
+        ['event_group_id', 'event_type', 'event_status', 'event_message',
+         'event_exception', 'mail_account', 'event_body']
+    )
+
+    ExchangeMessage = collections.namedtuple(
+        'ExchangeMessage',
+        ['sent_from', 'sent_to',
+         'mail_message_identifier', 'received_from', 'received_by',
+         'mail_message_created', 'mail_message_sent', 'mail_message_received']
+    )
+
+    exchange_event = ExchangeEvent(
+        event_group_id=message.get('wm_id'),
+        event_type=message.get('type'),
+        event_status=message.get('status'),
+        event_message=message.get('message'),
+        event_exception=message.get('exception'),
+        mail_account=message.get('account'),
+        event_body=str(message))
+    logger.debug('exchange event: %s', exchange_event)
+
+    exchange_message = None
+    if message.get('message_uuid', None):
+        exchange_message = ExchangeMessage(
+            sent_from=message.get('from_email'),
+            sent_to=message.get('to_emails'),
+            mail_message_identifier=message.get('message_uuid'),
+            received_from=message.get('from_address'),
+            received_by=message.get('to_addresses'),
+            mail_message_created=_parse_datetime(message.get('created')),
+            mail_message_sent=_parse_datetime(message.get('sent')),
+            mail_message_received=_parse_datetime(message.get('received')))
+        logger.debug('exchange message %s', exchange_message)
+
+    return exchange_event, exchange_message
+
+
+def _parse_datetime(date_time):
+    if date_time:
+        return parse_datetime(date_time)
+    return None

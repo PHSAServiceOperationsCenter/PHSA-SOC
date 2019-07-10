@@ -84,6 +84,20 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'citrus_borg_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'citrus_borg.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'mail_collector_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'mail_collector.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -111,6 +125,16 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'citrus_borg': {
+            'handlers': ['citrus_borg_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'mail_collector': {
+            'handlers': ['mail_collector_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 
@@ -125,11 +149,10 @@ CACHES = {
 
 # Application definition
 INSTALLED_APPS = [
-    'rules_engine.apps.RulesEngineConfig',
+    'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
-    'notifications.apps.NotificationsConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     'orion_flash.apps.OrionFlashConfig',
     'task_journal.apps.TaskJournalConfig',
@@ -288,7 +311,6 @@ CELERY_RESULT_PERSISTENT = False
 CELERY_TASK_SERIALIZER = 'json'
 
 CELERY_QUEUES = (
-    Queue('rules', Exchange('rules'), routing_key='rules'),
     Queue('email', Exchange('email'), routing_key='email'),
     Queue('orion', Exchange('orion'), routing_key='orion'),
     Queue('nmap', Exchange('nmap'), routing_key='nmap'),
@@ -297,6 +319,8 @@ CELERY_QUEUES = (
     Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
     Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
     Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
+    Queue('mail_collector', Exchange('mail_collector'),
+          routing_key='mail_collector'),
 )
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -380,7 +404,19 @@ DYNAMIC_PREFERENCES = {
     'VALIDATE_NAMES': True,
 }
 
+# settings specific to nmap
+# TODO: do we still need the SSL_DEFAULT_PORT here?
 NMAP_SERVICE_USER = 'nmap_user'
 
 SSL_PROBE_OPTIONS = '-Pn -p %s --script ssl-cert'
 SSL_DEFAULT_PORT = 443
+
+# settings specific to the mail_collector app
+EVENT_TYPE_SORT = {
+    'unknown': 0,
+    'configuration': 1,
+    'connection': 2,
+    'create': 3,
+    'send': 4,
+    'receive': 5,
+}

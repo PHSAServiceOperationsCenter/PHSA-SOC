@@ -26,16 +26,20 @@ we catch the error.
 
 """
 import collections
+import json
 import socket
 import time
 
 from datetime import datetime
 from uuid import uuid4
 
+from tzlocal import get_localzone
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import ServiceAccount, Message, Account, Configuration
+from exchangelib.errors import ErrorTooManyObjectsOpened
+from retry import retry
 
 from config import load_config
 from logger import LogWinEvent
@@ -47,24 +51,20 @@ class _Logger():
     a GUI window text control if one is provided
     """
 
-    def __init__(self, console_logger=None, event_logger=None):
+    def __init__(self, update_window_queue=None, event_logger=None):
         """
-        :arg console_logger:
+        :arg ``queue.Queue`` update_window_queue:
 
-            the handle for the window where the information must be written
-
-            the current implementation assumes a PySimpleGUI Multiline
-            control named 'output'.
-
-            this argument is not mandatory.
+            a queue object used to pass updates to a GUI running in
+            the main thread. this argument is not mandatory.
 
         :arg event_logger:
 
             an instance of the :class:`<logger.LogWinEvent>`
 
-            if one is not provided the constructor will create it
+            if one is not provided, the constructor will create it
         """
-        self.console_logger = console_logger
+        self.console_logger = update_window_queue
         if event_logger is None:
             event_logger = LogWinEvent()
 
@@ -74,21 +74,21 @@ class _Logger():
         """
         write info level events
         """
-        self.event_logger.info(strings)
+        self.event_logger.info(strings=[json.dumps(strings)])
         self.update_console(strings, level='INFO')
 
     def warn(self, strings):
         """
         write warn level events
         """
-        self.event_logger.warn(strings)
+        self.event_logger.warn(strings=[json.dumps(strings)])
         self.update_console(strings, level='WARN')
 
     def err(self, strings):
         """
         write error level events
         """
-        self.event_logger.err(strings)
+        self.event_logger.err(strings=[json.dumps(strings)])
         self.update_console(strings, level='ERROR')
 
     def update_console(self, strings, level=None):
@@ -98,14 +98,20 @@ class _Logger():
         if self.console_logger is None:
             return
 
+        if self.console_logger.full():
+            return
+
         if level is None:
             level = 'INFO'
 
-        self.console_logger.FindElement('output').Update(
-            '[{}] {}:\n'.format(level, datetime.now()), append=True)
-        for item in strings:
-            self.console_logger.FindElement('output').Update(
-                '\t{}\n'.format(item), append=True)
+        self.console_logger.put_nowait(
+            ('output', '[{}] {:%X}: {}\n'.format(level,
+                                                 datetime.now(), strings))
+        )
+
+
+def _get_account(config):
+    return '{}\\{}'.format(config.get('domain'), config.get('username'))
 
 
 def validate_email_to_ascii(email_address, logger=None, **config):
@@ -162,11 +168,13 @@ def validate_email_to_ascii(email_address, logger=None, **config):
             allow_empty_local=False,
             check_deliverability=config.get('check_email_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
-        logger.warn(strings=[
-            'type: verify configuration',
-            'status: FAIL',
-            'status message: bad email address %s' % email_address,
-            'exception: %s' % str(error)])
+        logger.warn(
+            dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
+                 account='{}, {}'.format(_get_account(config), email_address),
+                 message='bad email address %s' % email_address,
+                 exception=str(error))
+        )
         return None
 
     if config.get('force_ascii_email'):
@@ -212,13 +220,12 @@ def get_accounts(logger=None, **config):
 
     if not emails:
         logger.err(
-            strings=[
-                'type: verify configuration',
-                'status: FAIL',
-                'status message: none of the %s email addresses is valid.'
-                'please update your configuration for this node',
-                'invalid or unknown email addresses: %s'
-                % config.get('email_addresses'), ])
+            dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
+                 account=_get_account(config),
+                 message='no valid email addresses found in %s'
+                 % config.get('email_addresses'))
+        )
         return None
 
     credentials = ServiceAccount(
@@ -242,31 +249,29 @@ def get_accounts(logger=None, **config):
                                         config=exc_config,
                                         autodiscover=False))
             logger.info(
-                strings=[
-                    'type: verify connection',
-                    'status: PASS',
-                    'status message: connected to exchange with'
-                    ' account %s\\%s, %s' % (config.get('domain'),
-                                             config.get('username'), email), ])
+                dict(type='connection', status='PASS',
+                     wm_id=config.get('wm_id'),
+                     message='connected to exchange',
+                     account='{}\\{}, {}'.format(
+                         config.get('domain'), config.get('username'), email))
+            )
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
-                strings=[
-                    'type: verify connection',
-                    'status: FAIL',
-                    'message: cannot connect to exchange with'
-                    'account %s\\%s, %s' % (config.get('domain'),
-                                            config.get('username'), email),
-                    'exception: %s' % str(err), ])
+                dict(type='connection', status='PASS',
+                     wm_id=config.get('wm_id'),
+                     message='cannot connect to exchange',
+                     account='{}\\{}, {}'.format(
+                         config.get('domain'), config.get('username'), email),
+                     exeption=str(err))
+            )
 
     if not accounts:
-        logger.error(strings=[
-            'type: verify configuration',
-            'status: FAIL',
-            'status message: invalid exchange configuration for all'
-            'accounts in %s\\%s' % (config.get('domain'),
-                                    config.get('username')),
-            'email addresses: %s' % config.get('email_addresses'),
-        ])
+        logger.error(
+            dict(type='configuration', status='FAIL',
+                 wm_id=config.get('wm_id'),
+                 message='no valid exchange account found',
+                 account=_get_account(config))
+        )
         return None
 
     return accounts
@@ -290,7 +295,7 @@ WitnessMessage = collections.namedtuple(
 """
 
 
-class WitnessMessages():
+class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     """
     class for sent and received messages
 
@@ -367,10 +372,17 @@ class WitnessMessages():
 
         self.config = config
 
+        self.config['wm_id'] = '{}+{}+{}'.format(
+            self.config.get('site', 'no_site'), socket.gethostname(),
+            datetime.now(tz=get_localzone())
+        )
+
         self.messages = []
 
+        self.update_window_queue = console_logger
+
         self.logger = _Logger(
-            console_logger=console_logger, event_logger=logger)
+            update_window_queue=console_logger, event_logger=logger)
 
         if accounts is None:
             accounts = get_accounts(logger=self.logger, **config)
@@ -396,10 +408,12 @@ class WitnessMessages():
             return
 
         self.witness_emails = []
-        for witness_address in self.config.get('witness_addresses').split(','):
-            self.witness_emails.append(
-                validate_email_to_ascii(
-                    witness_address, logger=self.logger, **config))
+        if self.config.get('witness_addresses'):
+            for witness_address in \
+                    self.config.get('witness_addresses').split(','):
+                self.witness_emails.append(
+                    validate_email_to_ascii(
+                        witness_address, logger=self.logger, **config))
 
         for account in accounts:
             if not isinstance(account, Account):
@@ -408,18 +422,21 @@ class WitnessMessages():
                     (type(account), str(account)))
 
         self.accounts = accounts
-
         for account in self.accounts:
-            message_body = uuid4()
+            message_uuid = str(uuid4())
+            message_body = 'message_group_id: {}, message_id: {}'.\
+                format(self.config.get('wm_id'), message_uuid)
             self.messages.append(
                 WitnessMessage(
-                    message_uuid=message_body,
-                    message=Message(account=account,
-                                    subject='{} with identifier {}'.format(
-                                        self._set_subject(), message_body),
-                                    body=message_body,
-                                    to_recipients=self.emails,
-                                    cc_recipients=self.witness_emails),
+                    message_uuid=message_uuid,
+                    message=Message(
+                        account=account,
+                        subject='{} {}'.format(
+                            self._set_subject(), message_body),
+                        body=message_body,
+                        to_recipients=[
+                            account.primary_smtp_address],
+                        cc_recipients=self.witness_emails),
                     account_for_message=account
                 )
             )
@@ -431,7 +448,7 @@ class WitnessMessages():
         tags = '[DEBUG]' if self.config.get('debug') else ''
         tags += '[{}]'.format(
             self.config.get('site')) if self.config.get('site') else ''
-        tags = '{}[{}]'.format(tags, socket.getfqdn())
+        tags = '{}[{}]'.format(tags, socket.gethostname())
 
         return '{}{}'.format(tags, self.config.get('email_subject',
                                                    'email canary'))
@@ -447,13 +464,11 @@ class WitnessMessages():
         """
         if not self.messages:
             self.logger.err(
-                strings=[
-                    'type: verify configuration',
-                    'status: FAIL',
-                    'status message:'
-                    ' it was not possible to create any monitoring'
-                    ' messages. please double-check the exchange configuration'
-                    ' for this node.', ])
+                dict(type='create', status='FAIL',
+                     wm_id=self.config.get('wm_id'),
+                     account=_get_account(self.config),
+                     message='could not create any messages')
+            )
             return
 
         # we need to purge the messages that we cannot send, thus
@@ -463,32 +478,34 @@ class WitnessMessages():
                 message.message.send()
 
                 self.logger.info(
-                    strings=[
-                        'type: verify send',
-                        'status: PASS',
-                        'status message: monitoring message sent',
-                        'message_uuid: %s' % message.message_uuid,
-                        'account: %s'
-                        % message.account_for_message.primary_smtp_address,
-                        'to: %s'
-                        % ', '.join(
-                            [r.email_address for r in
-                             message.message.to_recipients]), ])
+                    dict(type='send', status='PASS',
+                         wm_id=self.config.get('wm_id'),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
+                         message='monitoring message sent',
+                         message_uuid=str(message.message_uuid),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join([r.email_address for r in
+                                              message.message.to_recipients]))
+                )
 
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(
-                    strings=[
-                        'type: verify send',
-                        'status: FAIL',
-                        'status message: cannot send monitoring message',
-                        'message_uuid: %s' % message.message_uuid,
-                        'account: %s'
-                        % message.account_for_message.primary_smtp_address,
-                        'to: %s'
-                        % ', '.join(
-                            [r.email_address for r in
-                             message.message.to_recipients]),
-                        'error: %s' % str(error), ])
+                    dict(type='send', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
+                         message='cannot send message',
+                         message_uuid=str(message.message_uuid),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join([r.email_address for r in
+                                              message.message.to_recipients]),
+                         exception=str(error))
+                )
 
                 self.messages.remove(message)
 
@@ -524,83 +541,126 @@ class WitnessMessages():
 
         """
         if min_wait_receive is None:
-            min_wait_receive = int(
-                self.config.get('min_wait_receive',
-                                load_config().get('min_wait_receive', 3))
-            )
+            min_wait_receive = int(self.config.get('min_wait_receive'))
 
         if step_wait_receive is None:
-            step_wait_receive = int(
-                self.config.get('step_wait_receive',
-                                load_config().get('step_wait_receive', 3))
-            )
+            step_wait_receive = int(self.config.get('step_wait_receive'))
 
         if max_wait_receive is None:
-            max_wait_receive = int(
-                self.config.get('max_wait_receive',
-                                load_config().get('max_wait_receive', 120))
-            )
+            max_wait_receive = int(self.config.get('max_wait_receive'))
+
+        class ErrorMessageNotFound(Exception):
+            """
+            custom exception to be raised in case a message is not found
+            """
+
+        @retry((ErrorTooManyObjectsOpened, ErrorMessageNotFound),
+               delay=int(min_wait_receive), max_delay=int(max_wait_receive),
+               backoff=int(step_wait_receive))
+        def get_from_inbox(message):
+            found_message = message.account_for_message.inbox.filter(
+                subject__icontains=str(message.message_uuid))
+
+            if found_message.exists():
+                return found_message.get()
+
+            raise ErrorMessageNotFound()
 
         if not self._sent:
             self.send()
 
         time.sleep(min_wait_receive)
+        for message in self.messages:
 
-        for account in self.accounts:
-            for message in self.messages:
+            try:
+                found_message = get_from_inbox(message)
+            except ErrorTooManyObjectsOpened as error:
+                self.logger.err(
+                    dict(type='receive', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
+                         message=(
+                             'too many objects opened on the server,'
+                             ' please increase the Check Receive Timeout'
+                             ' value'),
+                         message_uuid=str(message.message_uuid),
+                         exception=str(error),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
+                )
+                continue
+            except ErrorMessageNotFound:
+                found_message = None
+            except Exception as error:  # pylint: disable=broad-except
+                self.logger.err(dict(type='receive', status='FAIL',
+                                     wm_id=self.config.get('wm_id'),
+                                     account='{}, {}'.format(
+                                         _get_account(self.config),
+                                         message.account_for_message.primary_smtp_address),
+                                     message=(
+                                         'unexpected error while checking for'
+                                         ' message received'),
+                                     message_uuid=str(message.message_uuid),
+                                     exception=str(error),
+                                     from_email=message.
+                                     account_for_message.primary_smtp_address,
+                                     to_emails=', '.join(
+                                         [r.email_address for r in
+                                          message.message.to_recipients]))
+                                )
+                continue
 
-                _wait_receive = min_wait_receive
+            if found_message:
+                self.logger.info(
+                    dict(type='receive', status='PASS',
+                         wm_id=self.config.get('wm_id'),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
+                         message='message received',
+                         message_uuid=str(message.message_uuid),
+                         from_address=found_message.author.
+                         email_address,
+                         to_addresses=', '.join(
+                             [mailbox.email_address for
+                                      mailbox in found_message.to_recipients]),
+                         created=str(found_message.datetime_created),
+                         sent=str(found_message.datetime_sent),
+                         received=str(found_message.datetime_received),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
+                )
 
-                found_message = account.inbox.filter(
-                    subject__icontains=str(message.message_uuid))
+                if not self.config.get(
+                        'debug',
+                        load_config().get('debug', True)):
+                    found_message.delete()
 
-                while _wait_receive < max_wait_receive:
+                continue
 
-                    if found_message.exists():
+            else:
+                self.logger.err(
+                    dict(type='receive', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
+                         account='{}, {}'.format(
+                             _get_account(self.config),
+                             message.account_for_message.primary_smtp_address),
+                         message='message received',
+                         message_uuid=str(message.message_uuid),
+                         from_email=message.
+                         account_for_message.primary_smtp_address,
+                         to_emails=', '.join(
+                             [r.email_address for r in
+                              message.message.to_recipients]))
+                )
 
-                        found_message = found_message.get()
-                        self.logger.info(
-                            strings=[
-                                'type: transmission verification',
-                                'status: PASS',
-                                'status message:'
-                                ' email message successfully sent and received',
-                                'message_uuid: %s' % message.message_uuid,
-                                'from domain: %s'
-                                % found_message.author.
-                                email_address.split('@')[1],
-                                'to domains: %s'
-                                % ', '.join(
-                                    [
-                                        mailbox.email_address.split('@')[1] for
-                                        mailbox in found_message.to_recipients
-                                    ]),
-                                'created: %s' % found_message.datetime_created,
-                                'sent: %s' % found_message.datetime_sent,
-                                'received: %s'
-                                % found_message.datetime_received,
-                                'wait_receive: %s' % _wait_receive, ])
-
-                        if not self.config.get(
-                                'debug',
-                                load_config().get('debug', True)):
-                            found_message.delete()
-
-                        break
-
-                    time.sleep(step_wait_receive)
-                    _wait_receive = _wait_receive + step_wait_receive
-
-                else:
-                    self.logger.err(
-                        strings=[
-                            'type: transmission verification',
-                            'status: FAIL',
-                            'status message: message was not received',
-                            'message_uuid: %s' % message.message_uuid,
-                            'from: %s'
-                            % message.account_for_message.
-                            primary_smtp_address.split('@')[1],
-                            'to: %s'
-                            % account.primary_smtp_address.split('@')[1],
-                            'wait_receive: %s' % _wait_receive, ])
+        if self.update_window_queue:
+            self.update_window_queue.put_nowait(('control',))

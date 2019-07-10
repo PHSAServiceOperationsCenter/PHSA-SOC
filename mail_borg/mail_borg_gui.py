@@ -16,9 +16,11 @@ GUI module for exchange monitoring borg bot software
 
 """
 import collections
+import threading
 import time
 
 from datetime import datetime, timedelta
+from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
@@ -46,7 +48,7 @@ def get_window():
     ]
 
     output_frame = [
-        [gui.Multiline(size=(181, 19), key='output', disabled=True,
+        [gui.Multiline(size=(181, 15), key='output', disabled=True,
                        autoscroll=True, enable_events=True), ],
         [gui.Text('', size=(142, 1)),
          gui.Button('Clear execution data', key='clear'), ]
@@ -62,7 +64,7 @@ def get_window():
         [gui.Text('Application Name:', justification='left'), ],
         [gui.Text('Verify Email MX Address Timeout:', justification='left'), ],
         [gui.Text('Minimum Wait for Check Receive:', justification='left'), ],
-        [gui.Text('Increment Wait for Check Receive:',
+        [gui.Text('Multiply Factor for Check Receive:',
                   justification='left'), ],
         [gui.Text('Check Receive Timeout:', justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
@@ -75,7 +77,7 @@ def get_window():
                        size=(32, 1), do_not_clear=True, enable_events=True), ],
         [gui.Spin([i for i in range(1, 60)], key='mail_every_minutes',
                   initial_value=config.get('mail_every_minutes'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
         [gui.InputText(config.get('domain'), key='domain',
                        size=(32, 1), do_not_clear=True, enable_events=True), ],
@@ -92,19 +94,18 @@ def get_window():
                        do_not_clear=True,  enable_events=True), ],
         [gui.Spin([i for i in range(1, 20)], key='check_mx_timeout',
                   initial_value=config.get('check_mx_timeout'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
-        [gui.Spin([i for i in range(1, 30)], key='min_wait_receive',
+        [gui.Spin([i for i in range(1, 120)], key='min_wait_receive',
                   initial_value=config.get('min_wait_receive'),
-                  auto_size_text=True, enable_events=True),
+                  size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin([i for i in range(1, 10)], key='step_wait_receive',
                   initial_value=config.get('step_wait_receive'),
-                  auto_size_text=True, enable_events=True),
-         gui.Text('seconds'), ],
-        [gui.Spin([i for i in range(30, 120)], key='max_wait_receive',
+                  size=(3, 1), enable_events=True), ],
+        [gui.Spin([i for i in range(1, 600)], key='max_wait_receive',
                   initial_value=config.get('max_wait_receive'),
-                  auto_size_text=True,  enable_events=True),
+                  size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
         [gui.InputText(config.get('site'), key='site', size=(32, 1),
                        do_not_clear=True, enable_events=True), ],
@@ -139,7 +140,7 @@ def get_window():
                       key='debug', enable_events=True),
          gui.Checkbox('Enable Auto-run on startup', key='autorun',
                       default=config.get('autorun'),  enable_events=True),
-         gui.Checkbox('Use ASCII from of email addresses',
+         gui.Checkbox('Use ASCII form of email addresses',
                       default=config.get('force_ascii_email'),
                       key='force_ascii_email',  enable_events=True),
          gui.Checkbox('Allow UTF-8 characters in email addresses',
@@ -182,7 +183,7 @@ def next_run_in(next_run_at):
     return '{} minutes, {} seconds'.format(int(mins), int(secs))
 
 
-def mail_check(config, window):
+def mail_check(config, window, update_window_queue):
     """
     invoke the mail check functionality
 
@@ -191,13 +192,18 @@ def mail_check(config, window):
     window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update(
-        '{}: running mail check\n'.format(datetime.now()), append=True)
-
-    witness_messages = WitnessMessages(console_logger=window, **config)
-    witness_messages.verify_receive()
-
+        '{:%c}: running mail check\n'.format(datetime.now()), append=True)
     window.FindElement('output').Update(disabled=True)
-    window.FindElement('mailcheck').Update(disabled=False)
+
+    thr = threading.Thread(target=_mail_check, args=(
+        update_window_queue, dict(config)))
+    thr.start()
+
+
+def _mail_check(update_window_queue, config):
+    witness_messages = WitnessMessages(
+        console_logger=update_window_queue, **config)
+    witness_messages.verify_receive()
 
 
 def do_save_config(config, window):
@@ -206,15 +212,11 @@ def do_save_config(config, window):
     to both the configuration file and the server
 
     """
-    window.FindElement('save_config').Update(disabled=True)
-
     items = []
     for key, val in config.items():
         items.append((key, val))
 
     save_config(dict_config=collections.OrderedDict(items))
-
-    window.FindElement('save_config').Update(disabled=False)
 
 
 def do_reload_config(window):
@@ -230,6 +232,8 @@ def do_reload_config(window):
 
     window.FindElement('reload_config').Update(disabled=True)
 
+    return config
+
 
 def do_reset_config(window):
     """
@@ -244,6 +248,7 @@ def do_reset_config(window):
         window.FindElement(key).Update(value)
 
     _dirty_window(window)
+    return config
 
 
 def _set_autorun(window):
@@ -304,6 +309,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'max_wait_receive', 'site', 'tags', 'autodiscover',
                 'exchange_server', ]
 
+    update_window_queue = Queue(maxsize=500)
     config, window = get_window()
     config_is_dirty = _check_password(window)
     next_run_at = datetime.now() + \
@@ -314,11 +320,47 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
         event, values = window.Read(timeout=0)
 
         if values is None or event == 'Exit':
+            if config_is_dirty:
+                save = gui.PopupYesNo(
+                    'Save configuration?',
+                    'There are unsaved changes'
+                    ' in the application configuration.'
+                    ' Do you wish to save them?')
+
+                if save == 'Yes':
+                    do_save_config(config, window)
+                    continue
+
             break
+
+        while not update_window_queue.empty():
+            msg = update_window_queue.get_nowait()
+            if msg[0] in ['output']:
+                window.FindElement('output').Update(disabled=False)
+                window.FindElement('output').Update(msg[1], append=True)
+                window.FindElement('output').Update(disabled=True)
+                window.FindElement('status').Update('mail check in progress')
+            if msg[0] in ['control']:
+                window.FindElement('output').Update(disabled=False)
+                window.FindElement('output').Update('\nmail check complete\n',
+                                                    append=True)
+                window.FindElement('output').Update(disabled=True)
+                window.FindElement('mailcheck').Update(disabled=False)
+                if autorun:
+                    next_run_at = datetime.now() + \
+                        timedelta(minutes=int(window.FindElement(
+                            'mail_every_minutes').Get()))
+                    window.FindElement('status').Update(
+                        'next mail check run in {}'.format(
+                            next_run_in(next_run_at))
+                    )
+                else:
+                    window.FindElement('status').Update(
+                        'automated mail check execution is paused')
 
         if event in editable:
             config_is_dirty = True
-            config[event] = window.FindElement(event).Get()
+            config[event] = window.FindElement(event).Get().replace('\n', '')
 
             _dirty_window(window)
 
@@ -337,11 +379,11 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event == 'reset_config':
             config_is_dirty = True
-            do_reset_config(window)
+            config = do_reset_config(window)
 
         if event == 'reload_config':
             config_is_dirty = False
-            do_reload_config(window)
+            config = do_reload_config(window)
 
         if event == 'clear':
             _do_clear(window)
@@ -352,13 +394,15 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'next mail check run in {}'.format(next_run_in(next_run_at)))
 
             if next_run_at <= datetime.now():
-                mail_check(config=config, window=window)
+                mail_check(config=config, window=window,
+                           update_window_queue=update_window_queue)
                 next_run_at = datetime.now() + \
                     timedelta(minutes=int(window.FindElement(
                         'mail_every_minutes').Get()))
 
         if event == 'mailcheck':
-            mail_check(config=config, window=window)
+            mail_check(config=config, window=window,
+                       update_window_queue=update_window_queue)
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
                     'mail_every_minutes').Get()))
@@ -367,7 +411,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 window.FindElement('run').Update(disabled=True)
                 window.FindElement('pause').Update(disabled=False)
                 window.FindElement('status').Update(
-                    'next mail check run in {}'.format(next_run_in(next_run_at)))
+                    'next mail check run in {}'.format(
+                        next_run_in(next_run_at)))
             else:
                 window.FindElement('run').Update(disabled=False)
                 window.FindElement('pause').Update(disabled=True)
@@ -388,14 +433,6 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
         time.sleep(1)
 
     # Broke out of main loop. Close the window.
-    if config_is_dirty:
-        save = gui.PopupYesNo(
-            'Save configuration?',
-            'There are unsaved changes in the application configuration.'
-            ' Do you wish to save them?')
-
-        if save == 'Yes':
-            do_save_config(config, window)
 
     window.Close()
 

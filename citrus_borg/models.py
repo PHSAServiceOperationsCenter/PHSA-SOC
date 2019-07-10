@@ -21,12 +21,14 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models.deletion import SET_NULL
-from django.utils.timezone import now, timedelta
+from django.utils.timezone import now
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from simple_history.models import HistoricalRecords
 
 from p_soc_auto_base.models import BaseModel
 from orion_integration.orion import OrionClient
+from orion_integration.models import OrionNode
+from citrus_borg.dynamic_preferences_registry import get_preference
 
 
 def get_uuid():
@@ -60,6 +62,48 @@ class BorgSiteNotSeenManager(models.Manager):
             exclude(winlogbeathost__last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
+
+class WinlogbeatHostNotSeenManager(models.Manager):
+    """
+    model manager for bot hosts not seen for a while
+    """
+
+    def get_queryset(self):
+        """
+        override method for custom model managers
+        """
+        return WinlogbeatHost.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
+class KnownBrokeringDeviceNotSeenManager(models.Manager):
+    """
+    model manager for citrix app servers
+
+    yes, i know the class name is misleading
+    """
+
+    def get_queryset(self):
+        """
+        overloaded method for custom model managers
+        """
+        return KnownBrokeringDevice.objects.\
+            exclude(last_seen__gt=now() -
+                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+
+
+class CitrixHostManager(models.Manager):
+    """
+    get only citrix bots
+    """
+
+    def get_queryset(self):
+        """
+        override get_queryset to return only citrix bots
+        """
+        return WinlogbeatHost.objects.exclude(last_seen__isnull=True)
+
 # pylint: enable=too-few-public-methods,no-self-use
 
 
@@ -70,33 +114,27 @@ class BorgSite(BaseModel, models.Model):
     site = models.CharField(
         _('site name'), max_length=64, db_index=True, unique=True,
         blank=False, null=False)
-    history = HistoricalRecords()
 
     def __str__(self):
         return self.site
 
     class Meta:
         app_label = 'citrus_borg'
-        verbose_name = _('Citrix Bot Site')
-        verbose_name_plural = _('Citrix Bot Sites')
+        verbose_name = _('Bot Site')
+        verbose_name_plural = _('Bot Sites')
 
 
 class BorgSiteNotSeen(BorgSite):
+    """
+    sites not seen for a while
+    """
     objects = BorgSiteNotSeenManager()
 
     class Meta:
         proxy = True
         ordering = ('-winlogbeathost__last_seen',)
-        verbose_name = _('Citrix Bot Site')
-        verbose_name_plural = _(
-            'Citrix Bot Sites not seen for at least 72 hours')
-
-
-class WinlogbeatHostNotSeenManager(models.Manager):
-    def get_queryset(self):
-        return WinlogbeatHost.objects.\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+        verbose_name = _('Bot Site')
+        verbose_name_plural = _('Bot Sites not seen for a while')
 
 
 class WinlogbeatHost(BaseModel, models.Model):
@@ -109,7 +147,10 @@ class WinlogbeatHost(BaseModel, models.Model):
     ip_address = models.GenericIPAddressField(
         _('IP address'), protocol='IPv4', blank=True, null=True)
     last_seen = models.DateTimeField(
-        _('last seen'), db_index=True, blank=False, null=False)
+        _('Citrix bot last seen'), db_index=True, blank=True, null=True)
+    excgh_last_seen = models.DateTimeField(
+        _('Exchange client bot last seen'),
+        db_index=True, blank=True, null=True)
     site = models.ForeignKey(
         BorgSite, db_index=True, blank=True, null=True,
         on_delete=models.SET_NULL)
@@ -118,6 +159,22 @@ class WinlogbeatHost(BaseModel, models.Model):
         null=True, default=0,
         help_text=_(
             'Use the value in this field to query the Orion server'))
+
+    @property
+    @mark_safe
+    def orion_node_url(self):
+        """
+        link to the Orion Node object on the Orion server
+        """
+        orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
+        if orion_node.exists():
+            orion_node = orion_node.values('node_caption', 'details_url')[0]
+            return '<a href="%s%s">%s on Orion</>' % (
+                get_preference('orionserverconn__orion_server_url'),
+                orion_node.get('details_url'), orion_node.get('node_caption')
+            )
+
+        return 'acquired outside the Orion infrastructure'
 
     @property
     def resolved_fqdn(self):
@@ -143,14 +200,16 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         if not self.enabled:
             # it's disabled, we don't care so go away
-            return
+            return None
 
         if self.resolved_fqdn is None and self.ip_address is None:
-            # there is no way to identity the node in orion
+            # there is no way to identify the node in orion
+            # how does orion handle unamanaged nodes? is it possible
+            # to ignore network identification?
 
             # TODO: this is an error condition, must integrate with
             # https://trello.com/c/1Aadwukn
-            return
+            return None
 
         if self.resolved_fqdn:
             # let's use the DNS property, these nodes are mostly DHCP'ed
@@ -161,7 +220,7 @@ class WinlogbeatHost(BaseModel, models.Model):
                 # but can we use the DNS property?
                 self.orion_id = orion_id[0].get('NodeID', None)
                 self.save()
-                return
+                return None
 
         # couldn't use DNS, falling back to IPAddress
         orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
@@ -172,10 +231,9 @@ class WinlogbeatHost(BaseModel, models.Model):
         if orion_id:
             self.orion_id = orion_id[0].get('NodeID', None)
             self.save()
-            return
+            return 'updated Orion NodeID for %s' % self.host_name
 
-        raise OrionNodeIDError(
-            'cannot find Citrix bot %s on the Orion server' % self.host_name)
+        return 'cannot find bot %s on the Orion server' % self.host_name
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)
@@ -191,34 +249,58 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         :returns: a host object
         """
+        last_seen = now() \
+            if borg.event_source in ['ControlUp Logon Monitor'] else None
+        exch_last_seen = now() \
+            if borg.event_source in ['BorgExchangeMonitor'] else None
+
         winloghost = cls.objects.filter(
             host_name__iexact=borg.source_host.host_name)
 
         if winloghost.exists():
             winloghost = winloghost.get()
-            winloghost.last_seen = now()
+            winloghost.last_seen = last_seen
+            winloghost.excgh_last_seen = exch_last_seen
         else:
             user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(
-                host_name=borg.source_host.host_name, last_seen=now(),
+                host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
-                updated_by=user)
+                exch_last_seen=exch_last_seen, updated_by=user)
 
         winloghost.save()
         return winloghost
 
     class Meta:
-        verbose_name = _('Citrix Bot')
-        verbose_name_plural = _('Citrix Bots')
+        app_label = 'citrus_borg'
+        verbose_name = _('Remote Monitoring Bot')
+        verbose_name_plural = _('Remote Monitoring Bots')
 
 
-class WinlogbeatHostNotSeen(WinlogbeatHost):
-    objects = WinlogbeatHostNotSeenManager()
+class CitrixHost(WinlogbeatHost):
+    """
+    only citrix bots
+    """
+    objects = CitrixHostManager()
 
     class Meta:
         proxy = True
         verbose_name = _('Citrix Bot')
-        verbose_name_plural = _('Citrix Bots not seen for at least 72 hours')
+        verbose_name_plural = _('Citrix Bots')
+        get_latest_by = '-last_seen'
+        ordering = ['-last_seen', ]
+
+
+class WinlogbeatHostNotSeen(WinlogbeatHost):
+    """
+    bots not seen for a while
+    """
+    objects = WinlogbeatHostNotSeenManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Remote Monitoring Bot')
+        verbose_name_plural = _('Remote Monitoring Bots not seen for a while')
 
 
 class AllowedEventSource(BaseModel, models.Model):
@@ -232,7 +314,6 @@ class AllowedEventSource(BaseModel, models.Model):
             'the equivalent of filtering by -ProviderName in Get-WinEvent:'
             ' the application will only capture events generated by'
             ' providers listed in this model'))
-    history = HistoricalRecords()
 
     def __str__(self):
         return self.source_name
@@ -258,13 +339,6 @@ class WindowsLog(BaseModel, models.Model):
         verbose_name_plural = _('Supported Windows Logs')
 
 
-class KnownBrokeringDeviceNotSeenManager(models.Manager):
-    def get_queryset(self):
-        return KnownBrokeringDevice.objects.\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
-
-
 class KnownBrokeringDevice(BaseModel, models.Model):
     """
     keep a list of brokers returned by the logon simulator
@@ -277,7 +351,6 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     )
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
-    history = HistoricalRecords()
 
     def __str__(self):
         return self.broker_name
@@ -317,13 +390,15 @@ class KnownBrokeringDevice(BaseModel, models.Model):
 
 
 class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
+    """
+    citrix app servers not seen for a while
+    """
     objects = KnownBrokeringDeviceNotSeenManager()
 
     class Meta:
         proxy = True
         verbose_name = _('Citrix App Server')
-        verbose_name_plural = _(
-            'Citrix App Servers not seen for at least 24 hours')
+        verbose_name_plural = _('Citrix App Servers not seen for a while')
 
 
 class WinlogEvent(BaseModel, models.Model):
@@ -335,7 +410,9 @@ class WinlogEvent(BaseModel, models.Model):
         default=get_uuid)
     source_host = models.ForeignKey(
         WinlogbeatHost, db_index=True, blank=False, null=False,
-        on_delete=models.PROTECT, verbose_name=_('Event Source Host'))
+        on_delete=models.PROTECT,
+        limit_choices_to={'last_seen__isnull': False},
+        verbose_name=_('Event Source Host'))
     record_number = models.BigIntegerField(
         _('Record Number'), db_index=True, blank=False, null=False,
         help_text=_('event record external identifier'))
@@ -378,3 +455,10 @@ class WinlogEvent(BaseModel, models.Model):
 
     def __str__(self):
         return str(self.uuid)
+
+    class Meta:
+        app_label = 'citrus_borg'
+        verbose_name = _('Citrix Bot Windows Log Event')
+        verbose_name_plural = _('Citrix Bot Windows Log Events')
+        get_latest_by = '-created_on'
+        ordering = ['-created_on']

@@ -1,0 +1,56 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{{ tags }} {{ level }} {{ email_subject }} {{ bot }} over the last {{ time_delta | timedelta:"{hours_total} hours" }}
+{% endblock %}
+{% comment %}
+[TAGS] {{ INFO }} {{ Exchange Send Receive Events for site }} {{ site }}
+over the last {{ time_delta }} 
+{% endcomment %}
+
+
+{% block html %}
+{% if data %}
+<h3>
+{{ email_subject }} {{ bot }} over the last 
+{{ time_delta | timedelta:"{hours_total} hours" }}
+</h3>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><h3 style="color: red;">
+{{ alternate_email_subject }} {{ bot }}  over the last 
+{{ time_delta | timedelta:"{hours_total} hours" }}. Investigate ASAP.
+{% comment %}
+{{ ERROR: No data for }} {{ site }} over the .....
+{% endcomment %}
+</h3></div>
+{% endif %}
+<div><h5>
+This email has been generated on {{ source_host }} at {{ report_date_time }}.
+</h5></div>
+
+<p>tags: {{ tags }}</p>
+{% endblock %}

@@ -335,7 +335,7 @@ def report_events_by_site(site, report_interval, report_level):
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
-        event__event_source_host__site__site=site).\
+        event__source_host__site__site=site).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
     try:
@@ -368,7 +368,7 @@ def report_failed_events_by_site(site, report_interval):
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
-        event__event_source_host__site__site=site,
+        event__source_host__site__site=site,
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
@@ -440,7 +440,7 @@ def report_events_by_bot(bot, report_interval, report_level):
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
-        event__event_source_host__host_name=bot).\
+        event__source_host__host_name=bot).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
     try:
@@ -474,7 +474,7 @@ def report_failed_events_by_bot(bot, report_interval):
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
         not_seen_after=report_interval,
-        event__event_source_host__host_name=bot,
+        event__source_host__host_name=bot,
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 

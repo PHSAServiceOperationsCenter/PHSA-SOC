@@ -107,18 +107,23 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('last_seen', 'excgh_last_seen',)
 
     def last_seen(self, obj):  # pylint: disable=no-self-use
-        first_bot = obj.winlogbeathost_set.first()
+        first_bot = obj.winlogbeathost_set.\
+            filter(last_seen__isnull=False).first()
         if first_bot:
             return first_bot.last_seen
-        return 'Please allocate at least one bot to this site ASAP'
+        return 'Please allocate at least one Citrix bot to this site'
     last_seen.short_description = 'last seen'
 
     def excgh_last_seen(self, obj):
         """
         for those sites that have exchange client bots
         """
-        return obj.winlogbeathost_set.filter(
-            excgh_last_seen__isnull=False).first().excgh_last_seen
+        first_bot = obj.winlogbeathost_set.\
+            filter(excgh_last_seen__isnull=False).first()
+
+        if first_bot:
+            return first_bot.excgh_last_seen
+        return 'Please allocate at least one Exchange client bot to this site'
     excgh_last_seen.short_description = 'Exchange client bot last seen'
 
 

@@ -447,7 +447,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         we also prefix everything with a [DEBUG] tag if this is a
         DEBUG deployment and we always include a [$host name] tag
         """
-        tags = '[DEBUG]' if settings.DEBUG else None
+        tags = '[DEBUG]' if settings.DEBUG else ''
         tags += '[{}]'.format(socket.getfqdn())
 
         if hasattr(self.subscription_obj, 'tags'):

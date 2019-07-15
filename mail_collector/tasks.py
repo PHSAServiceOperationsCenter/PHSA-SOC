@@ -304,8 +304,7 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
         report_interval = get_preference('exchange__report_interval')
 
     if report_level is None:
-        report_interval = base_utils.MomentOfTime.past(
-            time_delta=get_preference('exchange__report_interval'))
+        report_level = get_preference('exchange__report_level')
 
     sites = list(
         base_utils.get_base_queryset('mail_collector.mailsite', enabled=True).
@@ -334,7 +333,8 @@ def report_events_by_site(site, report_interval, report_level):
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
-        not_seen_after=report_interval,
+        not_seen_after=base_utils.MomentOfTime.past(
+            time_delta=report_interval),
         event__source_host__site__site=site).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
@@ -367,7 +367,8 @@ def report_failed_events_by_site(site, report_interval):
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
-        not_seen_after=report_interval,
+        not_seen_after=base_utils.MomentOfTime.past(
+            time_delta=report_interval),
         event__source_host__site__site=site,
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
@@ -405,8 +406,7 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
 
     """
     if report_interval is None:
-        report_interval = base_utils.MomentOfTime.past(
-            time_delta=get_preference('exchange__report_interval'))
+        report_interval = get_preference('exchange__report_interval')
 
     if report_level is None:
         report_level = get_preference('exchange__report_level')
@@ -439,7 +439,8 @@ def report_events_by_bot(bot, report_interval, report_level):
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
-        not_seen_after=report_interval,
+        not_seen_after=base_utils.MomentOfTime.past(
+            time_delta=report_interval),
         event__source_host__host_name=bot).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
@@ -473,7 +474,8 @@ def report_failed_events_by_bot(bot, report_interval):
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
         filter_exp='event__event_registered_on__gte',
-        not_seen_after=report_interval,
+        not_seen_after=base_utils.MomentOfTime.past(
+            time_delta=report_interval),
         event__source_host__host_name=bot,
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')

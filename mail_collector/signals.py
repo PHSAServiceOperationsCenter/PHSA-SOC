@@ -19,7 +19,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from orion_flash.tasks import refresh_exchange_alerts
 from .models import (
     MailBotLogEvent, MailBotMessage, ExchangeServer, ExchangeDatabase,
     MailBetweenDomains, MailSite,
@@ -83,7 +82,6 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
             mail_message_identifier__iexact=instance.mail_message_identifier).\
             values_list('event__event_status', flat=True):
         verified_mail.status = 'FAIL'
-        refresh_exchange_alerts()
 
     verified_mail.last_verified = timezone.now()
     verified_mail.last_updated_from_node_id = last_updated_from_node_id
@@ -101,7 +99,6 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     """
     if instance.event_status not in ['PASS']:
         # only interested in successful events
-        refresh_exchange_alerts()
         return None
 
     if instance.event_type not in ['connection']:
@@ -127,7 +124,6 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     update exchange entitities state from send or receive events
     """
     if instance.event.event_status not in ['PASS']:
-        refresh_exchange_alerts()
         return None
 
     if instance.event.event_type not in ['send', 'receive']:

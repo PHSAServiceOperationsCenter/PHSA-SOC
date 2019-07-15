@@ -13,13 +13,14 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 :module:     p_soc_auto.settings
 
-:contact:    ali.rahmat@phsa.ca
 :contact:    serban.teodorescu@phsa.ca
 
 :copyright:
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
+    
+:updatedd:    Jul. 15, 2019
 """
 
 import os
@@ -77,13 +78,17 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
-        'orion_flash_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'orion_flash.log'),
-            'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
+
+        #======================================================================
+        # 'orion_flash_log': {
+        #     'level': 'DEBUG',
+        #     'class': 'logging.FileHandler',
+        #     'filename': os.path.join(LOG_DIR, 'orion_flash.log'),
+        #     'formatter': 'verbose',
+        #     'filters': ['require_debug_true']
+        # },
+        #======================================================================
+
         'citrus_borg_log': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
@@ -120,11 +125,15 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'orion_flash': {
-            'handlers': ['orion_flash_log', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+
+        #======================================================================
+        # 'orion_flash': {
+        #     'handlers': ['orion_flash_log', 'console'],
+        #     'level': 'DEBUG',
+        #     'propagate': True,
+        # },
+        #======================================================================
+
         'citrus_borg': {
             'handlers': ['citrus_borg_log', 'console'],
             'level': 'DEBUG',
@@ -154,13 +163,13 @@ INSTALLED_APPS = [
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
     'ssl_cert_tracker.apps.SslCertificatesConfig',
     'citrus_borg.apps.CitrusBorgConfig',
-    'orion_flash.apps.OrionFlashConfig',
-    'task_journal.apps.TaskJournalConfig',
+    #    'orion_flash.apps.OrionFlashConfig',
+    #    'task_journal.apps.TaskJournalConfig',
     'django_template_check',
     'django_mysql',
-    'simple_history',
-    'dal',
-    'dal_select2',
+    #    'simple_history',
+    #    'dal',
+    #    'dal_select2',
     'rangefilter',
     'templated_email',
     'timedeltatemplatefilter',
@@ -186,7 +195,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'simple_history.middleware.HistoryRequestMiddleware',
+    #    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'p_soc_auto.urls'
@@ -225,23 +234,27 @@ DATABASES = {
             'charset': 'utf8mb4',
         },
     },
-    'orion_aux_db': {
-        'ENGINE': 'sql_server.pyodbc',
-        'NAME': 'orion_aux_db',
-        'USER': 'orion_aux_db_user',
-        'PASSWORD': 'orion_aux_db_password',
-        #	'SA_PASSWORD': "orion_aux_db_password123',
-        'HOST': '10.248.211.70',
-        # 'HOST': '10.66.6.9',
-        'PORT': '',
 
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
-    },
+    #=========================================================================
+    #     'orion_aux_db': {
+    #         'ENGINE': 'sql_server.pyodbc',
+    #         'NAME': 'orion_aux_db',
+    #         'USER': 'orion_aux_db_user',
+    #         'PASSWORD': 'orion_aux_db_password',
+    #         #	'SA_PASSWORD': "orion_aux_db_password123',
+    #         'HOST': '10.248.211.70',
+    #         # 'HOST': '10.66.6.9',
+    #         'PORT': '',
+    #
+    #         'OPTIONS': {
+    #             'driver': 'ODBC Driver 17 for SQL Server',
+    #         },
+    #     },
+    #=========================================================================
+
 }
 
-DATABASE_ROUTERS = ['orion_flash.router.OrionAuxRouter', ]
+# DATABASE_ROUTERS = ['orion_flash.router.OrionAuxRouter', ]
 
 SILENCED_SYSTEM_CHECKS = ['django_mysql.W001', 'django_mysql.W002', ]
 # Password validation
@@ -319,7 +332,7 @@ CELERY_QUEUES = (
     Queue('shared', Exchange('shared'), routing_key='shared'),
     Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
     Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
-    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
+    #    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
     Queue('mail_collector', Exchange('mail_collector'),
           routing_key='mail_collector'),
 )

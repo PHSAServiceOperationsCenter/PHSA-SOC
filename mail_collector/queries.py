@@ -26,11 +26,10 @@ from mail_collector.models import (
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.communication import GroupBy, _group_by
-from orion_flash.api import (
+from p_soc_auto_base.utils import (
+    MomentOfTime, get_base_queryset,
     url_annotate as _url_annotate,
-    details_url_annotate as _details_url_annotate,
 )
-from p_soc_auto_base.utils import MomentOfTime, get_base_queryset
 
 
 def dead_bodies(data_source, filter_exp,

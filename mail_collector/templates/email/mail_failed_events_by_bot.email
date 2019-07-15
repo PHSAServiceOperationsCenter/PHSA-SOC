@@ -3,19 +3,18 @@
 {% block subject %}
 {{ tags }} {{ level }} {{ email_subject }} {{ bot }} over the last {{ time_delta | timedelta:"{hours_total} hours" }}
 {% endblock %}
-{% comment %}
-[TAGS] {{ INFO }} {{ Exchange Send Receive Events for site }} {{ site }}
-over the last {{ time_delta }} 
-{% endcomment %}
 
 
 {% block html %}
+
 {% if data %}
-<h3>
+
+<h3>{% comment %}
 {{ email_subject }} {{ bot }} over the last 
 {{ time_delta | timedelta:"{hours_total} hours" }}
 </h3>
 <div><p>
+
 <table style="border: 1px solid black;">
 <tr align="left" valign="center">
 {% for key, val in headers.items %}
@@ -32,6 +31,7 @@ over the last {{ time_delta }}
 </table>
 </p></div>
 
+
 {% if email_uuid %}
 <div>
 <p>You can view this email online at
@@ -39,18 +39,20 @@ over the last {{ time_delta }}
 {{email_uuid}}</a>
 </p></div>
 {% endif %}
+
 {% elif not data %}
+
 <div><h3 style="color: green;">
+
 {{ alternate_email_subject }} {{ bot }}  over the last 
-{{ time_delta | timedelta:"{hours_total} hours" }}. Investigate ASAP.
-{% comment %}
-{{ ERROR: No data for }} {{ site }} over the .....
-{% endcomment %}
+{{ time_delta | timedelta:"{hours_total} hours" }}.
 </h3></div>
+
 {% endif %}
 <div><h5>
 This email has been generated on {{ source_host }} at {{ report_date_time }}.
 </h5></div>
 
 <p>tags: {{ tags }}</p>
+
 {% endblock %}

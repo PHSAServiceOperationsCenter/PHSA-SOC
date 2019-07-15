@@ -26,6 +26,7 @@ from ssl_cert_tracker.lib import (
     is_not_yet_valid,  # @UnresolvedImport
 )
 from ssl_cert_tracker.models import SslCertificate  # @UnresolvedImport
+from p_soc_auto_base import utils as base_utils
 
 from .api import get_dead_bots, get_failed_logons, get_ux_alarms
 
@@ -43,21 +44,9 @@ KNOWN_BORG_DESTINATIONS = [
 ]
 
 
-class UnknownDataTargetError(Exception):
-    """
-    raise when trying to upload to an unknown data model
-    """
-
-
 class UnknownDataSourceError(Exception):
     """
     raise when we don't know where the data is supposed to come from
-    """
-
-
-class DataTargetFieldsAttributeError(Exception):
-    """
-    raise when the target model doesn't have a qs_fields attribute
     """
 
 
@@ -78,7 +67,7 @@ def purge_ssl_alerts():
     delete_info = []
     for data_source in KNOWN_SSL_DESTINATIONS:
 
-        model = get_model(data_source)
+        model = base_utils.get_model(data_source)
         for alert in model.objects.values('orion_node_id', 'orion_node_port'):
             deleted = 0
             if not SslCertificate.objects.filter(
@@ -105,7 +94,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
 
     """
     try:
-        return get_model(destination).create_or_update(qs_rows_as_dict)
+        return base_utils.get_model(destination).create_or_update(qs_rows_as_dict)
     except Exception as err:
         raise err
 
@@ -117,13 +106,14 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     dispatch alert data to orion auxiliary ssl alert models
     """
     if destination.lower() not in KNOWN_SSL_DESTINATIONS:
-        raise UnknownDataTargetError(
+        raise base_utils.UnknownDataTargetError(
             '%s is not known to this application' % destination)
 
-    deleted = get_model(destination).objects.all().delete()
+    deleted = base_utils.get_model(destination).objects.all().delete()
 
     data_rows = get_data_for(destination, **kwargs).\
-        values(*get_queryset_values_keys(get_model(destination)))
+        values(*base_utils.get_queryset_values_keys(
+            base_utils.get_model(destination)))
 
     if not data_rows:
         return 'no data'
@@ -152,16 +142,17 @@ def refresh_borg_alerts(destination, logger=LOG, **kwargs):
     periodic task definition simple
     """
     if destination.lower() not in KNOWN_BORG_DESTINATIONS:
-        raise UnknownDataTargetError(
+        raise base_utils.UnknownDataTargetError(
             '%s is not known to this application' % destination)
 
-    deleted = get_model(destination).objects.all().delete()
+    deleted = base_utils.get_model(destination).objects.all().delete()
     logger.debug(
         'purged %s records from %s',
-        deleted, get_model(destination)._meta.model_name)
+        deleted, base_utils.get_model(destination)._meta.model_name)
 
     data_rows = get_data_for(destination, **kwargs).\
-        values(*get_queryset_values_keys(get_model(destination)))
+        values(*base_utils.get_queryset_values_keys(
+            base_utils.get_model(destination)))
 
     if not data_rows:
         return 'no data'
@@ -177,37 +168,6 @@ def refresh_borg_alerts(destination, logger=LOG, **kwargs):
     msg = 'refreshing data in %s from %s entries' % (destination,
                                                      len(data_rows))
     return msg
-
-
-def get_model(destination):
-    """
-    get the model where the data is to be saved
-    """
-    try:
-        return apps.get_model(*destination.split('.'))
-    except Exception as err:
-        raise UnknownDataTargetError from err
-
-
-def get_queryset_values_keys(model):
-    """
-    this function returns a list of keys that will be passed to
-    :method:`<django.db.models.query.QuerySet.values>`
-
-    :returns: a `list of field names
-
-        note that these field names are for the queryset, **not for the
-        model that is the source of thew queryset**, because a queryset
-        can contain fields defined via annotations and/or aggregations
-
-    :raises: :exception:`<DataTargetFieldsAttributeError>`
-    """
-    if not hasattr(model, 'qs_fields'):
-        raise DataTargetFieldsAttributeError(
-            'model %s is missing the qs_fields attribute'
-            % model._meta.model_name)
-
-    return model.qs_fields
 
 
 def get_data_for(destination, **kwargs):

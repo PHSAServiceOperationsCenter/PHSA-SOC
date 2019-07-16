@@ -56,8 +56,7 @@ at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_citrixhost_changelis
 {% elif not data %}
 <div><p>All Citrix monitoring bots seem to be functioning.</p></div>
 {% endif %}
-<div><p>
-This email has been generated on {{ source_host }} at {{ report_date_time }}.
-</p></div>
-<p>tags: {{ tags }}</p>
+
+{% include './footer.email' %}
+
 {% endblock %}

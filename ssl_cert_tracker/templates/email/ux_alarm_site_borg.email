@@ -67,9 +67,7 @@ The User Experience on <strong>{{ site }}, {{ host_name }}</strong> has been
 acceptable over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 </p></div>
 {% endif %}
-<div><p>
-This email has been generated on {{ source_host }} at {{ report_date_time }}.
-</p></div>
 
-<p>tags: {{ tags }}</p>
+{% include './footer.email' %}
+
 {% endblock %}

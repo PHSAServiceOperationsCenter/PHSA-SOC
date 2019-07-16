@@ -259,8 +259,10 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         if winloghost.exists():
             winloghost = winloghost.get()
-            winloghost.last_seen = last_seen
-            winloghost.excgh_last_seen = exch_last_seen
+            if last_seen:
+                winloghost.last_seen = last_seen
+            if exch_last_seen:
+                winloghost.excgh_last_seen = exch_last_seen
         else:
             user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(

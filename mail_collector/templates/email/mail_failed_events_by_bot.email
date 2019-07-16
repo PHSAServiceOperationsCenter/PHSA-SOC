@@ -9,7 +9,7 @@
 
 {% if data %}
 
-<h3>{% comment %}
+<h3>
 {{ email_subject }} {{ bot }} over the last 
 {{ time_delta | timedelta:"{hours_total} hours" }}
 </h3>

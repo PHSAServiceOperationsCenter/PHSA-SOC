@@ -38,9 +38,7 @@
 {{ alternate_email_subject }} {{ time_delta|timedelta:"{hours_total} Hours" }}
 </h3></div>
 {% endif %}
-<div><h5>
-This email has been generated on {{ source_host }} at {{ report_date_time }}.
-</h5></div>
 
-<p>tags: {{ tags }}</p>
+{% include './footer.email' %}
+
 {% endblock %}

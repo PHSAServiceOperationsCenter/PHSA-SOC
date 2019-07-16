@@ -412,7 +412,9 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             tags=self.set_tags(),
             email_subject=self.subscription_obj.email_subject,
             alternate_email_subject=self.subscription_obj.
-            alternate_email_subject)
+            alternate_email_subject,
+            subscription_name=subscription_obj.subscription,
+            subscription_id=subscription_obj.pk)
 
         if extra_context:
             self.context.update(**extra_context)

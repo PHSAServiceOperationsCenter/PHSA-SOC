@@ -329,8 +329,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
                 if save == 'Yes':
                     do_save_config(config, window)
-                    continue
-
+                    
             break
 
         while not update_window_queue.empty():

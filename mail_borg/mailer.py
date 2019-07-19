@@ -257,7 +257,7 @@ def get_accounts(logger=None, **config):
             )
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
-                dict(type='connection', status='PASS',
+                dict(type='connection', status='FAIL',
                      wm_id=config.get('wm_id'),
                      message='cannot connect to exchange',
                      account='{}\\{}, {}'.format(
@@ -266,7 +266,7 @@ def get_accounts(logger=None, **config):
             )
 
     if not accounts:
-        logger.error(
+        logger.err(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
                  message='no valid exchange account found',

@@ -307,7 +307,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 'witness_addresses', 'email_subject', 'app_name',
                 'check_mx_timeout', 'min_wait_receive', 'step_wait_receive',
                 'max_wait_receive', 'site', 'tags', 'autodiscover',
-                'exchange_server', ]
+                'exchange_server', 'force_ascii_email', 'allow_utf8_email',
+                'check_email_mx', ]
 
     update_window_queue = Queue(maxsize=500)
     config, window = get_window()
@@ -359,7 +360,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event in editable:
             config_is_dirty = True
-            config[event] = window.FindElement(event).Get().replace('\n', '')
+            if not isinstance(config[event], bool):
+                config[event] = window.FindElement(event).Get().\
+                    replace('\n', '')
 
             _dirty_window(window)
 
@@ -371,6 +374,13 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                     timedelta(
                         minutes=int(
                             window.FindElement('mail_every_minutes').Get()))
+
+            if event == 'autodiscover':
+                if not window.FindElement('autodiscover').Get():
+                    if window.FindElement('exchange_server').\
+                            Get() in ['', 'None']:
+                        gui.PopupOK(
+                            'you must enter the name of the exchange server')
 
         if event == 'save_config':
             config_is_dirty = False

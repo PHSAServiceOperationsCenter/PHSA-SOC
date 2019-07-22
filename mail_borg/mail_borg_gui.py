@@ -340,6 +340,16 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 window.FindElement('output').Update(msg[1], append=True)
                 window.FindElement('output').Update(disabled=True)
                 window.FindElement('status').Update('mail check in progress')
+
+            if msg[0] in ['abort']:
+                window.FindElement('output').Update(disabled=False)
+                window.FindElement('output').Update(
+                    '\nmail check aborted\n', append=True)
+                window.FindElement('output').Update(disabled=True)
+                window.FindElement('status').Update(
+                    'mail check aborted. please verify the configuration')
+                window.FindElement('autorun').Update(value=False)
+
             if msg[0] in ['control']:
                 window.FindElement('output').Update(disabled=False)
                 window.FindElement('output').Update('\nmail check complete\n',

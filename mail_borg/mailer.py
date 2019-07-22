@@ -25,6 +25,7 @@ comprehensions; if an exception occurs, processing will be stopped even if
 we catch the error.
 
 """
+
 import collections
 import json
 import socket
@@ -37,12 +38,19 @@ from tzlocal import get_localzone
 from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
-from exchangelib import ServiceAccount, Message, Account, Configuration
+from exchangelib import (
+    ServiceAccount, Message, Account, Configuration, DELEGATE,
+)
 from exchangelib.errors import ErrorTooManyObjectsOpened
 from retry import retry
 
 from config import load_config
 from logger import LogWinEvent
+
+
+import logging
+from exchangelib.util import PrettyXmlHandler
+logging.basicConfig(level=logging.DEBUG, handlers=[PrettyXmlHandler()])
 
 
 class _Logger():
@@ -243,11 +251,13 @@ def get_accounts(logger=None, **config):
             if config.get('autodiscover', True):
                 accounts.append(Account(primary_smtp_address=email,
                                         credentials=credentials,
-                                        autodiscover=True))
+                                        autodiscover=True,
+                                        access_type=DELEGATE))
             else:
                 accounts.append(Account(primary_smtp_address=email,
                                         config=exc_config,
-                                        autodiscover=False))
+                                        autodiscover=False,
+                                        access_type=DELEGATE))
             logger.info(
                 dict(type='connection', status='PASS',
                      wm_id=config.get('wm_id'),
@@ -366,6 +376,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         :argtype logger: :class:`<logger.WinLogEvent>`
         """
         self._sent = False
+        self._abort = False
 
         if not config:
             config = load_config()
@@ -387,15 +398,29 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         if accounts is None:
             accounts = get_accounts(logger=self.logger, **config)
 
-        self.accounts = accounts
-
-        if not self.accounts:
-            # stop wasting time
+        if not accounts:
+            self._abort = True
             return
 
         if not isinstance(accounts, list):
             raise TypeError(
                 'bad object type %s. must be a list' % type(accounts))
+
+        for account in accounts:
+            if not isinstance(account, Account):
+                self.logger.err(
+                    dict(type='configuration', status='FAIL',
+                         wm_id=self.config.get('wm_id'),
+                         account=str(account),
+                         message='could not create any messages')
+                )
+
+        self.accounts = accounts
+
+        if not self.accounts:
+            # stop wasting time
+            self._abort = True
+            return
 
         self.emails = []
         for email_address in self.config.get('email_addresses').split(','):
@@ -415,13 +440,6 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                     validate_email_to_ascii(
                         witness_address, logger=self.logger, **config))
 
-        for account in accounts:
-            if not isinstance(account, Account):
-                raise TypeError(
-                    'bad object type %s for %s. must be exchangelib.Account' %
-                    (type(account), str(account)))
-
-        self.accounts = accounts
         for account in self.accounts:
             message_uuid = str(uuid4())
             message_body = 'message_group_id: {}, message_id: {}'.\
@@ -462,6 +480,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         if sending a particular message raises an error,
         log it and keep sending
         """
+        if self._abort:
+            if self.update_window_queue:
+                self.update_window_queue.put_nowait(('abort',))
+
+            return 'mail check abort'
+
         if not self.messages:
             self.logger.err(
                 dict(type='create', status='FAIL',
@@ -565,6 +589,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 return found_message.get()
 
             raise ErrorMessageNotFound()
+
+        if self._abort:
+            if self.update_window_queue:
+                self.update_window_queue.put_nowait(('abort',))
+
+            return 'mail check abort'
 
         if not self._sent:
             self.send()

@@ -48,11 +48,6 @@ from config import load_config
 from logger import LogWinEvent
 
 
-import logging
-from exchangelib.util import PrettyXmlHandler
-logging.basicConfig(level=logging.DEBUG, handlers=[PrettyXmlHandler()])
-
-
 class _Logger():
     """
     custom logger class that will write to the windows event log and to

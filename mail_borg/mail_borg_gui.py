@@ -48,7 +48,7 @@ def get_window():
     ]
 
     output_frame = [
-        [gui.Multiline(size=(181, 15), key='output', disabled=True,
+        [gui.Multiline(size=(181, 10), key='output', disabled=True,
                        autoscroll=True, enable_events=True), ],
         [gui.Text('', size=(142, 1)),
          gui.Button('Clear execution data', key='clear'), ]
@@ -206,7 +206,7 @@ def _mail_check(update_window_queue, config):
     witness_messages.verify_receive()
 
 
-def do_save_config(config, window):
+def do_save_config(config):
     """
     save modified configuration to the ini file and, later on,
     to both the configuration file and the server
@@ -329,7 +329,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                     ' Do you wish to save them?')
 
                 if save == 'Yes':
-                    do_save_config(config, window)
+                    do_save_config(config)
 
             break
 
@@ -373,6 +373,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
             if not isinstance(config[event], bool):
                 config[event] = window.FindElement(event).Get().\
                     replace('\n', '')
+            else:
+                config[event] = window.FindElement(event).Get()
 
             _dirty_window(window)
 
@@ -394,7 +396,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event == 'save_config':
             config_is_dirty = False
-            do_save_config(config, window)
+            do_save_config(config)
 
         if event == 'reset_config':
             config_is_dirty = True

@@ -114,6 +114,7 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
         exchange_server = ExchangeServer(exchange_server=exchange_server)
 
     exchange_server.last_connection = instance.event_registered_on
+    exchange_server.save()
 
     return exchange_server
 

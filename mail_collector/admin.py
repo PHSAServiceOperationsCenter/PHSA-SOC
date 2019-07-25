@@ -178,6 +178,9 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
         """
         show the site
         """
+        if obj.event.source_host.site is None:
+            return ('Please assign the %s bot to a site ASAP'
+                    % obj.event.source_host.host_name)
         return obj.event.source_host.site.site
     show_site.short_description = 'site'
 

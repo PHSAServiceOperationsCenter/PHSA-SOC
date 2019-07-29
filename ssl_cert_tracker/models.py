@@ -361,6 +361,10 @@ class Subscription(BaseModel):
     headers = models.TextField(
         'data headers', blank=False, null=False,
         default='common_name,expires_in,not_before,not_after')
+    tags = models.TextField(
+        'tags', blank=True, null=True,
+        help_text=('email classification tags placed on the subject line'
+                   ' and in the email body'))
 
     def __str__(self):
         return self.subscription

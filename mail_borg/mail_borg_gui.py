@@ -370,7 +370,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event in editable:
             config_is_dirty = True
-            if not isinstance(config[event], bool):
+            if not isinstance(config[event], (bool, int)):
                 config[event] = window.FindElement(event).Get().\
                     replace('\n', '')
             else:

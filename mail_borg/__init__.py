@@ -12,7 +12,7 @@ exchange monitoring client for borg bots
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    apr. 10, 2019
+:updated:    jul. 26, 2019
 
 exchange monitoring client for borg bots
 ========================================
@@ -28,13 +28,6 @@ this design decision is due to the fact that we want to reuse the citrix
 bots to run the exchange monitor programs and these bots already make use
 of the windows events log to pass inforamtion to the PSOC automation
 server.
-
-daemonizing the exchange monitor
---------------------------------
-
-the current design is also considering a windows based service instead of a
-of a more portable implementation but this may change since writing
-and running windows services with Python is a pain in the posterior.
 
 log collection
 --------------

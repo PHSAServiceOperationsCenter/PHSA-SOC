@@ -15,10 +15,12 @@ django models for the mail_collector app
 :updated:    may 24, 2019
 
 """
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
+from p_soc_auto_base.models import BaseModel
 
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -44,6 +46,94 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         """
         return BorgSite.objects.filter(
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
+
+
+class DomainAccount(BaseModel, models.Model):
+    """
+    domain accounts configuration
+    """
+    domain = models.CharField(
+        _('windows domain'),
+        max_length=15, db_index=True, blank=False, null=False)
+    username = models.CharField(
+        _('domain username'),
+        max_length=64, db_index=True, blank=False, null=False)
+    password = models.CharField(
+        _('password'), max_length=64, blank=False, null=False)
+    is_default = models.BooleanField(
+        _('default windows account'),
+        db_index=True, blank=False, null=False, default=False)
+
+    def __str__(self):
+        return '%s\\%s' % (self.domain, self.username)
+
+    def clean(self):
+        """
+        only one model instance can be the default
+
+        look through all the instances and raise an error if there already
+        is a default domain account
+        """
+        if not self.is_default:
+            return
+
+        if self._meta.model.objects.filter(is_default=True).exists():
+            raise ValidationError(
+                {'is_default': _('A default domain account already exists')})
+
+        return
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        need to call full_clean() here
+        """
+        try:
+            self.full_clean()
+        except ValidationError as error:
+            raise error
+
+        super().save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'mail_collector'
+        constraints = [models.UniqueConstraint(
+            fields=['domain', 'username'], name='unique_account')]
+        indexes = [models.Index(fields=['domain', 'username'])]
+        verbose_name = _('Domain Account')
+        verbose_name_plural = _('Domain Accounts')
+
+
+class ExchangeAccount(BaseModel, models.Model):
+    """
+    what Exchange calls 'the primary SMTP address'
+    """
+    smtp_address = models.EmailField(
+        _('Exchange Account'), max_length=253, db_index=True, unique=True,
+        blank=False, null=False)
+    domain_account = models.ForeignKey(
+        DomainAccount, db_index=True, blank=False, null=False,
+        on_delete=models.PROTECT, verbose_name=_('Domain Account'))
+    exchange_autodiscover = models.BooleanField(
+        _('use exchange auto discovery'),
+        blank=False, null=False, default=True)
+    autodiscover_server = models.CharField(
+        _('Exchange discovery server'), max_length=253, blank=True, null=True)
+
+    def __str__(self):
+        return self.smtp_address
+
+    class Meta:
+        app_label = 'mail_collector'
+        verbose_name = _('Exchange Account')
+        verbose_name_plural = _('Exchange Accounts')
+
+
+class ExchangeConfiguration(BaseModel, models.Model):
+    config_name = models.CharField(max_length=64)
+    exchange_accounts = models.ManyToManyField(ExchangeAccount)
+    is_default = models.BooleanField(
+        _('default exchange monitoring client configuration'),
+        db_index=True, blank=False, null=False, default=False)
 
 
 class MailSite(BorgSite):

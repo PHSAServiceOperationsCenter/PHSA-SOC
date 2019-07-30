@@ -449,8 +449,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         """
         tags = ''
 
-        if hasattr(self.subscription_obj, 'tags'):
-            for tag in tags.split(','):
+        if self.subscription_obj.tags:
+            for tag in self.subscription_obj.tags.split(','):
                 tags += '[{}]'.format(tag)
 
         tags = '[{}]{}'.format(socket.getfqdn(), tags)

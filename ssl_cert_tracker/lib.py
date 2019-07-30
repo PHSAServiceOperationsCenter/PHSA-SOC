@@ -15,12 +15,10 @@ library module for the ssl_certificates app
 :updated:    Oct. 30, 2018
 
 """
-import socket
-
 from enum import Enum
 from logging import getLogger
 from smtplib import SMTPConnectError
-from djqscsv import write_csv
+import socket
 
 from django.apps import apps
 from django.conf import settings
@@ -29,7 +27,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Now, Cast, Concat
 from django.utils import timezone
-
+from djqscsv import write_csv
 from templated_email import get_templated_mail
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -449,12 +447,16 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         we also prefix everything with a [DEBUG] tag if this is a
         DEBUG deployment and we always include a [$host name] tag
         """
-        tags = '[DEBUG]' if settings.DEBUG else ''
-        tags += '[{}]'.format(socket.getfqdn())
+        tags = ''
 
         if hasattr(self.subscription_obj, 'tags'):
             for tag in tags.split(','):
                 tags += '[{}]'.format(tag)
+
+        tags = '[{}]{}'.format(socket.getfqdn(), tags)
+
+        if settings.DEBUG:
+            tags = '[DEBUG]{}'.format(tags)
 
         return tags
 

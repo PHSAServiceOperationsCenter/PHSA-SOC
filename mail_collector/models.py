@@ -15,8 +15,11 @@ django models for the mail_collector app
 :updated:    may 24, 2019
 
 """
+from abc import abstractstaticmethod
+
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
@@ -94,6 +97,13 @@ class DomainAccount(BaseModel, models.Model):
 
         super().save(*args, **kwargs)
 
+    @staticmethod
+    def get_default():
+        """
+        get the default instance for this model
+        """
+        return DomainAccount.objects.filter(is_default=True).get()
+
     class Meta:
         app_label = 'mail_collector'
         constraints = [models.UniqueConstraint(
@@ -103,13 +113,25 @@ class DomainAccount(BaseModel, models.Model):
         verbose_name_plural = _('Domain Accounts')
 
 
-class ExchangeAccount(BaseModel, models.Model):
+class BaseEmail(BaseModel, models.Model):
     """
-    what Exchange calls 'the primary SMTP address'
+    base class for email addresses
     """
     smtp_address = models.EmailField(
         _('Exchange Account'), max_length=253, db_index=True, unique=True,
         blank=False, null=False)
+
+    def __str__(self):
+        return self.smtp_address
+
+    class Meta:
+        abstract = True
+
+
+class ExchangeAccount(BaseEmail, models.Model):
+    """
+    what Exchange calls 'the primary SMTP address'
+    """
     domain_account = models.ForeignKey(
         DomainAccount, db_index=True, blank=False, null=False,
         on_delete=models.PROTECT, verbose_name=_('Domain Account'))
@@ -119,21 +141,112 @@ class ExchangeAccount(BaseModel, models.Model):
     autodiscover_server = models.CharField(
         _('Exchange discovery server'), max_length=253, blank=True, null=True)
 
-    def __str__(self):
-        return self.smtp_address
-
     class Meta:
         app_label = 'mail_collector'
         verbose_name = _('Exchange Account')
         verbose_name_plural = _('Exchange Accounts')
 
 
+class WitnessEmail(BaseEmail, models.Model):
+    """
+    witness emails class
+    """
+    class Meta:
+        verbose_name = _('Witness Email Address')
+
+
 class ExchangeConfiguration(BaseModel, models.Model):
-    config_name = models.CharField(max_length=64)
-    exchange_accounts = models.ManyToManyField(ExchangeAccount)
+    """
+    exchange configuration objects
+    """
+    config_name = models.CharField(
+        _('name'), max_length=64, db_index=True, unique=True)
+    exchange_accounts = models.ManyToManyField(
+        ExchangeAccount, limit_choices_to={'enabled': True},
+        verbose_name=_('Exchange Accounts'))
     is_default = models.BooleanField(
         _('default exchange monitoring client configuration'),
         db_index=True, blank=False, null=False, default=False)
+    debug = models.BooleanField(
+        _('Debug'), default=False,
+        help_text=_('In debug mode the client will not clean up old messages'))
+    autorun = models.BooleanField(
+        _('Auto run'), default=True,
+        help_text=_(
+            'When enabled, the client will execute mail checks automatically'))
+    mail_check_period = models.DurationField(
+        _('Execute email check every'), default=timezone.timedelta(hours=1))
+    ascii_address = models.BooleanField(
+        _('Format internationalized DNS domains to ASCII'), default=True,
+        help_text=_('See https://tools.ietf.org/html/rfc5891 '))
+    utf8_address = models.BooleanField(
+        _('Allow UTF8 characters in the email address'), default=False)
+    check_mx = models.BooleanField(
+        _('Verify the domain part of the email address'), default=True)
+    check_mx_timeout = models.DurationField(
+        _('Timeout for verifying the domain part of the email address'),
+        default=timezone.timedelta(seconds=5))
+    min_wait_receive = models.DurationField(
+        _('Minimum waiting period before checking for a received message'),
+        default=timezone.timedelta(seconds=3))
+    backoff_factor = models.IntegerField(
+        _('Back-off factor for the waiting period before checking for'
+          ' a received message'), default=3)
+    max_wait_receive = models.DurationField(
+        _('Timeout while checking for a a received message'))
+    tags = models.TextField(
+        _('Optional tags for the email subject line'), blank=True, null=True)
+    email_subject = models.CharField(
+        _('Email Subject Line'), max_length=78,
+        default='exchange monitoring message')
+    witness_addresses = models.ManyToManyField(
+        WitnessEmail, limit_choices_to={'enabled': True},
+        verbose_name=_('CC the monitoring email messages to these addresses'))
+
+    def __str__(self):
+        return self.config_name
+
+    def clean(self):
+        """
+        only one model instance can be the default
+
+        look through all the instances and raise an error if there already
+        is a default domain account
+
+        also make sure there are no CRLF chars in the email subject
+        """
+        if self.email_subject:
+            self.email_subject = self.email_subject.\
+                replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
+
+        if not self.is_default:
+            return
+
+        if self._meta.model.objects.filter(is_default=True).exists():
+            raise ValidationError(
+                {'is_default':
+                 _('A default exchange client configuration already exists')})
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        need to call full_clean() here
+        """
+        try:
+            self.full_clean()
+        except ValidationError as error:
+            raise error
+
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def get_default():
+        """
+        return the default instance of this model
+        """
+        return ExchangeConfiguration.objects.filter(is_default=True).get()
+
+    class Meta:
+        verbose_name = _('Exchange Monitoring Client Configuration')
 
 
 class MailSite(BorgSite):

@@ -16,15 +16,108 @@ django admin forms for the mail_collector app
 
 """
 from django.contrib import admin
-
+from django.contrib.auth import get_user_model
+from django.forms.widgets import PasswordInput
+from django.utils.translation import gettext_lazy as _
 from rangefilter.filter import DateTimeRangeFilter
 
+from citrus_borg.admin import CitrusBorgBaseAdmin, BorgSiteAdmin
 from mail_collector.models import (
     MailBotLogEvent, MailBotMessage, MailHost, ExchangeServer,
-    ExchangeDatabase, MailSite, MailBetweenDomains,
+    ExchangeDatabase, MailSite, MailBetweenDomains, DomainAccount,
+    ExchangeAccount, WitnessEmail, ExchangeConfiguration,
 )
-from citrus_borg.admin import CitrusBorgBaseAdmin, BorgSiteAdmin
 from p_soc_auto_base.admin import BaseAdmin
+
+
+class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
+    """
+    base class for the admin forms used by the exchange client configuration
+    models
+    """
+    list_per_page = 50
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        overload
+        admin.ModelAdmin.formfield_for_foreignkey(
+            self, db_field, request, **kwargs)
+        """
+        if db_field.name in ['created_by', 'updated_by', ]:
+            kwargs['queryset'] = get_user_model().objects.\
+                filter(username=request.user.username)
+            kwargs['initial'] = kwargs['queryset'].get()
+
+        if db_field.name in ['domain_account', ]:
+            kwargs['queryset'] = DomainAccount.objects.filter(enabled=True)
+            kwargs['initial'] = DomainAccount.objects.filter(
+                is_default=True).get()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(DomainAccount)
+class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
+    """
+    admin forms for domain accounts
+    """
+    list_display_links = ('show_account',)
+    list_display = ('show_account', 'enabled', 'domain',
+                    'username',  'is_default', 'updated_on', 'updated_by')
+    list_editable = ('enabled', 'domain', 'username', 'is_default')
+    list_filter = ('enabled', 'domain')
+    search_fields = ('domain', 'username')
+    readonly_fields = ('show_account', 'created_by',
+                       'updated_by', 'created_on', 'updated_on')
+
+    def show_account(self, obj):
+        """
+        display field for windows domain accounts
+        """
+        return '%s\\%s' % (obj.domain, obj.username)
+    show_account.short_description = _('Domain Account')
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name in ['password']:
+            kwargs['widget'] = PasswordInput(render_value=True)
+
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
+@admin.register(ExchangeAccount)
+class ExchangeAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
+    """
+    admin forms for exchange accounts
+    """
+    list_display_links = ('smtp_address',)
+    list_display = ('smtp_address', 'enabled', 'domain_account',
+                    'exchange_autodiscover', 'updated_on', 'updated_by')
+    list_editable = ('enabled', 'domain_account', 'exchange_autodiscover')
+    list_filter = ('enabled', 'exchange_autodiscover',
+                   'domain_account__domain', 'domain_account__username')
+    search_fields = ('smtp_address', 'domain_account__domain',
+                     'domain_account__username')
+    readonly_fields = ('created_by',
+                       'updated_by', 'created_on', 'updated_on')
+
+
+@admin.register(WitnessEmail)
+class WitnessEmailAdmin(MailConfigAdminBase, admin.ModelAdmin):
+    """
+    admin forms for exchange accounts
+    """
+    list_display_links = ('smtp_address',)
+    list_display = ('smtp_address', 'enabled', 'updated_on', 'updated_by')
+    list_editable = ('enabled', )
+    list_filter = ('enabled', )
+    search_fields = ('smtp_address', )
+    readonly_fields = ('created_by',
+                       'updated_by', 'created_on', 'updated_on')
+
+
+@admin.register(ExchangeConfiguration)
+class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
+    pass
 
 
 class MailBotAdmin(BaseAdmin, admin.ModelAdmin):

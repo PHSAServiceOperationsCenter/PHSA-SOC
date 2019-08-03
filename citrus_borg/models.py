@@ -21,14 +21,14 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.db.models.deletion import SET_NULL
-from django.utils.timezone import now
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
-from p_soc_auto_base.models import BaseModel
-from orion_integration.orion import OrionClient
-from orion_integration.models import OrionNode
 from citrus_borg.dynamic_preferences_registry import get_preference
+from orion_integration.models import OrionNode
+from orion_integration.orion import OrionClient
+from p_soc_auto_base.models import BaseModel
 
 
 def get_uuid():

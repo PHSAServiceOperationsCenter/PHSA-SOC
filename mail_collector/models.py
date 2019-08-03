@@ -15,15 +15,13 @@ django models for the mail_collector app
 :updated:    may 24, 2019
 
 """
-from abc import abstractstaticmethod
-
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
-from p_soc_auto_base.models import BaseModel
+from p_soc_auto_base.models import BaseModel as _BaseModel
 
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -51,7 +49,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 
-class DomainAccount(BaseModel, models.Model):
+class DomainAccount(_BaseModel, models.Model):
     """
     domain accounts configuration
     """
@@ -72,15 +70,19 @@ class DomainAccount(BaseModel, models.Model):
 
     def clean(self):
         """
+        force the domain to uppercase
+
         only one model instance can be the default
 
         look through all the instances and raise an error if there already
         is a default domain account
         """
+        self.domain = self.domain.upper()
+
         if not self.is_default:
             return
 
-        if self._meta.model.objects.filter(is_default=True).exists():
+        if self._meta.model.objects.filter(is_default=True).exclude(id=self.id).exists():
             raise ValidationError(
                 {'is_default': _('A default domain account already exists')})
 
@@ -113,13 +115,14 @@ class DomainAccount(BaseModel, models.Model):
         verbose_name_plural = _('Domain Accounts')
 
 
-class BaseEmail(BaseModel, models.Model):
+class BaseEmail(_BaseModel, models.Model):
     """
     base class for email addresses
     """
     smtp_address = models.EmailField(
-        _('Exchange Account'), max_length=253, db_index=True, unique=True,
-        blank=False, null=False)
+        _('SMTP address'), max_length=253, db_index=True, unique=True,
+        blank=False, null=False,
+        help_text=_('Exchange Account'))
 
     def __str__(self):
         return self.smtp_address
@@ -155,7 +158,7 @@ class WitnessEmail(BaseEmail, models.Model):
         verbose_name = _('Witness Email Address')
 
 
-class ExchangeConfiguration(BaseModel, models.Model):
+class ExchangeConfiguration(_BaseModel, models.Model):
     """
     exchange configuration objects
     """

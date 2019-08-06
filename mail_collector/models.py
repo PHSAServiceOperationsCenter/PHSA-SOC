@@ -168,7 +168,7 @@ class ExchangeConfiguration(_BaseModel, models.Model):
         ExchangeAccount, limit_choices_to={'enabled': True},
         verbose_name=_('Exchange Accounts'))
     is_default = models.BooleanField(
-        _('default exchange monitoring client configuration'),
+        _('is default?'),
         db_index=True, blank=False, null=False, default=False)
     debug = models.BooleanField(
         _('Debug'), default=False,
@@ -178,33 +178,34 @@ class ExchangeConfiguration(_BaseModel, models.Model):
         help_text=_(
             'When enabled, the client will execute mail checks automatically'))
     mail_check_period = models.DurationField(
-        _('Execute email check every'), default=timezone.timedelta(hours=1))
+        _('check email every'), default=timezone.timedelta(hours=1))
     ascii_address = models.BooleanField(
-        _('Format internationalized DNS domains to ASCII'), default=True,
-        help_text=_('See https://tools.ietf.org/html/rfc5891 '))
+        _('Force ASCII MX'), default=True,
+        help_text=_('Format internationalized DNS domains to ASCII.'
+                    ' See https://tools.ietf.org/html/rfc5891 '))
     utf8_address = models.BooleanField(
-        _('Allow UTF8 characters in the email address'), default=False)
+        _('Allow UTF8 email address'), default=False)
     check_mx = models.BooleanField(
-        _('Verify the domain part of the email address'), default=True)
+        _('Verify MX connectivity'), default=True,
+        help_text=_('Ask the DNS server if the email domain is connectable'))
     check_mx_timeout = models.DurationField(
-        _('Timeout for verifying the domain part of the email address'),
-        default=timezone.timedelta(seconds=5))
+        _('Verify MX timeout'), default=timezone.timedelta(seconds=5))
     min_wait_receive = models.DurationField(
-        _('Minimum waiting period before checking for a received message'),
+        _('Wait before check receive'),
         default=timezone.timedelta(seconds=3))
     backoff_factor = models.IntegerField(
-        _('Back-off factor for the waiting period before checking for'
-          ' a received message'), default=3)
+        _('Back-off factor for check receive'), default=3)
     max_wait_receive = models.DurationField(
-        _('Timeout while checking for a a received message'))
+        _('Check receive timeout'),
+        default=timezone.timedelta(seconds=120))
     tags = models.TextField(
-        _('Optional tags for the email subject line'), blank=True, null=True)
+        _('Optional tags'), blank=True, null=True)
     email_subject = models.CharField(
-        _('Email Subject Line'), max_length=78,
+        _('Email Subject'), max_length=78,
         default='exchange monitoring message')
     witness_addresses = models.ManyToManyField(
-        WitnessEmail, limit_choices_to={'enabled': True},
-        verbose_name=_('CC the monitoring email messages to these addresses'))
+        WitnessEmail, limit_choices_to={'enabled': True}, blank=True,
+        verbose_name=_('Witness addresses'))
 
     def __str__(self):
         return self.config_name

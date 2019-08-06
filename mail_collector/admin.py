@@ -117,7 +117,71 @@ class WitnessEmailAdmin(MailConfigAdminBase, admin.ModelAdmin):
 
 @admin.register(ExchangeConfiguration)
 class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
-    pass
+    list_display_links = ('config_name',)
+    list_display = ('config_name', 'enabled', 'is_default', 'debug',
+                    'autorun', 'mail_check_period', 'ascii_address',
+                    'utf8_address',
+                    'check_mx', 'check_mx_timeout', 'email_subject',
+                    'count_exchange_accounts', 'count_witnesses', )
+    list_editable = ('enabled', 'is_default', 'debug', 'autorun',
+                     'mail_check_period',
+                     'ascii_address', 'utf8_address', 'check_mx',
+                     'check_mx_timeout', 'email_subject',)
+    list_filter = ('enabled', 'is_default')
+    search_fields = ('config_name',)
+    readonly_fields = ('created_by', 'updated_by', 'created_on', 'updated_on',
+                       'count_exchange_accounts', 'count_witnesses', )
+    filter_horizontal = ('exchange_accounts', 'witness_addresses')
+
+    fieldsets = (
+        ('Identification', {
+            'classes': ('extrapretty',),
+            'fields': (('config_name', 'enabled', 'is_default'), ),
+        }, ),
+        ('Runtime Configuration', {
+            'classes': ('extrapretty',),
+            'fields': (('debug',  'autorun', 'mail_check_period', ), ),
+        }, ),
+        ('Email Features', {
+            'classes': ('extrapretty', ),
+            'fields': (('ascii_address', 'utf8_address', 'check_mx', 'check_mx_timeout', ), ),
+        }, ),
+        ('Verification Timing', {
+            'classes': ('extrapretty',),
+            'fields': (('min_wait_receive', 'backoff_factor', 'max_wait_receive', ), ),
+        }, ),
+        ('Email Content', {
+            'classes': ('extrapretty',),
+            'fields': (('email_subject', ), ('tags', ), ),
+        }, ),
+        ('Email Addresses (+/-)', {
+            'classes': ('grp-collapse grp-open',),
+            'fields': (('exchange_accounts', ), ('witness_addresses', ), ),
+        }, ),
+        ('Notes (+/-)', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': (('notes', ), ),
+        }, ),
+        ('History (+/-)', {
+            'classes': ('grp-collapse grp-closed', ),
+            'fields': (('created_on', 'created_by', ),
+                       ('updated_on', 'updated_by', ),),
+        }, ),
+    )
+
+    def count_exchange_accounts(self, obj):
+        """
+        show a summary for the exchange accounts in the configuration
+        """
+        return obj.exchange_accounts.count()
+    count_exchange_accounts.short_description = _('# Exchange accounts')
+
+    def count_witnesses(self, obj):
+        """
+        show a summary of witness emails in the configuration
+        """
+        return obj.witness_addresses.count()
+    count_witnesses.short_description = _('# Witness addresses')
 
 
 class MailBotAdmin(BaseAdmin, admin.ModelAdmin):

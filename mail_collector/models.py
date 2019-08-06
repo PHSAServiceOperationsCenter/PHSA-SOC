@@ -257,6 +257,7 @@ class MailSite(BorgSite):
     """
     model for exchnage client sites
     """
+
     objects = MailSiteManager()
 
     class Meta:

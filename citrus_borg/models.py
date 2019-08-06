@@ -159,6 +159,10 @@ class WinlogbeatHost(BaseModel, models.Model):
         null=True, default=0,
         help_text=_(
             'Use the value in this field to query the Orion server'))
+    exchange_client_config = models.OneToOneField(
+        'mail_collector.ExchangeConfiguration',
+        blank=True, null=True, on_delete=models.SET_NULL,
+        db_index=True, verbose_name=_('Exchange client configuration'))
 
     @property
     @mark_safe

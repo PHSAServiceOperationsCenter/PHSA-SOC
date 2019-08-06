@@ -144,11 +144,13 @@ class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
         }, ),
         ('Email Features', {
             'classes': ('extrapretty', ),
-            'fields': (('ascii_address', 'utf8_address', 'check_mx', 'check_mx_timeout', ), ),
+            'fields': (('ascii_address', 'utf8_address',
+                        'check_mx', 'check_mx_timeout', ), ),
         }, ),
         ('Verification Timing', {
             'classes': ('extrapretty',),
-            'fields': (('min_wait_receive', 'backoff_factor', 'max_wait_receive', ), ),
+            'fields': (('min_wait_receive', 'backoff_factor',
+                        'max_wait_receive', ), ),
         }, ),
         ('Email Content', {
             'classes': ('extrapretty',),
@@ -220,6 +222,12 @@ class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
         """
         if db_field.name in ['site', ]:
             kwargs['queryset'] = MailSite.objects.filter(enabled=True)
+
+        if db_field.name in ['exchange_client_config', ]:
+            kwargs['queryset'] = ExchangeConfiguration.objects.filter(
+                enabled=True)
+            kwargs['initial'] = ExchangeConfiguration.objects.filter(
+                is_default=True).get()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

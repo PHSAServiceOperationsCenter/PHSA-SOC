@@ -12,7 +12,7 @@ django models for the mail_collector app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    jul. 7, 2019
+:updated:    aug. 7, 2019
 
 """
 from django.core.exceptions import ValidationError

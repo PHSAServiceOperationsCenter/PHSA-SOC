@@ -12,7 +12,7 @@ django admin forms for the mail_collector app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    may 30, 2019
+:updated:    aug. 7, 2019
 
 """
 from django.contrib import admin

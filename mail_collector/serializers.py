@@ -12,7 +12,7 @@ serialzers for the mail_collector app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    jul. 8, 2019
+:updated:    aug. 8, 2019
 
 """
 from rest_framework import serializers

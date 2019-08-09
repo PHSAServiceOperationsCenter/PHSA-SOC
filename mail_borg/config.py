@@ -17,15 +17,31 @@ configuration module for exchange monitoring borg bots
 """
 import collections
 import configparser
+import socket
 
+from requests import Session
 
 PASSWD = 'passwd'
 EMAILS = 'emails.txt'
 
 NOT_A_PASSWORD = 'not a password'
 
+
+WIN_EVENT_CFG = dict(
+    app_name='BorgExchangeMonitor',
+    log_type='Application',
+    evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
+    msg_dll=None)
+"""
+:var: WIN_EVENT_CFG:
+
+    contains the settings required for writing to the Windows event log
+    
+:vartype: ``dict``
+"""
+
 DEFAULTS = dict(autorun=False,
-                use_server_config=False,
+
                 debug=False,
                 domain='PHSABC',
                 username='svc_SOCmailbox',
@@ -35,10 +51,6 @@ DEFAULTS = dict(autorun=False,
                 email_addresses_file=EMAILS,
                 witness_addresses='',
                 email_subject='exchange monitoring message',
-                app_name='BorgExchangeMonitor',
-                log_type='Application',
-                evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
-                msg_dll=None,
                 mail_every_minutes=20,
                 force_ascii_email=True,
                 allow_utf8_email=False,
@@ -49,6 +61,51 @@ DEFAULTS = dict(autorun=False,
                 max_wait_receive=240,
                 site='noname',
                 tags='[default config]')
+
+INI_DEFAULTS = dict(use_cfg_srv=True,
+                    cfg_srv_ip='10.2.50.38',
+                    cfg_srv_port=8080,
+                    cfg_srv_conn_timeout=30,
+                    cfg_srv_read_timeout=120)
+
+
+"""
+use timedelta(seconds=pytimeparse.parse()).seconds() and seconds()/60 to
+deserialize the durations
+
+"""
+
+
+def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
+    """
+    there are some settings that cannot live on the automation server,
+    namely the ones telling the client how to connect to the server.
+
+    we keep them in an ini file in the same directory as the application
+    and if the ini file is not present, we fall back to the defaults in
+    :var:`<INI_DEFAULTS>`
+
+    :returns: ``dict`` with the basic configuration
+    """
+    base_configuration = dict()
+    config_parser = configparser.ConfigParser(
+        allow_no_value=True, empty_lines_in_values=False)
+    loaded = config_parser.read(config_file)
+    if not loaded:
+        base_configuration = dict(INI_DEFAULTS)
+        return base_configuration
+
+    base_configuration['use_cfg_server'] = config_parser.getboolean(
+        section, 'use_cfg_srv')
+    base_configuration['cfg_srv_ip'] = config_parser.get(section, 'cfg_srv_ip')
+    base_configuration['cfg_srv_port'] = config_parser.getint(
+        section, 'cfg_srv_port')
+    base_configuration['cfg_srv_conn_timeout'] = config_parser.getint(
+        section, 'cfg_srv_conn_timeout')
+    base_configuration['cfg_srv"read_timeout'] = config_parser.getint(
+        section, 'cfg_srv_read_timeout')
+
+    return base_configuration
 
 
 def load_config(config_file='mail_borg.ini', section='SITE'):

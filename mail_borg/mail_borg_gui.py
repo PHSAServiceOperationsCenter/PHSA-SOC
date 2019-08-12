@@ -24,7 +24,7 @@ from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
-    load_config, save_config, load_default_config, NOT_A_PASSWORD)
+    load_config, load_base_configuration)
 from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
@@ -35,6 +35,7 @@ def get_window():
     :returns: the main window for the program
     """
     config = load_config()
+    base_config = load_base_configuration()
 
     window = gui.Window(config.get('app_name'),
                         auto_size_buttons=True, use_default_focus=False)
@@ -55,11 +56,9 @@ def get_window():
     ]
 
     conf_labels_col = [
-        [gui.Text('Exchange Server Address', justification='left'), ],
+        [gui.Text('Configuration Server Address', justification='left'), ],
+        [gui.Text('Configuration Server Port', justification='left'), ],
         [gui.Text('Check Email Every', justification='left'), ],
-        [gui.Text('Domain:', justification='left'), ],
-        [gui.Text('User Name:', justification='left'), ],
-        [gui.Text('Password:', justification='left'), ],
         [gui.Text('Mail Subject', size=(None, 3), justification='left'), ],
         [gui.Text('Application Name:', justification='left'), ],
         [gui.Text('Verify Email MX Address Timeout:', justification='left'), ],
@@ -73,56 +72,59 @@ def get_window():
     ]
 
     conf_values_col = [
-        [gui.InputText(config.get('exchange_server'), key='exchange_server',
+        [gui.InputText(base_config.get('cfg_srv_ip'), key='cfg_srv_ip',
                        size=(32, 1), do_not_clear=True, enable_events=True), ],
-        [gui.Spin([i for i in range(1, 60)], key='mail_every_minutes',
-                  initial_value=config.get('mail_every_minutes'),
-                  size=(3, 1), enable_events=True),
+        [gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
+                       size=(32, 1), do_not_clear=True, enable_events=True), ],
+        [gui.Spin(
+            [i for i in range(1, 60)], key='mail_every_minutes',
+            initial_value=config.get(
+                'exchange_client_config').get('mail_check_period'),
+            size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
-        [gui.InputText(config.get('domain'), key='domain',
-                       size=(32, 1), do_not_clear=True, enable_events=True), ],
-        [gui.InputText(config.get('username'), key='username',
-                       size=(32, 1), do_not_clear=True, enable_events=True), ],
-        [gui.InputText(config.get('password'), key='password',
-                       size=(32, 1), do_not_clear=True, password_char='*',
-                       enable_events=True), ],
-
-        [gui.Multiline(config.get('email_subject'), key='email_subject',
-                       size=(32, 3), auto_size_text=True,
-                       do_not_clear=True,  enable_events=True), ],
-        [gui.InputText(config.get('app_name'), key='app_name', size=(32, 1),
-                       do_not_clear=True,  enable_events=True), ],
+        [gui.Multiline(config.get(
+            'exchange_client_config').get('email_subject'),
+            key='email_subject', size=(32, 3), auto_size_text=True,
+            do_not_clear=True,  enable_events=True), ],
         [gui.Spin([i for i in range(1, 20)], key='check_mx_timeout',
-                  initial_value=config.get('check_mx_timeout'),
-                  size=(3, 1), enable_events=True),
+                  initial_value=config.get(
+            'exchange_client_config').get('check_mx_timeout'),
+            size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin([i for i in range(1, 120)], key='min_wait_receive',
-                  initial_value=config.get('min_wait_receive'),
-                  size=(3, 1), enable_events=True),
+                  initial_value=config.get(
+            'exchange_client_config').get('min_wait_receive'),
+            size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin([i for i in range(1, 10)], key='step_wait_receive',
-                  initial_value=config.get('step_wait_receive'),
-                  size=(3, 1), enable_events=True), ],
+                  initial_value=config.get(
+            'exchange_client_config').get('backoff_factor'),
+            size=(3, 1), enable_events=True), ],
         [gui.Spin([i for i in range(1, 600)], key='max_wait_receive',
-                  initial_value=config.get('max_wait_receive'),
-                  size=(3, 1),  enable_events=True),
+                  initial_value=config.get(
+            'exchange_client_config').get('max_wait_receive'),
+            size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
-        [gui.InputText(config.get('site'), key='site', size=(32, 1),
-                       do_not_clear=True, enable_events=True), ],
-        [gui.Multiline(config.get('tags'), key='tags', size=(32, 3),
-                       auto_size_text=True, do_not_clear=True,
-                       enable_events=True), ], ]
+        [gui.InputText(config.get(
+            'exchange_client_config').get('site'), key='site', size=(32, 1),
+            do_not_clear=True, enable_events=True), ],
+        [gui.Multiline(config.get(
+            'exchange_client_config').get('tags'), key='tags', size=(32, 3),
+            auto_size_text=True, do_not_clear=True,
+            enable_events=True), ], ]
 
     conf_emails_col = [
-        [gui.Text('Mail Addresses:',  justification='left'), ],
-        [gui.Multiline(config.get('email_addresses'), key='email_addresses',
-                       size=(46, 22), auto_size_text=True,
-                       do_not_clear=True,  enable_events=True), ], ]
+        [gui.Text('Exchange Accounts:',  justification='left'), ],
+        [gui.Multiline(config.get(
+            'exchange_client_config').get('exchange_accounts'), key='email_addresses',
+            size=(46, 22), auto_size_text=True,
+            do_not_clear=True,  enable_events=True), ], ]
     conf_witness_col = [
         [gui.Text('Witness Addresses:', justification='left'), ],
-        [gui.Multiline(config.get('witness_addresses'), size=(46, 22),
-                       key='witness_addresses', auto_size_text=True,
-                       do_not_clear=True,  enable_events=True), ],
+        [gui.Multiline(config.get(
+            'exchange_client_config').get('witness_addresses'), size=(46, 22),
+            key='witness_addresses', auto_size_text=True,
+            do_not_clear=True,  enable_events=True), ],
     ]
 
     right_frame = [
@@ -134,20 +136,25 @@ def get_window():
          gui.Button('Use default configuration', key='reset_config',
                     disabled=False), ],
         [gui.Checkbox('Load Configuration from Server',
-                      default=config.get('use_server_config'),
+                      default=base_config.get('use_cfg_server'),
                       key='use_server_config', enable_events=True),
-         gui.Checkbox('Debug', default=config.get('debug'),
-                      key='debug', enable_events=True),
+         gui.Checkbox('Debug', default=config.get(
+             'exchange_client_config').get('debug'),
+            key='debug', enable_events=True),
          gui.Checkbox('Enable Auto-run on startup', key='autorun',
-                      default=config.get('autorun'),  enable_events=True),
+                      default=config.get(
+                          'exchange_client_config').get('autorun'),  enable_events=True),
          gui.Checkbox('Use ASCII form of email addresses',
-                      default=config.get('force_ascii_email'),
+                      default=config.get(
+                          'exchange_client_config').get('ascii_address'),
                       key='force_ascii_email',  enable_events=True),
          gui.Checkbox('Allow UTF-8 characters in email addresses',
-                      default=config.get('allow_utf8_email'),
+                      default=config.get(
+                          'exchange_client_config').get('utf8_email'),
                       key='allow_utf8_email', enable_events=True),
          gui.Checkbox('Verify email address domain for deliverability',
-                      default=config.get('check_email_mx'),
+                      default=config.get(
+                          'exchange_client_config').get('check_mx'),
                       key='check_email_mx', enable_events=True), ],
         [gui.Checkbox('Autodiscover the Exchange Server',
                       default=config.get('autodiscover'), key='autodiscover',

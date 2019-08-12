@@ -15,19 +15,32 @@ configuration module for exchange monitoring borg bots
 :updated:    may 14, 2019
 
 """
-import collections
 import configparser
+import json
 import socket
 
-from requests import Session
+import pytimeparse
 
-PASSWD = 'passwd'
-EMAILS = 'emails.txt'
+from requests import Session, urllib3
 
-NOT_A_PASSWORD = 'not a password'
+HTTP_PROTO = 'http'
+VERIFY_SSL = False
+SESSION = Session()
+"""
+:var SESSION: cached Session object to be reused by all Orion queries
 
+    this way we will take advantage of http connection pooling
 
-WIN_EVENT_CFG = dict(
+:vartype SESSION: `<request.Session.`
+"""
+
+SESSION.headers = {'Content-Type': 'application/json'}
+if not SESSION.verify:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+LOCAL_CONFIG = 'mail_borg.json'
+
+WIN_EVT_CFG = dict(
     app_name='BorgExchangeMonitor',
     log_type='Application',
     evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
@@ -36,31 +49,9 @@ WIN_EVENT_CFG = dict(
 :var: WIN_EVENT_CFG:
 
     contains the settings required for writing to the Windows event log
-    
+
 :vartype: ``dict``
 """
-
-DEFAULTS = dict(autorun=False,
-
-                debug=False,
-                domain='PHSABC',
-                username='svc_SOCmailbox',
-                autodiscover=True,
-                exchange_server=None,
-                password_file=PASSWD,
-                email_addresses_file=EMAILS,
-                witness_addresses='',
-                email_subject='exchange monitoring message',
-                mail_every_minutes=20,
-                force_ascii_email=True,
-                allow_utf8_email=False,
-                check_email_mx=True,
-                check_mx_timeout=5,
-                min_wait_receive=1,
-                step_wait_receive=2,
-                max_wait_receive=240,
-                site='noname',
-                tags='[default config]')
 
 INI_DEFAULTS = dict(use_cfg_srv=True,
                     cfg_srv_ip='10.2.50.38',
@@ -76,6 +67,17 @@ deserialize the durations
 """
 
 
+def parse_duration(duration, to_minutes=False):
+    """
+    take a json serialized duration coming 
+    """
+    duration = pytimeparse.parse(duration)
+    if to_minutes:
+        duration = duration / 60
+
+    return int(duration)
+
+
 def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
     """
     there are some settings that cannot live on the automation server,
@@ -88,15 +90,17 @@ def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
     :returns: ``dict`` with the basic configuration
     """
     base_configuration = dict()
+
     config_parser = configparser.ConfigParser(
         allow_no_value=True, empty_lines_in_values=False)
     loaded = config_parser.read(config_file)
+
     if not loaded:
         base_configuration = dict(INI_DEFAULTS)
         return base_configuration
 
     base_configuration['use_cfg_server'] = config_parser.getboolean(
-        section, 'use_cfg_srv')
+        section, 'use_cfg_server')
     base_configuration['cfg_srv_ip'] = config_parser.get(section, 'cfg_srv_ip')
     base_configuration['cfg_srv_port'] = config_parser.getint(
         section, 'cfg_srv_port')
@@ -108,161 +112,92 @@ def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
     return base_configuration
 
 
-def load_config(config_file='mail_borg.ini', section='SITE'):
+def load_config():
     """
     return the ``dict`` with the current configuration
     """
-    config = dict()
+    config = None
+    from_server = False
 
-    config_parser = configparser.ConfigParser(
-        allow_no_value=True, empty_lines_in_values=False)
-    loaded = config_parser.read(config_file)
+    base_config = load_base_configuration()
 
-    if not loaded:
-        config = dict(DEFAULTS)
+    if base_config.get('use_cfg_server'):
+        try:
+            config = get_config_from_server(base_config)
+        except:  # pylint: disable=bare-except
+            pass
 
-        # password and email addresses come from files
-        config['password'] = _get_password(
-            password_file=config.get('password_file'))
-        config.pop('password_file')
+        from_server = True
+        config['exchange_client_config']['mail_check_period'] = \
+            parse_duration(
+            config['exchange_client_config']['mail_check_period'],
+            to_minutes=True)
+        config['exchange_client_config']['check_mx_timeout'] = \
+            parse_duration(
+            config['exchange_client_config']['check_mx_timeout'])
+        config['exchange_client_config']['min_wait_receive'] = \
+            parse_duration(
+            config['exchange_client_config']['min_wait_receive'])
+        config['exchange_client_config']['max_wait_receive'] = \
+            parse_duration(
+            config['exchange_client_config']['max_wait_receive'])
 
-        config['email_addresses'] = _get_emails(
-            config.get('email_addresses_file'))
-        config.pop('email_addresses_file')
+    if config is None:
+        try:
+            config = get_config_from_file()
+        except Exception as err:
+            raise err
 
-        if config['use_server_config']:
-            return get_config_from_server()
-
-        return config
-
-    config['use_server_config'] = config_parser.getboolean(section,
-                                                           'use_server_config')
-
-    if config['use_server_config']:
-        return get_config_from_server()
-
-    config['debug'] = config_parser.getboolean(section, 'debug')
-    config['autorun'] = config_parser.getboolean(section, 'autorun')
-    config['domain'] = config_parser.get(section, 'domain')
-    config['username'] = config_parser.get(section, 'username')
-
-    config['autodiscover'] = config_parser.getboolean(section, 'autodiscover')
-    config['exchange_server'] = config_parser.get(section, 'exchange_server')
-
-    config['password'] = _get_password(
-        password_file=config_parser.get(section, 'password_file'))
-
-    config['email_addresses'] = _get_emails(config_parser.get(
-        section, 'email_addresses_file'))
-    config['witness_addresses'] = config_parser.get(
-        section, 'witness_addresses')
-
-    config['app_name'] = config_parser.get(section, 'app_name')
-    config['log_type'] = config_parser.get(section, 'log_type')
-    config['evt_log_key'] = config_parser.get(section, 'evt_log_key')
-
-    config['msg_dll'] = config_parser.get(section, 'msg_dll')
-
-    config['mail_every_minutes'] = config_parser.getint(
-        section, 'mail_every_minutes')
-    config['force_ascii_email'] = config_parser.getboolean(
-        section, 'force_ascii_email')
-    config['allow_utf8_email'] = config_parser.getboolean(
-        section, 'allow_utf8_email')
-    config['check_email_mx'] = config_parser.getboolean(
-        section, 'check_email_mx')
-    config['check_mx_timeout'] = config_parser.getint(
-        section, 'check_mx_timeout')
-    config['min_wait_receive'] = config_parser.getint(
-        section, 'min_wait_receive')
-    config['step_wait_receive'] = config_parser.getint(
-        section, 'step_wait_receive')
-    config['max_wait_receive'] = config_parser.getint(
-        section, 'max_wait_receive')
-
-    config['site'] = config_parser.get(section, 'site')
-    config['tags'] = config_parser.get(section, 'tags')
-
-    config['email_subject'] = config_parser.get(section, 'email_subject')
+    if from_server:
+        dump_config_to_file(config)
 
     return config
 
 
-def save_config(dict_config, config_file='mail_borg.ini'):
+def get_config_from_server(base_configuration):
     """
-    save configuration file
+    get the configuration from server
     """
+    rest_endpoint = 'mail_collector/api/get_config'
+    SESSION.verify = VERIFY_SSL
 
-    # password is a special case, we must save the password to a file,
-    # pop the password from the configuration dictionary (otherwise it will
-    # be saved in clear in a file thatmay end up in github),
-    # and save the file name to the configuration
-    dict_config['password_file'] = _set_passwd(dict_config.get('password'))
-    dict_config.pop('password')
+    response = SESSION.get(
+        '{}://{}:{}/{}/{}/'.format(
+            HTTP_PROTO, base_configuration.get('cfg_srv_ip'),
+            base_configuration.get('cfg_srv_port'), rest_endpoint,
+            socket.gethostname()),
+        timeout=(base_configuration.get('cfg_srv_conn_timeout'),
+                 base_configuration.get('cfg_srv_read_timeout')))
 
-    dict_config['email_addresses_file'] = _set_emails(
-        dict_config.get('email_addresses'))
-    dict_config.pop('email_addresses')
+    response.raise_for_status()
 
-    config_parser = configparser.ConfigParser(
-        allow_no_value=True, empty_lines_in_values=False)
-    config_parser.read_dict(
-        collections.OrderedDict(
-            [('SITE', dict_config)]), source='<collections.OrderedDict>')
-    with open(config_file, 'w') as file_handle:
-        config_parser.write(file_handle, space_around_delimiters=True)
+    return response.json()[0]
 
 
-def load_default_config():
+def get_config_from_file(json_file=LOCAL_CONFIG):
     """
-    load the default configuration
-    """
-    return load_config(config_file='default_mail_borg.ini', section='DEFAULT')
-
-
-def get_config_from_server():
-    """
-    return the configuration from the server
-    """
-    raise NotImplementedError('loading configuration from the server has'
-                              ' not yet been implemented')
-
-
-def _get_password(password_file=PASSWD):
-    """
-    absolutely not a safe way to deal with passwords but at least with
-    this we can keep the damned passwords from showing in the github history
-
-    mea culpa, mea culpa, mea maxima culpa
+    get the comfiguration from a local file
     """
     try:
-        with open(password_file, 'r') as fhandle:
-            passwd = fhandle.readline()
-    except FileNotFoundError:
-        _set_passwd(NOT_A_PASSWORD)
-        return NOT_A_PASSWORD
+        with open(json_file, 'r') as local_config:
+            config = json.load(local_config)
 
-    return passwd
+        local_config.close()
+    except Exception as err:
+        raise err
+
+    return config
 
 
-def _get_emails(emails_file=EMAILS):
+def dump_config_to_file(config, json_file=LOCAL_CONFIG):
+    """
+    dump the latest config from servetr to the local file. we need it in
+    case the server becomes unavailable
+    """
     try:
-        with open(emails_file, 'r') as file_handle:
-            emails = file_handle.read().replace('\n', ',')
-        return emails
-    except FileNotFoundError:
-        return ''
+        with open(json_file, 'w') as local_config:
+            json.dump(config, local_config, indent=4)
 
-
-def _set_passwd(password, password_file=PASSWD):
-    with open(password_file, 'w') as file_handle:
-        file_handle.write(password)
-
-    return password_file
-
-
-def _set_emails(emails, emails_file=EMAILS):
-    with open(emails_file, 'w') as file_handle:
-        file_handle.write(emails.replace(',', '\n'))
-
-    return emails_file
+        local_config.close()
+    except Exception as err:
+        raise err

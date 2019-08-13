@@ -24,7 +24,7 @@ from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
-    load_config, load_base_configuration)
+    load_config, load_base_configuration, WIN_EVT_CFG)
 from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
@@ -37,11 +37,11 @@ def get_window():
     config = load_config()
     base_config = load_base_configuration()
 
-    window = gui.Window(config.get('app_name'),
+    window = gui.Window(WIN_EVT_CFG.get('app_name'),
                         auto_size_buttons=True, use_default_focus=False)
 
     control_frame = [
-        [gui.Text('',  key='status', size=(116, 1),  justification='left'),
+        [gui.Text('',  key='status', size=(134, 1),  justification='left'),
          gui.Button('Run Mail Check Now', key='mailcheck'),
             gui.Button('Start Auto-run', key='run'),
             gui.Button('Pause Auto-run', key='pause'), ],
@@ -49,48 +49,61 @@ def get_window():
     ]
 
     output_frame = [
-        [gui.Multiline(size=(181, 10), key='output', disabled=True,
+        [gui.Multiline(size=(200, 10), key='output', disabled=True,
                        autoscroll=True, enable_events=True), ],
-        [gui.Text('', size=(142, 1)),
+        [gui.Text('', size=(161, 1)),
          gui.Button('Clear execution data', key='clear'), ]
     ]
 
     conf_labels_col = [
-        [gui.Text('Configuration Server Address', justification='left'), ],
-        [gui.Text('Configuration Server Port', justification='left'), ],
-        [gui.Text('Check Email Every', justification='left'), ],
-        [gui.Text('Mail Subject', size=(None, 3), justification='left'), ],
-        [gui.Text('Application Name:', justification='left'), ],
-        [gui.Text('Verify Email MX Address Timeout:', justification='left'), ],
+        [gui.Checkbox(
+            'Enable Auto-run on startup', key='autorun',  enable_events=True,
+            default=config.get('exchange_client_config').get('autorun')), ],
+
+        [gui.Checkbox('Debug', default=config.get(
+            'exchange_client_config').get('debug'),
+            key='debug', enable_events=True),
+            gui.Checkbox('Verify MX deliverability',
+                         default=config.get(
+                             'exchange_client_config').get('check_mx'),
+                         key='check_email_mx', enable_events=True), ],
+        [gui.Text('Verify MX Timeout:', justification='left'), ],
         [gui.Text('Minimum Wait for Check Receive:', justification='left'), ],
         [gui.Text('Multiply Factor for Check Receive:',
                   justification='left'), ],
         [gui.Text('Check Receive Timeout:', justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
-        [gui.Text('Additional Email Tags:',
-                  size=(None, 3), justification='left'), ],
+        [gui.Text('Mail Subject:', size=(None, 1), justification='left'), ],
+        [gui.Multiline(config.get(
+            'exchange_client_config').get('email_subject'),
+            key='email_subject', size=(32, 3), auto_size_text=True,
+            do_not_clear=True,  enable_events=True), ],
     ]
 
     conf_values_col = [
-        [gui.InputText(base_config.get('cfg_srv_ip'), key='cfg_srv_ip',
-                       size=(32, 1), do_not_clear=True, enable_events=True), ],
-        [gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
-                       size=(32, 1), do_not_clear=True, enable_events=True), ],
-        [gui.Spin(
+        [gui.Text('Check Email Every', justification='left'),
+         gui.Spin(
             [i for i in range(1, 60)], key='mail_every_minutes',
             initial_value=config.get(
                 'exchange_client_config').get('mail_check_period'),
             size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
-        [gui.Multiline(config.get(
-            'exchange_client_config').get('email_subject'),
-            key='email_subject', size=(32, 3), auto_size_text=True,
-            do_not_clear=True,  enable_events=True), ],
+
+
+        [gui.Checkbox('Force ASCII email',
+                      default=config.get(
+                          'exchange_client_config').get('ascii_address'),
+                      key='force_ascii_email',  enable_events=True),
+         gui.Checkbox('UTF-8 addresses',
+                      default=config.get(
+                          'exchange_client_config').get('utf8_email'),
+                      key='allow_utf8_email', enable_events=True), ],
         [gui.Spin([i for i in range(1, 20)], key='check_mx_timeout',
                   initial_value=config.get(
             'exchange_client_config').get('check_mx_timeout'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
+
         [gui.Spin([i for i in range(1, 120)], key='min_wait_receive',
                   initial_value=config.get(
             'exchange_client_config').get('min_wait_receive'),
@@ -105,9 +118,10 @@ def get_window():
             'exchange_client_config').get('max_wait_receive'),
             size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
-        [gui.InputText(config.get(
-            'exchange_client_config').get('site'), key='site', size=(32, 1),
-            do_not_clear=True, enable_events=True), ],
+        [gui.InputText(config.get('site').get('site'), key='site', size=(32, 1),
+                       do_not_clear=True, enable_events=True), ],
+        [gui.Text('Additional Email Tags:',
+                  size=(None, 1), justification='left'), ],
         [gui.Multiline(config.get(
             'exchange_client_config').get('tags'), key='tags', size=(32, 3),
             auto_size_text=True, do_not_clear=True,
@@ -115,64 +129,78 @@ def get_window():
 
     conf_emails_col = [
         [gui.Text('Exchange Accounts:',  justification='left'), ],
-        [gui.Multiline(config.get(
-            'exchange_client_config').get('exchange_accounts'), key='email_addresses',
-            size=(46, 22), auto_size_text=True,
-            do_not_clear=True,  enable_events=True), ], ]
-    conf_witness_col = [
+        [gui.Table(
+            [[None, None, None, None, None, None]],
+            headings=['domain', 'username', 'password', 'smtp',
+                      'autodiscover', 'autodiscover server'], key='exc_accs',
+            auto_size_columns=True, display_row_numbers=True
+        ), ],
         [gui.Text('Witness Addresses:', justification='left'), ],
         [gui.Multiline(config.get(
-            'exchange_client_config').get('witness_addresses'), size=(46, 22),
+            'exchange_client_config').get('witness_addresses'), size=(96, 1),
             key='witness_addresses', auto_size_text=True,
-            do_not_clear=True,  enable_events=True), ],
-    ]
+            do_not_clear=True,  enable_events=True), ], ]
 
-    right_frame = [
-        [gui.Text('', size=(96, 1)),
-         gui.Button('Save configuration to file', key='save_config',
-                    disabled=True),
-         gui.Button('Reload configuration from file', key='reload_config',
-                    disabled=True),
-         gui.Button('Use default configuration', key='reset_config',
-                    disabled=False), ],
-        [gui.Checkbox('Load Configuration from Server',
+    config_frame = [
+        [gui.Checkbox('Load Config from Server',
                       default=base_config.get('use_cfg_server'),
                       key='use_server_config', enable_events=True),
-         gui.Checkbox('Debug', default=config.get(
-             'exchange_client_config').get('debug'),
-            key='debug', enable_events=True),
-         gui.Checkbox('Enable Auto-run on startup', key='autorun',
-                      default=config.get(
-                          'exchange_client_config').get('autorun'),  enable_events=True),
-         gui.Checkbox('Use ASCII form of email addresses',
-                      default=config.get(
-                          'exchange_client_config').get('ascii_address'),
-                      key='force_ascii_email',  enable_events=True),
-         gui.Checkbox('Allow UTF-8 characters in email addresses',
-                      default=config.get(
-                          'exchange_client_config').get('utf8_email'),
-                      key='allow_utf8_email', enable_events=True),
-         gui.Checkbox('Verify email address domain for deliverability',
-                      default=config.get(
-                          'exchange_client_config').get('check_mx'),
-                      key='check_email_mx', enable_events=True), ],
-        [gui.Checkbox('Autodiscover the Exchange Server',
-                      default=config.get('autodiscover'), key='autodiscover',
-                      enable_events=True), ],
+         gui.Text('Config Server Address', justification='left'),
+         gui.InputText(base_config.get('cfg_srv_ip'), key='cfg_srv_ip',
+                       size=(12, 1), do_not_clear=True, enable_events=True),
+         gui.Text('Config Server Port', justification='left'),
+         gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
+                       size=(12, 1), do_not_clear=True, enable_events=True),
+         gui.Text('', size=(72, 1)),
+         gui.Button('Save configu', key='save_config',
+                    disabled=True),
+
+         gui.Button('Use default config', key='reset_config',
+                    disabled=False), ],
+    ]
+
+    mail_check_frame = [
+        [gui.Text(
+            ('Changes to any of these values are not preserved across'
+             ' startups. If you want to persist these changes, please'
+             ' edit the configuration on the server and reload it here')),
+         gui.Button('Refresh config', key='reload_config',
+                    disabled=False), ],
         [gui.Column(conf_labels_col), gui.Column(conf_values_col),
-         gui.Column(conf_emails_col), gui.Column(conf_witness_col), ], ]
+         gui.Column(conf_emails_col), ],
+    ]
 
     layout = [
         [gui.Frame('Control',
                    control_frame, title_color='darkblue', font='Any 12'), ],
-        [gui.Frame('Configuration',
-                   right_frame, title_color='darkblue', font='Any 12'), ],
+        [gui.Frame('Local configuration',
+                   config_frame, title_color='darkblue', font='Any 12'), ],
+        [gui.Frame('Exchange verification configuration',
+                   mail_check_frame, title_color='darkblue', font='Any 12'), ],
         [gui.Frame('Output',
                    output_frame, title_color='darkblue', font='Any 12'), ]]
 
     window.Layout(layout).Finalize()
 
     return config, window
+
+
+def _accounts_to_list(accounts, window):
+    listed_accounts = []
+
+    for account in accounts:
+
+        _account = []
+        _account.append(account.get('domain_account').get('domain'))
+        _account.append(account.get('domain_account').get('username'))
+        _account.append(account.get('domain_account').get('password'))
+        _account.append(account.get('smtp_address'))
+        _account.append(account.get('exchange_autodiscover'))
+        _account.append(account.get('autodiscover_server'))
+
+        listed_accounts.append(_account)
+
+    window.FindElement('exc_accs').Update(listed_accounts)
 
 
 def next_run_in(next_run_at):
@@ -223,7 +251,7 @@ def do_save_config(config):
     for key, val in config.items():
         items.append((key, val))
 
-    save_config(dict_config=collections.OrderedDict(items))
+    # save_config(dict_config=collections.OrderedDict(items))
 
 
 def do_reload_config(window):
@@ -242,20 +270,22 @@ def do_reload_config(window):
     return config
 
 
-def do_reset_config(window):
-    """
-    reload the default configuration
-
-    """
-    config = load_default_config()
-    for key, value in config.items():
-        if key in ['log_type', 'evt_log_key', 'msg_dll']:
-            # these are not configurable from the GUI
-            continue
-        window.FindElement(key).Update(value)
-
-    _dirty_window(window)
-    return config
+#=========================================================================
+# def do_reset_config(window):
+#     """
+#     reload the default configuration
+#
+#     """
+#     config = load_default_config()
+#     for key, value in config.items():
+#         if key in ['log_type', 'evt_log_key', 'msg_dll']:
+#             # these are not configurable from the GUI
+#             continue
+#         window.FindElement(key).Update(value)
+#
+#     _dirty_window(window)
+#     return config
+#=========================================================================
 
 
 def _set_autorun(window):
@@ -290,21 +320,6 @@ def _do_clear(window):
     window.FindElement('output').Update(disabled=True)
 
 
-def _check_password(window):
-    if window.FindElement('password').Get() in [NOT_A_PASSWORD]:
-        window.FindElement('password').Update(
-            gui.PopupGetText(
-                'Please enter the password for the domain account.\n'
-                ' Do not forget to save the configuration after providing'
-                ' the passwword',
-                'Invalid or Unconfigured Password Detected!',
-                password_char='*'))
-        _dirty_window(window)
-        return True
-
-    return False
-
-
 def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
@@ -319,7 +334,10 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
     update_window_queue = Queue(maxsize=500)
     config, window = get_window()
-    config_is_dirty = _check_password(window)
+    _accounts_to_list(config.get(
+        'exchange_client_config').get('exchange_accounts'), window)
+
+    config_is_dirty = False
     next_run_at = datetime.now() + \
         timedelta(minutes=int(window.FindElement('mail_every_minutes').Get()))
     autorun = _set_autorun(window)
@@ -407,7 +425,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         if event == 'reset_config':
             config_is_dirty = True
-            config = do_reset_config(window)
+            #config = do_reset_config(window)
 
         if event == 'reload_config':
             config_is_dirty = False

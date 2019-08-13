@@ -69,7 +69,7 @@ deserialize the durations
 
 def parse_duration(duration, to_minutes=False):
     """
-    take a json serialized duration coming 
+    take a json serialized duration coming
     """
     duration = pytimeparse.parse(duration)
     if to_minutes:

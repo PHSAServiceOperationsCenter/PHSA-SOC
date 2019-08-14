@@ -105,7 +105,7 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
         # and only connections in this function
         return None
 
-    exchange_server = instance.mail_account.split(',')[1].split('-')[1]
+    exchange_server = instance.mail_account.split('-')[1]
 
     try:
         exchange_server = ExchangeServer.objects.get(
@@ -130,8 +130,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     if instance.event.event_type not in ['send', 'receive']:
         return None
 
-    exchange_server, database = instance.event.mail_account.split(',')[1].\
-        split('-')[1:3]
+    exchange_server, database = instance.event.mail_account.split('-')[1:3]
     database = database.split('@')[0]
     last_updated_from_node_id = instance.event.source_host.orion_id
 

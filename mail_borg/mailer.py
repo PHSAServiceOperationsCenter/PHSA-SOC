@@ -166,15 +166,19 @@ def validate_email_to_ascii(email_address, logger=None, **config):
 
     try:
         email_dict = validate_email(
-            email_address, allow_smtputf8=config.get('allow_utf8_email'),
-            timeout=config.get('check_mx_timeout'),
+            email_address,
+            allow_smtputf8=config.get('exchange_client_config').
+            get('utf8_address'),
+            timeout=config.get('exchange_client_config').
+            get('check_mx_timeout'),
             allow_empty_local=False,
-            check_deliverability=config.get('check_email_mx'))
+            check_deliverability=config.get('exchange_client_config').
+            get('check_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
         logger.warn(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
-                 account='{}, {}'.format(_get_account(config), email_address),
+                 account=email_address,
                  message='bad email address %s' % email_address,
                  exception=str(error))
         )
@@ -216,49 +220,50 @@ def get_accounts(logger=None, **config):
     if logger is None:
         logger = _Logger()
 
-    emails = []
-    for email_address in config.get('email_addresses').split(','):
-        emails.append(validate_email_to_ascii(
-            email_address, logger=logger, **config))
-
-    if not emails:
-        logger.err(
-            dict(type='configuration', status='FAIL',
-                 wm_id=config.get('wm_id'),
-                 account=_get_account(config),
-                 message='no valid email addresses found in %s'
-                 % config.get('email_addresses'))
-        )
-        return None
-
-    credentials = ServiceAccount(
-        username='{}\\{}'.format(config.get('domain'), config.get('username')),
-        password=config.get('password'))
-
-    exc_config = None
-    if not config.get('autodiscover', True):
-        exc_config = Configuration(server=config.get('exchange_server'),
-                                   credentials=credentials)
-
     accounts = []
-    for email in emails:
+
+    exchange_accounts = config.get('exchange_client_config').\
+        get('exchange_accounts')
+    for exchange_account in exchange_accounts:
+        if not validate_email_to_ascii(
+                exchange_account.get('smtp_address'), logger=logger, **config):
+            continue
+
+        credentials = ServiceAccount(
+            username='{}\\{}'.format(
+                exchange_account.get('domain_account').get('domain'),
+                exchange_account.get('domain_account').get('username')),
+            password=exchange_account.get('domain_account').get('password')
+        )
+
+        exc_config = None
+        if not exchange_account.get('exchange_autodiscover', True):
+            exc_config = Configuration(
+                server=exchange_account.get('autodiscover_server'),
+                credentials=credentials)
+
         try:
-            if config.get('autodiscover', True):
-                accounts.append(Account(primary_smtp_address=email,
-                                        credentials=credentials,
-                                        autodiscover=True,
-                                        access_type=DELEGATE))
+            if exchange_account.get('exchange_autodiscover', True):
+                accounts.append(Account(
+                    primary_smtp_address=exchange_account.get('smtp_address'),
+                    credentials=credentials,
+                    autodiscover=True,
+                    access_type=DELEGATE))
             else:
-                accounts.append(Account(primary_smtp_address=email,
-                                        config=exc_config,
-                                        autodiscover=False,
-                                        access_type=DELEGATE))
+                accounts.append(Account(
+                    primary_smtp_address=exchange_account.get('smtp_address'),
+                    config=exc_config,
+                    autodiscover=False,
+                    access_type=DELEGATE))
             logger.info(
                 dict(type='connection', status='PASS',
                      wm_id=config.get('wm_id'),
                      message='connected to exchange',
                      account='{}\\{}, {}'.format(
-                         config.get('domain'), config.get('username'), email))
+                         exchange_account.get('domain_account').get('domain'),
+                         exchange_account.get(
+                             'domain_account').get('username'),
+                         exchange_account.get('smtp_address')))
             )
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
@@ -266,7 +271,10 @@ def get_accounts(logger=None, **config):
                      wm_id=config.get('wm_id'),
                      message='cannot connect to exchange',
                      account='{}\\{}, {}'.format(
-                         config.get('domain'), config.get('username'), email),
+                         exchange_account.get('domain_account').get('domain'),
+                         exchange_account.get(
+                             'domain_account').get('username'),
+                         exchange_account.get('smtp_address')),
                      exeption=str(err))
             )
 
@@ -274,8 +282,10 @@ def get_accounts(logger=None, **config):
         logger.err(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
-                 message='no valid exchange account found',
-                 account=_get_account(config))
+                 account=None,
+                 message=(
+                     'no valid exchange account found in config for bot %s'
+                     % config.get('host_name')))
         )
         return None
 
@@ -379,7 +389,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         self.config = config
 
         self.config['wm_id'] = '{}+{}+{}'.format(
-            self.config.get('site', 'no_site'), socket.gethostname(),
+            self.config.get('site').get('site', 'no_site'),
+            socket.gethostname(),
             datetime.now(tz=get_localzone())
         )
 
@@ -417,20 +428,10 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             self._abort = True
             return
 
-        self.emails = []
-        for email_address in self.config.get('email_addresses').split(','):
-            self.emails.append(
-                validate_email_to_ascii(
-                    email_address, logger=self.logger, **config))
-
-        if not self.emails:
-            # again, stop wasting time
-            return
-
         self.witness_emails = []
-        if self.config.get('witness_addresses'):
-            for witness_address in \
-                    self.config.get('witness_addresses').split(','):
+        if self.config.get('exchange_client_config').get('witness_addresses'):
+            for witness_address in self.config.get('exchange_client_config').\
+                    get('witness_addresses'):
                 self.witness_emails.append(
                     validate_email_to_ascii(
                         witness_address, logger=self.logger, **config))
@@ -458,13 +459,16 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         """
         add various tags as well as site and bot info to the email subject
         """
-        tags = '[DEBUG]' if self.config.get('debug') else ''
-        tags += '[{}]'.format(
-            self.config.get('site')) if self.config.get('site') else ''
-        tags = '{}[{}]'.format(tags, socket.gethostname())
+        tags = '{}[{}][{}]{}'.format(
+            self.config.get('exchange_client_config').get('tags'),
+            self.config.get('site').get('site'), socket.gethostname(),
+            self.config.get('exchange_client_config').get('email_subject')
+        )
 
-        return '{}{}'.format(tags, self.config.get('email_subject',
-                                                   'email canary'))
+        if self.config.get('exchange_client_config').get('debug'):
+            tags = '[DEBUG]{}'.format(tags)
+
+        return tags
 
     def send(self):
         """
@@ -485,10 +489,12 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             self.logger.err(
                 dict(type='create', status='FAIL',
                      wm_id=self.config.get('wm_id'),
-                     account=_get_account(self.config),
-                     message='could not create any messages')
+                     account=None,
+                     message=(
+                         'could not create any messages with the'
+                         ' config of bot %s' % self.config.get('host_name')))
             )
-            return
+            return 'nothing to send'
 
         # we need to purge the messages that we cannot send, thus
         messages = self.messages
@@ -499,9 +505,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.info(
                     dict(type='send', status='PASS',
                          wm_id=self.config.get('wm_id'),
-                         account='{}, {}'.format(
-                             _get_account(self.config),
-                             message.account_for_message.primary_smtp_address),
+                         account=message.account_for_message.
+                         primary_smtp_address,
                          message='monitoring message sent',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -514,9 +519,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='send', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account='{}, {}'.format(
-                             _get_account(self.config),
-                             message.account_for_message.primary_smtp_address),
+                         account=message.account_for_message.
+                         primary_smtp_address,
                          message='cannot send message',
                          message_uuid=str(message.message_uuid),
                          from_email=message.
@@ -530,7 +534,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         self._sent = True
 
-    def verify_receive(self, min_wait_receive=None, step_wait_receive=None,
+        return 'sent'
+
+    def verify_receive(self, min_wait_receive=None, step_wait_receive=None,  # pylint: disable=too-many-branches
                        max_wait_receive=None):
         """
         look for all the messages that were sent in the inbox of each account
@@ -560,13 +566,19 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         """
         if min_wait_receive is None:
-            min_wait_receive = int(self.config.get('min_wait_receive'))
+            min_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('min_wait_receive'))
 
         if step_wait_receive is None:
-            step_wait_receive = int(self.config.get('step_wait_receive'))
+            step_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('backoff_factor'))
 
         if max_wait_receive is None:
-            max_wait_receive = int(self.config.get('max_wait_receive'))
+            max_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('max_wait_receive'))
 
         class ErrorMessageNotFound(Exception):
             """
@@ -603,9 +615,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='receive', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account='{}, {}'.format(
-                             _get_account(self.config),
-                             message.account_for_message.primary_smtp_address),
+                         account=message.account_for_message.
+                         primary_smtp_address,
                          message=(
                              'too many objects opened on the server,'
                              ' please increase the Check Receive Timeout'
@@ -624,9 +635,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             except Exception as error:  # pylint: disable=broad-except
                 self.logger.err(dict(type='receive', status='FAIL',
                                      wm_id=self.config.get('wm_id'),
-                                     account='{}, {}'.format(
-                                         _get_account(self.config),
-                                         message.account_for_message.primary_smtp_address),
+                                     account=message.
+                                     account_for_message.primary_smtp_address,
                                      message=(
                                          'unexpected error while checking for'
                                          ' message received'),
@@ -644,9 +654,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.info(
                     dict(type='receive', status='PASS',
                          wm_id=self.config.get('wm_id'),
-                         account='{}, {}'.format(
-                             _get_account(self.config),
-                             message.account_for_message.primary_smtp_address),
+                         account=message.account_for_message.
+                         primary_smtp_address,
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_address=found_message.author.
@@ -664,9 +673,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                               message.message.to_recipients]))
                 )
 
-                if not self.config.get(
-                        'debug',
-                        load_config().get('debug', True)):
+                if not self.config.get('exchange_client_config').get('debug'):
                     found_message.delete()
 
                 continue
@@ -675,9 +682,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 self.logger.err(
                     dict(type='receive', status='FAIL',
                          wm_id=self.config.get('wm_id'),
-                         account='{}, {}'.format(
-                             _get_account(self.config),
-                             message.account_for_message.primary_smtp_address),
+                         account=message.account_for_message.
+                         primary_smtp_address,
                          message='message received',
                          message_uuid=str(message.message_uuid),
                          from_email=message.

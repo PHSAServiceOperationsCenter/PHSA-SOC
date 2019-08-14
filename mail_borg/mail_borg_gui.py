@@ -24,7 +24,7 @@ from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
-    load_config, load_base_configuration, WIN_EVT_CFG)
+    load_config, load_base_configuration, WIN_EVT_CFG, HTTP_PROTO)
 from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
@@ -41,7 +41,7 @@ def get_window():
                         auto_size_buttons=True, use_default_focus=False)
 
     control_frame = [
-        [gui.Text('',  key='status', size=(134, 1),  justification='left'),
+        [gui.Text('',  key='status', size=(133, 1),  justification='left'),
          gui.Button('Run Mail Check Now', key='mailcheck'),
             gui.Button('Start Auto-run', key='run'),
             gui.Button('Pause Auto-run', key='pause'), ],
@@ -119,7 +119,7 @@ def get_window():
             size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
         [gui.InputText(config.get('site').get('site'), key='site', size=(32, 1),
-                       do_not_clear=True, enable_events=True), ],
+                       disabled=True), ],
         [gui.Text('Additional Email Tags:',
                   size=(None, 1), justification='left'), ],
         [gui.Multiline(config.get(
@@ -151,11 +151,12 @@ def get_window():
          gui.Text('Config Server Port', justification='left'),
          gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
                        size=(12, 1), do_not_clear=True, enable_events=True),
-         gui.Text('', size=(72, 1)),
-         gui.Button('Save configu', key='save_config',
+         gui.Text('', size=(47, 1)),
+         gui.Button('Save local config', key='save_config',
                     disabled=True),
-
-         gui.Button('Use default config', key='reset_config',
+         gui.Button('Reset local config', key='reset_config',
+                    disabled=False),
+         gui.Button('Refresh config from server', key='reload_config',
                     disabled=False), ],
     ]
 
@@ -163,9 +164,14 @@ def get_window():
         [gui.Text(
             ('Changes to any of these values are not preserved across'
              ' startups. If you want to persist these changes, please'
-             ' edit the configuration on the server and reload it here')),
-         gui.Button('Refresh config', key='reload_config',
-                    disabled=False), ],
+             ' edit the configuration on the server'
+             ' ({}://{}:{}/admin/mail_collector/mailhost/?q={})'
+             ' and reload it here'.
+             format(HTTP_PROTO,
+                    base_config.get('cfg_srv_ip'),
+                    base_config.get('cfg_srv_port'),
+                    config.get('host_name')))),
+         ],
         [gui.Column(conf_labels_col), gui.Column(conf_values_col),
          gui.Column(conf_emails_col), ],
     ]

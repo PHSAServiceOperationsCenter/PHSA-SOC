@@ -15,6 +15,7 @@ configuration module for exchange monitoring borg bots
 :updated:    may 14, 2019
 
 """
+import collections
 import configparser
 import json
 import socket
@@ -78,7 +79,8 @@ def parse_duration(duration, to_minutes=False):
     return int(duration)
 
 
-def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
+def load_base_configuration(current_base_configuration=None,
+                            config_file='mail_borg.ini', section='SITE'):
     """
     there are some settings that cannot live on the automation server,
     namely the ones telling the client how to connect to the server.
@@ -89,6 +91,9 @@ def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
 
     :returns: ``dict`` with the basic configuration
     """
+    if current_base_configuration:
+        return dict(current_base_configuration)
+
     base_configuration = dict()
 
     config_parser = configparser.ConfigParser(
@@ -99,8 +104,8 @@ def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
         base_configuration = dict(INI_DEFAULTS)
         return base_configuration
 
-    base_configuration['use_cfg_server'] = config_parser.getboolean(
-        section, 'use_cfg_server')
+    base_configuration['use_cfg_srv'] = config_parser.getboolean(
+        section, 'use_cfg_srv')
     base_configuration['cfg_srv_ip'] = config_parser.get(section, 'cfg_srv_ip')
     base_configuration['cfg_srv_port'] = config_parser.getint(
         section, 'cfg_srv_port')
@@ -112,14 +117,39 @@ def load_base_configuration(config_file='mail_borg.ini', section='SITE'):
     return base_configuration
 
 
-def load_config():
+def reset_base_configuration():
+    """
+    reset the local configuration to default
+    """
+    base_config = dict(INI_DEFAULTS)
+
+    save_base_configuration(base_config)
+
+    return base_config
+
+
+def save_base_configuration(dict_config, config_file='mail_borg.ini'):
+    """
+    save the local configuration
+    """
+    config_parser = configparser.ConfigParser(
+        allow_no_value=True, empty_lines_in_values=False)
+    config_parser.read_dict(
+        collections.OrderedDict(
+            [('SITE', dict_config)]), source='<collections.OrderedDict>')
+
+    with open(config_file, 'w') as file_handle:
+        config_parser.write(file_handle, space_around_delimiters=True)
+
+
+def load_config(current_base_config=None):
     """
     return the ``dict`` with the current configuration
     """
     config = None
     from_server = False
 
-    base_config = load_base_configuration()
+    base_config = load_base_configuration(current_base_config)
 
     if base_config.get('use_cfg_server'):
         try:

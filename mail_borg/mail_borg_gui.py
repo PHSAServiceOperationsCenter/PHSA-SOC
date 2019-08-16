@@ -24,7 +24,9 @@ from queue import Queue
 
 import PySimpleGUI as gui
 from config import (
-    load_config, load_base_configuration, WIN_EVT_CFG)
+    load_config, load_base_configuration, WIN_EVT_CFG, HTTP_PROTO,
+    save_base_configuration, reset_base_configuration, INI_DEFAULTS,
+)
 from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
@@ -41,7 +43,7 @@ def get_window():
                         auto_size_buttons=True, use_default_focus=False)
 
     control_frame = [
-        [gui.Text('',  key='status', size=(134, 1),  justification='left'),
+        [gui.Text('',  key='status', size=(133, 1),  justification='left'),
          gui.Button('Run Mail Check Now', key='mailcheck'),
             gui.Button('Start Auto-run', key='run'),
             gui.Button('Pause Auto-run', key='pause'), ],
@@ -59,14 +61,15 @@ def get_window():
         [gui.Checkbox(
             'Enable Auto-run on startup', key='autorun',  enable_events=True,
             default=config.get('exchange_client_config').get('autorun')), ],
-
-        [gui.Checkbox('Debug', default=config.get(
-            'exchange_client_config').get('debug'),
-            key='debug', enable_events=True),
-            gui.Checkbox('Verify MX deliverability',
-                         default=config.get(
-                             'exchange_client_config').get('check_mx'),
-                         key='check_email_mx', enable_events=True), ],
+        [
+            gui.Checkbox(
+                'Debug', default=config.get('exchange_client_config').get('debug'),
+                key='debug', enable_events=True),
+            gui.Checkbox(
+                'Verify MX deliverability',
+                default=config.get('exchange_client_config').get('check_mx'),
+                key='check_mx', enable_events=True),
+        ],
         [gui.Text('Verify MX Timeout:', justification='left'), ],
         [gui.Text('Minimum Wait for Check Receive:', justification='left'), ],
         [gui.Text('Multiply Factor for Check Receive:',
@@ -83,43 +86,44 @@ def get_window():
     conf_values_col = [
         [gui.Text('Check Email Every', justification='left'),
          gui.Spin(
-            [i for i in range(1, 60)], key='mail_every_minutes',
+            [i for i in range(1, 60)], key='mail_check_period',
             initial_value=config.get(
                 'exchange_client_config').get('mail_check_period'),
             size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
-
-
-        [gui.Checkbox('Force ASCII email',
-                      default=config.get(
-                          'exchange_client_config').get('ascii_address'),
-                      key='force_ascii_email',  enable_events=True),
-         gui.Checkbox('UTF-8 addresses',
-                      default=config.get(
-                          'exchange_client_config').get('utf8_email'),
-                      key='allow_utf8_email', enable_events=True), ],
-        [gui.Spin([i for i in range(1, 20)], key='check_mx_timeout',
-                  initial_value=config.get(
-            'exchange_client_config').get('check_mx_timeout'),
+        [gui.Checkbox(
+            'Force ASCII email',
+            default=config.get('exchange_client_config').get('ascii_address'),
+            key='ascii_address',  enable_events=True),
+         gui.Checkbox(
+             'UTF-8 addresses',
+            default=config.get('exchange_client_config').get('utf8_email'),
+            key='utf8_email', enable_events=True), ],
+        [gui.Spin(
+            [i for i in range(1, 20)], key='check_mx_timeout',
+            initial_value=config.get(
+                'exchange_client_config').get('check_mx_timeout'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
-
-        [gui.Spin([i for i in range(1, 120)], key='min_wait_receive',
-                  initial_value=config.get(
-            'exchange_client_config').get('min_wait_receive'),
+        [gui.Spin(
+            [i for i in range(1, 120)], key='min_wait_receive',
+            initial_value=config.get(
+                'exchange_client_config').get('min_wait_receive'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
-        [gui.Spin([i for i in range(1, 10)], key='step_wait_receive',
-                  initial_value=config.get(
-            'exchange_client_config').get('backoff_factor'),
+        [gui.Spin(
+            [i for i in range(1, 10)], key='backoff_factor',
+            initial_value=config.get(
+                'exchange_client_config').get('backoff_factor'),
             size=(3, 1), enable_events=True), ],
-        [gui.Spin([i for i in range(1, 600)], key='max_wait_receive',
-                  initial_value=config.get(
-            'exchange_client_config').get('max_wait_receive'),
+        [gui.Spin(
+            [i for i in range(1, 600)], key='max_wait_receive',
+            initial_value=config.get(
+                'exchange_client_config').get('max_wait_receive'),
             size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
         [gui.InputText(config.get('site').get('site'), key='site', size=(32, 1),
-                       do_not_clear=True, enable_events=True), ],
+                       disabled=True), ],
         [gui.Text('Additional Email Tags:',
                   size=(None, 1), justification='left'), ],
         [gui.Multiline(config.get(
@@ -133,41 +137,57 @@ def get_window():
             [[None, None, None, None, None, None]],
             headings=['domain', 'username', 'password', 'smtp',
                       'autodiscover', 'autodiscover server'], key='exc_accs',
-            auto_size_columns=True, display_row_numbers=True
-        ), ],
+            auto_size_columns=True, display_row_numbers=True), ],
         [gui.Text('Witness Addresses:', justification='left'), ],
-        [gui.Multiline(config.get(
-            'exchange_client_config').get('witness_addresses'), size=(96, 1),
-            key='witness_addresses', auto_size_text=True,
-            do_not_clear=True,  enable_events=True), ], ]
+        [gui.Multiline(
+            ', '.join(
+                config.get('exchange_client_config').get('witness_addresses')),
+            size=(96, 1), key='witness_addresses', disabled=True), ], ]
 
     config_frame = [
         [gui.Checkbox('Load Config from Server',
-                      default=base_config.get('use_cfg_server'),
-                      key='use_server_config', enable_events=True),
+                      default=base_config.get('use_cfg_srv'),
+                      key='use_cfg_srv', enable_events=True),
          gui.Text('Config Server Address', justification='left'),
          gui.InputText(base_config.get('cfg_srv_ip'), key='cfg_srv_ip',
                        size=(12, 1), do_not_clear=True, enable_events=True),
          gui.Text('Config Server Port', justification='left'),
          gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
-                       size=(12, 1), do_not_clear=True, enable_events=True),
-         gui.Text('', size=(72, 1)),
-         gui.Button('Save configu', key='save_config',
+                       size=(5, 1), do_not_clear=True, enable_events=True),
+         gui.Text('Connection timeout'),
+         gui.InputText(base_config.get('cfg_srv_conn_timeout'),
+                       key='cfg_srv_conn_timeout', size=(3, 1),
+                       do_not_clear=True, enable_events=True),
+         gui.Text('Read timeout'),
+         gui.InputText(base_config.get('cfg_srv_read_timeout'),
+                       key='cfg_srv_read_timeout', size=(3, 1),
+                       do_not_clear=True, enable_events=True),
+         gui.Text('', size=(39, 1)),
+         gui.Button('Save local config', key='save_config',
                     disabled=True),
-
-         gui.Button('Use default config', key='reset_config',
+         gui.Button('Reset local config', key='reset_config',
                     disabled=False), ],
+        [gui.Text(config.get('load_status'))],
     ]
 
     mail_check_frame = [
-        [gui.Text(
-            ('Changes to any of these values are not preserved across'
-             ' startups. If you want to persist these changes, please'
-             ' edit the configuration on the server and reload it here')),
-         gui.Button('Refresh config', key='reload_config',
-                    disabled=False), ],
-        [gui.Column(conf_labels_col), gui.Column(conf_values_col),
-         gui.Column(conf_emails_col), ],
+        [
+            gui.Text(
+                ('Configuration changes are not preserved across startups.'
+                 ' To persist changes, edit the configuration on the server at')),
+            gui.InputText(
+                '{}://{}:{}/admin/mail_collector/mailhost/?q={}'.format(
+                    HTTP_PROTO, base_config.get('cfg_srv_ip'),
+                    base_config.get('cfg_srv_port'), config.get('host_name')),
+                disabled=True, size=(80, 1), key='bot_cfg_url'),
+            gui.Button('Refresh config from server', key='reload_config',
+                       disabled=False),
+        ],
+        [
+            gui.Column(conf_labels_col),
+            gui.Column(conf_values_col),
+            gui.Column(conf_emails_col),
+        ],
     ]
 
     layout = [
@@ -182,10 +202,10 @@ def get_window():
 
     window.Layout(layout).Finalize()
 
-    return config, window
+    return base_config, config, window
 
 
-def _accounts_to_list(accounts, window):
+def _accounts_to_table(accounts, window):
     listed_accounts = []
 
     for account in accounts:
@@ -224,6 +244,10 @@ def mail_check(config, window, update_window_queue):
 
     """
     window.FindElement('mailcheck').Update(disabled=True)
+    if not window.FindElement('run').disabled:
+        window.FindElement('run').Update(disabled=True)
+    if not window.FindElement('pause').disabled:
+        window.FindElement('pause').Update(disabled=True)
     window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update(
@@ -241,51 +265,108 @@ def _mail_check(update_window_queue, config):
     witness_messages.verify_receive()
 
 
-def do_save_config(config):
+def do_save_config(window):
     """
     save modified configuration to the ini file and, later on,
     to both the configuration file and the server
 
     """
-    items = []
-    for key, val in config.items():
-        items.append((key, val))
+    items = [
+        ('use_cfg_srv', bool(window.FindElement('use_cfg_srv').Get())),
+        ('cfg_srv_ip', window.FindElement('cfg_srv_ip').Get()),
+        ('cfg_srv_port', int(window.FindElement('cfg_srv_port').Get())),
+        ('cfg_srv_conn_timeout',
+         int(window.FindElement('cfg_srv_conn_timeout').Get())),
+        ('cfg_srv_read_timeout',
+         int(window.FindElement('cfg_srv_read_timeout').Get())),
+    ]
 
-    # save_config(dict_config=collections.OrderedDict(items))
+    save_base_configuration(dict_config=collections.OrderedDict(items))
+
+
+def _witness_emails_from_list(witness_emails, window):
+    window.FindElement('witness_addresses').Update(', '.join(witness_emails))
 
 
 def do_reload_config(window):
     """
     abandon live configuration and reload from file or server
     """
-    config = load_config()
-    for key, value in config.items():
-        if key in ['log_type', 'evt_log_key', 'msg_dll']:
-            # these are not configurable from the GUI
-            continue
-        window.FindElement(key).Update(value)
+    items = [
+        ('use_cfg_srv', bool(window.FindElement('use_cfg_srv').Get())),
+        ('cfg_srv_ip', window.FindElement('cfg_srv_ip').Get()),
+        ('cfg_srv_port', int(window.FindElement('cfg_srv_port').Get())),
+        ('cfg_srv_conn_timeout',
+         int(window.FindElement('cfg_srv_conn_timeout').Get())),
+        ('cfg_srv_read_timeout',
+         int(window.FindElement('cfg_srv_read_timeout').Get())),
+    ]
 
-    window.FindElement('reload_config').Update(disabled=True)
+    current_base_config = collections.OrderedDict(items)
+    config = load_config(current_base_config=current_base_config)
+
+    window.FindElement('bot_cfg_url').Update(
+        '{}://{}:{}/admin/mail_collector/mailhost/?q={}'.format(
+            HTTP_PROTO, current_base_config.get('cfg_srv_ip'),
+            current_base_config.get('cfg_srv_port'),
+            config.get('host_name'))
+    )
+    window.FindElement('autorun').Update(
+        config.get('exchange_client_config').get('autorun')
+    )
+    window.FindElement('debug').Update(
+        config.get('exchange_client_config').get('debug')
+    )
+    window.FindElement('check_mx').Update(
+        config.get('exchange_client_config').get('check_mx')
+    )
+    window.FindElement('email_subject').Update(
+        config.get('exchange_client_config').get('email_subject')
+    )
+    window.FindElement('mail_check_period').Update(
+        config.get('exchange_client_config').get('mail_check_period')
+    )
+    window.FindElement('ascii_address').Update(
+        config.get('exchange_client_config').get('ascii_address')
+    )
+    window.FindElement('utf8_email').Update(
+        config.get('exchange_client_config').get('utf8_email')
+    )
+    window.FindElement('check_mx_timeout').Update(
+        config.get('exchange_client_config').get('check_mx_timeout')
+    )
+    window.FindElement('min_wait_receive').Update(
+        config.get('exchange_client_config').get('min_wait_receive')
+    )
+    window.FindElement('backoff_factor').Update(
+        config.get('exchange_client_config').get('backoff_factor')
+    )
+    window.FindElement('max_wait_receive').Update(
+        config.get('exchange_client_config').get('max_wait_receive')
+    )
+    window.FindElement('site').Update(config.get('site').get('site'))
+    window.FindElement('tags').Update(
+        config.get('exchange_client_config').get('tags')
+    )
+    _accounts_to_table(config.get(
+        'exchange_client_config').get('exchange_accounts'), window)
+    _witness_emails_from_list(
+        config.get('exchange_client_config').get('witness_addresses'), window)
 
     return config
 
 
-#=========================================================================
-# def do_reset_config(window):
-#     """
-#     reload the default configuration
-#
-#     """
-#     config = load_default_config()
-#     for key, value in config.items():
-#         if key in ['log_type', 'evt_log_key', 'msg_dll']:
-#             # these are not configurable from the GUI
-#             continue
-#         window.FindElement(key).Update(value)
-#
-#     _dirty_window(window)
-#     return config
-#=========================================================================
+def do_reset_config(window):
+    """
+    reload the default configuration
+
+    """
+    reset_base_configuration()
+    base_config = load_base_configuration()
+    for key, value in base_config.items():
+        window.FindElement(key).Update(value)
+
+    return base_config
 
 
 def _set_autorun(window):
@@ -311,7 +392,6 @@ def _do_pause(window):
 def _dirty_window(window):
     window.FindElement('save_config').Update(disabled=False)
     window.FindElement('reset_config').Update(disabled=False)
-    window.FindElement('reload_config').Update(disabled=False)
 
 
 def _do_clear(window):
@@ -324,22 +404,17 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
     """
-    editable = ['use_server_config', 'debug', 'autorun', 'mail_every_minutes',
-                'domain', 'username', 'password', 'email_addresses',
-                'witness_addresses', 'email_subject', 'app_name',
-                'check_mx_timeout', 'min_wait_receive', 'step_wait_receive',
-                'max_wait_receive', 'site', 'tags', 'autodiscover',
-                'exchange_server', 'force_ascii_email', 'allow_utf8_email',
-                'check_email_mx', ]
+    editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
+                'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']
 
     update_window_queue = Queue(maxsize=500)
-    config, window = get_window()
-    _accounts_to_list(config.get(
-        'exchange_client_config').get('exchange_accounts'), window)
+    base_config, config, window = get_window()
+    _accounts_to_table(
+        config.get('exchange_client_config').get('exchange_accounts'), window)
 
     config_is_dirty = False
     next_run_at = datetime.now() + \
-        timedelta(minutes=int(window.FindElement('mail_every_minutes').Get()))
+        timedelta(minutes=int(window.FindElement('mail_check_period').Get()))
     autorun = _set_autorun(window)
 
     while True:
@@ -380,55 +455,49 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                 window.FindElement('output').Update('\nmail check complete\n',
                                                     append=True)
                 window.FindElement('output').Update(disabled=True)
-                window.FindElement('mailcheck').Update(disabled=False)
+                window.FindElement('mail_check_period').Update(disabled=False)
                 if autorun:
+                    window.FindElement('pause').Update(disabled=False)
                     next_run_at = datetime.now() + \
                         timedelta(minutes=int(window.FindElement(
-                            'mail_every_minutes').Get()))
+                            'mail_check_period').Get()))
                     window.FindElement('status').Update(
                         'next mail check run in {}'.format(
                             next_run_in(next_run_at))
                     )
                 else:
+                    window.FindElement('run').Update(disabled=False)
                     window.FindElement('status').Update(
                         'automated mail check execution is paused')
 
         if event in editable:
             config_is_dirty = True
-            if not isinstance(config[event], (bool, int)):
-                config[event] = window.FindElement(event).Get().\
+            if not isinstance(base_config[event], (bool, int)):
+                base_config[event] = window.FindElement(event).Get().\
                     replace('\n', '')
             else:
-                config[event] = window.FindElement(event).Get()
+                base_config[event] = window.FindElement(event).Get()
 
             _dirty_window(window)
 
             if event == 'autorun':
                 autorun = _set_autorun(window)
 
-            if event == 'mail_every_minutes':
+            if event == 'mail_check_period':
                 next_run_at = datetime.now() + \
                     timedelta(
                         minutes=int(
-                            window.FindElement('mail_every_minutes').Get()))
-
-            if event == 'autodiscover':
-                if not window.FindElement('autodiscover').Get():
-                    if window.FindElement('exchange_server').\
-                            Get() in ['', 'None']:
-                        gui.PopupOK(
-                            'you must enter the name of the exchange server')
+                            window.FindElement('mail_check_period').Get()))
 
         if event == 'save_config':
+            do_save_config(base_config)
+            window.FindElement('save_config').Update(disabled=True)
             config_is_dirty = False
-            do_save_config(config)
 
         if event == 'reset_config':
-            config_is_dirty = True
-            #config = do_reset_config(window)
+            base_config = do_reset_config(window)
 
         if event == 'reload_config':
-            config_is_dirty = False
             config = do_reload_config(window)
 
         if event == 'clear':
@@ -444,14 +513,14 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                            update_window_queue=update_window_queue)
                 next_run_at = datetime.now() + \
                     timedelta(minutes=int(window.FindElement(
-                        'mail_every_minutes').Get()))
+                        'mail_check_period').Get()))
 
         if event == 'mailcheck':
             mail_check(config=config, window=window,
                        update_window_queue=update_window_queue)
             next_run_at = datetime.now() + \
                 timedelta(minutes=int(window.FindElement(
-                    'mail_every_minutes').Get()))
+                    'mail_check_period').Get()))
 
             if autorun:
                 window.FindElement('run').Update(disabled=True)

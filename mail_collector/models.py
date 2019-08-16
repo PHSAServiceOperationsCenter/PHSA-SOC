@@ -82,7 +82,8 @@ class DomainAccount(_BaseModel, models.Model):
         if not self.is_default:
             return
 
-        if self._meta.model.objects.filter(is_default=True).exclude(id=self.id).exists():
+        if self._meta.model.objects.filter(is_default=True).\
+                exclude(pk=self.pk).exists():
             raise ValidationError(
                 {'is_default': _('A default domain account already exists')})
 
@@ -226,7 +227,8 @@ class ExchangeConfiguration(_BaseModel, models.Model):
         if not self.is_default:
             return
 
-        if self._meta.model.objects.filter(is_default=True).exists():
+        if self._meta.model.objects.filter(is_default=True).\
+                exclude(pk=self.pk).exists():
             raise ValidationError(
                 {'is_default':
                  _('A default exchange client configuration already exists')})

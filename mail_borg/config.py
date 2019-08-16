@@ -111,7 +111,7 @@ def load_base_configuration(current_base_configuration=None,
         section, 'cfg_srv_port')
     base_configuration['cfg_srv_conn_timeout'] = config_parser.getint(
         section, 'cfg_srv_conn_timeout')
-    base_configuration['cfg_srv"read_timeout'] = config_parser.getint(
+    base_configuration['cfg_srv_read_timeout'] = config_parser.getint(
         section, 'cfg_srv_read_timeout')
 
     return base_configuration
@@ -146,18 +146,31 @@ def load_config(current_base_config=None):
     """
     return the ``dict`` with the current configuration
     """
-    config = None
+    config = dict()
     from_server = False
 
     base_config = load_base_configuration(current_base_config)
 
-    if base_config.get('use_cfg_server'):
+    if not base_config.get('use_cfg_srv'):
         try:
-            config = get_config_from_server(base_config)
-        except:  # pylint: disable=bare-except
-            pass
+            config = get_config_from_file()
+            config['load_status'] = (
+                'Using cached configuration.')
+        except Exception as file_err:  # pylint: disable=broad-except
+            config['load_status'] = (
+                'Cannot load local configuration.'
+                'Local error: %s' % str(file_err))
 
+    try:
+        config = get_config_from_server(base_config)
+    except Exception as err:  # pylint: disable=broad-except
+        config = None
+
+    if config:
         from_server = True
+        config['load_status'] = (
+            'Loaded configuration %s from server'
+            % config['exchange_client_config']['config_name'])
         config['exchange_client_config']['mail_check_period'] = \
             parse_duration(
             config['exchange_client_config']['mail_check_period'],
@@ -172,11 +185,16 @@ def load_config(current_base_config=None):
             parse_duration(
             config['exchange_client_config']['max_wait_receive'])
 
-    if config is None:
+    else:
         try:
             config = get_config_from_file()
-        except Exception as err:
-            raise err
+            config['load_status'] = (
+                'Loaded cached configuration. Server error: %s' % str(err))
+        except Exception as file_err:
+            config['load_status'] = (
+                'Cannot load a configuration.'
+                ' Server error: %s. Local error: %s' % (str(err),
+                                                        str(file_err)))
 
     if from_server:
         dump_config_to_file(config)

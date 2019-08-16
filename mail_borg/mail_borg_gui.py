@@ -153,12 +153,21 @@ def get_window():
                        size=(12, 1), do_not_clear=True, enable_events=True),
          gui.Text('Config Server Port', justification='left'),
          gui.InputText(base_config.get('cfg_srv_port'), key='cfg_srv_port',
-                       size=(12, 1), do_not_clear=True, enable_events=True),
-         gui.Text('', size=(68, 1)),
+                       size=(5, 1), do_not_clear=True, enable_events=True),
+         gui.Text('Connection timeout'),
+         gui.InputText(base_config.get('cfg_srv_conn_timeout'),
+                       key='cfg_srv_conn_timeout', size=(3, 1),
+                       do_not_clear=True, enable_events=True),
+         gui.Text('Read timeout'),
+         gui.InputText(base_config.get('cfg_srv_read_timeout'),
+                       key='cfg_srv_read_timeout', size=(3, 1),
+                       do_not_clear=True, enable_events=True),
+         gui.Text('', size=(39, 1)),
          gui.Button('Save local config', key='save_config',
                     disabled=True),
          gui.Button('Reset local config', key='reset_config',
                     disabled=False), ],
+        [gui.Text(config.get('load_status'))],
     ]
 
     mail_check_frame = [
@@ -256,16 +265,21 @@ def _mail_check(update_window_queue, config):
     witness_messages.verify_receive()
 
 
-def do_save_config(base_config):
+def do_save_config(window):
     """
     save modified configuration to the ini file and, later on,
     to both the configuration file and the server
 
     """
-    items = []
-    for key, val in base_config.items():
-        if key in INI_DEFAULTS.keys():
-            items.append((key, val))
+    items = [
+        ('use_cfg_srv', bool(window.FindElement('use_cfg_srv').Get())),
+        ('cfg_srv_ip', window.FindElement('cfg_srv_ip').Get()),
+        ('cfg_srv_port', int(window.FindElement('cfg_srv_port').Get())),
+        ('cfg_srv_conn_timeout',
+         int(window.FindElement('cfg_srv_conn_timeout').Get())),
+        ('cfg_srv_read_timeout',
+         int(window.FindElement('cfg_srv_read_timeout').Get())),
+    ]
 
     save_base_configuration(dict_config=collections.OrderedDict(items))
 
@@ -278,9 +292,15 @@ def do_reload_config(window):
     """
     abandon live configuration and reload from file or server
     """
-    items = []
-    for key in INI_DEFAULTS.keys():
-        items.append((key, window.FindElement(key).Get()))
+    items = [
+        ('use_cfg_srv', bool(window.FindElement('use_cfg_srv').Get())),
+        ('cfg_srv_ip', window.FindElement('cfg_srv_ip').Get()),
+        ('cfg_srv_port', int(window.FindElement('cfg_srv_port').Get())),
+        ('cfg_srv_conn_timeout',
+         int(window.FindElement('cfg_srv_conn_timeout').Get())),
+        ('cfg_srv_read_timeout',
+         int(window.FindElement('cfg_srv_read_timeout').Get())),
+    ]
 
     current_base_config = collections.OrderedDict(items)
     config = load_config(current_base_config=current_base_config)
@@ -303,7 +323,7 @@ def do_reload_config(window):
     window.FindElement('email_subject').Update(
         config.get('exchange_client_config').get('email_subject')
     )
-    window.FindElement('mail_chek_period').Update(
+    window.FindElement('mail_check_period').Update(
         config.get('exchange_client_config').get('mail_check_period')
     )
     window.FindElement('ascii_address').Update(
@@ -333,27 +353,20 @@ def do_reload_config(window):
     _witness_emails_from_list(
         config.get('exchange_client_config').get('witness_addresses'), window)
 
-    window.FindElement('reload_config').Update(disabled=True)
-
     return config
 
 
-#=========================================================================
-# def do_reset_config(window):
-#     """
-#     reload the default configuration
-#
-#     """
-#     config = load_default_config()
-#     for key, value in config.items():
-#         if key in ['log_type', 'evt_log_key', 'msg_dll']:
-#             # these are not configurable from the GUI
-#             continue
-#         window.FindElement(key).Update(value)
-#
-#     _dirty_window(window)
-#     return config
-#=========================================================================
+def do_reset_config(window):
+    """
+    reload the default configuration
+
+    """
+    reset_base_configuration()
+    base_config = load_base_configuration()
+    for key, value in base_config.items():
+        window.FindElement(key).Update(value)
+
+    return base_config
 
 
 def _set_autorun(window):
@@ -391,7 +404,8 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
     """
-    editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port']
+    editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
+                'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']
 
     update_window_queue = Queue(maxsize=500)
     base_config, config, window = get_window()
@@ -475,21 +489,13 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                         minutes=int(
                             window.FindElement('mail_check_period').Get()))
 
-            if event == 'autodiscover':
-                if not window.FindElement('autodiscover').Get():
-                    if window.FindElement('exchange_server').\
-                            Get() in ['', 'None']:
-                        gui.PopupOK(
-                            'you must enter the name of the exchange server')
-
         if event == 'save_config':
             do_save_config(base_config)
             window.FindElement('save_config').Update(disabled=True)
             config_is_dirty = False
 
         if event == 'reset_config':
-            #config = do_reset_config(window)
-            config_is_dirty = True
+            base_config = do_reset_config(window)
 
         if event == 'reload_config':
             config = do_reload_config(window)

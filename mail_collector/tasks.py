@@ -19,16 +19,14 @@ from smtplib import SMTPConnectError
 
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
-
 from django.utils import timezone
 
-
+from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.models import WinlogbeatHost
-from citrus_borg.dynamic_preferences_registry import get_preference
-
 from mail_collector import exceptions, models, lib, queries
 from p_soc_auto_base import utils as base_utils
+
 
 LOGGER = get_task_logger(__name__)
 
@@ -142,7 +140,7 @@ def raise_failed_event_by_mail(event_pk):
 
 
 @shared_task(queue='mail_collector')
-def expire_events(data_source, moment=None):
+def expire_events(moment=None):
     """
     expire and/or delete events
 
@@ -172,20 +170,25 @@ def expire_events(data_source, moment=None):
         LOGGER.error(error)
         raise error
 
-    try:
-        queryset = base_utils.get_base_queryset(
-            data_source, event_registered_on__lte=moment)
-    except Exception as error:
-        LOGGER.error(error)
-        raise error
-
-    count, operation = queryset.update(is_expired=True), 'expired'
+    count_expired = models.MailBotLogEvent.objects.filter(
+        event_registered_on__lte=moment).update(is_expired=True)
 
     if get_preference('exchange__delete_expired'):
-        count, operation = queryset.all().delete(), 'deleted'
+        count_deleted_messages = models.MailBotMessage.objects.filter(
+            event__is_expired=True).all().delete()
 
-    return '{} {} older than {:%c} have been {}'.format(
-        count, queryset.model._meta.verbose_name_plural, moment, operation)
+        count_deleted_events = models.MailBotLogEvent.objects.filter(
+            is_expired=True).all().delete()
+
+        return (
+            'expired %s exchange events, deleted %s exchange message events'
+            ' and %s other exchange events' % (
+                count_expired,
+                count_deleted_messages,
+                count_deleted_events + count_deleted_messages)
+        )
+
+    return 'expired %s exchange log events' % count_expired
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,

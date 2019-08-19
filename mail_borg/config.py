@@ -150,8 +150,6 @@ def load_config(current_base_config=None):
     from_server = False
 
     base_config = load_base_configuration(current_base_config)
-    import ipdb
-    ipdb.set_trace()
     if not base_config.get('use_cfg_srv'):
         try:
             config = get_config_from_file()
@@ -174,6 +172,14 @@ def load_config(current_base_config=None):
         config['load_status'] = (
             'Loaded configuration %s from server'
             % config['exchange_client_config']['config_name'])
+
+        # the first time the bot starts, it is possibel that the
+        # automation server is not aware of this bot. in that case a
+        # default configuration is downloaded with a bogus host name
+        # and then the real host name is injected into the configuration
+        if config['host_name'] in ['host.not.exist']:
+            config['host_name'] = socket.gethostname()
+
         config['exchange_client_config']['mail_check_period'] = \
             parse_duration(
             config['exchange_client_config']['mail_check_period'],

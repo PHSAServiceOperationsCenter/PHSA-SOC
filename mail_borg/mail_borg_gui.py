@@ -244,9 +244,9 @@ def mail_check(config, window, update_window_queue):
 
     """
     window.FindElement('mailcheck').Update(disabled=True)
-    if not window.FindElement('run').disabled:
+    if not window.FindElement('run').Disabled:
         window.FindElement('run').Update(disabled=True)
-    if not window.FindElement('pause').disabled:
+    if not window.FindElement('pause').Disabled:
         window.FindElement('pause').Update(disabled=True)
     window.FindElement('status').Update('running mail check')
     window.FindElement('output').Update(disabled=False)
@@ -490,7 +490,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                             window.FindElement('mail_check_period').Get()))
 
         if event == 'save_config':
-            do_save_config(base_config)
+            do_save_config(window)
             window.FindElement('save_config').Update(disabled=True)
             config_is_dirty = False
 

@@ -150,7 +150,8 @@ def load_config(current_base_config=None):
     from_server = False
 
     base_config = load_base_configuration(current_base_config)
-
+    import ipdb
+    ipdb.set_trace()
     if not base_config.get('use_cfg_srv'):
         try:
             config = get_config_from_file()
@@ -160,6 +161,8 @@ def load_config(current_base_config=None):
             config['load_status'] = (
                 'Cannot load local configuration.'
                 'Local error: %s' % str(file_err))
+
+        return config
 
     try:
         config = get_config_from_server(base_config)

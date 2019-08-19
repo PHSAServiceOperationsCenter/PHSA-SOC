@@ -30,9 +30,7 @@ def get_bot_config(request, host_name):
     """
     queryset = MailHost.objects.filter(host_name__iexact=host_name)
     if not queryset.exists():
-        return Response(
-            'Bot at %s is not registered with the server.' % host_name,
-            status=status.HTTP_404_NOT_FOUND)
+        queryset = MailHost.objects.filter(host_name__iexact='host.not.exist')
 
     bot = queryset.get()
     if bot.site is None:

@@ -15,6 +15,7 @@ django models for the mail_collector app
 :updated:    aug. 7, 2019
 
 """
+from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -55,10 +56,12 @@ class DomainAccount(_BaseModel, models.Model):
     """
     domain = models.CharField(
         _('windows domain'),
-        max_length=15, db_index=True, blank=False, null=False)
+        max_length=15, db_index=True, blank=False, null=False,
+        validators=[validators.validate_slug])
     username = models.CharField(
         _('domain username'),
-        max_length=64, db_index=True, blank=False, null=False)
+        max_length=64, db_index=True, blank=False, null=False,
+        validators=[validators.validate_slug])
     password = models.CharField(
         _('password'), max_length=64, blank=False, null=False)
     is_default = models.BooleanField(
@@ -164,7 +167,8 @@ class ExchangeConfiguration(_BaseModel, models.Model):
     exchange configuration objects
     """
     config_name = models.CharField(
-        _('name'), max_length=64, db_index=True, unique=True)
+        _('name'), max_length=64, db_index=True, unique=True,
+        validators=[validators.validate_slug])
     exchange_accounts = models.ManyToManyField(
         ExchangeAccount, limit_choices_to={'enabled': True},
         verbose_name=_('Exchange Accounts'))

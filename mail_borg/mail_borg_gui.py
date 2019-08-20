@@ -176,9 +176,10 @@ def get_window():
                 ('Configuration changes are not preserved across startups.'
                  ' To persist changes, edit the configuration on the server at')),
             gui.InputText(
-                '{}://{}:{}/admin/mail_collector/mailhost/?q={}'.format(
+                '{}://{}:{}/admin/mail_collector/exchangeconfiguration/?q={}'.
+                format(
                     HTTP_PROTO, base_config.get('cfg_srv_ip'),
-                    base_config.get('cfg_srv_port'), config.get('host_name')),
+                    base_config.get('cfg_srv_port'), config.get('config_name')),
                 disabled=True, size=(80, 1), key='bot_cfg_url'),
             gui.Button('Refresh config from server', key='reload_config',
                        disabled=False),

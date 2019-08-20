@@ -23,7 +23,7 @@ import win32evtlog
 import win32api
 import win32security
 
-from config import load_config
+from config import WIN_EVT_CFG
 
 
 class LogWinEvent():
@@ -37,10 +37,10 @@ class LogWinEvent():
         Constructor
         '''
         if app_name is None:
-            app_name = load_config().get('app_name', 'BorgExchangeMon')
+            app_name = WIN_EVT_CFG.get('app_name', 'BorgExchangeMon')
 
         if log_type is None:
-            log_type = load_config().get('log_type', 'Application')
+            log_type = WIN_EVT_CFG.get('log_type', 'Application')
 
         self.app_name = app_name
         self.log_type = log_type
@@ -68,13 +68,13 @@ class LogWinEvent():
         try:
             win32api.RegOpenKey(
                 win32con.HKEY_LOCAL_MACHINE,
-                '{}\\{}\\{}'.format(load_config().get('evt_log_key'),
+                '{}\\{}\\{}'.format(WIN_EVT_CFG.get('evt_log_key'),
                                     self.log_type, self.app_name))
             return True
         except:  # @IgnorePep8 pylint: disable=bare-except
             return False
 
-    def register(self, msg_dll=load_config().get('msg_dll')):
+    def register(self, msg_dll=WIN_EVT_CFG.get('msg_dll')):
         """
         register mthe event source in the windows regisstry
         """

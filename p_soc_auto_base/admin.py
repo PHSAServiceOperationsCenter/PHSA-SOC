@@ -93,3 +93,16 @@ class BaseAdmin(admin.ModelAdmin):
                 del actions['delete_selected']
 
         return actions
+
+    def save_model(self, request, obj, form, change):
+        """
+        pre-populates created_by and updated_by fields
+
+        created_by must only be updated once  upon creation
+        """
+        if not hasattr(obj, 'created_by'):
+            obj.created_by = request.user
+
+        obj.updated_by = request.user
+
+        obj.save()

@@ -12,13 +12,17 @@ django models for the mail_collector app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    may 24, 2019
+:updated:    aug. 7, 2019
 
 """
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
+from p_soc_auto_base.models import BaseModel as _BaseModel
 
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -46,10 +50,220 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 
+class DomainAccount(_BaseModel, models.Model):
+    """
+    domain accounts configuration
+    """
+    domain = models.CharField(
+        _('windows domain'),
+        max_length=15, db_index=True, blank=False, null=False,
+        validators=[validators.validate_slug])
+    username = models.CharField(
+        _('domain username'),
+        max_length=64, db_index=True, blank=False, null=False,
+        validators=[validators.validate_slug])
+    password = models.CharField(
+        _('password'), max_length=64, blank=False, null=False)
+    is_default = models.BooleanField(
+        _('default windows account'),
+        db_index=True, blank=False, null=False, default=False)
+
+    def __str__(self):
+        return '%s\\%s' % (self.domain, self.username)
+
+    def clean(self):
+        """
+        force the domain to uppercase
+
+        only one model instance can be the default
+
+        look through all the instances and raise an error if there already
+        is a default domain account
+        """
+        self.domain = self.domain.upper()
+
+        if not self.is_default:
+            return
+
+        if self._meta.model.objects.filter(is_default=True).\
+                exclude(pk=self.pk).exists():
+            raise ValidationError(
+                {'is_default': _('A default domain account already exists')})
+
+        return
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        need to call full_clean() here
+        """
+        try:
+            self.full_clean()
+        except ValidationError as error:
+            raise error
+
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def get_default():
+        """
+        get the default instance for this model
+        """
+        return DomainAccount.objects.filter(is_default=True).get()
+
+    class Meta:
+        app_label = 'mail_collector'
+        constraints = [models.UniqueConstraint(
+            fields=['domain', 'username'], name='unique_account')]
+        indexes = [models.Index(fields=['domain', 'username'])]
+        verbose_name = _('Domain Account')
+        verbose_name_plural = _('Domain Accounts')
+
+
+class BaseEmail(_BaseModel, models.Model):
+    """
+    base class for email addresses
+    """
+    smtp_address = models.EmailField(
+        _('SMTP address'), max_length=253, db_index=True, unique=True,
+        blank=False, null=False,
+        help_text=_('Exchange Account'))
+
+    def __str__(self):
+        return self.smtp_address
+
+    class Meta:
+        abstract = True
+
+
+class ExchangeAccount(BaseEmail, models.Model):
+    """
+    what Exchange calls 'the primary SMTP address'
+    """
+    domain_account = models.ForeignKey(
+        DomainAccount, db_index=True, blank=False, null=False,
+        on_delete=models.PROTECT, verbose_name=_('Domain Account'))
+    exchange_autodiscover = models.BooleanField(
+        _('use exchange auto discovery'),
+        blank=False, null=False, default=True)
+    autodiscover_server = models.CharField(
+        _('Exchange discovery server'), max_length=253, blank=True, null=True)
+
+    class Meta:
+        app_label = 'mail_collector'
+        verbose_name = _('Exchange Account')
+        verbose_name_plural = _('Exchange Accounts')
+
+
+class WitnessEmail(BaseEmail, models.Model):
+    """
+    witness emails class
+    """
+    class Meta:
+        verbose_name = _('Witness Email Address')
+
+
+class ExchangeConfiguration(_BaseModel, models.Model):
+    """
+    exchange configuration objects
+    """
+    config_name = models.CharField(
+        _('name'), max_length=64, db_index=True, unique=True,
+        validators=[validators.validate_slug])
+    exchange_accounts = models.ManyToManyField(
+        ExchangeAccount, limit_choices_to={'enabled': True},
+        verbose_name=_('Exchange Accounts'))
+    is_default = models.BooleanField(
+        _('is default?'),
+        db_index=True, blank=False, null=False, default=False)
+    debug = models.BooleanField(
+        _('Debug'), default=False,
+        help_text=_('In debug mode the client will not clean up old messages'))
+    autorun = models.BooleanField(
+        _('Auto run'), default=True,
+        help_text=_(
+            'When enabled, the client will execute mail checks automatically'))
+    mail_check_period = models.DurationField(
+        _('check email every'), default=timezone.timedelta(hours=1))
+    ascii_address = models.BooleanField(
+        _('Force ASCII MX'), default=True,
+        help_text=_('Format internationalized DNS domains to ASCII.'
+                    ' See https://tools.ietf.org/html/rfc5891 '))
+    utf8_address = models.BooleanField(
+        _('Allow UTF8 email address'), default=False)
+    check_mx = models.BooleanField(
+        _('Verify MX connectivity'), default=True,
+        help_text=_('Ask the DNS server if the email domain is connectable'))
+    check_mx_timeout = models.DurationField(
+        _('Verify MX timeout'), default=timezone.timedelta(seconds=5))
+    min_wait_receive = models.DurationField(
+        _('Wait before check receive'),
+        default=timezone.timedelta(seconds=3))
+    backoff_factor = models.IntegerField(
+        _('Back-off factor for check receive'), default=3)
+    max_wait_receive = models.DurationField(
+        _('Check receive timeout'),
+        default=timezone.timedelta(seconds=120))
+    tags = models.TextField(
+        _('Optional tags'), blank=True, null=True)
+    email_subject = models.CharField(
+        _('Email Subject'), max_length=78,
+        default='exchange monitoring message')
+    witness_addresses = models.ManyToManyField(
+        WitnessEmail, limit_choices_to={'enabled': True}, blank=True,
+        verbose_name=_('Witness addresses'))
+
+    def __str__(self):
+        return self.config_name
+
+    def clean(self):
+        """
+        only one model instance can be the default
+
+        look through all the instances and raise an error if there already
+        is a default domain account
+
+        also make sure there are no CRLF chars in the email subject
+        """
+        if self.email_subject:
+            self.email_subject = self.email_subject.\
+                replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
+
+        if not self.is_default:
+            return
+
+        if self._meta.model.objects.filter(is_default=True).\
+                exclude(pk=self.pk).exists():
+            raise ValidationError(
+                {'is_default':
+                 _('A default exchange client configuration already exists')})
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        need to call full_clean() here
+        """
+        try:
+            self.full_clean()
+        except ValidationError as error:
+            raise error
+
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def get_default():
+        """
+        return the default instance of this model
+        """
+        return ExchangeConfiguration.objects.filter(is_default=True).get()
+
+    class Meta:
+        verbose_name = _('Exchange Monitoring Client Configuration')
+
+
 class MailSite(BorgSite):
     """
     model for exchnage client sites
     """
+
     objects = MailSiteManager()
 
     class Meta:

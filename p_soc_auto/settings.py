@@ -165,6 +165,7 @@ INSTALLED_APPS = [
     'citrus_borg.apps.CitrusBorgConfig',
     #    'orion_flash.apps.OrionFlashConfig',
     #    'task_journal.apps.TaskJournalConfig',
+    'rest_framework',
     'django_template_check',
     'django_mysql',
     #    'simple_history',

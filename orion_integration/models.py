@@ -7,21 +7,29 @@ django models for the orion_integration app
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
+:updated:    Aug. 21, 2019
+
 """
+import logging
+
 from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from p_soc_auto_base.models import BaseModel
 from citrus_borg.dynamic_preferences_registry import get_preference
+from p_soc_auto_base.models import BaseModel
+
 from .orion import OrionClient
+
+
+LOGGER = logging.getLogger('orion_integration_log')
 
 # pylint:disable=R0903
 
@@ -112,11 +120,15 @@ class OrionBaseModel(BaseModel, models.Model):
             self.save()
             return True
 
-        if not self.not_seen_since:
-            self.not_seen_since = timezone.now()
-            self.save()
+        try:
+            self.delete()
+        except Exception as error:
+            LOGGER.exception(str(error))
 
-        return True
+        LOGGER.info('removed orion entity %s. not found in Orion',
+                    self.orion_id)
+
+        return False
 
     # pylint:disable=R0914
     @classmethod

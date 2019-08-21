@@ -68,6 +68,7 @@ def store_mail_data(body):
 
         # is this a failed event? if so, raise the alarm
         # TODO: also need to call something that updates the orion_flash
+        # or maybe not, keep that as a separate task on a separate schedule
         if event.event_status in ['FAIL']:
             try:
                 raise_failed_event_by_mail(event_pk=event.pk)

@@ -19,6 +19,8 @@ from smtplib import SMTPConnectError
 
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
+
+from django.db.models import Q
 from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -539,3 +541,35 @@ def report_failed_events_by_bot(bot, report_interval):
     return (
         'could not email exchange failed send receive events report for bot %s'
         % bot)
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
+def raise_site_not_configured_for_bot():
+    """
+    email alerts if there are exchange bots with mis-configured site info
+
+    #TODO: subscription
+
+    #TODO: template
+    """
+    data = models.MailHost.objects.filter(
+        Q(site__isnull=True) | Q(site__site__iexact='site.not.exist')).\
+        exclude(host_name__iexact='host.not.exist')
+
+    if not data and not get_preference('exchange__empty_alerts'):
+        return 'all exchange bots are properly configured'
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=data,
+            subscription=base_utils.get_subscription('Exchange bot no site'),
+            logger=LOGGER,
+            level=get_preference('exchange__server_error'))
+    except Exception as error:
+        raise error
+
+    if ret:
+        return ('emailed alert for mis-configured Exchange bots')
+
+    return ('cannot email alert for mis-configured Exchange bots')

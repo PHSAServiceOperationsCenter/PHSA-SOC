@@ -263,6 +263,45 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
              serializer='pickle', retry_backoff=True,
              autoretry_for=(SMTPConnectError,))
+def report_mail_between_domains(only_fails=False, subscription=None):
+    """
+    task to run mail between domains reports
+
+    :arg str subscription:
+
+        the email subscription. default: Mail Verification Report
+
+    #TODO: create the subscription above, use Mail Verification Failed as an
+    # example
+
+    :arg bool only_fails: only report the fails, default: ``False``
+    """
+    if subscription is None:
+        subscription = 'Mail Verification Report'
+
+    subscription = base_utils.get_subscription(subscription)
+
+    queryset = models.MailBetweenDomains.objects.filter(
+        enabled=True, is_expired=False)
+
+    if only_fails:
+        queryset = queryset.filter(status__iexact='FAILED')
+
+    try:
+        ret = base_utils.borgs_are_hailing(
+            data=queryset, subscription=subscription, logger=LOGGER)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'emailed report for mail between domains verification'
+
+    return 'could not email report for mail between domains verification'
+
+
+@shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
+             serializer='pickle', retry_backoff=True,
+             autoretry_for=(SMTPConnectError,))
 def dead_mail_sites(subscription: str, time_delta_pref: str = None,
                     level: str = None) -> str:
     """

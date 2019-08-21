@@ -212,8 +212,17 @@ def verify_ssl_for_node_port(cert_node_port_tuple):
     if not, removw the node_port certificate instance from the database
     """
     port = cert_node_port_tuple[2]
-    ip_address = OrionNode.objects.get(
-        orion_id=cert_node_port_tuple[1]).ip_address
+
+    try:
+        ip_address = OrionNode.objects.get(
+            orion_id=cert_node_port_tuple[1]).ip_address
+    except OrionNode.DoesNotExist:
+        SslCertificate.objects.filter(
+            orion_id=cert_node_port_tuple[1]).all().delete()
+        return ('Deleted orphan SSL certificate on %s:%s.'
+                ' Orion node with id %s does not exist' %
+                (cert_node_port_tuple[1], port, cert_node_port_tuple[1]))
+
     try:
         _ = SslProbe(ip_address, port)
     except NmapNotAnSslNodeError:

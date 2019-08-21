@@ -103,6 +103,13 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'orion_integration_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'orion_integration.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -141,6 +148,11 @@ LOGGING = {
         },
         'mail_collector': {
             'handlers': ['mail_collector_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'orion_integration': {
+            'handlers': ['orion_integration_log', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },

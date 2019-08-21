@@ -21,11 +21,10 @@ from django.apps import apps
 from django.db.models import Max
 from django.db.models.query import QuerySet
 
-from mail_collector.models import (
-    ExchangeServer, ExchangeDatabase, MailBotLogEvent, MailBotMessage,)
-
 from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.locutus.communication import GroupBy, _group_by
+from mail_collector.models import (
+    ExchangeServer, ExchangeDatabase, MailBotLogEvent, MailBotMessage,)
 from p_soc_auto_base.utils import (
     MomentOfTime, get_base_queryset,
     url_annotate as _url_annotate,
@@ -146,7 +145,7 @@ using dead_bodies
            'event__event_status',
            'event__event_registered_on','event__source_host__site__site')
            
-which begs the question: how do we deal with log events intead of
+which begs the question: how do we deal with log events instead of
 log mail messages?
 duh... use mailbotlogevent as the source and add a filter for
 mailbotmessage__isnull. it will also work with hasattr but then we need

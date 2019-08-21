@@ -42,7 +42,7 @@ over the last {{ time_delta }}
 {% elif not data %}
 <div><h3 style="color: green;">
 {{ alternate_email_subject }} {{ site }}  over the last 
-{{ time_delta | timedelta:"{hours_total} hours" }}. Investigate ASAP.
+{{ time_delta | timedelta:"{hours_total} hours" }}.
 {% comment %}
 {{ ERROR: No data for }} {{ site }} over the .....
 {% endcomment %}

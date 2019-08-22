@@ -558,6 +558,9 @@ def raise_site_not_configured_for_bot():
         Q(site__isnull=True) | Q(site__site__iexact='site.not.exist')).\
         exclude(host_name__iexact='host.not.exist')
 
+    if data.exists():
+        data = base_utils.url_annotate(data)
+
     if not data and not get_preference('exchange__empty_alerts'):
         return 'all exchange bots are properly configured'
     try:
@@ -570,6 +573,6 @@ def raise_site_not_configured_for_bot():
         raise error
 
     if ret:
-        return ('emailed alert for mis-configured Exchange bots')
+        return 'emailed alert for mis-configured Exchange bots'
 
-    return ('cannot email alert for mis-configured Exchange bots')
+    return 'cannot email alert for mis-configured Exchange bots'

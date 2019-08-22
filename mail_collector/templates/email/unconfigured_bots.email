@@ -1,0 +1,44 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{{ tags }} {{ level }}Exchange verification bots with incomplete configuration
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h3>
+Please add valid site informatoion to the Exchange bots in the table below
+</h3>
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><h3 style="color: green;">
+All Exchange bots are configured correctly
+</h3></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

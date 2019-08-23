@@ -221,7 +221,7 @@ class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
         :type request:
         """
         if db_field.name in ['site', ]:
-            kwargs['queryset'] = MailSite.objects.filter(enabled=True)
+            kwargs['queryset'] = MailSite.objects.all()
 
         if db_field.name in ['exchange_client_config', ]:
             kwargs['queryset'] = ExchangeConfiguration.objects.filter(

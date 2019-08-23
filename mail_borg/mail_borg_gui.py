@@ -179,7 +179,8 @@ def get_window():
                 '{}://{}:{}/admin/mail_collector/exchangeconfiguration/?q={}'.
                 format(
                     HTTP_PROTO, base_config.get('cfg_srv_ip'),
-                    base_config.get('cfg_srv_port'), config.get('config_name')),
+                    base_config.get('cfg_srv_port'),
+                    config.get('exchange_client_config').get('config_name')),
                 disabled=True, size=(80, 1), key='bot_cfg_url'),
             gui.Button('Refresh config from server', key='reload_config',
                        disabled=False),

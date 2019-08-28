@@ -26,7 +26,14 @@ from mail_collector.serializers import BotConfigSerializer
 @api_view(['GET', ])
 def get_bot_config(request, host_name):
     """
-    returns the bot config JSON encoded
+    get the exchange client configuration
+
+    :arg ``str`` host_name:
+
+        the short host name for the bot that is requesting a configuration
+
+    :returns: the bot config JSON encoded
+    :rtype: :class: rest_framework.response.Response
     """
     queryset = MailHost.objects.filter(host_name__iexact=host_name)
 

@@ -11,8 +11,12 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import socket
 import sys
+
 import django
+from django.conf import settings
+
 
 sys.path.insert(0, os.path.abspath('../../'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
@@ -21,9 +25,10 @@ django.setup()
 
 # -- Project information -----------------------------------------------------
 
-project = 'SOC_Automation'
-copyright = '2019, serban teodorescu'
-author = 'serban teodorescu'
+project = 'SOC Automation and Orchestration'
+copyright = (
+    '2018 - 2019 Provincial Health Service Authority of British Columbia')
+author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
 release = '0.7.3-rc.1'
@@ -39,6 +44,8 @@ extensions = [
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.viewcode',
     'sphinx.ext.inheritance_diagram',
 ]
 
@@ -56,9 +63,21 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'bizstyle'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6', None),
+    'django': ('http://docs.djangoproject.com/en/2.2/',
+               'http://docs.djangoproject.com/en/2.2/_objects/'), }
+
+DJANGO_ADMIN_DOCS_URL = '{}://{}:{}/admin/docs/models/'.format(
+    settings.SERVER_PROTO, socket.getfqdn(), settings.SERVER_PORT)
+
+rst_epilog = """
+    .. |admin_docs| replace:: {0}
+""".format(DJANGO_ADMIN_DOCS_URL)

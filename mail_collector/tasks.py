@@ -148,7 +148,7 @@ def expire_events(moment=None):
     expire and/or delete events
 
     expired events are deleted based on
-    :class:`<citru_borg.dynamic_preferences_registry.ExchangeDeleteExpired>`
+    :class:`<citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired>`
 
     :arg str data_source:
 
@@ -160,7 +160,7 @@ def expire_events(moment=None):
         default: ``None``
         when ``Nne`` it will be calculated based on
         :class:`<citru_borg.dynamic_preferences_registry.ExchangeExpireEvents>`
-        relative to :method:`<datetime.datetime.now>`
+        relative to :meth:`<datetime.datetime.now>`
     """
     if moment is None:
         moment = base_utils.MomentOfTime.past(

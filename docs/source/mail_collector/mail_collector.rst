@@ -1,7 +1,7 @@
 .. _mail_collector:
 
-Mail Collector Application Docs
-===============================
+Mail Collector Application
+==========================
 
 The Mail Collector application is responsible for generating alerts for
 email and Exchange functionality.
@@ -16,6 +16,11 @@ composed of `Winlogbeat
         There is a version restriction for both Winlogbeat and Logstash. We
         only support version 6.5.4 for both products.
 
+The mail borg events from all the bots are centralized via the Logstash
+server and queued to the RabbitMQ server via the **logstash** exchange.
+There is a **logstash** queue bound to that exchange and the Mail Collectgor
+application is pulling in the events from that queue.
+
 Application
 -----------
 
@@ -27,13 +32,147 @@ Application
 Models
 ------
 
+.. automodule:: mail_collector.models
+
 Domain Account
 ^^^^^^^^^^^^^^
 
-See `DOmain Account fields <../../admin/doc/models/mail_collector.domainaccount>`_.
+See `Domain Account fields <../../admin/doc/models/mail_collector.domainaccount>`_.
 
 .. autoclass:: mail_collector.models.DomainAccount
    :members: clean, save, get_default
+
+Exchange Account
+^^^^^^^^^^^^^^^^
+
+See `Exchange Account fields
+<../../admin/doc/models/mail_collector.exchangeaccount>`_.
+
+Witness Email
+^^^^^^^^^^^^^
+
+See `Witness Email fields
+<../../admin/doc/models/mail_collector.witnessemail>`_.
+
+Exchange Monitoring Client Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See `Exchange Client Configuration fields
+<../../admin/doc/models/mail_collector.exchange_configuration>`_.
+
+.. autoclass:: mail_collector.models.ExchangeConfiguration
+   :members: clean, save, get_default
+
+Exchange Monitoring Bot
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This model is used to store host information for the remote bots that are
+running an instance of the Exchange Monitoring Client.
+
+It is a child of :class:`citrus_borg.models.WinlogbeatHost`. See `Citrix Bot
+fields <../../admin/doc/models/citrus_borg.winlogbeathost>`_.
+
+.. autoclass:: mail_collector.models.MailHostManager
+   :members: get_queryset
+
+.. autoclass:: citrus_borg.models.WinlogbeatHost
+   :members: orion_node_url, get_orion_id, get_or_create_from_borg
+
+Exchange Monitoring Site
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+This model is used to store site information for remote sites that have at
+least one bot running an instance of the Exchange Monitoring Client.
+
+It is a child of :class:`citrus_borg.models.BorgSite`. See `Borg Site fields
+<../../admin/docs/models/citrus_borg.borgsite>`
+
+.. autoclass:: mail_collector.models.MailSiteManager
+   :members: get_queryset
+
+Mail Monitoring Event
+^^^^^^^^^^^^^^^^^^^^^
+
+See `Mail Monitoring Events fields
+<../../admin/doc/models/mail_collector.mailbotlogevents>`_.
+
+Mail Monitoring Message
+^^^^^^^^^^^^^^^^^^^^^^^
+
+See `Mail Monitoring Message fields
+<../../admin/doc/models/mail_collector.mailbotmessage>`_.
+
+
+Exchange Server
+^^^^^^^^^^^^^^^
+
+See `Exchange Server
+<../../admin/doc/models/mail_collector.exchangeserver>`_.
+
+Exchange Database
+^^^^^^^^^^^^^^^^^
+
+See `Exchange Database fields
+<../../admin/doc/mail_collector.exchangedatabase>`_.
+
+.. autoclass:: mail_collector.models.ExchangeDatabase
+
+Domain to Domain Mail Verification
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See `Domain to Domain Mail Verification fields
+<../../admin/doc/models/mail_collector.mailbetweendomains>`_.
+
+.. autoclass:: mail_collector.models.MailBetweenDomains
+
+Admin
+-----
+
+.. automodule:: mail_collector.admin
+
+.. autoclass:: mail_collector.admin.MailConfigAdminBase
+   :members: formfield_for_foreignkey
+
+.. autoclass:: mail_collector.admin.DomainAccountAdmin
+   :members: show_account, formfield_for_dbfield
+
+.. autoclass:: mail_collector.admin.ExchangeAccountAdmin
+
+.. autoclass:: mail_collector.admin.WitnessEmailAdmin
+
+.. autoclass:: mail_collector.admin.ExchangeConfigurationAdmin
+   :members: count_exchange_accounts, count_witnesses
+
+.. autoclass:: mail_collector.admin.MailBotAdmin
+   :members: has_add_permission, has_delete_permission,
+             formfield_for_foreignkey
+
+.. autoclass:: mail_collector.admin.MailSiteAdmin
+
+.. autoclass:: mail_collector.admin.MailBetweenDomainsAdmin
+   :members: show_link
+
+.. autoclass:: mail_collector.admin.MailBotLogEventAdmin
+   :members: show_site, get_actions
+   :show-inheritance:
+
+.. autoclass:: mail_collector.admin.MailHostAdmin
+   :members: has_add_permission
+   :show-inheritance:
+
+.. autoclass:: mail_collector.admin.MailBotMessageAdmin
+   :members: show_site, event_uuid, event_group_id, event_type,
+             event_status, event_message, source_host, event_body,
+             mail_account, event_registered_on, get_actions
+   :show-inheritance:
+
+.. autoclass:: mail_collector.admin.ExchangeServerAdmin
+   :members: has_add_permission, has_delete_permission
+   :show-inheritance:
+
+.. autoclass:: mail_collector.admin.ExchangeDatabaseAdmin
+   :members: formfield_for_foreignkey
+   :show-inheritance:
 
 REST API
 --------
@@ -53,6 +192,20 @@ Serializers
 -----------
 
 .. automodule:: mail_collector.serializers
+   :members:
+   :undoc-members:
+
+Signals
+-------
+
+.. automodule:: mail_collector.signals
+   :members:
+   :undoc-members:
+
+Tasks
+-----
+
+.. automodule:: mail_collector.tasks
    :members:
    :undoc-members:
 

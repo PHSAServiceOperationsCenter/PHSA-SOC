@@ -1,8 +1,6 @@
 """
 .. _api:
 
-REST API for the mail_collector app
-
 :module:    mail_collector.api
 
 :copyright:
@@ -13,6 +11,8 @@ REST API for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    aug. 9, 2019
+
+REST endpoints for the :ref:`mail_collector` application
 
 """
 from rest_framework import status
@@ -28,12 +28,20 @@ def get_bot_config(request, host_name):
     """
     get the exchange client configuration
 
-    :arg ``str`` host_name:
+    :param request: an HTTP GET request
+    :param host_name: the short host name for the bot that is
+                          requesting a configuration
+    :type host_name: str
 
-        the short host name for the bot that is requesting a configuration
+    :returns:
 
-    :returns: the bot config JSON encoded
-    :rtype: :class: rest_framework.response.Response
+        the bot config JSON encoded if available, or a default configuration
+        also JSON encoded when the host_name is not known to the
+        server. if netiher configurations are available,
+        an HTTP 406 (not acceptable) error is returned
+
+    :rtype: :class:`rest_framework.response.Response`
+
     """
     queryset = MailHost.objects.filter(host_name__iexact=host_name)
 

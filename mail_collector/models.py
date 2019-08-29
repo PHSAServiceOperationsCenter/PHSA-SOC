@@ -27,24 +27,37 @@ from p_soc_auto_base.models import BaseModel as _BaseModel
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
-    only show bots with exchange monitoring clients
+    django model manager that allows us to reuse
+    :class:`citrus_borg.models.WinlogbeatHost` for the :class:`MailHost`
     """
 
     def get_queryset(self):  # pylint: disable=no-self-use
         """
-        override get_queryset
+        override :meth:`django.db.models.Manager.get_queryset`
+        to filter only the hosts that have
+        an Exchange Monitoring Client running
+
+        the filter is using an is not null lookup against the
+        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
         """
         return WinlogbeatHost.objects.exclude(excgh_last_seen__isnull=True)
 
 
 class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
-    only the sites that have exchange monitoring clients
+    model manager that allows us to reuse
+    :class:`citrus_borg.models.BirgSite` for the :class:`MailSite`
     """
 
     def get_queryset(self):  # pylint: disable=no-self-use
         """
-        override get_queryset
+        override :func:`django.db.models.Manager.get_queryset`
+        to retrieve only those sites that have at least one remote bot
+        running an Exchange Monitoring Client
+
+        the filter is using an is not null lookup against the
+        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
+
         """
         return BorgSite.objects.filter(
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
@@ -52,7 +65,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
 
 class DomainAccount(_BaseModel, models.Model):
     """
-    domain accounts configuration
+    Model to store WIndows domain accounts data
     """
     domain = models.CharField(
         _('windows domain'),
@@ -73,12 +86,18 @@ class DomainAccount(_BaseModel, models.Model):
 
     def clean(self):
         """
-        force the domain to uppercase
+        override :meth:`django.db.models.Model.clean` to
+        clean the instance data before saving it to the database
 
-        only one model instance can be the default
+        * force the domain to upper case letters to respect the
+          Windows conventions
 
-        look through all the instances and raise an error if there already
-        is a default domain account
+        * only one instance can be the default domain account. this is
+          tracked using :attr:`is_default`. this method is looking through
+          all the saved instances and raising an error if there already
+          is a default domain account
+
+        :raises: :exc:`django.core.exceptions.ValidationError`
         """
         self.domain = self.domain.upper()
 
@@ -94,7 +113,9 @@ class DomainAccount(_BaseModel, models.Model):
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
-        need to call full_clean() here
+        override :meth:`django.db.models.Model.save` to invoke
+        :meth:`django.db.models.Model.full_clean`. otherwise the
+        :meth:`clean` will not be invoked
         """
         try:
             self.full_clean()
@@ -137,7 +158,8 @@ class BaseEmail(_BaseModel, models.Model):
 
 class ExchangeAccount(BaseEmail, models.Model):
     """
-    what Exchange calls 'the primary SMTP address'
+    Model containing all the data needed to connect to an Exchange
+    account
     """
     domain_account = models.ForeignKey(
         DomainAccount, db_index=True, blank=False, null=False,
@@ -156,7 +178,7 @@ class ExchangeAccount(BaseEmail, models.Model):
 
 class WitnessEmail(BaseEmail, models.Model):
     """
-    witness emails class
+    Model for basic email addresses
     """
     class Meta:
         verbose_name = _('Witness Email Address')
@@ -164,7 +186,8 @@ class WitnessEmail(BaseEmail, models.Model):
 
 class ExchangeConfiguration(_BaseModel, models.Model):
     """
-    exchange configuration objects
+    Model storing all the information required to configure an active
+    Exchange Monitoring Client
     """
     config_name = models.CharField(
         _('name'), max_length=64, db_index=True, unique=True,
@@ -217,12 +240,19 @@ class ExchangeConfiguration(_BaseModel, models.Model):
 
     def clean(self):
         """
-        only one model instance can be the default
+        override :meth:`django.db.models.Model.clean` to
+        clean the instance data before saving it to the database
 
-        look through all the instances and raise an error if there already
-        is a default domain account
+        * force the domain to upper case letters to respect the
+          Windows conventions
 
-        also make sure there are no CRLF chars in the email subject
+        * only one instance can be the default domain account. this is
+          tracked using :attr:`is_default`. this method is looking through
+          all the saved instances and raising an error if there already
+          is a default domain account
+
+        :raises: :exc:`django.core.exceptions.ValidationError`
+
         """
         if self.email_subject:
             self.email_subject = self.email_subject.\
@@ -239,7 +269,9 @@ class ExchangeConfiguration(_BaseModel, models.Model):
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
-        need to call full_clean() here
+        override :meth:`django.db.models.Model.save` to invoke
+        :meth:`django.db.models.Model.full_clean`. otherwise the
+        :meth:`clean` will not be invoked
         """
         try:
             self.full_clean()

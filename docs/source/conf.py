@@ -47,6 +47,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.inheritance_diagram',
+    'celery.contrib.sphinx',
+    'sphinx.ext.autosectionlabel',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -74,10 +76,3 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3.6', None),
     'django': ('http://docs.djangoproject.com/en/2.2/',
                'http://docs.djangoproject.com/en/2.2/_objects/'), }
-
-DJANGO_ADMIN_DOCS_URL = '{}://{}:{}/admin/docs/models/'.format(
-    settings.SERVER_PROTO, socket.getfqdn(), settings.SERVER_PORT)
-
-rst_epilog = """
-    .. |admin_docs| replace:: {0}
-""".format(DJANGO_ADMIN_DOCS_URL)

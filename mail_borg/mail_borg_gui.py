@@ -458,6 +458,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                                                     append=True)
                 window.FindElement('output').Update(disabled=True)
                 window.FindElement('mail_check_period').Update(disabled=False)
+                window.FindElement('mailcheck').Update(disabled=False)
                 if autorun:
                     window.FindElement('pause').Update(disabled=False)
                     next_run_at = datetime.now() + \

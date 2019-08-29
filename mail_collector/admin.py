@@ -1,8 +1,6 @@
 """
 .. _admin:
 
-django admin forms for the mail_collector app
-
 :module:    mail_collector.admin
 
 :copyright:
@@ -13,6 +11,8 @@ django admin forms for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    aug. 7, 2019
+
+Admin forms for the :ref:`mail_collector` application
 
 """
 from django.contrib import admin
@@ -39,9 +39,7 @@ class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
-        overload
-        admin.ModelAdmin.formfield_for_foreignkey(
-            self, db_field, request, **kwargs)
+        override :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
         """
         if db_field.name in ['created_by', 'updated_by', ]:
             kwargs['queryset'] = get_user_model().objects.\

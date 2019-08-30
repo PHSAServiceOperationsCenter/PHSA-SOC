@@ -12,7 +12,7 @@
 
 :updated:    aug. 7, 2019
 
-Admin forms for the :ref:`mail_collector` application
+Admin forms for the :ref:`Mail Collector Application`
 
 """
 from django.contrib import admin
@@ -32,14 +32,18 @@ from p_soc_auto_base.admin import BaseAdmin
 
 class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
     """
-    base class for the admin forms used by the exchange client configuration
+    Base class for the exchange client configuration admin classes
     models
     """
     list_per_page = 50
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
-        override :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+        Override
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+        to provide custom drop-downs for some form fields
+
+
         """
         if db_field.name in ['created_by', 'updated_by', ]:
             kwargs['queryset'] = get_user_model().objects.\
@@ -57,7 +61,8 @@ class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
 @admin.register(DomainAccount)
 class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     """
-    admin forms for domain accounts
+    Admin forms for the :class:`mail_collector.models.DomainAccount`
+    model
     """
     list_display_links = ('show_account',)
     list_display = ('show_account', 'enabled', 'domain',
@@ -68,9 +73,9 @@ class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     readonly_fields = ('show_account', 'created_by',
                        'updated_by', 'created_on', 'updated_on')
 
-    def show_account(self, obj):
+    def show_account(self, obj):  # pylint: disable=no-self-use
         """
-        display field for windows domain accounts
+        display combined field for windows domain accounts
         """
         return '%s\\%s' % (obj.domain, obj.username)
     show_account.short_description = _('Domain Account')

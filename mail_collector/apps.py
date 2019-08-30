@@ -14,6 +14,9 @@ django apps module for the mail_collector app
 
 :updated:    May 31, 2019
 
+Module used to register the :ref:`Mail Collector Application` with the
+:ref:`SOC Automation Project`
+
 """
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
@@ -21,7 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 class MailCollectorConfig(AppConfig):
     """
-    app configuration for mail_collector
+    application class for :ref:`Mail Collector Application`
     """
     name = 'mail_collector'
     verbose_name = _(
@@ -29,6 +32,7 @@ class MailCollectorConfig(AppConfig):
 
     def ready(self):
         """
-        this is where imports must happen for django applications
+        documented solution for avoiding circular import errors when
+        loading modules that use the django framework packages
         """
         import mail_collector.signals

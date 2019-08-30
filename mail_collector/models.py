@@ -1,8 +1,6 @@
 """
 .. _models:
 
-django models for the mail_collector app
-
 :module:    mail_collector.models
 
 :copyright:
@@ -13,6 +11,8 @@ django models for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    aug. 7, 2019
+
+:ref:`Mail Collector Application` models and model managers
 
 """
 from django.core import validators
@@ -28,7 +28,8 @@ from p_soc_auto_base.models import BaseModel as _BaseModel
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     django model manager that allows us to reuse
-    :class:`citrus_borg.models.WinlogbeatHost` for the :class:`MailHost`
+    :class:`citrus_borg.models.WinlogbeatHost` model for the 
+    :class:`MailHost` model
     """
 
     def get_queryset(self):  # pylint: disable=no-self-use
@@ -46,12 +47,13 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
 class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     model manager that allows us to reuse
-    :class:`citrus_borg.models.BirgSite` for the :class:`MailSite`
+    :class:`citrus_borg.models.BorgSite` model for the
+    :class:`MailSite` model
     """
 
     def get_queryset(self):  # pylint: disable=no-self-use
         """
-        override :func:`django.db.models.Manager.get_queryset`
+        override :meth:`django.db.models.Manager.get_queryset`
         to retrieve only those sites that have at least one remote bot
         running an Exchange Monitoring Client
 
@@ -65,7 +67,10 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
 
 class DomainAccount(_BaseModel, models.Model):
     """
-    Model to store WIndows domain accounts data
+    Windows domain accounts data class
+
+    `Domain Account fields
+    <../../../admin/doc/models/mail_collector.domainaccount>`_
     """
     domain = models.CharField(
         _('windows domain'),
@@ -160,6 +165,9 @@ class ExchangeAccount(BaseEmail, models.Model):
     """
     Model containing all the data needed to connect to an Exchange
     account
+
+    `Exchange Account fields
+    <../../../admin/doc/models/mail_collector.exchangeaccount>`_
     """
     domain_account = models.ForeignKey(
         DomainAccount, db_index=True, blank=False, null=False,
@@ -179,6 +187,9 @@ class ExchangeAccount(BaseEmail, models.Model):
 class WitnessEmail(BaseEmail, models.Model):
     """
     Model for basic email addresses
+
+    `Witness Email fields
+    <../../../admin/doc/models/mail_collector.witnessemail>`_
     """
     class Meta:
         verbose_name = _('Witness Email Address')
@@ -188,6 +199,9 @@ class ExchangeConfiguration(_BaseModel, models.Model):
     """
     Model storing all the information required to configure an active
     Exchange Monitoring Client
+
+    `Exchange Configuration fields
+    <../../../admin/doc/models/mail_collector.exchangeconfiguration>`_
     """
     config_name = models.CharField(
         _('name'), max_length=64, db_index=True, unique=True,
@@ -293,7 +307,9 @@ class ExchangeConfiguration(_BaseModel, models.Model):
 
 class MailSite(BorgSite):
     """
-    model for exchnage client sites
+    Exchange client sites proxy model
+
+    `Mail Site fields <../../../admin/docs/models/citrus_borg.borgsite>`_
     """
 
     objects = MailSiteManager()
@@ -308,7 +324,9 @@ class MailSite(BorgSite):
 
 class MailHost(WinlogbeatHost):
     """
-    proxy model for exchange client bots
+    Exchange monitoring bots proxy model
+
+    `Mail Bot fields <../../../admin/doc/models/citrus_borg.winlogbeathost>`
     """
     objects = MailHostManager()
 
@@ -322,7 +340,13 @@ class MailHost(WinlogbeatHost):
 
 class MailBotLogEvent(models.Model):
     """
-    model for events sent by mail monitoring bots
+    Model for events sent by mail monitoring bots
+
+    This model will store all events: connection events, error events,
+    configuration events, as well as send and receive events
+
+    `Mail Monitoring Event fields
+    <../../../admin/doc/models/mail_collector.mailbotlogevents>`
     """
     event_group_id = models.CharField(
         _('Session Id'), max_length=128, db_index=True, blank=False,
@@ -379,7 +403,10 @@ class MailBotLogEvent(models.Model):
 
 class MailBotMessage(models.Model):
     """
-    model for mail monitoring messages
+    Model for mail monitoring events that include email messages
+
+    `Mail Monitoring Message fields
+    <../../../admin/doc/models/mail_collector.mailbotmessage>`_
     """
     mail_message_identifier = models.CharField(
         _('Exchange Message Identifier'), max_length=36, db_index=True,
@@ -411,7 +438,10 @@ class MailBotMessage(models.Model):
 
 class ExchangeServer(models.Model):
     """
-    the exchange servers being monitored
+    Model for the exchange servers being monitored
+
+    `Exchange Server fields
+    <../../../admin/doc/models/mail_collector.exchangeserver>`_
     """
     exchange_server = models.CharField(
         _('Exchange Server'), max_length=16, db_index=True, unique=True,
@@ -450,7 +480,10 @@ class ExchangeServer(models.Model):
 
 class ExchangeDatabase(models.Model):
     """
-    exchange database instances
+    Model for exchange database instances
+
+    `Exchange Database fields
+    <../../../admin/doc/mail_collector.exchangedatabase>`_
     """
     database = models.CharField(
         _('Database'), max_length=16, db_index=True, unique=True, blank=False,
@@ -481,8 +514,11 @@ class ExchangeDatabase(models.Model):
 
 class MailBetweenDomains(models.Model):
     """
-    track user side email functionality between specific email domains for each
+    Track user side email functionality between specific email domains for each
     site
+
+    `Domain to Domain Mail Verification fields
+    <../../../admin/doc/models/mail_collector.mailbetweendomains>`_
     """
     from_domain = models.CharField(
         _('Sent from email domain'), max_length=63, db_index=True, blank=False,

@@ -12,7 +12,7 @@
 
 :updated:    aug. 9, 2019
 
-REST endpoints for the :ref:`mail_collector` application
+REST end-points for the :ref:`Mail Collector Application`
 
 """
 from rest_framework import status
@@ -37,7 +37,7 @@ def get_bot_config(request, host_name):
 
         the bot config JSON encoded if available, or a default configuration
         also JSON encoded when the host_name is not known to the
-        server. if netiher configurations are available,
+        server. if neither configurations are available,
         an HTTP 406 (not acceptable) error is returned
 
     :rtype: :class:`rest_framework.response.Response`
@@ -46,15 +46,12 @@ def get_bot_config(request, host_name):
     queryset = MailHost.objects.filter(host_name__iexact=host_name)
 
     if not queryset.exists():
-        # bot doesn't exist yet, return the default configuration
         queryset = MailHost.objects.filter(host_name__iexact='host.not.exist')
         serializer = BotConfigSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     bot = queryset.get()
     if bot.exchange_client_config is None:
-        # bot exists but it doesn't have a configuration
-        # assign the default configuration and refresh the queryset
         try:
             exchange_client_config = ExchangeConfiguration.objects.filter(
                 is_default=True).get()

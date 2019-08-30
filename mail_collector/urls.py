@@ -1,8 +1,6 @@
 """
 .. _urls:
 
-urls module for the mail_collector app
-
 :module:    mail_collector.urls
 
 :copyright:
@@ -13,6 +11,8 @@ urls module for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    aug. 9, 2019
+
+URL mappings for the :ref:`Mail Collector Application`
 
 """
 from django.urls import path

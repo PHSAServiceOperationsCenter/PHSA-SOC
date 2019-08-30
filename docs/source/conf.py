@@ -31,7 +31,7 @@ copyright = (
 author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.3-rc.1'
+release = '0.7.4-dev'
 
 
 # -- General configuration ---------------------------------------------------
@@ -64,8 +64,13 @@ exclude_patterns = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'bizstyle'
+html_theme = 'classic'
+html_theme_options = {
+    'rightsidebar': False,
+    'stickysidebar': True,
+    'collapsiblesidebar': False,
+    'externalrefs': True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -1,0 +1,2 @@
+Mail Collector Subscriptions
+============================

@@ -1,8 +1,6 @@
 """
 .. _tasks:
 
-celery tasks for the mail_collector application
-
 :module:    mail_collector.tasks
 
 :copyright:
@@ -13,6 +11,8 @@ celery tasks for the mail_collector application
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    May 27, 2019
+
+Celery Tasks for the :ref:`Mail Collector Application`
 
 """
 from smtplib import SMTPConnectError
@@ -36,7 +36,28 @@ LOGGER = get_task_logger(__name__)
 @shared_task(queue='mail_collector', rate_limit='5/s')
 def store_mail_data(body):
     """
-    grab the exchange events from rabbitmq and dump it to the database
+    Save an exchange bot event to the database
+
+    :arg ``collections.namedtuple`` body: the event object
+
+    :returns:
+
+        the saved event. this will be either a
+        :class:`mail_collector.models.MailBotLogEvent`
+        instance if the event is a connection or an exception, or a
+        :class:`mail_collector.models.MailBotMessage` instance if the
+        event is a sent or a received. note that in the latter case
+        a :class:`mail_collector.models.MailBotLogEvent` instance
+        is created implicitly
+
+    :raises:
+
+        :exc:`mail_collector.exceptions.SaveExchangeEventError` if the
+        :class:`mail_collector.models.MailBotLogEvent` cannot be saved
+
+        :exc:`mail_collector.exceptions.SaveExchangeMailEventError` if the
+        :class:`mail_collector.models.MailBotMessage` instance cannot be saved
+
     """
     try:
         exchange_borg = process_borg(body, LOGGER)
@@ -68,16 +89,14 @@ def store_mail_data(body):
             event_exception=event_data.event_exception)
         event.save()
 
-        # is this a failed event? if so, raise the alarm
-        # TODO: also need to call something that updates the orion_flash
-        # or maybe not, keep that as a separate task on a separate schedule
         if event.event_status in ['FAIL']:
             try:
-                raise_failed_event_by_mail(event_pk=event.pk)
-            except:  # pylint: disable=bare-except
-                # swallow the exception because we need to finish
+                raise_failed_event_by_mail.apply_async(
+                    kwargs={'event_pk': event.pk})
+            except Exception as error:  # pylint: disable=broad-except
+                # log and swallow the exception because we need to finish
                 # processing this event if it comes with a mail message
-                pass
+                LOGGER.exception(error)
 
     except Exception as error:
         raise exceptions.SaveExchangeEventError(
@@ -108,13 +127,21 @@ def store_mail_data(body):
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
-             retry_backoff=True,
-             autoretry_for=(SMTPConnectError,))
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def raise_failed_event_by_mail(event_pk):
     """
     send an alert email for failed events
 
-    # TODO: template and subscription
+    :arg int event_pk:
+
+        the primary key of the :class:`mail_collector.models.MailBotLogEvent`
+        instance with the failed event
+
+    :returns: the result of the email operation
+    :rtype: str
+
+    :raises: :exc:`Exception` if an error is thrown by the email send op
+
     """
     data = models.MailBotLogEvent.objects.filter(pk=event_pk)
     subscription = base_utils.get_subscription('Exchange Client Error')
@@ -122,7 +149,7 @@ def raise_failed_event_by_mail(event_pk):
     # let's cache some data to avoid evaluating the queryset multiple times
     data_extract = data.values(
         'uuid', 'event_type',
-        'source_0host__site__site', 'source_host__host_name')[0]
+        'source_host__site__site', 'source_host__host_name')[0]
 
     try:
         ret = base_utils.borgs_are_hailing(
@@ -145,22 +172,21 @@ def raise_failed_event_by_mail(event_pk):
 @shared_task(queue='mail_collector')
 def expire_events(moment=None):
     """
-    expire and/or delete events
+    mark events as expired. also delete them if so configured
 
-    expired events are deleted based on
-    :class:`<citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired>`
+    expired events are deleted based on the value of the
+    :class:`citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired`
+    dynamic settings
 
-    :arg str data_source:
+    :arg `datetime.datetime` moment:
 
-        'app_label.model_name' info for the model that needs purging
+        the cutoff moment; all rows older than this will be expired.
+        default: ``None``. when ``None`` it will be calculated based on the
+        value of the
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents`
+        dynamic setting relative to the moment returned by
+        :meth:`datetime.datetime.now`
 
-    :arg ``datetime.datetime``:
-
-        the cutoff moment of time; all row older than this will be expired.
-        default: ``None``
-        when ``Nne`` it will be calculated based on
-        :class:`<citru_borg.dynamic_preferences_registry.ExchangeExpireEvents>`
-        relative to :meth:`<datetime.datetime.now>`
     """
     if moment is None:
         moment = base_utils.MomentOfTime.past(
@@ -201,33 +227,54 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
         data_source, filter_exp, subscription, url_annotate=False,
         level=None, filter_pref=None, **base_filters):
     """
+    generic task to raise email alerts about
+    :ref:`Mail Collector Application` entities that have been in an
+    abnormal state for a given duration measured going back from the
+    current moment
+
+    .. todo:: see `<https://trello.com/c/vav94p7e>`_
+
+    :arg str data_source: the reference to a
+        :class:`django.db.models.Model` in the form of 'app_label.model_name'
+
+    :arg str filter_exp: a django filter lhs expression (field_name__lookup);
+        it is actually geared to deal with datetime fields
+
+    :arg str subscription: the reference to the
+        :class:`ssl_cert_tracker.models.Subscription` instance to be used
+        for rendering the email alert
+
+    :arg bool url_annotate:
+
+        extend the queryset with the entity URL; default ``False``
+
+    :arg str level: INFO|WARN|ERROR to add to the subject line of the email
+        alert; default ``None``
+
+    :arg `object` filter_pref: either a
+        :class:`django.utils.timezone.timedelta` instance or a :class:`dict`
+        suitable as argument for constructing a
+        :class:`django.utils.timezone.timedelta` like {'days': ``float``,
+        'hours': ``float``, 'seconds': ``float``}; default ``None``.
+        when ``None`` the value is picked up from the
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultError`
+        dynamic setting
+
+    :arg **base_filters: additional django lookup style arguments to be
+        applied to the queryset
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if an exception was thrown while sending the alert
+
     example::
 
-        queries.dead_bodies(exc_servers, last_connected, not_seen_for_warn,
-        enabled=True)
-
-        do it for all the fields in exc_servers and ofr each of those for
-        both warn and critical
-
-        same thing for exc_databases
-
-        same thing for exchange clients. see if it can be done for exchange
-        sites
-
-
-    extra_context: filter_pref, level
-
-    some tasks to implement:
-
-    qs=dead_bodies('mail_collector.mailhost','excgh_last_seen__lte',
+        qs=dead_bodies('mail_collector.mailhost','excgh_last_seen__lte',
                     not_seen_after={'minutes': 1}, enabled=True)
 
-    the below is not correct; see the trick documented in queries
-    qs=dead_bodies('mail_collector.mailsite','winlogbeathost__excgh_last_seen__lte',
-                    not_seen_after={'minutes': 1}, enabled=True)
-
-    must raise the failed email verifications here; there is a bug that
-    doesn't allow doing it from signals
     """
 
     if level is None:
@@ -237,8 +284,6 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
 
     if filter_pref is None:
         filter_pref = get_preference('exchange__default_error')
-    else:
-        filter_pref = get_preference(filter_pref)
 
     not_seen_after = base_utils.MomentOfTime.past(time_delta=filter_pref)
 
@@ -267,16 +312,19 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
              autoretry_for=(SMTPConnectError,))
 def report_mail_between_domains(only_fails=False, subscription=None):
     """
-    task to run mail between domains reports
+    task to run reports about mail between domains
 
     :arg str subscription:
 
-        the email subscription. default: Mail Verification Report
-
-    #TODO: create the subscription above, use Mail Verification Failed as an
-    # example
+        the email subscription. default: 'Mail Verification Report'
 
     :arg bool only_fails: only report the fails, default: ``False``
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises: :exc:`Exception` if an exception was thrown while sending the alert
+
     """
     if subscription is None:
         subscription = 'Mail Verification Report'
@@ -304,10 +352,33 @@ def report_mail_between_domains(only_fails=False, subscription=None):
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
              serializer='pickle', retry_backoff=True,
              autoretry_for=(SMTPConnectError,))
-def dead_mail_sites(subscription: str, time_delta_pref: str = None,
-                    level: str = None) -> str:
+def dead_mail_sites(subscription, time_delta_pref=None, level=None):
     """
-    task for diseminating site related info via email
+    task for site related alerts via email
+
+    :returns:
+
+        the return depends on whether the systems has detected alerts and
+        on the value of the
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
+        dynamic setting
+
+        *    if there are alerts, this task will return the result of the email
+             send op
+
+        *    otherwise the task will check the value of the
+             :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
+             dynamic setting.
+
+             *    if the value is ``False``, the task will not send any emails
+                  and it will return this information
+
+             *    otherwise the task will send an email saying that there are
+                  no alerts and return the result of the email send op
+    :rtype: str
+
+    :raises: :exc:`Exception` if an exception was thrown while sending the alert
+
     """
     if level is None:
         level = get_preference('exchange__default_level')
@@ -342,7 +413,27 @@ def dead_mail_sites(subscription: str, time_delta_pref: str = None,
 @shared_task(queue='mail_collector', serializer='pickle')
 def invoke_report_events_by_site(report_interval=None, report_level=None):
     """
-    invoke the tasks for emailing events by site reports
+    invoke tasks for mailing the events by site reports
+
+    :arg `object` report_interval:
+
+        the time interval for which the report is calculated
+
+        it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :class:`datetime.timedelta`
+        instance. it defaults to ``None`` and  when it is ``None``,
+        the value is picked from
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeReportInterval`
+
+    :arg str report_level: similar to a log level, defaults to ``None``
+
+        when ``None``, the value is picked from
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+
+
+    :returns: the sites for which the report tasks have been invoked
+    :rtype: str
+
 
     """
     if report_interval is None:
@@ -372,6 +463,23 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
 def report_events_by_site(site, report_interval, report_level):
     """
     send out report with events for a site via email
+
+    :arg str site: the site to report on
+
+    :arg `object` report_interval: the time interval for which the report is
+        calculated. it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :class:`datetime.timedelta`
+        instance
+
+    :arg str report_level: INFO|WARN|ERROR
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if an exception was thrown while sending the alert
+
     """
     subscription = base_utils.get_subscription('Exchange Send Receive By Site')
 
@@ -404,7 +512,23 @@ def report_events_by_site(site, report_interval, report_level):
              autoretry_for=(SMTPConnectError,))
 def report_failed_events_by_site(site, report_interval):
     """
-    send out report with events for a site via email
+    send out report with failed events for a site via email
+
+    :arg str site: the host (short) name of the bot to report on
+
+    :arg `object` report_interval: the time interval for which the report is
+        calculated. it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :class:`datetime.timedelta`
+        instance
+
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if an exception was thrown while sending the alert
+
     """
     subscription = base_utils.get_subscription(
         'Exchange Failed Send Receive By Site')
@@ -441,10 +565,21 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     """
     invoke tasks for mailing the events by bot reports
 
-    :arg report_interval: the reporting period going back from now()
-    :type report_interval: ``datetime.timedelta``
+    :arg `object` report_interval:
 
-    :arg str report_level: similar to a log level
+        the time interval for which the report is calculated
+
+        it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :class:`datetime.timedelta`
+        instance. it defaults to ``None`` and  when it is ``None``,
+        the value is picked from
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeReportInterval`
+
+    :arg str report_level: similar to a log level, defaults to ``None``
+
+        when ``None``, the value is picked from
+        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+
 
     :returns: the bots for which the report tasks have been invoked
     :rtype: str
@@ -476,7 +611,24 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
              autoretry_for=(SMTPConnectError,))
 def report_events_by_bot(bot, report_interval, report_level):
     """
-    send out report for events for a bot via email
+    send out report for events for a bot over a given duration measured
+    back from the moment of the call  via email
+
+    :arg str bot: the host (short) name of the bot to report on
+
+    :arg `object` report_interval: the time interval for which the report is
+        calculated. it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :class:`datetime.timedelta`
+        instance
+
+    :arg str report_level: INFO|WARN|ERROR pre-pended to the email subject line
+
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises:
+        :exc:`Exception` if an exception was thrown while sending the alert
 
     """
     subscription = base_utils.get_subscription('Exchange Send Receive By Bot')
@@ -510,7 +662,22 @@ def report_events_by_bot(bot, report_interval, report_level):
              autoretry_for=(SMTPConnectError,))
 def report_failed_events_by_bot(bot, report_interval):
     """
-    send out report for failed events for a bot via email
+    send out report for failed events for a bot over a given duration measured
+    back from the moment of the call  via email
+
+    :arg str bot: the host (short) name of the bot to report on
+
+    :arg `object` report_interval: the time interval for which the report is
+        calculated. it is either a :class:`datetime.timedelta` instance or a
+        :class:`dict` suitable for constructing a :classL`datetime.timedelta`
+        instance, for instance {'hours': 1, 'seconds': 1}
+
+    :returns: the result of the email send operation
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if an exception was thrown while sending the alert
 
     """
     subscription = base_utils.get_subscription(
@@ -550,9 +717,13 @@ def raise_site_not_configured_for_bot():
     """
     email alerts if there are exchange bots with mis-configured site info
 
-    #TODO: subscription
+    :returns: the result of the email send operation
+    :rtype: str
 
-    #TODO: template
+    :raises:
+
+        :exc:`Exception` if an exception was thrown while sending the alert
+
     """
     data = models.MailHost.objects.filter(
         Q(site__isnull=True) | Q(site__site__iexact='site.not.exist')).\

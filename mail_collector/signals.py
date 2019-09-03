@@ -1,8 +1,6 @@
 """
 .. _signals:
 
-django models for the mail_collector app
-
 :module:    mail_collector.signals
 
 :copyright:
@@ -13,6 +11,9 @@ django models for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    jun. 10, 2019
+
+Django Signals Module for the :ref:`Mail Collector Application`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """
 from django.db.models.signals import post_save
@@ -31,17 +32,25 @@ from .models import (
 def update_mail_between_domains(sender, instance, *args, **kwargs):
     """
     create or update entries in
-    :class:`<mail_collector.models.MailBetweenDomains>`
+    :class:`<mail_collector.models.MailBetweenDomains>` after applicable
+    exchange bot events have been created or updated in
+    :class:`mail_collector.models.MailBotMessage`
 
     an entry in the domain to domain verification requires a send and a receive
-    event for the same message identifier.
+    event for the same message identifier. since one cannot have a receive
+    event unless a matching send event has already been generated, this
+    function looks for all receive events.
 
-    the domain to domain verification status depends on the event_status of
-    the send and receive events. if either event_status is FAIL,
-    the verification status is FAIL as well.
+    an :class:`mail_collector.models.MailBotMessage` that contains a
+    receive event with a status of PASS is considered to be the sign of
+    a successful email transmission between the email MX domain of the
+    sender and the email MX domain of the receiver and a note of this is made
+    in the :class:`<mail_collector.models.MailBetweenDomains>` model
 
     the site entry in the domain to domain verification is extracted from the
-    event_group_id value.
+    :attr:`mail_collector.models.MailBotMessage.event_group_id` value.
+    this attribute is in the format $site+$host_name+$timestamp
+
     the from domain is extracted from the sent_from field in the instance.
     the to domain is extracted from the received_by field of the received event
 

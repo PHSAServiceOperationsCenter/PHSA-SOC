@@ -19,7 +19,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
-    
+
 :updatedd:    Jul. 15, 2019
 """
 

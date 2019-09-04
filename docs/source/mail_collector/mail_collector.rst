@@ -1,28 +1,32 @@
 Mail Collector Application
 ==========================
 
-The Mail Collector application is responsible for generating alerts for
-email and Exchange functionality.
+The :ref:`Mail Collector Application` is responsible for collecting Windows
+log events created by instances of the
+:ref:`Mail Borg Client Application` running on remote monitoring bots, and
+for generating alerts and warning with regards to  email and Exchange services
+availability at remote sites.
 
-Instances of the :ref:`Mail Borg Client Application` running on monitoring
-bots located on remote sites are generating data about Exchange services
-availability for each remote site in the form of Windows event log entries.
-The Windows events thus generated are collected via a chain composed of
-`Winlogbeat <https://www.elastic.co/products/beats/winlogbeat>`_, 
-`Logstash <https://www.elastic.co/products/logstash>`_,
-and `RabbitMQ <https://www.rabbitmq.com/>`_ and delivered to the
-:ref:`Mail Collector Application`.
+The application will also generate periodic reports with regards to  email
+and Exchange services availability at remote sites.
 
-:note:
+The application is also capable of analyzing the availability of all and/or
+various Exchange servers and Exchange databases based on the configurations
+made available to the :ref:`Mail Borg Client Application` instances. 
 
-        There is a version restriction for both Winlogbeat and Logstash. We
-        only support version 6.5.4 for both products.
+This application is also responsible for providing main configurations for 
+nstances of the :ref:`Mail Borg Client Application` running on remote
+monitoring bots.
 
 
+  
 
 .. toctree::
    :maxdepth: 2
    
+   data_collection.rst
+   alerts.rst
+   reports.rst
    settings.rst
    dynamic_settings.rst
    mail_collector_subscriptions.rst

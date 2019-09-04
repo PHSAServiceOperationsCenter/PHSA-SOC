@@ -1,8 +1,6 @@
 """
 .. _queries:
 
-query classes and functions for the mail_collector app
-
 :module:    mail_collector.queries
 
 :copyright:
@@ -14,6 +12,7 @@ query classes and functions for the mail_collector app
 
 :updated:    Jun. 11, 2019
 
+Query functions for the :ref:`Mail Collector Application`
 """
 import datetime
 
@@ -34,19 +33,39 @@ from p_soc_auto_base.utils import (
 def dead_bodies(data_source, filter_exp,
                 not_seen_after=None, url_annotate=False, **base_filters):
     """
-    return instances not seen before a moment in time
+    :returns: :class:`django.db.models.Queryset` objects that are filtered on
+        :class:`django.db.models.DateTimeField` fields
 
-    :param data_source:
-        a queryset or the data source in 'app_label.modelname' format
-    :param filter_exp: the field and lookup to use for filtering
+    :arg data_source: the data source used to populate the queryset
 
-        for example, 'last_updated__lte' will filter on a field named
+            Either a :class:`django.db.models.Queryset` object or a :class:`str`
+            in 'app_label.modelname' format
+
+    :arg str filter_exp: the field and lookup to use for filtering
+
+        For example, 'last_updated__lte' will filter on a field named
         last_updated using a less than or equal lookup
-    :type filter_exp: str
-    :param not_before: the moment in time used for filtering
-    :type not_before: datetime.datetime
-    :param url_annotate: do we also add the absolute url for each object?
-    :type url_annotate: bool
+
+    :arg not_seen_after:
+
+        the time interval required to buid the filter parameter value
+
+        It can be a :class:`datetime.timedelta` object or a :class:`dict`
+        that can be used to construct a :class:`datetime.timedelta` object.
+
+        Default: ``None``. When ``None``, the value is picked up from
+        :class:`citrus_borg.dynamic_properties_registry.ExchangeServerError`.
+
+    :arg bool url_annotate: do we also add the absolute url for each object?
+
+    :arg \*\*base_filters: optional django lookups for the queryset
+
+    :raises:
+
+        :exc:`TypeError` if the not_seen_after argument is of types other
+        than :class:`datetime.timedelta` object, :class:`dict`
+        that can be used to construct a :class:`datetime.timedelta` object,
+        or ``None``
     """
     if not_seen_after is None:
         not_seen_after = MomentOfTime.past(
@@ -75,15 +94,31 @@ def dead_mail_sites(not_seen_after=None):
     """
     :returns:
 
-        queryset based on :class:`<mail_collector.models.MailHost>` that
-        will be used to evaluate sites from where exchange requests have not
+        :class:`django.db.models.Queryset` objects based on 
+        :class:`mail_collector.models.MailHost` that
+        represent sites from where exchange requests have not
         been observed for the duration specified in the argument
 
-    the special thing about this function is that it need to filter on
-    an aggregated annotation.
-    there may be multiple bots on any site and the site can only be
-    considered down if all its bots are down. we must filter against the
+    This query function must filter on an aggregated annotation.
+    There may be multiple bots on any site and the site can only be
+    considered down if all its bots are down. We must filter against the
     bot most recently seen for each site.
+
+    :param not_seen_after: the time interval required to buid the filter
+        parameter value
+
+        It can be a :class:`datetime.timedelta` object or a :class:`dict`
+        that can be used to construct a :class:`datetime.timedelta` object.
+
+        Default: ``None``. When ``None``, the value is picked up from
+        :class:`citrus_borg.dynamic_properties_registry.ExchangeServerError`
+
+    :raises:
+
+        :exc:`TypeError` if the not_seen_after argument is of types other
+        than :class:`datetime.timedelta` object, :class:`dict`
+        that can be used to construct a :class:`datetime.timedelta` object,
+        or ``None``
     """
     if not_seen_after is None:
         not_seen_after = MomentOfTime.past(time_delta=not_seen_after)

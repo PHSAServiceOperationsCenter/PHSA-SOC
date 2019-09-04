@@ -13,7 +13,6 @@
 :updated:    jun. 10, 2019
 
 Django Signals Module for the :ref:`Mail Collector Application`
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 """
 from django.db.models.signals import post_save
@@ -31,28 +30,42 @@ from .models import (
 @receiver(post_save, sender=MailBotMessage)
 def update_mail_between_domains(sender, instance, *args, **kwargs):
     """
-    create or update entries in
-    :class:`<mail_collector.models.MailBetweenDomains>` after applicable
+    **Create** or **update** entries in
+    :class:`mail_collector.models.MailBetweenDomains` after applicable
     exchange bot events have been created or updated in
     :class:`mail_collector.models.MailBotMessage`
 
-    an entry in the domain to domain verification requires a send and a receive
-    event for the same message identifier. since one cannot have a receive
-    event unless a matching send event has already been generated, this
-    function looks for all receive events.
+    An entry in the domain to domain verification model requires a send and
+    a receive event for the same message identifier.
+    Since one cannot have a receive event unless a matching send event
+    has already been generated, this function looks for all receive events.
 
-    an :class:`mail_collector.models.MailBotMessage` that contains a
+    An :class:`mail_collector.models.MailBotMessage` instance that contains a
     receive event with a status of PASS is considered to be the sign of
     a successful email transmission between the email MX domain of the
     sender and the email MX domain of the receiver and a note of this is made
-    in the :class:`<mail_collector.models.MailBetweenDomains>` model
+    in the :class:`mail_collector.models.MailBetweenDomains` model
 
-    the site entry in the domain to domain verification is extracted from the
+    The site entry in the domain to domain verification is extracted from the
     :attr:`mail_collector.models.MailBotMessage.event_group_id` value.
     this attribute is in the format $site+$host_name+$timestamp
 
-    the from domain is extracted from the sent_from field in the instance.
-    the to domain is extracted from the received_by field of the received event
+    :Note:
+
+        This functionality is absolutely dependent on the convention
+        described above. This convention is under out control since
+        it is implemented via the :ref:`Mail Borg Client Application`.
+        Please do not mess with success.
+
+    The from domain is extracted from the
+    :attr:`mail_collector.models.MailBotMessage.sent_from` field in the
+    instance.
+
+    The to domain is extracted from the
+    :attr:`mail_collector.models.MailBotMessage.received_by` field of the
+    received event.
+
+    :returns: a :class:`str` with the data that was updated or ``None``
 
     """
     if not sender.objects.filter(
@@ -104,7 +117,14 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 @receiver(post_save, sender=MailBotLogEvent)
 def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     """
-    update the exchange servers with connection events
+    **Create** or **update** :class:`mail_collector.models.ExchangeServer`
+    instances from Exchange connection events
+
+    The conventions described in :func:`update_exchange_entities_from_message`
+    apply here as well.
+
+    :returns: the updated :class:`mail_collector.models.ExchangeServer`
+        instance
     """
     if instance.event_status not in ['PASS']:
         # only interested in successful events
@@ -131,7 +151,26 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
 @receiver(post_save, sender=MailBotMessage)
 def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     """
-    update exchange entitities state from send or receive events
+    **Create** or **update** Exchange backend entities from send or receive
+    email events
+
+    Exchange backend entities:
+
+    *    :class:`mail_collector.models.ExchangeServer`
+
+    *    :class:`mail_collector.models.ExchangeDatabase`
+
+    The datetime fields in both models are used to keep track of when the
+    most recent Exchange event has been recorded. The models also keep track
+    of where said event is originated from.
+
+    Events are being correlated with Exchange entities based on the
+    Exchange account. By convention the Exchange account contains
+    the name of the Exchange server and the name of the Exchange database
+    instance as follows: z-$ServerName-$DatabaseName@mx_domain.ca.
+
+    :returns: a :class:`tuple` with the updated Exchange entity instance
+        and the event type that caused the update
     """
     if instance.event.event_status not in ['PASS']:
         return None

@@ -326,7 +326,7 @@ class MailHost(WinlogbeatHost):
     """
     Exchange monitoring bots proxy model
 
-    `Mail Bot fields <../../../admin/doc/models/citrus_borg.winlogbeathost>`
+    `Mail Bot fields <../../../admin/doc/models/citrus_borg.winlogbeathost>`_
     """
     objects = MailHostManager()
 

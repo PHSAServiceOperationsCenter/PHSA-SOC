@@ -260,7 +260,7 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
         :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultError`
         dynamic setting
 
-    :arg **base_filters: additional django lookup style arguments to be
+    :arg \*\*base_filters: additional django lookup style arguments to be
         applied to the queryset
 
     :returns: the result of the email send operation

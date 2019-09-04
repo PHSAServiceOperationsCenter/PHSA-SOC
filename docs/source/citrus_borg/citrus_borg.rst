@@ -1,2 +1,2 @@
-The Citrus Borg Application
-===========================
+Citrus Borg Application
+=======================

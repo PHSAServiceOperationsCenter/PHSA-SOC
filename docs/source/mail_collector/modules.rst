@@ -15,4 +15,4 @@ Mail Collector Modules
    modules/serializers.rst
    modules/signals.rst
    modules/tasks.rst
-   modules/urls.rst
+   

@@ -1,8 +1,6 @@
 """
 .. _serializers:
 
-serialzers for the mail_collector app
-
 :module:    mail_collector.serializers
 
 :copyright:
@@ -13,6 +11,8 @@ serialzers for the mail_collector app
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    aug. 8, 2019
+
+REST serialzers for the :ref:`Mail Collector Application`
 
 """
 from rest_framework import serializers
@@ -25,7 +25,9 @@ from mail_collector.models import (
 
 class DomainAccountSerializer(serializers.ModelSerializer):
     """
-    serializer for domain accounts
+    Serializer for :class:`mail_collector.models.DomainAccount`
+
+    This is a read-only serializer.
     """
     domain = serializers.CharField(max_length=15)
     username = serializers.CharField(max_length=64)
@@ -38,7 +40,9 @@ class DomainAccountSerializer(serializers.ModelSerializer):
 
 class ExchangeAccountSerializer(serializers.ModelSerializer):
     """
-    serializer for exchange accounts
+    Serializer for :class:`mail_collector.models.ExchangeAccount`
+
+    This is a read-only serializer.
     """
     smtp_address = serializers.EmailField()
     domain_account = DomainAccountSerializer()
@@ -53,7 +57,9 @@ class ExchangeAccountSerializer(serializers.ModelSerializer):
 
 class WitnessEmailSerializer(serializers.ModelSerializer):
     """
-    serialzer for witness email addresses
+    Serialzer for :class:`mail_collector.models.WitnessEmail`
+
+    This is a read-only serializer.
     """
     smtp_address = serializers.EmailField()
 
@@ -64,7 +70,9 @@ class WitnessEmailSerializer(serializers.ModelSerializer):
 
 class ExchangeConfigurationSerializer(serializers.ModelSerializer):
     """
-    serializer for elient configurations
+    Serializer for :class:`mail_collector.models.ExchangeConfiguration`
+
+    This is a read-only serializer.
     """
     config_name = serializers.CharField(max_length=64)
     exchange_accounts = ExchangeAccountSerializer(many=True, read_only=True)
@@ -93,7 +101,9 @@ class ExchangeConfigurationSerializer(serializers.ModelSerializer):
 
 class MailSiteSerializer(serializers.ModelSerializer):
     """
-    serializer for site info
+    Serializer for :class:`mail_collector.models.MailSite`
+
+    This is a read-only serializer.
     """
     site = serializers.CharField(max_length=64)
 
@@ -104,7 +114,14 @@ class MailSiteSerializer(serializers.ModelSerializer):
 
 class BotConfigSerializer(serializers.ModelSerializer):
     """
-    serializer for passing the full configuration to a bot
+    Serializer used for passing the main configuration required for running
+    an instance of the :ref:`Mail Borg Client Application` on a remote
+    monitoring bot
+
+    It combines information from
+    :class:`mail_collector.models.MailHost`,
+    :class:`mail_collector.models.MailSite`, and
+    :class:`mail_collector.models.ExchangeConfiguration`
     """
     host_name = serializers.CharField(max_length=63)
     site = MailSiteSerializer(read_only=True)

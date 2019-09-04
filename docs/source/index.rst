@@ -45,6 +45,7 @@ SOC Automation Server Applications
    p_soc_auto_base/p_soc_auto_base.rst
    configs/config.rst
    citrus_borg/citrus_borg.rst
+   mail_borg/mail_borg.rst
    mail_collector/mail_collector.rst
    orion_integration/orion_integration.rst
    ssl_cert_tracker/ssl_cert_tracker.rst

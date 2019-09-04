@@ -88,3 +88,9 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3.6', None),
     'django': ('http://docs.djangoproject.com/en/2.2/',
                'http://docs.djangoproject.com/en/2.2/_objects/'), }
+
+autodoc_default_options = {
+    'member-order': 'bysource',
+    'undoc-members': True,
+    'exclude-members': '__weakref__',
+}

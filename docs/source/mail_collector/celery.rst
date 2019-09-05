@@ -14,3 +14,6 @@ Celery Queues
 
 Celery Worker Configuration
 ---------------------------
+
+Celery Periodic Tasks
+---------------------

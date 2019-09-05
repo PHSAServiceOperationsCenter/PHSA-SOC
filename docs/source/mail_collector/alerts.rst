@@ -11,7 +11,12 @@ via independent `Celery <https://docs.celeryproject.org/en/latest/index.html>`_
 All email alerts can be fully disabled at the subscription level.
 See :ref:`Mail Collector Subscriptions` for details.
 
-All alerts can be disabled at the :ref`Periodic Tasks` level.
+All alerts can be disabled at the :ref:`Mail Collector Subscriptions` level.
+
+All alerts can be disabled at the :ref:`Celery Periodic Tasks` level unless
+otherwise specified.
+
+
 
 Alerts (and/or warnings) can be raised for the following objects:
 
@@ -70,3 +75,9 @@ Alerts (and/or warnings) can be raised for the following objects:
   This type of alert can be disabled for any pair of MX domains using the
   'enabled` field of the :class:`mail_collector.models.MailBetweenDomains`
   model
+  
+* Failed Exchange event alert: if an Exchange event of any type with a status
+  of FAILED is detected, an alert will be raised.
+  
+  This type of alert cannot be disabled at the :ref:`Celery Periodic Tasks`
+  level

@@ -38,21 +38,18 @@ under :ref:`Mail Collector Reports`.
 It is also possible to delete expire events.
 
 Events are expired and/or deleted by the
-:function:`mail_collector.tasks.expire_events` based on dynamic settings
-defined under
-:class:`citrus_borg.dynamic_properties_registry.ExchangeExpireEvents` and
-:class:`citrus_borg.dynamic_properties_registry.ExchangeDeleteExpired`.
+:meth:`mail_collector.tasks.expire_events` `Celery 
+<https://docs.celeryproject.org/en/latest/index.html>`_ task using the
+:ref:`Expire Exchange events`  and :ref:`Delete expired Exchange events`
+dynamic settings.
 
-Event expiration is evaluated and executed as below::
+Event expiration for the :ref:`Mail Collector Application` is scheduled to
+execute from the `Expire collected mail messages periodic task 
+<../../../admin/django_celery_beat/periodictask/?q=&task=mail_collector.tasks.expire_events>`_.
 
-    In [3]: from django_celery_beat.models import PeriodicTask
-
-    In [9]: PeriodicTask.objects.filter(task__iexact='mail_collector.tasks.expire_events').values('name','task','interval__every','interval__period')
-    Out[9]: <ExtendedQuerySet [{'name': 'Expire collected mail messages', 'task': 'mail_collector.tasks.expire_events', 'interval__every': 72, 'interval__period': 'hours'}]>
-
-    In [10]:
-    
 See `Celery Periodic Tasks 
 <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>`_ and
 `Using custom scheduler classes 
 <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html#using-custom-scheduler-classes>`_
+for more details about scheduling `Celery 
+<https://docs.celeryproject.org/en/latest/index.html>`_ tasks.

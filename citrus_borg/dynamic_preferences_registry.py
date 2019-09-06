@@ -339,7 +339,7 @@ class ExchangeDefaultError(DurationPreference):
     """
     Dynamic preferences class controlling how long the
     :ref:`Mail Collector Application` will wait before raising an error
-    about unspecified itesm
+    about unspecified items
 
     :access_key: 'exchange__bot_error'"""
     section = exchange

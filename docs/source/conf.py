@@ -27,7 +27,7 @@ django.setup()
 
 project = 'SOC Automation and Orchestration'
 copyright = (
-    '2018 - 2019 Provincial Health Service Authority of British Columbia')
+    '2018 - 2019 Provincial Health Services Authority of British Columbia')
 author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags

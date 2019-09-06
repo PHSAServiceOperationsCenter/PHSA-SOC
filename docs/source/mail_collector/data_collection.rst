@@ -5,7 +5,7 @@ Data Collection
 ---------------
 
 Instances of the :ref:`Mail Borg Client Application` running on monitoring
-bots located on remote sites are generating data about Exchange services
+bots located at remote sites are generating data about Exchange services
 availability for each remote site in the form of Windows event log entries.
 The Windows events thus generated are collected via a chain composed of
 `Winlogbeat <https://www.elastic.co/products/beats/winlogbeat>`_, 
@@ -29,13 +29,13 @@ From an operational perspective, the data collected by this application is
 only relevant for short periods of time.
 
 The application accounts for this fact by providing functionality to expire
-collected data via the 'is_expired' field of the
+collected data via the 'is_expired' field of the 
 :class:`mail_collector.models.MailBotLogEvent` model. Expired events will
 not be taken into consideration when evaluating any alert conditions described
 under :ref:`Mail Collector Alerts` or when populating any reports described
 under :ref:`Mail Collector Reports`.
 
-It is also possible to delete expire events.
+It is also possible to delete expired events.
 
 Events are expired and/or deleted by the
 :meth:`mail_collector.tasks.expire_events` `Celery 

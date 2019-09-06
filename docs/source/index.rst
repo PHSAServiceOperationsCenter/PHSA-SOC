@@ -6,7 +6,7 @@
 PHSA SOC Automation Documentation
 =================================
 
-The SOC Automation project is repsponsible for creating, implementing,
+The SOC Automation project is responsible for creating, implementing,
 and maintaining custom network and system monitoring software for the
 SOC team.
 
@@ -15,13 +15,13 @@ The SOC Automation project provides the following facilities.
 * **Custom Data Collection Facilities**:
   We provide multiple components for collecting custom monitoring data.
   All data collection components run independently of the SOC Automation
-  server. Some data collection are not location dependent and can be
-  colocated with the SOC Automation server. Other data collection
-  components must be executed on nodes located on remote sites
+  server. Some data collection components are not location dependent and 
+  can be co-located with the SOC Automation server. Other data collection
+  components must be executed on nodes located at remote sites
   
 * **Custom Alert Facilities**:
   All the data collected is stored and analyzed on the SOC Automation server.
-  Configurable alerts are generated based on this analisys and dispatched via
+  Configurable alerts are generated based on this analysis and dispatched via
   email to interested parties. The alerting mechanism is designed to be
   extensible with minimal effort
 

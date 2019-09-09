@@ -15,7 +15,7 @@ various Exchange servers and Exchange databases based on the configurations
 made available to the :ref:`Mail Borg Client Application` instances. 
 
 This application is also responsible for providing main configurations for 
-nstances of the :ref:`Mail Borg Client Application` running on remote
+instances of the :ref:`Mail Borg Client Application` running on remote
 monitoring bots.
 
 

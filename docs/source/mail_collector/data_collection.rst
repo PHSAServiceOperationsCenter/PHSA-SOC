@@ -13,7 +13,7 @@ The Windows events thus generated are collected via a chain composed of
 and `RabbitMQ <https://www.rabbitmq.com/>`_ and delivered to the
 :ref:`Mail Collector Application`.
 
-:note:
+:Note:
 
         There is a version restriction for both Winlogbeat and Logstash. We
         only support version 6.5.4 for both products.
@@ -21,6 +21,20 @@ and `RabbitMQ <https://www.rabbitmq.com/>`_ and delivered to the
 The data collection process is asynchronous and it is executed via
 independent `Celery <https://docs.celeryproject.org/en/latest/index.html>`_
 `workers <https://docs.celeryproject.org/en/latest/userguide/workers.html>`_.
+
+The data collection functionality is partially shared with the
+:ref:`Citrus Borg Application`. The common module is a consumer of AMQP
+messages that integrates with 
+`Celery <https://docs.celeryproject.org/en/latest/index.html>`_
+`workers <https://docs.celeryproject.org/en/latest/userguide/workers.html>`_.
+This module is implemented using the
+`celery-meesage-consumer package 
+<https://github.com/depop/celery-message-consumer>`_. See the
+:mod:`citrus_borg.consumers` module for detail.
+
+The `Celery task <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_
+responsible for data collection in this application is
+:meth:`mail_collector.tasks.store_mail_data`.
 
 Data Retention
 --------------

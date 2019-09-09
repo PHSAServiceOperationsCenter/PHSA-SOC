@@ -13,8 +13,8 @@ See :ref:`Mail Collector Subscriptions` for details.
 
 All alerts can be disabled at the :ref:`Mail Collector Subscriptions` level.
 
-All alerts can be disabled at the :ref:`Celery Periodic Tasks` level unless
-otherwise specified.
+All alerts can be disabled from the `Mail Collector periodic tasks admin page 
+<../../../admin/django_celery_beat/periodictask>`_ unless otherwise specified.
 
 
 
@@ -79,5 +79,6 @@ Alerts (and/or warnings) can be raised for the following objects:
 * Failed Exchange event alert: if an Exchange event of any type with a status
   of FAILED is detected, an alert will be raised.
   
-  This type of alert cannot be disabled at the :ref:`Celery Periodic Tasks`
-  level
+  This type of alert cannot be disabled from the 
+  `Mail Collector periodic tasks admin page 
+  <../../../admin/django_celery_beat/periodictask>`_

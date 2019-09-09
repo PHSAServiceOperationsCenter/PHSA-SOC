@@ -349,6 +349,9 @@ CELERY_QUEUES = (
     Queue('mail_collector', Exchange('mail_collector'),
           routing_key='mail_collector'),
 )
+"""
+celery queues
+"""
 
 CELERY_DEFAULT_QUEUE = 'shared'
 CELERY_DEFAULT_EXCHANGE = 'shared'
@@ -359,6 +362,9 @@ CELERY_USE_DJANGO = True
 CELERY_EXCHANGES = {
     'default': {'name': 'logstash', 'type': 'topic', },
 }
+"""
+celery exchanges
+"""
 
 # service users
 RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'

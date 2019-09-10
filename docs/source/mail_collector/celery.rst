@@ -154,17 +154,17 @@ overwhelm our current configuration.
 
 There are 2 solutions to resolve this situation:
 
-* increase the autoscaling factor for celery the worker service(s) before
-  restarting them. this will avoid loss of data and will not require any
+* increase the autoscaling factor for the celery worker service(s) before
+  restarting them. This will avoid loss of data and will not require any
   changes in the `RabbitMQ exchange configuration 
-  <https://www.rabbitmq.com/>`_. the downside to this approach is that all the
+  <https://www.rabbitmq.com/>`_. The downside to this approach is that all the
   alerts and reports that could not be sent while the workes were down are
   also queued and they will be send out after the workers are restarted which
   will result in a lot of emails being sent out in a very short oeriod of time
   
 * wipe out the message store of the `RabbitMQ server 
-  <https://www.rabbitmq.com/>`_. this is a destructive procedure that will
+  <https://www.rabbitmq.com/>`_. This is a destructive procedure that will
   result in data loss. Additionally we will have to manually bond the
-  'logstash' queue to the 'logstash' exchange on the `RabbitMQ server 
+  ``logstash`` queue to the ``logstash`` exchange on the `RabbitMQ server 
   <https://www.rabbitmq.com/>`_. this procedure is described under
   :ref:`RabbitMQ Server User Guide`

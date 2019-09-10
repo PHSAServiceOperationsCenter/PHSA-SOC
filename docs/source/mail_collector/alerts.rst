@@ -20,65 +20,214 @@ All alerts can be disabled from the `Mail Collector periodic tasks admin page
 
 Alerts (and/or warnings) can be raised for the following objects:
 
-* Remote monitoring bots: if a remote bot known to have a running instance
-  of the :ref:`Mail Borg Client Application` has not been sending specific
-  Windows log event to the :ref:`Mail Collector Application` over a given
-  evaluation period, an alert will be raised.thi
+Alerts for remote monitoring bots
+---------------------------------
+
+If a remote bot known to have a running instance of the 
+:ref:`Mail Borg Client Application` has not been sending specific Windows log
+events to the :ref:`Mail Collector Application` over a given evaluation period,
+an alert will be raised.
   
-  The alert threshold, in this case, the evaluation period is configurable
-  and it is possible to define multiple alerts of this type with various
-  thresholds and various alert levels.
+The alert threshold, in this case, the evaluation period is configurable
+and it is possible to define multiple alerts of this type with various
+thresholds and various alert levels.
   
-  This type of alert can be disabled at the bot definition level. See
-  :class:`mail_collector.models.MailHost`. Use the 'enabled' field to
-  control this functionality.
+This type of alert can be disabled at the bot definition level. See
+:class:`mail_collector.models.MailHost`. Use the ``enabled`` field to
+control this functionality.
+
+**Currently defined:**
+
+* `Critical alert for exchange client bots 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+exchange+client+bots>`_
   
-* Remote monitoring sites: simmilars to above but applying to remote
-  monitoring sites.
+  The alert condition will be evaluated based on the ``Schedule`` section
+  shown on the page linked above.
   
-  A remote monitoring site for Exchange services is defined as a remote
-  monitoring site with at least one monitoring bot for Exchange services.
+  The threshold for this alert is cofigured from the dynamic preference at
+  `Exchange Client Bot Errors After 
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_error>`_.
   
-  These alerts will be raised only if all the bots on a site are
-  satisfying the alert thresholds
+* `Warning alert for exchange client bots 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+client+bots>`_
   
-* Exchange server alerts: if, for any known exchange server, a specific
-  event type has not been recorded over a given evaluation period, an
-  alert will be raised.
+  The threshold for this alert is cofigured from the dynamic preference at
+  `Exchange Client Bot Warnings After 
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_warn>`_
   
-  The event types tracked for this type of alerts are: connected, sent, and
-  received.
+:Note:
+
+    The alert thresholds above are shared with other alerts. One must exercise
+    caution before one will change them.
+
   
-  This type of alert can be disabled for one or more given Exchange servers
-  via the 'enabled' field. See :class:`mail_collector.models.ExchangeServer`
+Alerts for remote monitoring sites
+----------------------------------
+
+These alerts are simmmilar to above but applying to remote monitoring sites.
   
-* Exchange database alerts: if, for any known Exchange database, an event
-  involving database access has not been recorded over a given evaluation
-  period, an alert will be raised.
+A remote monitoring site for Exchange services is defined as a remote
+monitoring site with at least one monitoring bot for Exchange services.
   
-  The application is only tracking events of type received for reasons of
-  simplicity.
+These alerts will be raised only if all the bots on a site are satisfying
+the alert thresholds.
+
+This type of alert can be disabled at the bot definition level. See
+:class:`mail_collector.models.MailSite`. Use the ``enabled`` field to
+control this functionality.
+
+**Currently defined:**
+
+* `Critical alert for exchange client sites 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+exchange+client+sites>`_
   
-  This type of alert can be disabled for one or more given Exchange databases
-  via the 'enabled' field. See :class:`mail_collector.models.ExchangeDatabase`
+  The threshold for this alert is cofigured from the dynamic preference at
+  `Exchange Client Bot Errors After 
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_error>`_
   
-* Email services between MX domains alerts: if an email originating from an
-  address in a given MX domain (i.e. @phsa.ca) cannot be delivered to an
-  address in a given MX domain (i.e. @hssbc.ca) and assuming that the
-  application is aware that such functionality is supported over a given
-  evaluation period, an alert will be raised.
+* `Warning alert for exchange client sites 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+client+sites>`_
   
-  We track this functionality via the
-  :class:`mail_collector.models.MailBetweenDomains` model by recording
-  timepstamps for interactions between pairs of MX domains.
+  The threshold for this alert is cofigured from the dynamic preference at
+  `Exchange Client Bot Warnings After 
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_warn>`_
+
   
-  This type of alert can be disabled for any pair of MX domains using the
-  'enabled` field of the :class:`mail_collector.models.MailBetweenDomains`
-  model
+Alerts for Exchange servers
+---------------------------
+
+if, for any known exchange server, a specific event type has not been recorded
+over a given evaluation period, an alert will be raised.
   
-* Failed Exchange event alert: if an Exchange event of any type with a status
-  of FAILED is detected, an alert will be raised.
+The event types tracked for this type of alerts are: ``connected``, ``sent``,
+and ``received``.
   
-  This type of alert cannot be disabled from the 
-  `Mail Collector periodic tasks admin page 
-  <../../../admin/django_celery_beat/periodictask>`_
+This type of alert can be disabled for one or more given Exchange servers
+via the ``enabled`` field. See :class:`mail_collector.models.ExchangeServer`.
+
+**Currently defined:**
+
+* `Critical Exchange server receive alert 
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+receive+to+exchange+servers>`_
+  
+* `Critical Exchange server send alert 
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+send+to+exchange+servers>`_
+  
+* `Critical Exchange server connection alert
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+connections+to+exchange+servers>`_
+  
+* `Warning Exchange server receive alert 
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+receive+to+exchange+servers>`_
+  
+* `Warning Exchange server send alert
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+send+to+exchange+servers>`_
+  
+* `Warning Exchange server connection alert 
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+connections+to+exchange+servers>`_
+  
+The threshold for the critical alerts is configured via the dynamic preference at
+`Exchange Server Error After 
+<../../../admin/dynamic_preferences/globalpreferencemodel/?q=server_error>`_.
+
+The threshold for the warning alerts is configured via the dynamic preference at
+`Exchange Server Warning After 
+<../../../admin/dynamic_preferences/globalpreferencemodel/?q=server_warn>`_.
+
+Alerts for Exchange databases
+-----------------------------
+
+If, for any known Exchange database, an event involving database access has
+not been recorded over a given evaluation period, an alert will be raised.
+  
+The application is only tracking events of type ``received`` for reasons of
+simplicity.
+  
+This type of alert can be disabled for one or more given Exchange databases
+via the ``enabled`` field. See :class:`mail_collector.models.ExchangeDatabase`.
+
+**Currently defined:**
+
+* `Critical Exchange database alert 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+exchange+databases>`_
+  
+* `Warning Exchange database alert 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+databases>`_
+  
+These alerts use the same thresholds as the ones defined in the 
+:ref:`Alerts for Exchange servers` section.
+  
+Alerts for email services between MX domains
+--------------------------------------------
+
+If an email originating from an address in a given MX domain (i.e. @phsa.ca)
+cannot be delivered to an address in a given MX domain (i.e. @hssbc.ca)
+and assuming that the application is aware that such functionality is supported
+over a given evaluation period, an alert will be raised.
+  
+We track this functionality via the 
+:class:`mail_collector.models.MailBetweenDomains` model by recording
+time stamps for interactions between pairs of MX domains.
+  
+This type of alert can be disabled for any pair of MX domains using the
+'enabled` field of the :class:`mail_collector.models.MailBetweenDomains`
+model.
+
+**Currently defined:**
+
+* `Critical email between domains verification failure alert 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+email+check+failure>`_
+  
+* `Critical email between domains not verified alert 
+  <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+email+check+not+checked>`_
+  
+  The threshold for this alarm is the same as the one described in
+  :ref:`Alerts for remote monitoring bots` section for critical alerts 
+  
+Alerts for failed Exchange events
+---------------------------------
+
+If an Exchange event of any type with a status of ``FAILED`` is detected,
+an alert will be raised.
+  
+This type of alert is not based on periodically re-evaluating the error
+condition. Therefor it cannot be disabled from the 
+`Mail Collector periodic tasks admin page 
+<../../../admin/django_celery_beat/periodictask>`_.
+
+Alerts for client bot configuration
+-----------------------------------
+
+When a remote bot running an Exchange client instance is sending events
+without site information is detected on the server an laert will be raised for
+said bot.
+
+This can happen in either of the following cases:
+
+* A bot is not known to the server:
+ 
+  Under normal conditions bot information will only be made
+  available on the automation server the first time Windows log events
+  originating from said are being detected and saved to the server side
+  database.
+  
+  However, even when this is the first time the bot is running, it will still
+  query the server for the main configuration needed by the
+  :ref:`Mail Borg Client Application` instance. The server will return a special
+  `Host doesn't exist <../../../admin/mail_collector/mailhost/?q=host.not.exist>`_ 
+  configuration. When this configuration is used, the bot information will
+  be created on the server but withour valid ``Site`` information.
+  
+  The server considers this to be an error condition and this type of alert
+  is raised to inform the operator that the ``site`` field must be configured
+  for the newly detected bot
+  
+* A bot is known to the server but the ``site`` field has not been configured
+
+* A bot has been running using main configuration data cached locally but the
+  operator has changed the ``site`` info in this configuration to something
+  the server is not aware of
+  
+This alert is evaluated periodically as configured in the ``Schedule``
+section of the `Site not configured on bot Exchange alert 
+<../../../admin/django_celery_beat/periodictask/?q=exchange+alert+site+not+configured>`_
+page.

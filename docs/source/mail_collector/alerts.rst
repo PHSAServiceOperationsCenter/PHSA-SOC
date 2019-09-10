@@ -11,14 +11,8 @@ via independent `Celery <https://docs.celeryproject.org/en/latest/index.html>`_
 All email alerts can be fully disabled at the subscription level.
 See :ref:`Mail Collector Subscriptions` for details.
 
-All alerts can be disabled at the :ref:`Mail Collector Subscriptions` level.
-
 All alerts can be disabled from the `Mail Collector periodic tasks admin page 
 <../../../admin/django_celery_beat/periodictask>`_ unless otherwise specified.
-
-
-
-Alerts (and/or warnings) can be raised for the following objects:
 
 Alerts for remote monitoring bots
 ---------------------------------
@@ -51,7 +45,7 @@ control this functionality.
 * `Warning alert for exchange client bots 
   <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+client+bots>`_
   
-  The threshold for this alert is cofigured from the dynamic preference at
+  The threshold for this alert is configured from the dynamic preference at
   `Exchange Client Bot Warnings After 
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_warn>`_
   

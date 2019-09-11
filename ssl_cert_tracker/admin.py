@@ -298,6 +298,8 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
     list_editable = ['enabled', 'emails_list', 'template_dir',
                      'template_name', 'template_prefix']
     readonly_fields = ('created_on', 'updated_on', )
+    list_filter = ('enabled', )
+    search_fields = ('subscription', )
 
 
 @admin.register(SslExpiresIn)

@@ -18,6 +18,11 @@ This application is also responsible for providing main configurations for
 instances of the :ref:`Mail Borg Client Application` running on remote
 monitoring bots.
 
+The ``subscription`` services used by the :ref:`Mail Collector Application`
+are provided via the :ref:`Subscription Services` component.
+
+The ``email`` services used by the :ref:`Mail Collector Application`
+are provided via the :ref:`Email Services` component.
 
   
 
@@ -29,7 +34,6 @@ monitoring bots.
    reports.rst
    settings.rst
    dynamic_settings.rst
-   mail_collector_subscriptions.rst
    celery.rst
    modules.rst
    

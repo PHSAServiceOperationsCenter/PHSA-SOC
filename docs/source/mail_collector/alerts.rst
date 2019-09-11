@@ -9,7 +9,7 @@ via independent `Celery <https://docs.celeryproject.org/en/latest/index.html>`_
 `workers <https://docs.celeryproject.org/en/latest/userguide/workers.html>`_. 
 
 All email alerts can be fully disabled at the subscription level.
-See :ref:`Mail Collector Subscriptions` for details.
+See :ref:`Subscription Services` for details.
 
 All alerts can be disabled from the `Mail Collector periodic tasks admin page 
 <../../../admin/django_celery_beat/periodictask>`_ unless otherwise specified.
@@ -54,6 +54,9 @@ control this functionality.
     The alert thresholds above are shared with other alerts. One must exercise
     caution before one will change them.
 
+These alerts are using the email subscription defined at the
+`Exchange Client Bots Not Seen subscription listed here 
+<../../../admin/ssl_cert_tracker/subscription/>`_.
   
 Alerts for remote monitoring sites
 ----------------------------------
@@ -86,6 +89,9 @@ control this functionality.
   `Exchange Client Bot Warnings After 
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_warn>`_
 
+These alerts are using the email subscription defined at the
+`Exchange Client Bot Sites Not Seen subscription listed here 
+<../../../admin/ssl_cert_tracker/subscription/>`_.
   
 Alerts for Exchange servers
 ---------------------------
@@ -104,21 +110,59 @@ via the ``enabled`` field. See :class:`mail_collector.models.ExchangeServer`.
 * `Critical Exchange server receive alert 
   <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+receive+to+exchange+servers>`_
   
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Receive subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+  
 * `Critical Exchange server send alert 
   <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+send+to+exchange+servers>`_
+
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Send subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
   
 * `Critical Exchange server connection alert
   <../../../admin/django_celery_beat/periodictask/?q=Raise+critical+alert+for+connections+to+exchange+servers>`_
   
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Connect subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+
 * `Warning Exchange server receive alert 
   <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+receive+to+exchange+servers>`_
   
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Receive subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+  
 * `Warning Exchange server send alert
   <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+send+to+exchange+servers>`_
+
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Send subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
   
 * `Warning Exchange server connection alert 
   <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+connections+to+exchange+servers>`_
   
+  This alert is using the email subscription defined at the
+  `Exchange Servers No Connect subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+
+* 'Warning Exchange server not seen alert
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+any+exchange+servers>`_
+  
+  This alert is using the email subscription defined at the
+  `Exchange Servers Not Seen subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+  
+* 'Critical Exchange server not seen alert 
+  <../../../admin/django_celery_beat/periodictask/?q=Raise+critical++alert+for+any+exchange+servers>`_
+  
+  This alert is using the email subscription defined at the
+  `Exchange Servers Not Seen subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+
 The threshold for the critical alerts is configured via the dynamic preference at
 `Exchange Server Error After 
 <../../../admin/dynamic_preferences/globalpreferencemodel/?q=server_error>`_.
@@ -146,6 +190,10 @@ via the ``enabled`` field. See :class:`mail_collector.models.ExchangeDatabase`.
   
 * `Warning Exchange database alert 
   <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+databases>`_
+
+These alerts are using the email subscription defined at the
+`Exchange Databases Not Seen subscription listed here 
+<../../../admin/ssl_cert_tracker/subscription/>`_.
   
 These alerts use the same thresholds as the ones defined in the 
 :ref:`Alerts for Exchange servers` section.
@@ -157,6 +205,9 @@ If an email originating from an address in a given MX domain (i.e. @phsa.ca)
 cannot be delivered to an address in a given MX domain (i.e. @hssbc.ca)
 and assuming that the application is aware that such functionality is supported
 over a given evaluation period, an alert will be raised.
+
+If an email verifying the services between a pair of MX domains has not been
+detected for a specific interva,, an laert will be raised.
   
 We track this functionality via the 
 :class:`mail_collector.models.MailBetweenDomains` model by recording
@@ -171,8 +222,16 @@ model.
 * `Critical email between domains verification failure alert 
   <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+email+check+failure>`_
   
+  This alert is using the email subscription defined at the
+  `Mail Verification Failed subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_
+  
 * `Critical email between domains not verified alert 
   <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+email+check+not+checked>`_
+  
+  This alert is using the email subscription defined at the
+  `Mail Unchecked On Site subscription listed here 
+  <../../../admin/ssl_cert_tracker/subscription/>`_.
   
   The threshold for this alarm is the same as the one described in
   :ref:`Alerts for remote monitoring bots` section for critical alerts 
@@ -187,6 +246,10 @@ This type of alert is not based on periodically re-evaluating the error
 condition. Therefor it cannot be disabled from the 
 `Mail Collector periodic tasks admin page 
 <../../../admin/django_celery_beat/periodictask>`_.
+
+This alert is using the email subscription defined at the
+`Exchange Client Error subscription listed here 
+<../../../admin/ssl_cert_tracker/subscription/>`_.
 
 Alerts for client bot configuration
 -----------------------------------
@@ -225,3 +288,7 @@ This alert is evaluated periodically as configured in the ``Schedule``
 section of the `Site not configured on bot Exchange alert 
 <../../../admin/django_celery_beat/periodictask/?q=exchange+alert+site+not+configured>`_
 page.
+
+This alert is using the email subscription defined at the
+`Exchange bot no site subscription listed here 
+<../../../admin/ssl_cert_tracker/subscription/>`_.

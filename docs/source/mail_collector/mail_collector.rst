@@ -32,6 +32,7 @@ are provided via the :ref:`Email Services` component.
    data_collection.rst
    alerts.rst
    reports.rst
+   bot_config.rst   
    settings.rst
    dynamic_settings.rst
    celery.rst

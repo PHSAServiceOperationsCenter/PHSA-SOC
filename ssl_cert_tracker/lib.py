@@ -463,7 +463,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     def send(self):
         """
         wrapper around the
-        :method:`<django.core.mail.EmailMultiAlternatives.send>`
+        :meth:`<django.core.mail.EmailMultiAlternatives.send>`
         """
         try:
             sent = self.email.send()

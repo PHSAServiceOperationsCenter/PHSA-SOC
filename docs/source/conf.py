@@ -22,6 +22,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
 django.setup()
 
+# set the location of the GraphVix binary
+os.environ['GRAPHVIZ_DOT'] = '/usr/bin/dot'
 
 # -- Project information -----------------------------------------------------
 
@@ -51,9 +53,11 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinx.ext.todo',
     'sphinx.ext.autosummary',
+    'sphinxcontrib.plantuml',
 ]
 
 todo_include_todos = True
+plantuml = '/usr/bin/plantuml'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

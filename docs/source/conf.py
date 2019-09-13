@@ -23,7 +23,8 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
 django.setup()
 
 # set the location of the GraphVix binary
-os.environ['GRAPHVIZ_DOT'] = '/usr/bin/dot'
+os.environ['GRAPHVIZ_DOT'] = '/bin/dot'
+#os.environ['GRAPHVIZ_DOT'] = '/usr/bin/dot'
 
 # -- Project information -----------------------------------------------------
 
@@ -57,7 +58,8 @@ extensions = [
 ]
 
 todo_include_todos = True
-plantuml = '/usr/bin/plantuml'
+#plantuml = '/usr/bin/plantuml'
+plantuml = 'java -jar /usr/bin/plantuml.jar'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

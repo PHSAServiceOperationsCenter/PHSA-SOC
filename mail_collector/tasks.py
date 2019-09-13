@@ -268,6 +268,9 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
 
     :raises:
 
+        :exc:`TypeError` if filter_pref cannot be cast to
+        ``datetime.timedelta``
+
         :exc:`Exception` if an exception was thrown while sending the alert
 
     example::
@@ -284,6 +287,14 @@ def bring_out_your_dead(  # pylint: disable=too-many-arguments
 
     if filter_pref is None:
         filter_pref = get_preference('exchange__default_error')
+
+    if not isinstance(filter_pref, dict):
+        filter_pref = get_preference(filter_pref)
+        if not isinstance(filter_pref, timezone.timedelta):
+            raise TypeError(
+                'Invalid object type %s. Must be datetime.timedelta.'
+                % type(filter_pref)
+            )
 
     not_seen_after = base_utils.MomentOfTime.past(time_delta=filter_pref)
 

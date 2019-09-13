@@ -17,7 +17,7 @@ import sys
 import django
 from django.conf import settings
 
-
+sys.path.insert(0, os.path.abspath('../../mail_borg'))
 sys.path.insert(0, os.path.abspath('../../'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
 django.setup()
@@ -57,6 +57,10 @@ extensions = [
     'sphinxcontrib.plantuml',
 ]
 
+autodoc_mock_imports = [
+    'win32api', 'win32con', 'win32evtlog', 'win32evtlogutil', 'win32security',
+    'tkinter',
+]
 todo_include_todos = True
 #plantuml = '/usr/bin/plantuml'
 plantuml = 'java -jar /usr/bin/plantuml.jar'

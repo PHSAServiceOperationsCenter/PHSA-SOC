@@ -17,8 +17,8 @@ All the notes in the diagram below are written using Django jargon. The
 :ref:`Mail Collector Application`. Some notes in the diagram also reference
 models defined in the :ref:`Citrus Borg Application`.
 
-When populating and serializing this data structure to JSON, we will obtain
-something like this **change to a link to the REST call**.
+`Output sample <../../../mail_collector/api/get_config/baby_d/?format=json>`_
+obtained when populating and serializing this data structure to JSON.
 
 .. uml::
    :caption: Exchange client configuration data model

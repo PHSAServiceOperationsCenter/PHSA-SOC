@@ -17,10 +17,10 @@ will write events to the windows event logs
 :updated:    apr. 12, 2019
 
 """
-import win32evtlogutil
+import win32api
 import win32con
 import win32evtlog
-import win32api
+import win32evtlogutil
 import win32security
 
 from config import WIN_EVT_CFG

@@ -43,7 +43,3 @@ winlogbeat is configured on the bot
 import sys
 
 __version__ = '0.2.0-dev'
-
-if sys.platform != 'win32':
-    # me only like windows, booooo
-    raise OSError('%s will not work on %s' % (__name__, sys.platform))

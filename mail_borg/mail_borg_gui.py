@@ -16,11 +16,11 @@ GUI module for exchange monitoring borg bot software
 
 """
 import collections
-import threading
-import time
-
 from datetime import datetime, timedelta
 from queue import Queue
+import sys
+import threading
+import time
 
 import PySimpleGUI as gui
 from config import (
@@ -28,6 +28,7 @@ from config import (
     save_base_configuration, reset_base_configuration, INI_DEFAULTS,
 )
 from mailer import WitnessMessages
+
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
 
@@ -406,6 +407,10 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     the main function
     """
+    if sys.platform != 'win32':
+        # me only like windows, booooo
+        print('%s will not work on %s' % (__name__, sys.platform))
+
     editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
                 'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']
 

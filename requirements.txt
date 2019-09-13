@@ -44,7 +44,7 @@ django-timedeltatemplatefilter==0.1.2
 django-timezone-field==3.0
 djangorestframework==3.10.2
 dnspython==1.16.0
-docutils==0.15.1
+docutils==0.15.2
 either==0.2
 email-validator==1.0.4
 exchangelib==1.12.5

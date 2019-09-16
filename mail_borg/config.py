@@ -173,12 +173,15 @@ def load_config(current_base_config=None):
             'Loaded configuration %s from server'
             % config['exchange_client_config']['config_name'])
 
-        # the first time the bot starts, it is possibel that the
+        # the first time the bot starts, it is possible that the
         # automation server is not aware of this bot. in that case a
         # default configuration is downloaded with a bogus host name
         # and then the real host name is injected into the configuration
         if config['host_name'] in ['host.not.exist']:
             config['host_name'] = socket.gethostname()
+
+        if not config['site']:
+            config['site'] = {'site': 'site.not.exist'}
 
         config['exchange_client_config']['mail_check_period'] = \
             parse_duration(

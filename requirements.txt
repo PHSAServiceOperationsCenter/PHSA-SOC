@@ -110,6 +110,7 @@ pytest-xdist==1.29.0
 python-crontab==2.3.8
 python-dateutil==2.8.0
 python-libnmap==0.7.0
+pytimeparse==1.1.8
 pytz==2019.1
 pytzdata==2019.2
 pywinrm==0.3.0
@@ -117,6 +118,7 @@ PyYAML==5.1.1
 requests==2.22.0
 requests-kerberos==0.12.0
 requests-ntlm==1.1.0
+retry==0.9.2
 schema==0.7.0
 simplegeneric==0.8.1
 simplejson==3.16.0

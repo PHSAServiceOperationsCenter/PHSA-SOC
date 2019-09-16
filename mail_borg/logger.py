@@ -1,10 +1,6 @@
 """
 .. _logger:
 
-logger module for exchange monitoring borg bots
-
-will write events to the windows event logs
-
 :module:    mail_borg.event_logger
 
 :copyright:
@@ -16,6 +12,19 @@ will write events to the windows event logs
 
 :updated:    apr. 12, 2019
 
+Logging module for the :ref:`Mail Borg Client Application`
+
+This module is providing classes for creating WIndows event log entries
+
+.. todo::
+
+    Must rename this module to something that suggests its strict
+    dependencies to the Windows platform
+    
+.. todo::
+
+    Sooner or later we need to make this thing portable
+    
 """
 import win32api
 import win32con

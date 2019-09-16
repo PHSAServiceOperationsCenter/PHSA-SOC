@@ -1,8 +1,6 @@
 """
 .. _config:
 
-configuration module for exchange monitoring borg bots
-
 :module:    mail_borg.config
 
 :copyright:
@@ -14,6 +12,11 @@ configuration module for exchange monitoring borg bots
 
 :updated:    may 14, 2019
 
+Configuration module for the :ref:`Mail Borg Client Application`
+
+.. todo::
+
+    there are some constants that need to move into the local configuration
 """
 import collections
 import configparser
@@ -25,14 +28,20 @@ import pytimeparse
 from requests import Session, urllib3
 
 HTTP_PROTO = 'http'
+"""
+:class:`str` HTTP_PROTO determines if we use http or https to connect to the
+configuration server
+
+"""
 VERIFY_SSL = False
+"""
+:class:`bool` VERIFY_SSL: check the validity of the SSL certificate when using https
+"""
+
 SESSION = Session()
 """
-:var SESSION: cached Session object to be reused by all Orion queries
-
-    this way we will take advantage of http connection pooling
-
-:vartype SESSION: `<request.Session.`
+:class:`requests.Session` SESSION: cached Session object to be reused by all
+http connections
 """
 
 SESSION.headers = {'Content-Type': 'application/json'}
@@ -40,6 +49,12 @@ if not SESSION.verify:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 LOCAL_CONFIG = 'mail_borg.json'
+"""
+:class:`str` LOCAL_CONFIG is the name of the file used to cache the
+configuration downloaded from the ``SOC Automation server``. This is the
+configuration that will be used if loading the configuration from the server
+is disabled
+"""
 
 WIN_EVT_CFG = dict(
     app_name='BorgExchangeMonitor',
@@ -47,11 +62,20 @@ WIN_EVT_CFG = dict(
     evt_log_key='\\SYSTEM\\CurentControlSet\\Service\\EventLog',
     msg_dll=None)
 """
-:var: WIN_EVENT_CFG:
+:class:`dict` WIN_EVENT_CFG contains the settings required for writing to the
+Windows event log
 
-    contains the settings required for writing to the Windows event log
+:key app_name: the value of the application property in the event log
 
-:vartype: ``dict``
+:key log_type: which windows log will be used for writing the events
+
+:key evt_log_key: Windows registry key for the events log
+
+:key msg_dll:
+
+    Windows resources for providing descriptions when writing log events.
+    If ``None``, the default DLL will be used
+
 """
 
 INI_DEFAULTS = dict(use_cfg_srv=True,
@@ -59,18 +83,29 @@ INI_DEFAULTS = dict(use_cfg_srv=True,
                     cfg_srv_port=8080,
                     cfg_srv_conn_timeout=30,
                     cfg_srv_read_timeout=120)
-
-
 """
-use timedelta(seconds=pytimeparse.parse()).seconds() and seconds()/60 to
-deserialize the durations
-
+:class:`dict` INI_DEFAULTS are the local configuration values that will be
+used to overwrite the :file:mail_borg.ini configuration file when the user
+clicks on the ``Reset local config`` button
 """
 
 
 def parse_duration(duration, to_minutes=False):
     """
-    take a json serialized duration coming
+    cast a duration  to an integer value representing seconds or minutes
+
+    this function is needed because the main configuration as defined on
+    the ``SOC Automation server`` is using JSON serialized
+    :class:`django.db.models.DurationField` objects while the
+    :ref:`Mail Borg Client Application` uses :class:`int` values for
+    minutes and/or seconds
+
+    :arg duration: the duration to be cast to :class:`int`
+
+    :arg bool to_minutes:
+
+        by default the cast is calculated to seconds. when this argument is
+        ``True``, the cast is calculated to minutes
     """
     duration = pytimeparse.parse(duration)
     if to_minutes:

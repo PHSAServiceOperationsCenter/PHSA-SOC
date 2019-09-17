@@ -1,5 +1,7 @@
-Configuring :ref:`Mail Borg Client Application` instances remotely
-==================================================================
+.. _borg_remote_config:
+
+Remote Configurations for :ref:`Mail Borg Client Application` instances
+=======================================================================
 
 While the ref:`Mail Borg Client Application` can use fully local configurations,
 it is designed to pull its main configuration from the automation server.
@@ -9,6 +11,100 @@ are responsible for defining, editing, maintaining, and delivering
 configuration data to a :ref:`Mail Borg Client Application` instance upon
 request.
 
+.. _borg_client_config:
+
+Configuration sample
+--------------------
+
+The configuration data is `JSON <https://www.json.org/>`_ encoded and a sample
+is shown here.
+
+.. code-block:: json
+
+    [
+        {
+            "host_name":"bccss-t450s-04",
+            "site":{"site":"over the rainbow"},
+            "exchange_client_config":
+                {
+                    "config_name":"default configuration",
+                    "exchange_accounts":
+                        [
+                            {
+                                "smtp_address":"z-spexcm001-db01001@phsa.ca",
+                                "domain_account":
+                                    {
+                                        "domain":"PHSABC",
+                                        "username":"svc_SOCmailbox",
+                                        "password":"goodluckwiththat"
+                                    },
+                                    "exchange_autodiscover":true,
+                                    "autodiscover_server":null
+                            },
+                            {
+                                "smtp_address":"z-spexcm001-db01002@phsa.ca",
+                                "domain_account":
+                                    {
+                                        "domain":"PHSABC",
+                                        "username":"svc_SOCmailbox",
+                                        "password":"goodluckwiththat"
+                                    },
+                                    "exchange_autodiscover":true,
+                                    "autodiscover_server":null
+                            },
+                        ],
+                "debug":false,
+                "autorun":true,
+                "mail_check_period":"01:00:00",
+                "ascii_address":true,
+                "utf8_address":false,
+                "check_mx":true,
+                "check_mx_timeout":"00:00:05",
+                "min_wait_receive":"00:00:03",
+                "backoff_factor":3,
+                "max_wait_receive":"00:02:00",
+                "tags":null,
+                "email_subject":"exchange monitoring message",
+                "witness_addresses":
+                    [],
+                },
+        },
+    ]
+    
+Note that the configuration data is pulled from multiple tables as per the
+:ref:`Data structure` diagram shown below.
+
+Special configuration cases
+---------------------------
+
+If a bot is not known to the ``SOC Automation server``, it can still pull the
+main configuration from the server but:
+
+* The ``host_name`` key in sample above will contain the value 'host.not.exist'
+  
+  When the bot sends its first event to the ``SOC Automation server``, a
+  record will be made of its name.
+  
+  **The ``SOC Automation server`` user must then change the record above by:**
+  
+  1. assigning an :class:`mail_collector.models.ExchangeCofiguration`
+     instance to said bot
+ 
+  2. assigning a valid :class:`mail_collector.models.MailSite` instance
+     to said bot
+     
+  3. opening an RDP session to the bot host and clicking the ``Reload
+     config from server`` button
+
+* The ``site`` key in the sample above will be empty. The
+  :ref:`Mail Borg Client Application` will populate this key with the value
+  ``{'site': 'site.not.seen'}``
+
+.. todo: `<https://trello.com/c/E2cSQpwA>`_
+
+.. todo: `<https://trello.com/c/Vs0LWMD5>`_
+
+
 Data structure
 --------------
 
@@ -16,9 +112,6 @@ All the notes in the diagram below are written using Django jargon. The
 **mail_collector** group label in the diagram maps to the
 :ref:`Mail Collector Application`. Some notes in the diagram also reference
 models defined in the :ref:`Citrus Borg Application`.
-
-`Output sample <../../../mail_collector/api/get_config/baby_d/?format=json>`_
-obtained when populating and serializing this data structure to JSON.
 
 .. uml::
    :caption: Exchange client configuration data model

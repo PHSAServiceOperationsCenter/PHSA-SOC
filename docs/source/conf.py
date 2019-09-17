@@ -34,7 +34,7 @@ copyright = (
 author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.4-dev'
+release = '0.7.5-dev'
 
 
 # -- General configuration ---------------------------------------------------

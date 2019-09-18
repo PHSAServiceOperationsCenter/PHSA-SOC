@@ -157,7 +157,7 @@ def raise_failed_event_by_mail(event_pk):
             level=get_preference('exchange__server_error'),
             event_type=data_extract.get('event_type'),
             site=data_extract.get('source_host__site__site'),
-            bot=data_extract('source_host__host_name'))
+            bot=data_extract.get('source_host__host_name'))
     except Exception as error:
         raise error
 

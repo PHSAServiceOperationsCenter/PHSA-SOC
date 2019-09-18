@@ -55,7 +55,6 @@ SOC Automation Server Applications
    :caption: SOC Automation Server Applications:
 
    citrus_borg/citrus_borg.rst
-   mail_borg/mail_borg.rst
    mail_collector/mail_collector.rst
    orion_integration/orion_integration.rst
    ssl_cert_tracker/ssl_cert_tracker.rst

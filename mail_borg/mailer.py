@@ -14,18 +14,40 @@ mail module for exchange monitoring borg bots
 
 :updated:    may 14, 2019
 
-notes
-=====
+This module provides a client library for accessing an
+`Exchange Web Services (EWS) 
+<https://searchwindowsserver.techtarget.com/definition/Exchange-Web-Services-EWS>`_
+end point.
 
-we will avoid the use of list comprehensions because of the way we want to
-handle exceptions in this module.
-in most cases, if there is a problem with a list item, we want to log the
-problem and continue processing. that is not supported with list
-comprehensions; if an exception occurs, processing will be stopped even if
-we catch the error.
+This client provides strictly email functionality:
+
+* ``connect`` to an Exchange server over EWS
+
+* ``send`` an email via an Exchange server over EWS
+
+* ``receive`` the email via an Exchange server over EWS
+
+The ``send`` and ``receive`` terms are somewhat misleading. A ``send`` is
+better described as *we are creating an artifact that looks like an email
+message on an Exchange server*. A ``receive`` is more or less the equivalent
+of *we are accessing an artifact that looks like an email message on an
+Exchange server*.
+
+.. note::
+
+    We have made a conscious effort to avoid using list comprehensions because
+    of how exceptions need to be handled in this module.
+
+    Specifically, if there is a problem with a list item, we want to log the
+    problem and continue processing. That is not supported with list
+    comprehensions; if an exception occurs, processing will be stopped even if
+    we catch the error.
+
+Most members of this module make use of an attribute named
+``config``. This attribute is the Python representation of the structure
+described in the :ref:`borg_client_config`.
 
 """
-
 import collections
 import json
 import socket
@@ -50,8 +72,14 @@ from logger import LogWinEvent
 
 class _Logger():
     """
-    custom logger class that will write to the windows event log and to
-    a GUI window text control if one is provided
+    Custom logging class that will write to the windows event log, and to
+    a GUI window text control if access to one such destination is provided
+
+    When working with GUI applications, the :mod:`mail_borg.mailer` modules
+    needs to run on a thread separate from the one where the GUI application
+    is running. Communication between these threads is provided via a
+    :class:`queue.Queue` instance.
+
     """
 
     def __init__(self, update_window_queue=None, event_logger=None):
@@ -63,19 +91,29 @@ class _Logger():
 
         :arg event_logger:
 
-            an instance of the :class:`<logger.LogWinEvent>`
+            an instance of the :class:`mail_borglogger.LogWinEvent`
 
             if one is not provided, the constructor will create it
         """
         self.console_logger = update_window_queue
+        """
+        instance attribute storing the :class:`queue.Queue` instance used
+        for passing data to a GUI application
+        """
         if event_logger is None:
             event_logger = LogWinEvent()
 
         self.event_logger = event_logger
+        """
+        instance attribute storing the :class:`mail_borglogger.LogWinEvent`
+        instance used to create Windows log events
+        """
 
     def info(self, strings):
         """
         write info level events
+
+        :arg strings: an `object` that can be serialized to ``JSON``
         """
         self.event_logger.info(strings=[json.dumps(strings)])
         self.update_console(strings, level='INFO')
@@ -83,6 +121,8 @@ class _Logger():
     def warn(self, strings):
         """
         write warn level events
+
+        :arg strings: an `object` that can be serialized to ``JSON``
         """
         self.event_logger.warn(strings=[json.dumps(strings)])
         self.update_console(strings, level='WARN')
@@ -90,6 +130,8 @@ class _Logger():
     def err(self, strings):
         """
         write error level events
+
+        :arg strings: an `object` that can be serialized to ``JSON``
         """
         self.event_logger.err(strings=[json.dumps(strings)])
         self.update_console(strings, level='ERROR')
@@ -97,6 +139,13 @@ class _Logger():
     def update_console(self, strings, level=None):
         """
         update the GUI window control with the logged message
+
+        this method will update the `queue.Queue` used to communicate with
+        the GUI application
+
+        :arg strings: an `object` than can be cast to `str`
+
+        :arg str level: INFO|WARN|ERROR, default is INFO
         """
         if self.console_logger is None:
             return
@@ -114,39 +163,59 @@ class _Logger():
 
 
 def _get_account(config):
+    """
+
+    :arg config:
+
+        a copy of the :attr:`WitnessMessages.config`  instance attribute
+
+    :returns: a ``DOMAIN\\username`` account representation
+    :rtype: :class:`str`
+    """
     return '{}\\{}'.format(config.get('domain'), config.get('username'))
 
 
 def validate_email_to_ascii(email_address, logger=None, **config):
     """
-    validate, normalize, and return an email address
-    optionally also convert it to ascii
+    this function is using the `python-email-validator 
+    <https://github.com/JoshData/python-email-validator>`_ package to
+    return a valid email address
 
-    :arg dict config:
+    Optionally:
 
-        :arg bool to_ascii: default ``True``
+    * reject an email address  the username part contains non `ASCII 
+      <https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html>`_
+      characters
 
-            see below for SMTPUTF8 support. i am pretty sure that any recent
-            Exchange version will support characters like è but this is
-            British Columbia and they don't always play nice with the feds or
-            with Québec
+      If one wants to support UTF-8 characters, one must make sure that the
+      Exchange server supports `SMTPUTF8 
+      <https://tools.ietf.org/html/rfc6531>`_
 
-        :arg bool allow_smtputf8: default ``False``
+    * support `Internationalized domain names(RFC 5891) 
+      <https://tools.ietf.org/html/rfc5891>`_
 
-            it is unclear whether Exchange supports SMTPUTF8 in versions 2016
-            or lower so let's stay away from all that nonsense
+    * normalize usernames to ASCII
 
-        :arg bool check_deliverability: default True
+      .. todo:: `<https://trello.com/c/bkfFT4Cv>`_
 
-            does the domain part of the email address resolve? this should be
-            checked because it may show us DNS errors on some borg nodes
+    * verify the existence of the MX record for the email domain. there is
+      a configurable timeout argument for this option
 
-        :arg int timeout: seconds, default picked from config, fallback 15
+    The options are provided via the ``config`` argument.
 
-            timeout value for verifying the MX record of the email address
+    :arg str email_address: the email address to validate
 
-    :arg logger: log all problems; usually provided by the caller
-    :argtype logger: :class:`<_Logger>`
+    :arg config:
+
+        a copy of the :attr:`WitnessMessages.config`  instance attribute
+
+    :arg logger: log all problems
+
+        Usually provided by the caller the logger data is provided by the
+        calling function but this function is capable of creating a
+        :class:`_Logger` instance if needed
+
+    :type logger: :class:`_Logger`
 
     :returns:
 
@@ -155,8 +224,13 @@ def validate_email_to_ascii(email_address, logger=None, **config):
 
     :raises:
 
-        this function doesn't raise any exceptions because it does its own
-        error handling by logging specific failures to the windows events log
+        This function doesn't raise any exceptions because it does its own
+        error handling. It is catching and logging:
+
+        :exc:``email_validator.EmailSyntaxError``
+
+        :exc:``email_validator.EmailUndeliverableError``
+
     """
     if not config:
         config = load_config()

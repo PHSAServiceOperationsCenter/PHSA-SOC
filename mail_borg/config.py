@@ -370,7 +370,7 @@ def get_config_from_file(json_file=LOCAL_CONFIG):
     must match the first list entry of the structure described at
     :ref:`borg_client_config`.
 
-    :arg str json_file: 
+    :arg str json_file:
 
         the relative path and name  of the `JSON <https://www.json.org/>`_ file
 

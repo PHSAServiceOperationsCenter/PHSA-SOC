@@ -80,6 +80,33 @@ class _Logger():
     is running. Communication between these threads is provided via a
     :class:`queue.Queue` instance.
 
+    The methods in this class that take a ``strings`` argument expect that
+    said argument is can be serialized to ``JSON``.
+    The reason for this requirement is architectural in nature; somewhere down
+    the line these messages will put on a wire and the end points expect to
+    be receive ``JSON`` objects.
+
+    As used in the :ref:`Mail Borg Client Application`, all the messages fed
+    into an instance of this class are Python :class:`dictionaries <dict>`
+    with the following structure:
+
+    .. code-block:: python
+
+        msg = {
+                'type': 'the type of the event',
+                'status': 'is it a PASS or a FAIL',
+                'wm_id': 'unique identifier for the message group',
+                'message': 'an explanation for the event',
+                'exception': 'the exception that triggered the event, if any',
+        }
+
+    The message group maps to an single Exchange verification operation. All
+    the messages that are part of the verification operation include the
+    ``wm_id`` attribute. This attribute is essential for various operations
+    executed on the server side/
+
+    All the values in this dictionary must be :class:`strings <str>`.
+
     """
 
     def __init__(self, update_window_queue=None, event_logger=None):
@@ -167,7 +194,12 @@ def _get_account(config):
 
     :arg config:
 
-        a copy of the :attr:`WitnessMessages.config`  instance attribute
+        a :class:`dictionary <dict>` that matches the structure described in
+        :ref:`borg_client_config` (or the relevantr portions thereof)
+
+        As used in the :ref:`Mail Borg Client Application`, the ``config``
+        argument is provided via an :attr:`WitnessMessages.config` instance
+        attribute
 
     :returns: a ``DOMAIN\\username`` account representation
     :rtype: :class:`str`
@@ -177,21 +209,21 @@ def _get_account(config):
 
 def validate_email_to_ascii(email_address, logger=None, **config):
     """
-    this function is using the `python-email-validator 
+    this function is using the `python-email-validator
     <https://github.com/JoshData/python-email-validator>`_ package to
     return a valid email address
 
     Optionally:
 
-    * reject an email address  the username part contains non `ASCII 
+    * reject an email address  the username part contains non `ASCII
       <https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html>`_
       characters
 
       If one wants to support UTF-8 characters, one must make sure that the
-      Exchange server supports `SMTPUTF8 
+      Exchange server supports `SMTPUTF8
       <https://tools.ietf.org/html/rfc6531>`_
 
-    * support `Internationalized domain names(RFC 5891) 
+    * support `Internationalized domain names(RFC 5891)
       <https://tools.ietf.org/html/rfc5891>`_
 
     * normalize usernames to ASCII
@@ -207,7 +239,12 @@ def validate_email_to_ascii(email_address, logger=None, **config):
 
     :arg config:
 
-        a copy of the :attr:`WitnessMessages.config`  instance attribute
+        a :class:`dictionary <dict>` that matches the structure described in
+        :ref:`borg_client_config` (or the relevantr portions thereof)
+
+        As used in the :ref:`Mail Borg Client Application`, the ``config``
+        argument is provided via an :attr:`WitnessMessages.config` instance
+        attribute
 
     :arg logger: log all problems
 
@@ -266,26 +303,60 @@ def validate_email_to_ascii(email_address, logger=None, **config):
 
 def get_accounts(logger=None, **config):
     """
-    get a list of Exchange accounts
+    get a list of working Exchange accounts
 
-    the assumption is that the same domain account has multiple
-    Exchange accounts and that we want to verify all these accounts
+    This function expects that each Exchange account is described by the
+    ``config`` argument as shown in the ``JSON`` snippet below.
+
+    A full representation of the structure of the ``config`` argument as
+    used in the :ref:`Mail Borg Client Application` is available in the
+    :ref:`borg_client_config` section.
+
+    .. code-block:: json
+
+        {
+            "smtp_address":"z-spexcm001-db01001@phsa.ca",
+            "domain_account":
+                {
+                    "domain":"PHSABC",
+                    "username":"svc_SOCmailbox",
+                    "password":"goodluckwiththat"
+                },
+                "exchange_autodiscover":true,
+                "autodiscover_server":null
+        }
 
     :arg dict config:
 
-        :arg str domain: the windows domain
+       a :class:`dictionary <dict>` that matches the structure described in
+       :ref:`borg_client_config` (or the relevant portions thereof)
 
-        :arg str username: the domain user name
+       As used in the :ref:`Mail Borg Client Application`, the ``config``
+       argument is provided via an :attr:`WitnessMessages.config` instance
+       attribute
 
-        :arg str password: the password
+    :arg logger:
 
-        :arg list email_addresses:
+        logging facility; Usually provided by the caller the logger
+        data is provided by the calling function but this function is capable
+        of creating a :class:`_Logger` instance if needed
 
-            the list SMTP aliases,  i.e. the Exchange accounts for this
-            particular user
+    :type logger: :class:`_Logger`
 
-    :arg logger: logger; usually provided by the caller
-    :argtype logger: :class:`<logger.WinLogEvent>`
+
+    :returns:
+        :class:`list` of :class:`exchangelib.Account` objects
+        An :class:`exchangelib.Account` object is only created if this
+        module was able to connect to the EWS end point using the provided
+        credentials.
+
+        If an Exchange account entry in the ``config`` argument cannot be used
+        to create a valid :class:`exchangelib.Account` instance, an error
+        will be logged and there will be no matching entry in the return.
+
+        If none of the Exchange account entries in the ``config`` argument can
+        be used to create a valid :class:`exchangelib.Account` instance,
+        an error will be logged and the function will return ``None``
 
     """
     if not config:
@@ -369,98 +440,113 @@ def get_accounts(logger=None, **config):
 WitnessMessage = collections.namedtuple(
     'WitnessMessage', ['message_uuid', 'message', 'account_for_message'])
 """
-:var WitnessMessage: name tuple class describing an exchange message
+class describing an exchange message created using the
+:func:`collections.namedtuple` factory function
 
-    *    :message_uuid: an unique identifier for the message
-                        used for retrieving the message from the inbox
-                        so as to verify that it was received
-
-    *    :message: the message itself
-
-    *    :account_for_message: the exchange account used to send the
-                               message
-
-:vartype WitnessMessage: :class:`<collections.namedtuple>`
 """
 
 
-class WitnessMessages():  # pylint: disable=too-many-instance-attributes
+class WitnessMessages():
     """
-    class for sent and received messages
+    Class that encapsulates all the functionality required to execute
+    an Exchange verification operation once
 
-    a message is an ``uuid`` instance generated via : method:`<uuid.uuid4>`.
-    this way each message has/is its own unique identifier and can be searched
-    for in the inbox. the identifier must be aprt of the message subject;
-    there is a problem with fuzzy searching in the body on the Exchange side
+    An Exchange verification operation consists of sending a message to self
+    for each Exchange account listed in the ``config`` attribute.
+    The verification itself has three components that must all be successful
 
-    an exchange account is defined by the domain account and by all the
-    SMPT aliases associated with the account. for example:
+    * connecting successfully to the Exchange server
 
-    *    PHSABC\\serban.teodorescu with serban.teodorescu@phsa.ca is an account
+    * sending the message successfully
 
-    *    PHSABC\\serban.teodorescu with serban.teodorescu@hssbc.org is
-         another account
+    * finding the sent message in the receiving ``inbox`` successfully
 
-    a monitoring or witness message is a message that has been successfully
-    sent from one account to itself and all the other accounts and then has
-    been identified in the inbox of each account. for example:
-    the message wih UUID: xxxxx will be sent from serban.teodorescu@phsa.ca
-    to serban.teodorescu@phsa.ca and serban.teodorescu@hssbc.org. if the
-    send operation executed with no errors and we can retrieve the message
-    from the inbox of both serban.teodorescu@phsa.ca and
-    serban.teodorescu@hssbc.org within a reasonable amount of time, we
-    are assuming that exchange functionality has been proven for the
-    account that was used to send this message (in this case,
-    serban.teodorescu@phsa.ca)
 
+    The main attribute in this class is the Exchange message.
+    Each Exchange message contains an ``uuid`` instance generated
+    via the :meth:`<uuid.uuid4>` method in the subject line.
+    This way we can search the receiving ``inbox`` for each send message.
+    The identifier must be part of the message subject because
+    there is a problem with fuzzy searching in the message body on the EWS
+    side.
+    The class constructor is responsible for creating this identifier.
+
+    Each instance of this class will also create an unique instance identifier.
+    This identifier is appended to both the email message itself and,
+    more importantly, to the Windows log events created while said class
+    instance is active.
+    This identifier is used to figure out the site and the bot from whence
+    the log event was collected and the time when when the event was created.
+    This identifier is created in the constructor and will become part of
+    the :class:`dictionary <dict>` stored in the :attr:`config` instance
+    attribute with a key of ``wm_id``.
+    The format of this identifier is ``$site+$host+local_timestamp`` where
+    $site is the :class:`mail_collector.models.MailSite` site where the
+    client is running and $host is the name of the bot as returned by the
+    :meth:`socket.gethostname` method.
+
+    This class builds a separate `exchangelib.Message` for each Exchange
+    account defined in the ``config`` argument. See :func:`get_accounts` for
+    details about the representation of Exchange accounts.
+
+    The :meth:`send` method will send all the messages so created and the
+    :meth:`verify_receive` will look for the sent messages in the receiving
+    ``inbox``.
     """
 
     def __init__(
             self, accounts=None, logger=None, console_logger=None, **config):
         """
-        constructor
+        :arg list accounts: a list of :class:`exchangelib.Account` objects
+            If accounts is ``None``, the constructor will build one using
+            the data in the ``config`` argument(s)
 
-        :arg list accounts: a list of :class:`<exchangelib.Account>` objects
+        :arg logger:
+
+            logging facility; Usually provided by the caller the logger
+            data is provided by the calling function but this function is
+            capable of creating a :class:`_Logger` instance if needed
+
+        :type logger: :class:`_Logger`
+
+        :arg queue.Queue console_logger:
+
+            the queue used to pass messages to a GUI interface running on the
+            main thread
 
         :arg dict config:
 
+            a :class:`dictionary <dict>` that matches the structure described
+            in :ref:`borg_client_config`
 
-            :arg str domain: the windows domain
+            As used in the :ref:`Mail Borg Client Application`, the ``config``
+            argument is provided from a :mod:`mail_borg.mail_borg_gui`
+            instance.
 
-            :arg str username: the domain user name
+            It is acceptable to use a ``config`` value generated separately
+            as long as it uses the structure referenced above.
 
-            :arg str password: the password
+            If this argument is not provided, the constructor will invoke the
+            :func:`mail_borg.configuration.load_config` function.
 
-            :arg list email_addresses:
-
-                the list SMTP aliases,  i.e. the Exchange accounts for this
-                particular user. also used as the list of send to emails.
-                this may have to change
-
-            :arg list witness_addresses:
-
-                cc the message(s) to human monitored mailboxes if desired
-
-            :arg str email_subject:
-
-            :arg str site:
-
-            :arg str tags:
-
-            :arg bool debug:
-
-            all the args required for the :function:`<validate_email_to_ascii>`
-
-        :arg logger: windows events log writer
-        :argtype logger: :class:`<logger.WinLogEvent>`
         """
         self._sent = False
+        """state variable for the send op"""
+
         self._abort = False
+        """
+        state variable for an abort
+
+        Aborting happens if there are no messages in the sending queue
+        """
 
         if not config:
             config = load_config()
 
         self.config = config
+        """
+        attribute storing all the data required to create an instance
+        """
 
         self.config['wm_id'] = '{}+{}+{}'.format(
             self.config.get('site').get('site', 'no_site'),
@@ -469,11 +555,16 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         )
 
         self.messages = []
+        """the `list` of messages that are part of the Exchange check op"""
 
         self.update_window_queue = console_logger
+        """
+        store the `queue.Queue` instance used to talk to the outside world
+        """
 
         self.logger = _Logger(
             update_window_queue=console_logger, event_logger=logger)
+        """logging attribute"""
 
         if accounts is None:
             accounts = get_accounts(logger=self.logger, **config)
@@ -496,6 +587,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 )
 
         self.accounts = accounts
+        """
+        the `list` of `exchangelib.Account` instances
+        """
 
         if not self.accounts:
             # stop wasting time
@@ -503,6 +597,11 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             return
 
         self.witness_emails = []
+        """
+        the witness emails used in this instance
+
+        See :class:`mail_collector.models.WitnessEmail` for an explanation.
+        """
         if self.config.get('exchange_client_config').get('witness_addresses'):
             for witness_address in self.config.get('exchange_client_config').\
                     get('witness_addresses'):
@@ -532,6 +631,9 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     def _set_subject(self):
         """
         add various tags as well as site and bot info to the email subject
+
+        The message subject will end up with a prefix of
+        ``[tags][site][hostname]email_subject``
         """
         tags = '{}[{}][{}]{}'.format(
             self.config.get('exchange_client_config').get('tags'),
@@ -551,7 +653,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         if there are no messages, log an error
 
         if sending a particular message raises an error,
-        log it and keep sending
+        log it, drop it from the list of messages in the instance, and keep
+        sending the rest of the messages
         """
         if self._abort:
             if self.update_window_queue:
@@ -610,17 +713,11 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         return 'sent'
 
-    def verify_receive(self, min_wait_receive=None, step_wait_receive=None,  # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches
+    def verify_receive(self, min_wait_receive=None, step_wait_receive=None,
                        max_wait_receive=None):
         """
-        look for all the messages that were sent in the inbox of each account
-        used to send them
-
-        each message is sent from the account associated with said message
-        to each address in the send_to attribute.
-        additionally, each address in the send_to attribute is associated
-        with an account that is being monitored.
-        thus we wait a while, then
+        look for all the messages that were sent in the receiving ``inbox``
 
         * for each account:
 
@@ -629,14 +726,21 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             * if found log the sent_at, received_at for further analysis
 
             * if not found log an error:
-              cannot communicate from message.account.smtp_address
-              to account.inboc.smtp_adddress
+              cannot communicate from ``message.account.smtp_address``
+              to ``account.inbox.smtp_adddress``
 
-        :arg int wait_receive: seconds, default picked from config
+        :arg int wait_receive: minimum delay for searching the ``inboxx``
+            measured in seconds seconds
 
-            fallback 60 seconds;
-            time to wait before looking for the messages since exchange is not
-            all that fast
+            If ``None``, pick the value from the :attr:`config`
+
+        :arg int step_wait_receive: back-off factor
+
+            If ``None``, pick the value from the :attr:`config`
+
+        :arg int max_wait_receive: maximum delay for searching the ``inbox``
+
+            If ``None``, pick the value from the :attr:`config`
 
         """
         if min_wait_receive is None:
@@ -663,6 +767,27 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                delay=int(min_wait_receive), max_delay=int(max_wait_receive),
                backoff=int(step_wait_receive))
         def get_from_inbox(message):
+            """
+            look for the message in the destination inbox
+
+            In case of failure, retry if the failure was one of
+            :exc:`exchangelib.ErrorMessageNotFound` or
+            :exc:`exchangelib.ErrorTooManyObjectsOpened`. The latter is
+            typical of cases when the Exchange server is throttling
+            connections.
+
+            The retry operation follows the pattern below:
+
+            * apply the minimal delay
+
+            * try; if it worked, return
+
+            * multiply the current delay by the back-off factor
+
+            * wait for the current delay and try
+
+            * if the current delay has reached the maximum delay, give up
+            """
             found_message = message.account_for_message.inbox.filter(
                 subject__icontains=str(message.message_uuid))
 
@@ -769,3 +894,5 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         if self.update_window_queue:
             self.update_window_queue.put_nowait(('control',))
+
+    # pylint: enable=too-many-branches

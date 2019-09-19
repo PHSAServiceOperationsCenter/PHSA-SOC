@@ -35,7 +35,8 @@ configuration server
 """
 VERIFY_SSL = False
 """
-:class:`bool` VERIFY_SSL: check the validity of the SSL certificate when using https
+:class:`bool` VERIFY_SSL: check the validity of the SSL certificate when
+using https
 """
 
 SESSION = Session()

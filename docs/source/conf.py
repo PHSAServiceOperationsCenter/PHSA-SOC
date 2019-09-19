@@ -23,8 +23,10 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
 django.setup()
 
 # set the location of the GraphVix binary
+# PHSA
 os.environ['GRAPHVIZ_DOT'] = '/bin/dot'
-#os.environ['GRAPHVIZ_DOT'] = '/usr/bin/dot'
+# KEARY
+# os.environ['GRAPHVIZ_DOT'] = '/usr/bin/dot'
 
 # -- Project information -----------------------------------------------------
 
@@ -34,7 +36,7 @@ copyright = (
 author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.5-dev'
+release = '0.7.6-dev'
 
 
 # -- General configuration ---------------------------------------------------
@@ -59,10 +61,15 @@ extensions = [
 
 autodoc_mock_imports = [
     'win32api', 'win32con', 'win32evtlog', 'win32evtlogutil', 'win32security',
-    'tkinter',
+    'tkinter', 'PySimpleGUI',
 ]
+
 todo_include_todos = True
-#plantuml = '/usr/bin/plantuml'
+
+# PlantUML location
+# KEARY
+# plantuml = '/usr/bin/plantuml'
+# PHSA
 plantuml = 'java -jar /usr/bin/plantuml.jar'
 
 # Add any paths that contain templates here, relative to this directory.
@@ -78,16 +85,6 @@ exclude_patterns = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#=========================================================================
-# html_theme = 'classic'
-# html_theme_options = {
-#     'rightsidebar': False,
-#     'stickysidebar': True,
-#     'collapsiblesidebar': False,
-#     'externalrefs': True,
-# }
-#=========================================================================
-#html_theme = 'nature'
 html_theme = 'sphinxdoc'
 
 # Add any paths that contain custom static files (such as style sheets) here,

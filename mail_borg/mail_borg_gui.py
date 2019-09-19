@@ -64,7 +64,8 @@ def get_window():
             default=config.get('exchange_client_config').get('autorun')), ],
         [
             gui.Checkbox(
-                'Debug', default=config.get('exchange_client_config').get('debug'),
+                'Debug',
+                default=config.get('exchange_client_config').get('debug'),
                 key='debug', enable_events=True),
             gui.Checkbox(
                 'Verify MX deliverability',
@@ -560,4 +561,5 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     window.Close()
 
 
-main()
+if __name__ == '__main__':
+    main()

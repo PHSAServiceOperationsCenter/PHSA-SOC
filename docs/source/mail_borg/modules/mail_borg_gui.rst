@@ -1,5 +1,7 @@
 Mail Borg GUI
 =============
 
-yuuuk. this one really needs to be documented by hand. tkinter is messing with
-the universe.
+.. automodule:: mail_borg.mail_borg_gui
+   :members:
+   :undoc-members:
+   :private-members:

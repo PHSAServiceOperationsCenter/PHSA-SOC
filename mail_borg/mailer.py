@@ -1,8 +1,6 @@
 """
 .. _mailer:
 
-mail module for exchange monitoring borg bots
-
 :module:    mail_borg.mailer
 
 :copyright:
@@ -14,12 +12,12 @@ mail module for exchange monitoring borg bots
 
 :updated:    may 14, 2019
 
-This module provides a client library for accessing an
+This module provides a specialize email only client library for accessing an
 `Exchange Web Services (EWS) 
 <https://searchwindowsserver.techtarget.com/definition/Exchange-Web-Services-EWS>`_
 end point.
 
-This client provides strictly email functionality:
+Email functionality is evaluated using the following concepts:
 
 * ``connect`` to an Exchange server over EWS
 

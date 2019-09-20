@@ -444,7 +444,7 @@ class describing an exchange message created using the
 """
 
 
-class WitnessMessages():
+class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     """
     Class that encapsulates all the functionality required to execute
     an Exchange verification operation once
@@ -462,7 +462,7 @@ class WitnessMessages():
 
     The main attribute in this class is the Exchange message.
     Each Exchange message contains an ``uuid`` instance generated
-    via the :meth:`<uuid.uuid4>` method in the subject line.
+    via the :meth:`uuid.uuid4` method in the subject line.
     This way we can search the receiving ``inbox`` for each send message.
     The identifier must be part of the message subject because
     there is a problem with fuzzy searching in the message body on the EWS
@@ -479,8 +479,8 @@ class WitnessMessages():
     the :class:`dictionary <dict>` stored in the :attr:`config` instance
     attribute with a key of ``wm_id``.
     The format of this identifier is ``$site+$host+local_timestamp`` where
-    $site is the :class:`mail_collector.models.MailSite` site where the
-    client is running and $host is the name of the bot as returned by the
+    ``$site`` is the :class:`mail_collector.models.MailSite` site where the
+    client is running and ``$host`` is the name of the bot as returned by the
     :meth:`socket.gethostname` method.
 
     This class builds a separate `exchangelib.Message` for each Exchange
@@ -489,7 +489,8 @@ class WitnessMessages():
 
     The :meth:`send` method will send all the messages so created and the
     :meth:`verify_receive` will look for the sent messages in the receiving
-    ``inbox``.
+    ``inbox``. The :meth:`verify_receive` will also invoke the
+    :meth:`send` method when the :attr:`_sent` is ``False``. 
     """
 
     def __init__(

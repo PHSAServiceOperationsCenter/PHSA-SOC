@@ -7,3 +7,4 @@ Mail Borg Mailer
    :private-members: _get_account _set_subject
    :special-members: __init__
    :exclude-members: _source
+   

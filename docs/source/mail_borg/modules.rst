@@ -1,7 +1,7 @@
 Mail Borg Modules
 =================
 
-
+.. automodule:: mail_borg
 
 .. toctree::
    :maxdepth: 2

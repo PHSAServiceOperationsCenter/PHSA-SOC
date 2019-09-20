@@ -1,8 +1,6 @@
 """
 .. _mail_borg:
 
-exchange monitoring client for borg bots
-
 :module:    mail_borg
 
 :copyright:
@@ -14,32 +12,37 @@ exchange monitoring client for borg bots
 
 :updated:    jul. 26, 2019
 
-exchange monitoring client for borg bots
-========================================
+Exchange Monitoring Client Package
+==================================
 
-portability
+This package implements the :ref:`Mail Borg Client Application`.
+
+Portability
 -----------
 
-because the logging mechanism is based on
-`pywin32 <https://github.com/mhammond/pywin32>`_ this package is windows
-only.
+Because the logging mechanism is based on
+`pywin32 <https://github.com/mhammond/pywin32>`_ this package is **Windows
+only**.
 
-this design decision is due to the fact that we want to reuse the citrix
-bots to run the exchange monitor programs and these bots already make use
-of the windows events log to pass inforamtion to the PSOC automation
-server.
+This design decision is due to the fact that we want to reuse the remote
+Citrix bots to run :ref:`Mail Borg Client Application` instances as well.
+Citrix diagnostics information collected by these bots is making use of
+the Windows events log and a mechanism for disseminating such events to the
+``SOC Automation server`` is already in place and running.
 
-log collection
---------------
+The :ref:`Mail Borg Client Application` is using a GUI interface and this will
+also introduce various portability and/or deployment issues.
 
-the logger dependency on windows can be removed if we rewrite the logger
-module to use ``logging.handlers.NTEventLogHandler`` and load the
-NT handler conditionally based on the platform (replacing with a
-``logging.handlers.SteamingFileHandler`` or a ``logging.handlers.Syslog``
-handler. this will also require that an elastic search beat other than
-winlogbeat is configured on the bot
+The :ref:`Mail Borg Config` module is fully portable.
 
+The :ref:`Mail Borg Logger` module is absolutely not portable as implemented.
+
+The :ref:`Mail Borg Mailer` module is not portable but making it platform
+independent would require very little effort.
+
+Note that the event dissemination is also Windows only. Any portability
+efforts will have to take that into consideration.
 """
 import sys
 
-__version__ = '0.2.3-dev'
+__version__ = '0.2.4-dev'

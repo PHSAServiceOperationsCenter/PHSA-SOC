@@ -1,8 +1,6 @@
 """
 .. _mail_borg_gui:
 
-GUI module for exchange monitoring borg bot software
-
 :module:    mail_borg.mail_borg_gui
 
 :copyright:
@@ -12,7 +10,9 @@ GUI module for exchange monitoring borg bot software
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    apr. 30, 2019
+:updated:    Sep. 20, 2019
+
+GUI module for the :ref:`Mail Borg Client Application`
 
 """
 import collections
@@ -25,7 +25,7 @@ import time
 import PySimpleGUI as gui
 from config import (
     load_config, load_base_configuration, WIN_EVT_CFG, HTTP_PROTO,
-    save_base_configuration, reset_base_configuration, INI_DEFAULTS,
+    save_base_configuration, reset_base_configuration,
 )
 from mailer import WitnessMessages
 
@@ -35,6 +35,8 @@ gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
 
 def get_window():
     """
+    Function that builds the GUI interface and all its elements
+
     :returns: the main window for the program
     """
     config = load_config()
@@ -210,6 +212,30 @@ def get_window():
 
 
 def _accounts_to_table(accounts, window):
+    """
+    Information pertinent to Exchange accounts is displayed using a
+    `PySimpleGUI.Table` element.
+
+    This function is reponsible for taking a list of Exchange accounts and
+    generating a `PySimpleGUI.Table` row for each account.
+
+    An Exchange account is described by the structure shown below:
+
+    .. code-block:: json
+
+        {
+            "smtp_address":"z-spexcm001-db01001@phsa.ca",
+            "domain_account":
+                {
+                    "domain":"PHSABC",
+                    "username":"svc_SOCmailbox",
+                    "password":"goodluckwiththat"
+                },
+                "exchange_autodiscover":true,
+                "autodiscover_server":null
+        }
+
+    """
     listed_accounts = []
 
     for account in accounts:
@@ -406,12 +432,26 @@ def _do_clear(window):
 
 def main():  # pylint: disable=too-many-branches,too-many-statements
     """
-    the main function
-    """
-    if sys.platform != 'win32':
-        # me only like windows, booooo
-        print('%s will not work on %s' % (__name__, sys.platform))
+    The ``main()`` function
 
+    For a discussion about ``main()`` functions in `Python
+    <https://www.python.org/about/>`_, please see
+    `Defining Main Functions in Python
+    <https://realpython.com/python-main-function/>`_.
+
+    Under normal ops this module is never imported anywhere and using a
+    ``main()`` and the `__main__ Python facility
+    <https://docs.python.org/3.6/library/__main__.html?highlight=__main__>`_
+    is not needed.
+
+    The requirement for using the ``main()`` is introduced by our choice to
+    use the `Sphinx autodoc extension
+    <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
+    for generating documentation. This extension needs to import all the
+    modules that are self-documented using ``docstrings``. The extension
+    will not be able to import this module unless the ``main()`` function
+    mechanism is being used
+    """
     editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
                 'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']
 
@@ -562,4 +602,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
 
 if __name__ == '__main__':
+
+    if sys.platform != 'win32':
+        # me only like windows, booooo
+        raise OSError('%s will not work on %s' % (__name__, sys.platform))
+
     main()

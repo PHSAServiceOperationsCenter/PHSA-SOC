@@ -14,6 +14,17 @@
 
 GUI module for the :ref:`Mail Borg Client Application`
 
+This module is built using the `PySimpleGUI
+<https://pysimplegui.readthedocs.io/en/latest/>`_ package.
+
+:note:
+
+    GUI interfaces creating using the `PySimpleGUI
+    <https://pysimplegui.readthedocs.io/en/latest/>`_ package cannot be
+    resized.
+    This application is optimized for screens running at a resolution of
+    1920 x 1080 pixels.
+
 """
 import collections
 from datetime import datetime, timedelta
@@ -37,7 +48,20 @@ def get_window():
     """
     Function that builds the GUI interface and all its elements
 
-    :returns: the main window for the program
+    :returns:
+
+        a :class:`tuple` containing
+
+        * the ``basic configuration`` as loaded into the ``GUI`` on launch
+        * the ``main configuration`` as loaded into the ``GUI`` on launch
+        * the `PySimpleGUI.window` object of the
+          :ref:`Mail Borg Client Application`
+
+    GUI elements showing main configuration data are populated using
+    the :func:`mail_borg.config.load_config` function.
+
+    GUI elements showing basic configuration data are populated using the
+    :func:`mail_borg.config.load_base_configuration` function.
     """
     config = load_config()
     base_config = load_base_configuration()
@@ -255,14 +279,16 @@ def _accounts_to_table(accounts, window):
 
 def next_run_in(next_run_at):
     """
-    pretty format for durations
+    update the time counter for the next :func:`mail_check` call
 
-    :arg `datetime.datetime` next_run_at: a moment in time
+    :arg `datetime.datetime` next_run_at: the moment for the next
+        :func:`mail_check` call
 
-    :returns:
+        This moment is re-evaluated every time the :func:`mail_check` is called
+        and it is stored in a state variable in the :func:`main` function.
 
-        the difference between :arg next_run_at: and the value
-        of :method:<`datetime.dateime.now`> formatted as minutes and seconds
+    :returns: a :class:`tuple` in minutes, seconds format that represents the
+        time left until the next call of the :func:`mail_check`
     """
     mins, secs = divmod((next_run_at - datetime.now()).total_seconds(), 60)
     return '{} minutes, {} seconds'.format(int(mins), int(secs))
@@ -270,7 +296,25 @@ def next_run_in(next_run_at):
 
 def mail_check(config, window, update_window_queue):
     """
-    invoke the mail check functionality
+    start the `threading.Thread` where the Exchange verification op is
+    executed
+
+    This function is called from the OnClickUp event of the
+    ``RUn Mail Check Now`` `PySimpleGUI.Button`.
+
+    :arg dict config: the main configuration that is currently active. Note
+        that this :ref:`configuration <borg_client_config>` may have been
+        changed locally in the ``GUI`` interface
+
+    :arg `PySimpleGUI.window` window: the window object associated with the
+        ``GUI`` interface. This argument is used to update various elements
+        in the ``GUI``. This includes updating the `PySimpleGUI.Text`
+        element that shows the status of the application and disabling and/or
+        enabling various `PySimpleGUI.Button` elements
+
+    :arg `queue.Queue` update_window_queue: the `queue.Queue` used to pass
+        information between the Exchange verification thread and the ``GUI``
+        (main) thread
 
     """
     window.FindElement('mailcheck').Update(disabled=True)
@@ -290,6 +334,21 @@ def mail_check(config, window, update_window_queue):
 
 
 def _mail_check(update_window_queue, config):
+    """
+    the threaded call to the :class:`mail_borg.mailer.WitnessMessages`
+    instance used to execute the Exchange verification op
+
+    :arg `PySimpleGUI.window` window: the window object associated with the
+        ``GUI`` interface. This argument is used to update various elements
+        in the ``GUI``. This includes updating the `PySimpleGUI.Text`
+        element that shows the status of the application and disabling and/or
+        enabling various `PySimpleGUI.Button` elements
+
+    :arg `queue.Queue` update_window_queue: the `queue.Queue` used to pass
+        information between the Exchange verification thread and the ``GUI``
+        (main) thread
+
+    """
     witness_messages = WitnessMessages(
         console_logger=update_window_queue, **config)
     witness_messages.verify_receive()
@@ -297,8 +356,16 @@ def _mail_check(update_window_queue, config):
 
 def do_save_config(window):
     """
-    save modified configuration to the ini file and, later on,
-    to both the configuration file and the server
+    call the :func:`mail_borg.config.save_basic_configuration` to save
+    changes made to the local configuration from the ``GUI`` interface
+
+    This function is invoked by OnClickUp event of the ``Save local config``
+    `PySimpleGUI.Button`
+
+    :arg `PySimpleGUI.window` window: the window object associated with the
+        ``GUI`` interface. This function will access the values of the
+        ``GUI`` elements associated with the local configuration and pass
+        them to the saving function
 
     """
     items = [
@@ -315,12 +382,38 @@ def do_save_config(window):
 
 
 def _witness_emails_from_list(witness_emails, window):
+    """
+    populate the ``GUI`` element used for showing
+    :class:`mail_collector.models.WitnessEmail` instances used in the
+    main configuration
+
+    This ``GUI`` element is accepting only :class:`str` data while the
+    :class:`mail_collector.models.WitnessEmail` data is provided as a
+    :class:`list`.
+
+    """
     window.FindElement('witness_addresses').Update(', '.join(witness_emails))
 
 
 def do_reload_config(window):
     """
-    abandon live configuration and reload from file or server
+    abandon the main configuration shown in the ``GUI`` interface and
+    reload the main configuration from either the ``SOC Automation server``,
+    or the locally cached main configuration
+
+    This function is invoked by the OnClickUp event of the ``Refresh config
+    from server`` `PySimpleGUI.Button` element.
+
+    The source of the new main configuration is determined based on the state
+    of the ``Load Config from Server`` `PySimpleGUI.Checkbox` element.
+
+    The function assembles the current basic configuration from the
+    associated ``GUI`` elements and uses it as an argument to the
+    :func:`mail_borg.config.load_config` function. It then re-populates
+    the main configuration ``GUI`` controls with the new data.
+
+    :arg `PySimpleGUI.window` window: the window objects associated with
+        the ``GUI`` interface
     """
     items = [
         ('use_cfg_srv', bool(window.FindElement('use_cfg_srv').Get())),
@@ -388,7 +481,17 @@ def do_reload_config(window):
 
 def do_reset_config(window):
     """
-    reload the default configuration
+    reload the basic configuration active in the ``GUI`` with the
+    values defined in the :attr:`mail_borg.config.INI_DEFAULTS`
+
+    Note that these defaults, particularly the value of the ``cfg_srv_ip``
+    (the address of the ``SOC Automation server``) may be out of date.
+
+    This function is invoked by the OnCLickUp event of the ``Reset local
+    config`` `PySimpleGUI.Button` element.
+
+    :arg `PySimpleGUI.window` window: the window objects associated with
+        the ``GUI`` interface
 
     """
     reset_base_configuration()
@@ -400,6 +503,12 @@ def do_reset_config(window):
 
 
 def _set_autorun(window):
+    """
+    calculate the value of the :attr:`main.autorun` state variable
+
+    :returns: ``True`` or ``False``
+
+    """
     autorun = window.FindElement('autorun').Get()
     if autorun:
         window.FindElement('pause').Update(disabled=False)
@@ -413,6 +522,10 @@ def _set_autorun(window):
 
 
 def _do_pause(window):
+    """
+    update various ``GUI`` elements to reflect the :attr:`main.autorun` state
+    variable
+    """
     window.FindElement('status').Update(
         'automated mail check execution is paused')
     window.FindElement('pause').Update(disabled=True)
@@ -420,11 +533,21 @@ def _do_pause(window):
 
 
 def _dirty_window(window):
+    """
+    update various ``GUI`` elements to reflect the
+    :attr:`main.config_is_dirty` state variable
+    """
     window.FindElement('save_config').Update(disabled=False)
     window.FindElement('reset_config').Update(disabled=False)
 
 
 def _do_clear(window):
+    """
+    clear the data from ``output`` `PySimpleGUI.Multiline` element
+
+    This function is invoked in the OnClickUp event of the ``Clear execution
+    data`` `PySimpleGUI.Button` element
+    """
     window.FindElement('output').Update(disabled=False)
     window.FindElement('output').Update('')
     window.FindElement('output').Update(disabled=True)
@@ -434,23 +557,83 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     """
     The ``main()`` function
 
+    This is the entry point to the script using this module.
+
     For a discussion about ``main()`` functions in `Python
     <https://www.python.org/about/>`_, please see
     `Defining Main Functions in Python
     <https://realpython.com/python-main-function/>`_.
 
     Under normal ops this module is never imported anywhere and using a
-    ``main()`` and the `__main__ Python facility
+    ``main()`` function and the `__main__ Python facility
     <https://docs.python.org/3.6/library/__main__.html?highlight=__main__>`_
     is not needed.
 
-    The requirement for using the ``main()`` is introduced by our choice to
-    use the `Sphinx autodoc extension
+    The requirement for using the ``main()`` function is introduced by our
+    choice to use the `Sphinx autodoc extension
     <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
     for generating documentation. This extension needs to import all the
     modules that are self-documented using ``docstrings``. The extension
     will not be able to import this module unless the ``main()`` function
     mechanism is being used
+
+    :state variables:
+
+        :config_is_dirty:
+
+            local state variable keeping track of whether the ``basic
+            configuration`` currently shown in the ``GUI`` interface is different
+            from the ``basic configuration`` that was initially loaded in the
+            ``GUI`` i.e. from a stored medium
+
+            This variable is consulted on ``Exit`` and a ``dialog box``
+            prompting the user to save a changed (dirty) ``basic
+            configuration`` if the variable is ``True``.
+
+            The variable is set if the value of any `PySimpleGUI.window` element
+            matching an entry in the :class:`editable <list>` has changed.
+
+            The variable is reset when the ``Save local config``
+            `PySimpleGU.Button` element is clicked.
+
+        :autorun:
+
+            local state variable keeping track of whether the :func:`mail_check`
+            function is invoked automatically or manually
+
+        :next_run_at:
+
+            Local `datetime.datetime` variable that keeps track of when the
+            :func:`mail_check` will execute next but only if the :attr:`autorun`
+            is ``True``
+
+    :control variables:
+
+        :editable:
+
+            local :class:`list` that used for identifying ``GUI`` elements
+            that will trigger a state change for the :attr:`config_is_dirty`
+            variable
+
+        :update_window_queue:
+
+            `queue.Queue` that is used for keeping track of the state of
+            the ``Exchange verification op`` `threading.Thread` launched by
+            the :func:`mail_check` function
+
+            The following "events" will be delivered via this `queue.Queue`:
+
+            * ``output``: update the status tracking ``GUI`` elements with
+              the progress of the ``Exchange verification op``
+
+            * ``abort``: the ``Exchange verification op`` has been aborted.
+              Set various ``GUI`` elements accordingly.
+
+            * ``control``: the ``Exchange verification op`` has completed
+               successfully. Make ready for the next ``Exchange verification
+               op`` taking into consideration the value of the 
+               :attr:`autorun` state variable
+
     """
     editable = ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
                 'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']

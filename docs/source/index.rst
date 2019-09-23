@@ -38,7 +38,7 @@ SOC Automation Server Infrastructure
 ------------------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: SOC Automation Server Infrastructure:
 
    p_soc_auto/p_soc_auto.rst
@@ -51,7 +51,7 @@ SOC Automation Server Applications
 ----------------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: SOC Automation Server Applications:
 
    citrus_borg/citrus_borg.rst
@@ -64,7 +64,7 @@ SOC Automation Client Applications
 ----------------------------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: SOC Automation Client Applications:
 
    mail_borg/mail_borg.rst

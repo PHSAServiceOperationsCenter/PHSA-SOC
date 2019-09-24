@@ -1,100 +1,70 @@
 Mail Collector Dynamic Settings
 ===============================
 
-.. automodule:: citrus_borg.dynamic_preferences_registry
-
-get_preference
---------------
-
-.. autofunction:: citrus_borg.dynamic_preferences_registry.get_preference
+Access any of the dynamic preferences listed below using the
+:func:`citrus_borg.dynamic_preferences_registry.get_preference`
 
 Expire Exchange events
 ----------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents`
    
 Delete expired Exchange events
 ------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired`
    
 Exchange reports interval
 -------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeReportingInterval
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeReportingInterval`
    
 Exchange reports error level
 ----------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeReportErrorLevel
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeReportErrorLevel`
    
 Exchange empty alerts
 ---------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeSendEmptyAlerts
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeSendEmptyAlerts`
    
 Exchange default error level
 ----------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
    
 Exchange event source
 ---------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeEventSource
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeEventSource`
    
 Exchange entities warning threshold
 -----------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeServerWarn
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeServerWarn`
 
 Exchange entities error threshold
 ---------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeServerError
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeServerError`
 
 Exchange bot warning threshold
 ---------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeDeadBotWarn
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeDeadBotWarn`
 
 Exchange nil duration
 ---------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeNilDuration
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeNilDuration`
 
 Exchange bot error threshold
 ---------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeDeadBotError
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeDeadBotError`
 
 Exchange default error threshold
 ---------------------------------
 
-.. autoclass:: citrus_borg.dynamic_preferences_registry.ExchangeDefaultError
-   :members: default, verbose_name
-   :show-inheritance:
+:class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultError`

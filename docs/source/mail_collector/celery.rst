@@ -6,7 +6,7 @@ Celery Data Collection Considerations
 
 The mail borg events from all the bots are centralized via the Logstash
 server and queued to the RabbitMQ server via the **logstash** exchange.
-There is a **logstash** queue bound to that exchange and the Mail Collectgor
+There is a **logstash** queue bound to that exchange and the Mail Collector
 application is pulling in the events from that queue. See 
 :ref:`Data Collection` for more details.
 
@@ -167,4 +167,4 @@ There are 2 solutions to resolve this situation:
   result in data loss. Additionally we will have to manually bond the
   ``logstash`` queue to the ``logstash`` exchange on the `RabbitMQ server 
   <https://www.rabbitmq.com/>`_. this procedure is described under
-  :ref:`RabbitMQ Server User Guide`
+  :ref:`RabbitMQ Server`

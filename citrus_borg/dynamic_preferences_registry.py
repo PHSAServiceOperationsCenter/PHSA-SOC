@@ -18,11 +18,11 @@ Although it is defined as part of the :ref:`Citrus Borg Application`, it
 is shared across all the applications in the :ref:`SOC Automation Project`.
 
 Each class in the module is a dynamic preference and each dynamic preference
-can be configured via the `Global preferences admin interface 
+can be configured via the `Global preferences admin interface
 <../../../admin/dynamic_preferences/globalpreferencemodel/>`_ using the value
-of the ``verbose_name`` attribute of the class. 
+of the ``verbose_name`` attribute of the class.
 
-To access the value of a given dynamic setting, use the :ref:`get_preference`
+To access the value of a given dynamic setting, use the :func:`get_preference`
 function. For example:
 
 .. ipython::

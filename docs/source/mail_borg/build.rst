@@ -201,25 +201,25 @@ below. Note that this is a PowerShell session with Administrator privileges.
 
 Create the certificate:
 
-.. code-block:: ps1con
+.. code-block::
 
     PS C:\Users\serban> New-SelfSignedCertificate -DnsName serban.teodorescu@phsa.ca -Type CodeSigning -CertStoreLocation cert:\CurrentUser\My
     
 Export the certificate:
 
-.. code-block:: ps1con
+.. code-block::
 
     PS C:\Users\serban> Export-Certificate -Cert (Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert)[0] -FilePath mail_borg_gui_sig.crt
     
 Import the certificate to the TrustedPublisher cert store:
 
-.. code-block:: ps1con
+.. code-block::
 
     PS C:\Users\serban> Import-Certificate -FilePath .\mail_borg_gui_sig.crt -Cert Cert:\CurrentUser\TrustedPublisher
     
 Import the certificate to the Root cert store:
 
-.. code-block:: ps1con
+.. code-block::
 
     PS C:\Users\serban> Import-Certificate -FilePath .\mail_borg_gui_sig.crt -Cert Cert:\CurrentUser\Root
 

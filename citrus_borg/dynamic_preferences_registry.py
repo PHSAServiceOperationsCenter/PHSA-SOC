@@ -632,6 +632,11 @@ class SendNoNews(BooleanPreference):
 class DeadAfter(DurationPreference):
     """
     reprot something as dead after preference
+
+    .. todo::
+
+        is this being used anywhere?
+
     """
     section = citrus_borg_common
     name = 'dead_after'

@@ -431,7 +431,7 @@ default user for accessing the `SolarWinds Orion server
 Can be used for both Web console and REST access
 
 Exposed as a dynamic preference by
-:class:`citrus_borg.dynamic_preferences_registry.OrionServerUser`
+:class:`citrus_borg.dynamic_preferences_registry.OrionServerPassword`
 
 Configurable from `Orion Server User Name
 <../../../admin/dynamic_preferences/globalpreferencemodel/?q=orion_password&o=2>`_
@@ -526,7 +526,8 @@ CELERY_RESULT_PERSISTENT = False
 
 CELERY_TASK_SERIALIZER = 'json'
 """
-Serialize `Celery tasks <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_
+Serialize `Celery tasks
+<https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_
 to ``JSON``
 
 This is the preferred settingfor security purposes. See the discussion for
@@ -565,10 +566,6 @@ CELERY_EXCHANGES = {
 celery exchanges
 """
 
-# service users
-RULES_ENGINE_SERVICE_USER = 'phsa_rules_user'
-NOTIFICATIONS_SERVICE_USER = 'phsa_notifications_user'
-
 # common email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
@@ -577,18 +574,61 @@ EMAIL_FILE_PATH = '/tmp'
 # ===========================================================================
 # email settings for PHSA Exchange relay
 EMAIL_HOST = 'smtp.healthbc.org'
+"""
+SMTP relay address
+
+The :ref:`SOC Automation Server` will use this SMTP server to deliver emails
+via the `PHSA`` ``Exchange`` infrastructure.
+
+:Note:
+
+    The address of the :ref:`SOC Automation Server` must be white-listed on
+    the SMTP relay server.
+
+.. todo::
+
+    This and all the other email related ``attributes`` must be enhanced to
+    make use of ``dynamic preferences``
+"""
+
 EMAIL_USE_TLS = False
+"""use ``TLS`` when connecting to the SMTP relay?"""
+
 EMAIL_USE_SSL = False
+"""
+use ``SSL`` when connecting to the SMTP relay?
+
+.. todo::
+
+    There is no encryption on connections to the SMTP relay. I don't know
+    who is managing that server but enabling ``TLS`` or ``SSL`` strikes me
+    as a very good idea. See `Zero Trust Security
+    <https://www.cloudflare.com/learning/security/glossary/what-is-zero-trust/>`_.
+
+"""
+
 EMAIL_PORT = 25
+"""SMTP relay connection port"""
+
 EMAIL_HOST_USER = ''
+"""SMTP relay user name"""
+
 EMAIL_HOST_PASSWORD = ''
+"""SMTP relay user password"""
+
 # ===========================================================================
 
 DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
+"""
+default address used in the ``FROM:`` field for emails originating on the
+:ref:`SOC Automation Server`
+
+.. todo::
+
+    Make it a ``dynamic preference``.
+"""
+
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
-SUB_EMAIL_TYPE = 0
-ESC_EMAIL_TYPE = 1
-SUB_ESC_EMAIL_TYPE = 2
 
 #=========================================================================
 # # ==========================================================================
@@ -602,9 +642,6 @@ SUB_ESC_EMAIL_TYPE = 2
 # EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
 # # ===========================================================================
 #=========================================================================
-
-# broadcast only notifications of these levels
-NOTIFICATION_BROADCAST_LEVELS = []
 
 # server settings: use them to build URL's
 SERVER_PORT = '8080'
@@ -623,20 +660,169 @@ This value is used for programmatically building URLS in various modules
 
 # settings specific to the citrus_borg application
 CITRUS_BORG_SERVICE_USER = 'citrus-borg'
+"""
+default value for the ``Django`` service user for maintaining information
+about remote ``Citrix`` and/or ``Exchange`` bots in
+:class:`django.db.models.Model` models
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.ServiceUser`
+
+"""
+
 CITRUS_BORG_DEAD_BOT_AFTER = timezone.timedelta(minutes=10)
+"""
+default value for the interval used to evaluate alerts about remote bots
+not communicating with the :ref:`SOC Automation Server`
+
+:Note:
+
+    Such alerts cannot reveal the reason for the lack of communication.
+
+    False positives will occur when there is a problem with the :ref:`Data
+    Collection` mechanisms
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.BotAlertAfter`
+
+"""
+
 CITRUS_BORG_DEAD_SITE_AFTER = timezone.timedelta(minutes=10)
+"""
+default value for the interval used when evaluating alerts about remote sites
+not communicating with the :ref:`SOC Automation Server`
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.SiteAlertAfter`
+
+"""
 CITRUS_BORG_DEAD_BROKER_AFTER = timezone.timedelta(hours=24)
+"""
+default value for the interval used when evaluating alerts about ``Citrix``
+session hosts not communicating with remote ``Citrix`` bots
+
+:Note:
+
+    This is not a relevant alert under the current ``Cerner CST `` ``Citrix``
+    deployments.
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.SessionHostAlertAfter`
+
+"""
+
 CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER = timezone.timedelta(hours=72)
+"""
+default interval for assembling reports about ``Citrix`` entities that cannot
+communicate
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.NodeForgottenAfter`
+
+"""
+
 CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN = timezone.timedelta(hours=72)
+"""
+default value for the **ignore events older than** interval applying to
+all ``Citrix`` events
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.IgnoreEvents`
+
+"""
+
 CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
+"""
+default value for how old a ``Citrix`` event has to be before it is considered
+amd marked as ``expired``
+
+``Expired`` events are ignored bu the :ref:`SOC Automation Server`.
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.ExpireEvents`
+
+"""
+
 CITRUS_BORG_DELETE_EXPIRED = True
+"""
+delete ``expired`` ``Citrix`` events?
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.DeleteExpiredEvents`
+"""
+
 CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL = timezone.timedelta(minutes=10)
+"""
+default value for the interval used in evaluating the alert condition for
+failed ``Citrix logon`` events
+
+Exposed as a dynamic preference by
+:class:`citrus_borg.dynamic_preferences_registry.FailedLogonAlertInterval`
+
+"""
+
 CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD = 2
+"""
+default threshold for the number of failed ``Citrix logon`` within the
+interval exposed by
+:class:`citrus_borg.dynamic_preferences_registry.FailedLogonAlertInterval`
+
+The alert is triggered if the number of failed ``Citrix logon`` events is
+greater than or equal to the this threshold during the evaluation interval
+
+Exposed by
+:class:`citrus_borg.dynamic_preferences_registry.FailedLogonAlertThreshold`
+
+"""
+
 CITRUS_BORG_SITE_UX_REPORTING_PERIOD = timezone.timedelta(hours=24)
+"""
+default interval used when assembling reports about the user experience, i.e.
+performance or lack thereof, provided by a ``Citrix Application Server`` as
+measured by the ``ControlUp`` application
+
+Exposed by
+:class:`citrus_borg.dynamic_preferences_registry.UxReportingPeriod`
+
+"""
+
 CITRUS_BORG_UX_ALERT_THRESHOLD = timezone.timedelta(seconds=10)
+"""
+default threshold value for alerts related to the ``Citrix`` user experience
+
+These alerts are raised if the ``ControlUp`` application reports ``Citrix``
+response times greater than this threshold.
+
+Exposed by
+:class:`citrus_borg.dynamic_preferences_registry.UxAlertThreshold`
+
+"""
+
 CITRUS_BORG_UX_ALERT_INTERVAL = timezone.timedelta(minutes=10)
+"""
+default interval for evaluating the ``Citrix`` user experience
+
+Exposed by
+:class:`citrus_borg.dynamic_preferences_registry.UxAlertInterval`
+"""
+
 CITRUS_BORG_FAILED_LOGONS_PERIOD = timezone.timedelta(hours=12)
+"""
+default interval for assembling reports about failed ``Citrix`` logon events
+
+exposed by
+:class:`citrus_borg.dynamic_preferences_registry.LogonReportsInterval`
+
+"""
+
 CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS = False
+"""
+do not send emails when there are no alerts?
+
+exposed by
+:class:`citrus_borg.dynamic_preferences_registry.SendNoNews`
+
+"""
 
 DYNAMIC_PREFERENCES = {
     'MANAGER_ATTRIBUTE': 'preferences',
@@ -648,11 +834,23 @@ DYNAMIC_PREFERENCES = {
 }
 
 # settings specific to nmap
-# TODO: do we still need the SSL_DEFAULT_PORT here?
 NMAP_SERVICE_USER = 'nmap_user'
+"""
+service ``Django`` user for creating and/or maintaining instances of
+:class:`ssl_cert_tracker.models.SslCertificateIssuer` and
+:class:`ssl_cert_tracker.models.SslCertificate` automatically
+"""
 
 SSL_PROBE_OPTIONS = '-Pn -p %s --script ssl-cert'
+"""
+command line switches used by `nmap <https://nmap.org/>`_ for probing
+``SSL`` certificates
+"""
+
 SSL_DEFAULT_PORT = 443
+"""
+default network port for ``SSL`` `nmap <https://nmap.org/>`_ probes
+"""
 
 EVENT_TYPE_SORT = {
     'unknown': 0,
@@ -665,3 +863,6 @@ EVENT_TYPE_SORT = {
 """
 Mapping required to provide a custom sort order for event types
 """
+
+if __name__ == '__main__':
+    pass

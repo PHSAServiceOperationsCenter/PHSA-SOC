@@ -30,6 +30,12 @@ The :ref:`SOC Automation Server` supports content caching via `memcached
 See :ref:`Memcached Details` for more usage information about `memcached
 <https://memcached.org/>`_.
 
+Off the shelf components are installed using the normal facilities provided
+by the operating system of the :ref:`SOC Automation Server` host.
+Currently, the :ref:`SOC Automation Server` is running on a `CentOS 7.5
+<https://www.centos.org/>`_.
+
+
 Django settings
 ---------------
 

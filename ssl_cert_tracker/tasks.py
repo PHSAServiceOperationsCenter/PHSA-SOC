@@ -36,8 +36,6 @@ from .nmap import (
 
 LOG = get_task_logger(__name__)
 
-SSL_PROBE_OPTIONS = r'-Pn -p 443 --script ssl-cert'
-
 
 class NmapXMLError(Exception):
     """

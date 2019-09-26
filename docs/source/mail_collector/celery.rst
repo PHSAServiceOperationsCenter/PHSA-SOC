@@ -38,8 +38,10 @@ The `systemd <https://www.freedesktop.org/wiki/Software/systemd/>`_
 configuration files are provided under the project directory in
 :file:`configs/celery/`.
 
-The :file:`phsa_celery_mail_collector.service` file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. _monkey_with_systemd:
+
+The **phsa_celery_mail_collector.service** file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is the systemd service file. It needs to symlinked or copied to the
 :file:`/etc/systemd/system` directory depending on the Linux distribution running on

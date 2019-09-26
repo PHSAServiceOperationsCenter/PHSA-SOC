@@ -4,29 +4,24 @@ SOC Automation Server
 The :ref:`SOC Automation Server` is a `Python <https://www.python.org/>`_
 `Django <https://www.djangoproject.com/>`_ application server running against
 a `MariaDB <https://mariadb.org/>`_ database server.
-
 See :ref:`MariaDB Details` for more usage information the `MariaDB
 <https://mariadb.org/>`_ database server.
 
 The :ref:`SOC Automation Server` is exposed to the network by an `NGINX server
 <https://nginx.org/en/download.html>`_ over `uWSGI
 <https://uwsgi-docs.readthedocs.io/en/latest/>`_.
-
 See :ref:`NGINX Details` for more usage information about the `NGINX server
 <https://nginx.org/en/download.html>`_.
-
 See :ref:`uWSGI Details` for more usage information about the  `uWSGI
 <https://uwsgi-docs.readthedocs.io/en/latest/>`_ layer.
 
 The :ref:`SOC Automation Server` supports asynchronous task execution via
 `Celery <http://www.celeryproject.org/>`_.
-
 See :ref:`Celery Details` for more usage information about `Celery
 <http://www.celeryproject.org/>`_.
 
 The :ref:`SOC Automation Server` supports content caching via `memcached
 <https://memcached.org/>`_.
-
 See :ref:`Memcached Details` for more usage information about `memcached
 <https://memcached.org/>`_.
 

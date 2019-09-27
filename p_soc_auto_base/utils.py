@@ -1,8 +1,6 @@
 """
 .. _utils:
 
-utility classes and functions for the p_soc_auto project
-
 :module:    p_soc_auto.p_soc_auto_base.utils
 
 :copyright:
@@ -13,6 +11,9 @@ utility classes and functions for the p_soc_auto project
 :contact:    serban.teodorescu@phsa.ca
 
 :update:    Jul. 15, 2019
+
+This module contains utility `Python` classes and functions used by the
+`Django` applications  of the :ref:`SOC Automation Server`.
 
 """
 import logging
@@ -34,19 +35,48 @@ LOGGER = logging.getLogger('django')
 
 class UnknownDataTargetError(Exception):
     """
-    raise when trying to upload to an unknown data model
+    custom :exc:`Exception` class raised when the :func:`get_model` function
+    cannot find the requested data model
     """
 
 
 class DataTargetFieldsAttributeError(Exception):
     """
-    raise when the target model doesn't have a qs_fields attribute
+    custom :exc:`Exception class raised when the
+    :func:`get_queryset_values_keys` cannot find a :attr:`qs_fields`
     """
 
 
 def get_model(destination):
     """
-    get the model where the data is to be saved
+    get a :class:`django.db.models.Model` object
+
+    This function takes a :class:`str` argument and returns the matching
+    :class:`django.db.models.Model` model if possible. We use this function
+    because :class:`django.db.models.Model` objects cannot be ``JSON``
+    serialized when `calling Celery tasks
+    <https://docs.celeryproject.org/en/latest/userguide/calling.html#serializers>`_.
+    Using this function, the wrokaround is
+
+    .. code-block:: python
+
+        from p_soc_auto_base.utils import get_model
+
+        @shared_task
+        def a_task(model_name_as_string):
+            my_django_model = get_model(model_name_as_string)
+
+            return do_something_with(my_django_model)
+
+    :arg str destination: the 'app_name.model_name' string for a `model`
+
+    :returns: the matching :class:`django.db.models.Model` model object
+
+    :raises:
+
+        :exc:`UnknownDataTargetError` if there is no matching model
+        registered on the server
+
     """
     try:
         return apps.get_model(*destination.split('.'))
@@ -56,16 +86,26 @@ def get_model(destination):
 
 def get_queryset_values_keys(model):
     """
-    this function returns a list of keys that will be passed to
-    :method:`<django.db.models.query.QuerySet.values>`
+    A :class:`Django queryset <django.db.models.query.QuerySet>` can have
+    data fields (straight database fields) and calculated fields (the
+    result of calculations performed at the database level, e.g. `Count` or
+    `Sum` aggregated fields).
+    If the `queryset` does have calculated fields, the names of these fields
+    will be present in the :attr:`django.db.models.Model.qs_fields` attribute
+    of the `model` on which the `qyeryset` is based.
 
-    :returns: a `list of field names
+    This function returns the :attr:`django.db.models.Model.qs_fields`
+    attribute if it exists
 
-        note that these field names are for the queryset, **not for the
-        model that is the source of thew queryset**, because a queryset
-        can contain fields defined via annotations and/or aggregations
+    :returns: the :attr:`django.db.models.Model.qs_fields` :class:`list`
 
-    :raises: :exception:`<DataTargetFieldsAttributeError>`
+    :Note:
+
+        These field names are for the `queryset`, **not for the
+        `model` that is the source of the `queryset`**.
+
+    :raises: :exception:`DataTargetFieldsAttributeError` if the `qs_fields`
+        attribute is not present
     """
     if not hasattr(model, 'qs_fields'):
         raise DataTargetFieldsAttributeError(

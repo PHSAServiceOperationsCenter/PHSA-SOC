@@ -1,9 +1,5 @@
 """
-.. _admin:
-
-django admin for the p_soc_aut_base app
-
-contains base classes for admin forms
+.. _base_admin:
 
 :module:    p_soc_auto.p_soc_auto_base.admin
 
@@ -15,6 +11,10 @@ contains base classes for admin forms
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    sep. 17, 2018
+
+`django.contrib.admin` objects to be reused across the :ref:`SOC Automation
+Server` apps
+
 """
 from django.contrib import admin
 from django.contrib import messages
@@ -23,7 +23,14 @@ from django.core.exceptions import FieldDoesNotExist
 
 def enable_selected(modeladmin, request, queryset):
     """
-    enable objects admin action
+    add an action to the `Django Admin Summary pages` that will set an
+    :attr:`enabled` field to ``True`` if the
+    :class:`Django model <django.db.models.Model>` behind a
+    :class:`Django admin <django.contrib.admin.ModelAdmin>` has such an
+    attribute
+
+    See `Django admin actions
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/actions/>`_.
     """
     try:
         modeladmin.model._meta.get_field('enabled')
@@ -49,7 +56,11 @@ admin.site.add_action(enable_selected, 'enable_selected')
 
 def disable_selected(modeladmin, request, queryset):
     """
-    disable objects admin action
+    add an action to the `Django Admin Summary pages` that will set an
+    :attr:`enabled` field to ``False`` if the
+    :class:`Django model <django.db.models.Model>` behind a
+    :class:`Django admin <django.contrib.admin.ModelAdmin>` has such an
+    attribute
     """
     try:
         modeladmin.model._meta.get_field('enabled')
@@ -75,7 +86,8 @@ admin.site.add_action(disable_selected, 'disable_selected')
 
 class BaseAdmin(admin.ModelAdmin):
     """
-    base class for admin classes
+    Use this class as the base class for other admin classes inheriting from
+    :class:`django.contrib.admin.ModelAdmin` if so desired
     """
     actions_on_top = True
     actions_on_bottom = True
@@ -85,7 +97,10 @@ class BaseAdmin(admin.ModelAdmin):
 
     def get_actions(self, request):
         """
-        make the delete selected action available if the user is a superuser
+        override :meth:`django.contrib.admin.ModelAdmin.get_actions`
+
+        The purpose is to only allow superusers the privilege of deleting
+        objects from `Django Admin Summary pages`
         """
         actions = super().get_actions(request)
         if not request.user.is_superuser:
@@ -96,9 +111,10 @@ class BaseAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """
-        pre-populates created_by and updated_by fields
+        override :meth:`django.contrib.admin.ModelAdmin.save_model`
 
-        created_by must only be updated once  upon creation
+        pre-populates created_by and updated_by fields. created_by must only
+        be updated once  upon creation
         """
         if not hasattr(obj, 'created_by'):
             obj.created_by = request.user

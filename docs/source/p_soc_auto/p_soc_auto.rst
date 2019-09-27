@@ -20,11 +20,10 @@ readily scaled horizontally via virtualization or containerization.
     security protocols for inter-component communication.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Components
    
    socauto.rst
-   django_settings.rst
    memcached.rst
    nginx.rst
    uwsgi.rst

@@ -193,3 +193,20 @@ source controlled file ``configs/celery/phsa_celery_flower.service``.
    
 See the usual suspects for enabling and controlling the ``Flower`` service.
 
+`Celery` scaling
+----------------
+
+To be determined...
+
+`Celery` security
+-----------------
+
+At a miminum,we need to use non-default credentials in the
+:attr:`p_soc_auto.settings.CELERY_BROKER_URL`.
+
+`Celery` supports `SSL
+<https://docs.celeryproject.org/en/latest/userguide/configuration.html#broker-use-ssl>`_
+with the default transport (`pyamqp`) for the `AMPQ <https://www.amqp.org/>`_
+protocol.
+Sill, enabling `SSL` between the `Celery workers` and the
+:ref:`RabbitMQ Server` must be a separate, dedicated effort. 

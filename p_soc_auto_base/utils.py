@@ -43,7 +43,7 @@ class UnknownDataTargetError(Exception):
 class DataTargetFieldsAttributeError(Exception):
     """
     custom :exc:`Exception class raised when the
-    :func:`get_queryset_values_keys` cannot find a :attr:`qs_fields`
+    :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`
     """
 
 
@@ -56,7 +56,7 @@ def get_model(destination):
     because :class:`django.db.models.Model` objects cannot be ``JSON``
     serialized when `calling Celery tasks
     <https://docs.celeryproject.org/en/latest/userguide/calling.html#serializers>`_.
-    Using this function, the wrokaround is
+    Using this function, the workaround is
 
     .. code-block:: python
 
@@ -92,7 +92,7 @@ def get_queryset_values_keys(model):
     `Sum` aggregated fields).
     If the `queryset` does have calculated fields, the names of these fields
     will be present in the :attr:`django.db.models.Model.qs_fields` attribute
-    of the `model` on which the `qyeryset` is based.
+    of the `model` on which the `queryset` is based.
 
     This function returns the :attr:`django.db.models.Model.qs_fields`
     attribute if it exists
@@ -104,7 +104,7 @@ def get_queryset_values_keys(model):
         These field names are for the `queryset`, **not for the
         `model` that is the source of the `queryset`**.
 
-    :raises: :exception:`DataTargetFieldsAttributeError` if the `qs_fields`
+    :raises: :exc:`DataTargetFieldsAttributeError` if the `qs_fields`
         attribute is not present
     """
     if not hasattr(model, 'qs_fields'):
@@ -117,7 +117,24 @@ def get_queryset_values_keys(model):
 
 def url_annotate(queryset):
     """
-    annotate a queryset with the admin url of the underlying model
+    annotate each row in a :class:`Django queryset
+    <django.db.models.query.QuerySet>` with the absolute path of the admin url
+    of the underlying :class:`Django model <django.db.models.Model>` instance
+
+    See `Reversing admin URLs
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.
+
+    Note that this fail if the `Django Admin Site
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`_
+    is not enabled.
+
+    This function uses the `Model _meta API
+    <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_
+    to extract the `name` of the `primary key` field, the `app_label` property,
+    and the `model_name` property.
+    It then uses the `Concat
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#concat>`_
+    database function to calculate a field containting the value of the `URL`.
 
     :arg queryset: the :class:`<django.db.models.query.QuerySet>` object
 
@@ -125,15 +142,14 @@ def url_annotate(queryset):
 
     :raises:
 
-        :exception:`<TypeError>` if the argument is nnot a queryset
+        :exc:`TypeError` if the argument is not a
+        :class:`Django queryset <django.db.models.query.QuerySet>`
+
     """
     if not isinstance(queryset, QuerySet):
         raise TypeError(
             'bad type %s for object %s' % (type(queryset), queryset))
 
-    # get the object metadata from an (the first) element of the queryset
-    # we need the app_label, model_name, and primary key field name so
-    # that we can build the url value
     obj_sample = queryset.model._meta
 
     return queryset.annotate(url_id=Cast(obj_sample.pk.name, TextField())).\
@@ -152,8 +168,42 @@ def details_url_annotate(
         queryset, app_path=None,
         model_path=None, param_name=None, param_lookup_name=None):
     """
-    annotate a queryset with an admin link to related records
-    http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
+    annotate each row in a `queryset` with an admin link to related records
+
+    For example, we have a hosts and host events and host events linked via a
+    :class:`Django Foreign Key
+    <django.db.models.ForeignKey>` field. This function will annotate each row in
+    the hosts `queryset` with the absolute `Django admin URL` to the related
+    host events like below::
+
+        http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
+
+    :arg queryset: the initial :class:`Django queryset
+        <django.db.models.query.QuerySet>`
+
+    :arg str app_path: the `app_label` for the model with the details.
+        If ``None``, the `app_label` is picked from the `queryset` using the
+        `Model _meta API
+        <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
+        This is only useful if the master and the details models are defined in the
+        same `Django application`.
+
+    :arg str model_path: the `model_name` property of the `Django model` with the
+        details. If ``None``, it will be picked from the `queryset` using the
+        `Model _meta API`. This, however, is o very little use, since there are
+        very few realistic data models where the master and the details are in
+        the same `Djanog model`.
+
+    :arg str param_name: `Django lookup` key_name__field_name used to build the
+        `param` part of the `URL`. If one considers the example above, this
+        argument is 'source_host__host_name' which means that the events
+        (the details) model has a foreign key named 'source_host' pointing to
+        the hosts (master) model and the lookup will be applied against a
+        field named 'host_name' in the later model.
+
+    :arg str param_lookup_name: the name of the field that contains the `value`
+        part of the `URL`. If one considers the example above, the value used
+        in the filter is picked from the field containing the host_name.
     """
     if not isinstance(queryset, QuerySet):
         raise TypeError(
@@ -193,9 +243,12 @@ def remove_duplicates(sequence=None):
     """
     remove duplicates from a sequence
 
+    We are not using the `set(list)` approach because that one only works with
+    :class:`list <list>`. this approach will also work with :class:`strings <str>`.
+
     :arg sequence: the sequence that may be containing duplicates
 
-    :returns: a ``list`` with no duplicate items
+    :returns: a :class:`lst` with no duplicate items
     """
     class IterableError(Exception):
         """
@@ -212,7 +265,7 @@ def remove_duplicates(sequence=None):
     if sequence is None:
         raise IterableError(sequence)
 
-    if not isinstance(sequence, (list, tuple)):
+    if not isinstance(sequence, (str, list, tuple)):
         try:
             sequence = [sequence]
         except Exception:
@@ -227,33 +280,42 @@ def remove_duplicates(sequence=None):
 
 def get_pk_list(queryset, pk_field_name='id'):
     """
-    get the primary key values from a queryset
+    :returns: a :class:`lst` with the primary key values from a
+        :class:`Django queryset <django.db.models.query.QuerySet>`
 
-    needed when invoking celery tasks without a pickle serializer:
+    needed when invoking `celery tasks` without forcing the use of the `pickle`
+    serializer:
 
-        *    if we pass around model instances, we must use pickle and that
-             is a security problem
+    * if we pass around `model` instances, we must use `pickle` and that is a
+      security problem
 
-        *    the proper pattern is to pass around primary keys (usually
-             ``int``) which are JSON serializable and pulling the instance
-             from the database inside the celery task. note that this will
-             increase the number of database access calls considerably
+    * the proper pattern is to pass around primary keys (usually :class:`int`)
+      which are `JSON` serializable and pulling the `model` instance from the
+      database inside the `celery task`. Note that this will increase the number
+      of database access calls considerably
 
-    :arg queryset: the (pre-processed) queryset
-    :type queryset: :class"`<django.db.models.query.QuerySet>`
+    :arg queryset: the `queryset`
+    :type queryset: :class:`django.db.models.query.QuerySet`
 
-    :arg str pk_field_name:
+    :arg str pk_field_name: the name of the primary key field; in `Django` primary
+        keys are by default using the name 'id'.
 
-        the name of the primary key field, (``django``) default 'id'
-
-    :returns: a ``list`` of primary key values
     """
     return list(queryset.values_list(pk_field_name, flat=True))
 
 
 def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
     """
-    make datetime objects to timezone aware if needed
+    make sure that a :class:`datetime.datetime` object is `timezone aware
+    <https://docs.python.org/3/library/datetime.html#module-datetime>`_
+
+    :arg `datetime.datetime datetime_input:
+
+    :arg `django.utils.timezone` use_timezone: the timezone to use
+
+    :arg bool is_dst: use `Daylight saving time
+        <https://en.wikipedia.org/wiki/Daylight_saving_time>`_
+
     """
     if timezone.is_aware(datetime_input):
         return datetime_input
@@ -264,17 +326,31 @@ def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
 
 class MomentOfTime():
     """
-    quick and dirty way of calculating a ``datetime.datetime`` object
-    relative to another ``datetime.datetime`` object (the reference
-    moment) when a ``dateime.timedelta`` is provided.
+    Utility class for calculating a `datetime.datetime` moment
+    relative to another `datetime.datetime` moment (the reference
+    moment) when a `datetime.timedelta` interval is provided.
 
-    in most cases the reference moment is the value returned by
-    :method:`<datetime.dateime.now>` but sometimes we need something else
+    In most cases the reference moment is the value returned by the
+    :meth:`datetime.dateime.now` method but sometimes we need something else.
+
+    Note that this class uses the `django.utils.timezone
+    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`_
+    module instead of the `Python datetime
+    <https://docs.python.org/3/library/datetime.html#module-datetime>`_ module.
+    Therefore, it should not be used outside `Django applications`.
     """
     @staticmethod
     def now(now):
         """
-        static method for the now reference moment
+        `static method
+        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        for calculating the reference moment
+
+        :arg `datetime.datetime` now: the reference moment; if ``None``, use the
+            value returned by :meth:`django.utils.timezone.now`
+
+        :raises: :exc:`TypeError` if it cannot create or return a
+            :class:`datetime.datetime` moment
         """
         if now is None:
             now = timezone.now()
@@ -288,17 +364,26 @@ class MomentOfTime():
     @staticmethod
     def time_delta(time_delta, **kw_time_delta):
         """
-        return a proper ``datetime.timedelta`` object. if a dictionary is
-        provided instead, try to build the object from the dictionary
+        `static method
+        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        for verifying or calculating a :class:`django.utils.timezone.timedelta`
+        object
+
+        :returns: a proper `datetime.timedelta` object. if the time_delta argument
+            is not provided, use the :class:`kw_time_delta dictionary <dict>` to
+            create a `datetime.timedelta` object
+
+        :arg `datetime.tomedelta` time_delta: if this argument is provided, the
+            static method will return it untouched
+
+        :arg dict kw_time_delta: a :class:`dict` suitable for creating a
+            :class:`datetime.timedelta` object. See
+            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_.
 
         :raises:
 
-            ``exceptions.TypeError`` when :arg:`<time_delta>`` is not of the
-            proper type or if the input dictionary cannot be used as argument
-            for ``datetime.timedelta``
+            :exc:`TypeError` when it cannot return a :class:`datetime.tomedelta`
 
-        :param time_delta: default ``None``
-        :type time_delta: ``datetime.timedelta``
         """
 
         if time_delta is None:
@@ -317,7 +402,25 @@ class MomentOfTime():
     @classmethod
     def past(cls, **moment):
         """
-        moment in the past
+        `class method
+        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        that returns a moment in the past relative to the reference moment
+
+        :arg dict moment: `keyword arguments
+            <https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments>`_
+            with the following keys:
+
+            :now: contains the reference moment; if not present, this method
+                  will use the value returned by :meth:`django.utils.timezone.now`.
+
+            :time_delta: contains the `datetime.timedelta` interval used to
+                         calculate the moment in the past.
+
+                         If this key is not present, the method expects other keys
+                         as per
+                         `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_
+                         so that a `datetime.timedelta` interval can be calculated.
+
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \
             - MomentOfTime.time_delta(
@@ -326,7 +429,11 @@ class MomentOfTime():
     @classmethod
     def future(cls, **moment):
         """
-        future moment
+        `class method
+        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        that returns a moment in the future relative to the reference moment
+
+        See :meth:`past` for details.
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \
             + MomentOfTime.time_delta(

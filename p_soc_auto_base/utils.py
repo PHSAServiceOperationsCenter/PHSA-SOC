@@ -369,11 +369,11 @@ class MomentOfTime():
         for verifying or calculating a :class:`django.utils.timezone.timedelta`
         object
 
-        :returns: a proper `datetime.timedelta` object. if the time_delta argument
+        :returns: a proper :class:`datetime.timedelta` object. if the time_delta argument
             is not provided, use the :class:`kw_time_delta dictionary <dict>` to
-            create a `datetime.timedelta` object
+            create a :class:`datetime.timedelta` object
 
-        :arg `datetime.tomedelta` time_delta: if this argument is provided, the
+        :arg `datetime.timedelta` time_delta: if this argument is provided, the
             static method will return it untouched
 
         :arg dict kw_time_delta: a :class:`dict` suitable for creating a
@@ -382,7 +382,7 @@ class MomentOfTime():
 
         :raises:
 
-            :exc:`TypeError` when it cannot return a :class:`datetime.tomedelta`
+            :exc:`TypeError` when it cannot return a :class:`datetime.timedelta`
 
         """
 

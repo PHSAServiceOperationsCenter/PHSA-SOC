@@ -442,28 +442,45 @@ class MomentOfTime():
 
 def get_base_queryset(data_source, **base_filters):
     """
-    return a queryset associated with a given django model.
-    if the filters optional arguments are provide the queryset
-    will be filtered accordingly
+    :returns: a :class:`Django queryset <django.db.models.query.QuerySet>`
+        associated with a :class:`Django model <django.db.models.Model>`
+
+        If the filters optional arguments are provided, the `Django queryset`
+        will be filtered accordingly
 
     :arg str data_source: a model name in the format 'app_label.model_name'
-    :returns: the queryset associated with the data source
+    :arg dict base_filters: optional arguments to be used for the `filter()
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`_
+        method of the `queryset`
 
-    :arg **base_filters: django filters to be applied to the queryset
+        For example:
 
-        example: if something like enabled=True is part of :arg:**base_filters,
-        the queryset returned will have .filter(enabled=True) applied
+        .. ipython::
+
+            In [1]: from p_soc_auto_base.utils import get_base_queryset
+
+            In [2]: qs = get_base_queryset('citrus_borg.borgsite')
+
+            In [3]: qs.values('site', 'enabled')
+            Out[3]: <QuerySet [{'site': 'Squamish', 'enabled': False}, {'site': 'LGH', 'enabled': False}, {'site': 'Whistler', 'enabled': False}, {'site': 'Pemberton', 'enabled': False}, {'site': 'Bella Bella', 'enabled': False}, {'site': 'Bella Coola', 'enabled': False}, {'site': 'Sechelt', 'enabled': False}, {'site': 'Powell River', 'enabled': False}, {'site': 'over the rainbow', 'enabled': True}, {'site': 'Bella Bella-wifi', 'enabled': False}, {'site': 'Bella Coola-wifi', 'enabled': False}, {'site': 'Whistler-wifi', 'enabled': False}, {'site': 'Pemberton-wifi', 'enabled': False}, {'site': 'LGH-wifi', 'enabled': False}, {'site': 'Squamish-wifi', 'enabled': False}]>
+
+            In [4]: qs = get_base_queryset('citrus_borg.borgsite', enabled=True)
+
+            In [5]: qs.values('site', 'enabled')
+            Out[5]: <QuerySet [{'site': 'over the rainbow', 'enabled': True}]>
+
+            In [6]:
+
 
     :raises:
 
-        :exception:`<exceptions.LookupError>` if the model cannot be found.
-        either the app_label is not present in the INSTALLED_APPS section
-        in the settings, or the model doesn't exist in the app
+        :exc:`LookupError` if the model cannot be found
 
-    :raises:
+            either the app_label is not present in the INSTALLED_APPS section
+            in the settings, or the model doesn't exist in the app
 
-        :exception:`<django.core.exceptions.FieldError>` if there are invalid
-        filter specifications in the base_filters optional arguments
+        :exc:`django.core.exceptions.FieldError` if there are invalid filter
+            specifications in the base_filters optional arguments
     """
     try:
         model = apps.get_model(data_source)
@@ -483,7 +500,23 @@ def get_base_queryset(data_source, **base_filters):
 
 def get_subscription(subscription):
     """
-    :returns: a :class:`<ssl_cert_tracker.models.Subscription>` instance
+    :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
+
+    :arg str subscription: the subscription value
+        Note that this value is case-sensitive
+
+    .. todo::
+
+        Use `filter(subscription__iexact=subscription).get()` to avoid the case
+        sensitive requirement
+
+    :raises: :exc:`Exception` if the
+        :class:`ssl_cert_tracker.models.Subscription` instance cannot be found
+
+    .. todo::
+
+        Change the error catching to use a
+        :exc:`djang.db.core.exceptions.ObjectDoesNotExist` exception.
     """
     try:
         return Subscription.objects.\
@@ -494,7 +527,41 @@ def get_subscription(subscription):
 
 def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     """
-    prepare and send emails from the citrus_borg application
+    use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
+    email from the :ref:`SOC Automation Server`
+
+    :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
+
+    :arg str subscription: the key for retrieving the :class:`Subscription
+        <ssl_cert_tracker.models.Subscription>` instance used to render and address
+        the email
+
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
+        must contain a descriptor for the `queryset` fields that will be
+        rendered in the email.
+
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
+        must contain the name and location of the template that will be used to
+        render the email. 
+
+    :arg LOGGER: a logging handlle
+    :type LOGGER: :class:`logging.Logger`
+
+    :arg dict extra_context: optional arguments with additional data to be rendered
+        in the email
+
+    :raises: :exc:`Exception` if the email cannot be rendered or if the email
+        cannot be sent
+
+        We are using generic :class:`exceptions <Exception>` because this function
+        is almost always invoked from a `Celery task
+        <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
+        `Celery` will do all the error handling work if needed.
+
+        .. todo::
+
+            We need a custom error for rendering the email and an SMTP related
+            error for sending the email.
     """
     try:
         email_alert = Email(

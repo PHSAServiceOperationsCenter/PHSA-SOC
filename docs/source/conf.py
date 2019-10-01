@@ -93,7 +93,7 @@ html_theme = 'sphinxdoc'
 html_static_path = ['_static']
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3.6', None),
+    'python': ('https://docs.python.org/3', None),
     'django': ('http://docs.djangoproject.com/en/2.2/',
                'http://docs.djangoproject.com/en/2.2/_objects/'),
     'urllib3': ('http://urllib3.readthedocs.org/en/latest', None),

@@ -132,7 +132,7 @@ The ``SOC Automation server`` also needs to consume `AMQP
 
 The `Logstash <https://www.elastic.co/products/logstash>`_ server will create
 the ``logstash`` ``exchange`` automatically when starting. See
-:ref:`Logstash Server User Guide` for details.
+:ref:`Logstash Server` for details.
 
 We must add a ``binding`` from the ``logstash`` ``exchange`` to the
 ``logstash`` ``queue so that the ``SOC Automation server`` can consume

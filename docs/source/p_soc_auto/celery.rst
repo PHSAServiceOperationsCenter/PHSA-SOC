@@ -198,8 +198,8 @@ See the usual suspects for enabling and controlling the ``Flower`` service.
 
 To be determined...
 
-`Celery` security
------------------
+Celery security
+---------------
 
 At a miminum,we need to use non-default credentials in the
 :attr:`p_soc_auto.settings.CELERY_BROKER_URL`.

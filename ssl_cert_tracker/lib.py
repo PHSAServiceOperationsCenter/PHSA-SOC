@@ -267,35 +267,72 @@ def is_not_yet_valid(
 
 class NoDataEmailError(Exception):
     """
-    raise this if one tries to create an instance of :class:`<Email>` with no
-    data
+    Custom :exc:`Exception` class
+
+    Raise this exception if one tries to create an instance of :class:`Email`
+    with a :attr:`Email.data` attribute of :class:`NoneType` (:attr:`data` is ``None``).
+
+    The expectation is that :attr:`Email.data` is a
+    :class:`django.db.models.query.QuerySet` and the :class:`Email` class can handle
+    empty `QuerySet` objects. This exception prevents invoking the :class:`Email`
+    class without a `data` argument in the constructor.
     """
 
 
 class NoSubscriptionEmailError(Exception):
     """
-    raise this if one tries to create an instance of :class:`<Email>` with no
-    subscription object
+    Custom :exc:`Exception` class
+
+    Raise this exception if one tries to create an instance of :class:`Email`
+    without specifying the `subscription` key for a :class:`Subscription
+    <ssl_cert_tracker.models.Subscription>` instance.
     """
 
 
 class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
-    a (more or less) subclass of
-    :class:`<django.core.mail.EmailMultiAlternatives>` with a body prepared
-    from django template
+    Subclass of the
+    :class:`django.core.mail.EmailMultiAlternatives` class (see `Sending alternative
+    content types
+    <https://docs.djangoproject.com/en/2.2/topics/email/#sending-alternative-content-types>`_
+    under the `EmailMessage class
+    <https://docs.djangoproject.com/en/2.2/topics/email/#the-emailmessage-class>`_
+    in the Django docs about `Sending email
+    <https://docs.djangoproject.com/en/2.2/topics/email/#module-django.core.mail>`_)
 
-    instances of this class are multi-part (test and html) email messages
+    This class allows for using `Django templates
+    <https://docs.djangoproject.com/en/2.2/ref/templates/language/>`_ when creating
+    multi-part (text and html) email messages by way of the `django-templated-email
+    <https://github.com/vintasoftware/django-templated-email>`_ package.
+
+    The class assumes that all email messages are based on tabular data coming
+    from the database and they also contain some metadata to make the
+    message easier to understand.
+    Both the data and the metadata are plugged into a `Django template` using
+    a `context
+    <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_.
+
+    See :ref:`Email template sample` for an example of a `Django template` to be
+    plugged into an instance of this class
     """
 
     def _get_headers_with_titles(self):
         """
-        prepare the column heads
+        prepares the headers for the columns that will be rendered in the email
+        message body
 
-        in most cases these can be the model.field.verbose_name properties
-        so we look into the model._meta API
+        This method will infer the column names based on the fields present in
+        the :attr:`Email.data` :class:`queryset <django.db.models.query.QuerySet>`.
 
-        if there is __ we are looking at a relationship. for the moment we
+        In most cases the field names in a `queryset` are the same as the fields
+        in the :class`django.db.models.Model` that was used to construct it. Such
+        fields have a :attr:`verbose_name` attribute that is used to provide human
+        readable named fot he fields. We retrieve the :attr:`verbose_name` for each
+        field using the `Model _meta API
+        <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
+
+        Some field names in the `queryset` will contain one or more occurrences of
+        the "__" substring. there is __ we are looking at a relationship. for the moment we
         will just take the substring after the last __ and call it a day
 
         if we cannot find a field that matches and it is not a relationship,

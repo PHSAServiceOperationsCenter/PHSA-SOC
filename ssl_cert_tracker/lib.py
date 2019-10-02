@@ -291,8 +291,8 @@ class NoSubscriptionEmailError(Exception):
 
 class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
-    Subclass of the
-    :class:`django.core.mail.EmailMultiAlternatives` class (see `Sending alternative
+    Subclass of
+    :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending alternative
     content types
     <https://docs.djangoproject.com/en/2.2/topics/email/#sending-alternative-content-types>`_
     under the `EmailMessage class
@@ -321,27 +321,41 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         prepares the headers for the columns that will be rendered in the email
         message body
 
-        This method will infer the column names based on the fields present in
-        the :attr:`Email.data` :class:`queryset <django.db.models.query.QuerySet>`.
+        This method will infer the column names from the field names stored under
+        the :attr:`ssl_cert_tracker.models.Subscription.headers` field. The method
+        assumes that the field names in the :attr:`headers
+        <ssl_cert_tracker.models.Subscription.headers>` field will match field
+        names in the :attr:`Email.data`
+        :class:`queryset <django.db.models.query.QuerySet>`.
 
         In most cases the field names in a `queryset` are the same as the fields
-        in the :class`django.db.models.Model` that was used to construct it. Such
+        in the :class:`django.db.models.Model` that was used to construct it. Such
         fields have a :attr:`verbose_name` attribute that is used to provide human
-        readable named fot he fields. We retrieve the :attr:`verbose_name` for each
+        readable named for the fields. We retrieve the :attr:`verbose_name` for each
         field using the `Model _meta API
         <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
 
         Some field names in the `queryset` will contain one or more occurrences of
-        the "__" substring. there is __ we are looking at a relationship. for the moment we
-        will just take the substring after the last __ and call it a day
+        the "__" substring. In this case, the field represents a relationship
+        and the relevant `verbose_name` attribute is present in a different model.
+        Under the current implementation, this method will create the column name
+        by replacing "__" with ": ". If there are "_" substrings as well (classic
+        Pythn convention for attribute names), they will be replaced with " ".
 
-        if we cannot find a field that matches and it is not a relationship,
-        it is an annotation and there isn't much we cando; replace _ with
-        space and call it a day
+        Some fields in the `queryset` are calculated (and created) on the fly when
+        the `queryset` is `evaluated
+        <https://docs.djangoproject.com/en/2.2/topics/db/queries/#querysets-are-lazy>`_.
+        In this case, we cannot make any reasonable guesses about the field names,
+        except that they may contain the "_" substring as a (convention based)
+        separator. Column headers for these field will be based on replacing the
+        "_" occurrences with " " (spaces).
 
-        everything will be capitalized using ``str.title()``
+        All column headers are capitalized using :meth:`str.title`.
 
-        :returns: a ``dict`` that will be part of the template context
+        :returns: a :class:`dictionary <dict>` in which the keys are the field names
+            from :attr:`ssl_cert_tracker.models.Subscription.headers` and the
+            values are created using the rules above
+
         """
         field_names = [
             field.name for field in self.data.model._meta.get_fields()]
@@ -350,15 +364,27 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             if key in field_names:
                 headers[key] = self.data.model._meta.get_field(
                     key).verbose_name.title()
-            else:
+            elif '__' in key:
                 headers[key] = key.replace(
                     '__', ': ').replace('_', ' ').title()
+            else:
+                headers[key] = key.replace('_', ' ').title()
 
         return headers
 
     def prepare_csv(self):
         """
-        generate csv file if possible
+        generate a comma-separated file with the values in the :attr:`Email.data`
+        if required via the :attr:`Email.add_csv` attribute value
+
+        If the :attr:`data` is empty, the comma-separated file will not be
+        created.
+
+        The file will be named by linking the value of the :attr:`email subject
+        <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
+        :attr:`Email.subscripttion_obj` instance member with a time stamp. The file
+        will be saved under the path described by
+        :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
         """
         if not self.add_csv:
             return
@@ -387,56 +413,95 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             self, data=None, subscription_obj=None, logger=None,
             add_csv=True, **extra_context):
         """
-        :arg data: a django queryset
-                   the constructor will prepare the template context and pass
-                   it to the :function:`<templated_email.get_templated_mail>`
-                   which is responsible for rendering the subject and body
-                   of the email message
+        :arg data: a :class:`django.db.models.query.QuerySet`
 
-        :arg subscription_obj: an instance of
-                               :class:`<ssl_cert_tracker.models.Subscription>`
-                               containing all the meta-date required to
-                               build and send an email message. this includes
-                               template information and pure SMTP data (like
-                               email addresses and stuff)
+        :arg subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
+            instance
 
-        :arg logger: a logging.logger object
+            Will contain all the metadata required to build and send the email
+            message. This includes template information and pure SMTP data (like
+            email addresses and stuff).
 
-        :arg bool add_csv: generate a csv file from :arg data: and
-                              attach it to the email. if the file is not
-                              generated, log the problem and send the email
-                              without attachments
+        :arg logger: a :class:`logging.logger` object
 
-        :arg dict extra_context: just in case one needs more data
+            If one is not provided, the constructor will create one
+
+        :arg bool add_csv: generate the csv file from :attr:`Email.data` and attach
+            it to the email message?
+
+        :arg dict extra_context: additional data required by the `Django template
+            <https://docs.djangoproject.com/en/2.2/topics/templates/#module-django.template>`_
+            for rendering the email message
+
+            If this argument is present, the {key: value,} pairs therein will be
+            appended to the :attr:`Email.context` :class:`dictionary <dict>`.
+
+        :raises: :exc:`Exception` if the email message cannot be prepared
         """
+
         self.add_csv = add_csv
+        """
+        :class:`bool` attribute controlling whether a comma-separated file is to
+        be created and attached to the email message
+        """
+
         self.csv_file = None
+        """
+        :class:`str` attribute for the name of the comma-separared file
+
+        This attribute is set in the :meth:`prepare_csv`.
+        """
 
         if logger is None:
             self.logger = LOG
+            """:class:`logging.Logger` instance"""
         else:
             self.logger = logger
+            """:class:`logging.Logger` instance"""
 
         if data is None:
             self.logger.error('no data was provided for the email')
             raise NoDataEmailError('no data was provided for the email')
 
         self.data = data
+        """
+        :class:`django.db.models.query.QuerySet` with the data to be rendered
+        in the email message body
+        """
         if subscription_obj is None:
             self.logger.error('no subscription was provided for the email')
             raise NoSubscriptionEmailError(
                 'no subscription was provided for the email')
 
         self.subscription_obj = subscription_obj
+        """
+        an :class:`ssl_cert_tracker.models.Subscriptions` instance with the
+        details required for rendering and sending the email message
+        """
 
         self.headers = self._get_headers_with_titles()
+        """
+        a :class:`dictionary <dict>` that maps human readable column names (headers)
+        to the fields in the :attr:`data` :class:`django.db.models.query.QuerySet`
+        """
 
         self.prepare_csv()
 
         self.prepared_data = []
+        """
+        :class:`lst of :class:`dictionaries <dict>` where each item represents a
+        row in the :attr:`Email.data` :class:`django.db.models.query.QuerySet`
+        with the human readable format of the field name (as represented by the
+        values in the :attr:`Email.headers` :class:`dictionary <dict>`) as the key
+        and the contents of the field as values
+
+        For example, if the `queryset` has one entry with dog_name: `jimmy`, the
+        corresponding entry in :attr:`Email.heasers` is {'dog_name': 'Dog name'},
+        and the item in this list will end up as {'Dog name': 'jimmy'}.
+        """
         for data_item in data.values(*self.headers.keys()):
             self.prepared_data.append(
-                {key: data_item[key] for key in self.headers.keys()})
+                {key: data_item[key] for key in self.headers.keys()})  # pylint: disable=consider-iterating-dictionary
 
         self.context = dict(
             report_date_time=timezone.now(),
@@ -450,6 +515,11 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             alternate_email_subject,
             subscription_name=subscription_obj.subscription,
             subscription_id=subscription_obj.pk)
+        """
+        :class:`dictionary <dict>` used to `render the context
+        <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_
+        for the email message
+        """
 
         if extra_context:
             self.context.update(**extra_context)
@@ -474,15 +544,20 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
     def set_tags(self):
         """
-        create the values for a {{ tags }} element in the template
+        format the contents of the :attr:`ssl_sert_tracker.models.Subscription.tags`
+        of the :attr:`Eamil.subscription_obj`
+        to something like "[TAG`][TAG2]etc"
 
-        in case we have subscriptions that have a tags attribute (something
-        that will happend in uhuru), add all the tags from the
-        subscription instance; tags is a CharField and uses comma to
-        separate between tags
+        By convention, the :attr:`ssl_sert_tracker.models.Subscription.tags` value
+        is a list of comma separated words or phrases. This method converts that
+        value to [TAGS][][], etc.
+        A tag containing the hostname of the :ref:`SOC Automation Server` host
+        will show as a [$hostname] tag to help with identifying the source of the
+        email message.
 
-        we also prefix everything with a [DEBUG] tag if this is a
-        DEBUG deployment and we always include a [$host name] tag
+        In a `DEBUG` environment, this method will prefix all the other tags with a
+        [DEBUG] tag. A `DEBUG` environemnt is characterized by the value of
+        :attr:`p_soc_auto.settings.DEBUG`.
         """
         tags = ''
 
@@ -499,8 +574,18 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
     def send(self):
         """
-        wrapper around the
-        :meth:`<django.core.mail.EmailMultiAlternatives.send>`
+        send the email message
+
+        wrapper around :meth:`django.core.mail.EmailMultiAlternatives.send`
+
+        :returns: '1' if the email message was sent, and '0' if not
+
+        :raises:
+
+            :exc:`smtplib.SMTPConnectError` if an `SMTP` error is thrown
+
+            :exc:`Exception` if any other errors are thrown
+
         """
         try:
             sent = self.email.send()

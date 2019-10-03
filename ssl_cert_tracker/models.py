@@ -1,5 +1,5 @@
 """
-.. _models:
+.. _ssl_cert_tracker_models:
 
 django models for the ssl_certificates app
 

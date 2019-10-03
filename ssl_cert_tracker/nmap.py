@@ -1,7 +1,16 @@
 """
 .. _nmap:
 
-nmap functions and classes for the ssl_certificates app
+NMAP classes and functions
+==========================
+
+Classes and functions used by the :ref:`SSL Certificate Tracker Application`
+to control and monitor `NMAP <https://nmap.org/>`__ scans
+
+This module makes heavy use of the `libnamp
+<https://github.com/savon-noir/python-libnmap>`__ package. Documentation for
+the `libnmap` package is available at
+`<https://libnmap.readthedocs.io/en/latest/index.html>`__.
 
 :module:    ssl_cert_tracker.nmap
 
@@ -26,61 +35,84 @@ from django.utils import timezone
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser
 
-LOG = logging.getLogger('ssl_cert_tracker_log')
-
 from .models import SslProbePort
+
+LOG = logging.getLogger('ssl_cert_tracker_log')
+"""
+fall-back logging object for this module
+
+All the functions and methods in this module will use this `Logger` instance
+if they are not called with a `logger` argument.
+"""
 
 
 class NmapTargetError(Exception):
     """
-    raise when nmap is invoked with no target
+    Custom :exc:`Exception` class raised if :meth:`NmapProbe.__init__` is
+    invoked without an `address` argument
     """
 
 
 class NmapError(Exception):
     """
-    raise if the nmap probe returns an error
+    Custom :exc:`Exception` class raised if the `NMAP <https://nmap.org/>`__
+    scan returns an error not handled by other :exc:`Exception` classes in
+    this module
     """
 
 
 class NmapHostDownError(Exception):
     """
-    raise if nmap reports the host as down
+    Custom :exc:`Exception` class raised if the `NMAP <https://nmap.org/>`__
+    scan reports that the `Target
+    <https://nmap.org/book/man-target-specification.html>`__ host is down
     """
 
 
 class NmapTooManyHostsError(Exception):
     """
-    raise if the nmap probe returns more than one host
+    Custom :exc:`Exception` class raised if the `NMAP <https://nmap.org/>`__
+    scan returns more than one host
 
-    no idea how this can happen but hte data structures suggest that it is
+    I have no idea how this can happen but the structure of the
+    :class:`libnmap.objects.host.NmapHost` suggest that it is
     possible
     """
 
 
 class NmapNotAnSslNodeError(Exception):
     """
-    raise if there is no SSL data returned by the probe
+    Custom :exc:`Exception` class raised if the `NMAP <https://nmap.org/>`__
+    `SSL` scan reports that there is no SSL information for the
+    `Target <https://nmap.org/book/man-target-specification.html>`__ host
     """
 
 
 class NmapProbe():
     """
-    class for data returned by an nmap probe
+    Base class for `NMAP <https://nmap.org/>`__ scans
+
+    Note that, unlike other base classes, this class can be used on its own.
     """
 
     def __init__(self, address=None, opts=None, logger=LOG):
         """
-        :arg address: the network name or address of the node
+        :class:`NmapProbe` constructor
 
-        :arg str opts: the options to be used by nmap
+        :arg str address: the network names or addresses reference for the
+            `Target  <https://nmap.org/book/man-target-specification.html>`__
+            of the `NMAP <https://nmap.org/>`__ scan
 
-        :arg `logging.logger` logger: the logger
+        :arg str opts: the options to be used by the `NMAP
+            <https://nmap.org/>`__ scan
 
-        :raises:
+            See `NMAP Options Summary
+            <https://nmap.org/book/man-briefoptions.html>`__ if curiosity
+            overwhelms you (but remember how the cat died).
 
-            :exception:`<NmapTargetError>` if the address argument is
-            missing
+        :arg `logging.Logger` logger: the logging object
+
+        :raises: :exc:`NmapTargetError`
 
 
         """
@@ -88,17 +120,34 @@ class NmapProbe():
             raise NmapTargetError('must provide a target for the nmap probe')
 
         self._address = address
+        """the `NMAP` scan target"""
 
         if opts is None:
             opts = ''
         self._opts = opts
+        """the options for the `NMAP` scan"""
+
         self._logger = logger
+        """the instance logging object"""
 
         self.nmap_data = self.probe_node()
+        """
+        :class:`libnmap.objects.report.NmapReport` instance with the data
+        collected by the `NMAP <https://nmap.org/>`__ scan
+        """
 
     def probe_node(self):
         """
-        execute an nmap probe against a network node
+        launch the `NMAP <https://nmap.org/>`__ scan and parse the results
+
+        :returns:  a :class:`libnmap.objects.report.NmapReport` instance
+            with the data collected by the `NMAP <https://nmap.org/>`__ scan
+
+            The :class:`libnmap.objects.report.NmapReport` instance is created
+            by calling :meth:`libnmap.parser.NmapParser.parse`
+
+        :raises: :exc:`NmapError` if the `NMAP <https://nmap.org/>`__ scan
+            returns anything on `stderr`
 
         """
         self._logger.debug(
@@ -116,26 +165,33 @@ class NmapProbe():
     @property
     def summary(self):
         """
-        :returns:
-
-            the summary of the :class:`<libnmap.objects.report.NmapReport>`
-            instance created by :method:`<libnmap.parser.NmapParser.parse>`
+        :returns: the summary :attr:`libnmap.objects.report.NmapReport.summary`
+            attribute
         """
         return self.nmap_data.summary
 
     @property
     def host(self):
         """
-        :returns:
+        :returns: the first entry in the hosts
+            :attr:`libnmap.objects.report.NmapReport.hosts` attribute
 
-            the :class:`<libnmap.objects.host.NmapHost>` where the SSL
-            service is supposed to be running
+            We are only returning the first entry because we are always
+            intializing :attr:`NmapProbe._address` with info for a single node
+
+            .. todo::
+
+                Clean this up. An `NMAP <https://nmap.org/>`__ scan can
+                return information for many hosts. It is only for `SSL` scans
+                that we want to focus on one node at a time.
+
+        :rtype: :class:`libnmap.objects.host.NmapHost`
 
         :raises:
 
-            :exception:`<NmapHostDownError>`
+            :exc:`NmapHostDownError`
 
-            :exception:`<NmapTooManyHostsError>`
+            :exc:`NmapTooManyHostsError`
         """
         if len(self.nmap_data.hosts) > 1:
             raise NmapTooManyHostsError(
@@ -152,54 +208,105 @@ class NmapProbe():
     @property
     def hostnames(self):
         """
-        :returns: the host names returned by the nmap probe
+        :returns: the hostnames
+            :attr:`libnmap.objects.host.NmapHost.host.hostnames` attribute
+
+            Information returned by an `NMAP <https://nmap.org/>`__ scan for
+            a single target can point to multiple hostnames.
+
+            .. todo::
+
+                See :meth:`NmapProbe.host`.
         """
         return self.host.hostnames
 
     @property
     def service(self):
         """
-        :returns: the nmap service data
+        :returns: the first entry in the
+            :attr:`libnmap.objects.host.NmapHost.services` attribute of
+            *property* :meth:`NmapProbe.host`
+        :rtype: :class:`libnmap.objects.service.NmapService`
+
+        .. todo::
+
+            The same considerations as the ones from :meth:`NmapProbe.host`
+            apply.
         """
         return self.host.services[0]
 
     @property
     def port(self):
         """
-        the network port
+        :returns: the :attr:`network port
+            <libnmap.objects.service.NmapService.port>` attribute of *property*
+            :meth:`NmapProbe.service`
+        :rtype: int
         """
         return self.service.port
 
     @property
     def protocol(self):
         """
-        the network protocol
+        :returns: the :attr:`network protocol
+            <libnmap.objects.service.NmapService.protocol>` attribute of
+            *property* :meth:`NmapProbe.service`
+        :rtype: str
         """
         return self.service.protocol
 
     @property
     def state(self):
         """
-        the port state
+        :returns: the :attr:`port state
+            <libnmap.objects.service.NmapService.state>` attribute of
+            *property* :meth:`NmapProbe.service`
+        :rtype: str
         """
         return self.service.state
 
     @property
     def reason(self):
         """
-        the reason for the port state
+        :returns: the :attr:`reason for the port state
+            <libnmap.objects.service.NmapService.reason>` attribute of
+            *property* :meth:`NmapProbe.service`
+        :rtype: str
         """
         return self.service.reason
 
 
 class SslProbe(NmapProbe):
     """
-    nmap data for ssl nodes
+    :class:`NmapProbe` child class specialized in `NMAP <https://nmap.org/>`__
+    `SSL server certificate
+    <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`__
+    scans
+
+    .. todo::
+
+        Both :attr:`p_soc_auto.settings.SSL_PROBE_OPTIONS` and
+        :atr:`p_soc_auto.settings.SSLDEFAULT_PORT` need to be extended with
+        `dynamic preferences` and the :meth:`constructor <__init__>` of this
+        class needs to use said `dynamic preference` when initializing.
+
+    See :class:`ssl_cert_tracker.models.SslCertificate` for detailed
+    descriptions of the properties in this class.
     """
 
     def __init__(
             self, address=None, port=settings.SSL_DEFAULT_PORT, logger=LOG):
+        """
+        :arg str address: the DNS name or the IP address of the host that
+            will be probed for an `SSL server certificate
+            <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`__
 
+        :arg int port: the network port that will be probed for an `SSL
+            server certificate
+            <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`__
+
+        :arg `logging.Logger` logger: the logging object
+        """
         opts = r'{}'.format(settings.SSL_PROBE_OPTIONS % port)
 
         super().__init__(address, opts, logger)
@@ -209,8 +316,9 @@ class SslProbe(NmapProbe):
     def get_ssl_data(self):
         """
         :returns: the SSL certificate data
+        :rtype: dict
 
-        :raises: :exception:`<NmapNotAnSslNodeError>`
+        :raises: :exc:`NmapNotAnSslNodeError`
         """
         try:
             return self.service.scripts_results[0].get('elements', None)
@@ -222,7 +330,7 @@ class SslProbe(NmapProbe):
     def ssl_subject(self):
         """
         :returns: the SSL certificate subject data
-        :rtype: ``dict``
+        :rtype: dict
         """
         return self.ssl_data.get('subject', None)
 
@@ -237,42 +345,51 @@ class SslProbe(NmapProbe):
     @property
     def ssl_pk_bits(self):
         """
-        public key bits
+        :returns: the size of the public key in bits
+        :rtype: str
         """
         return self.ssl_data.get('pubkey', None).get('bits', None)
 
     @property
     def ssl_pk_type(self):
         """
-        public key type
+        :returns: the public key type
+        :rtype: str
         """
         return self.ssl_data.get('pubkey', None).get('type', None)
 
     @property
     def ssl_pem(self):
         """
-        SSL certificate data
+        :returns: the `SSL` certificate `PEM representation
+            <https://support.ssl.com/Knowledgebase/Article/View/19/0/der-vs-crt-vs-cer-vs-pem-certificates-and-how-to-convert-them>`__
+        :rtype: str
         """
         return self.ssl_data.get('pem', None)
 
     @property
     def ssl_md5(self):
         """
-        MD5 sum
+        :returns: the `MD5 hash <https://en.wikipedia.org/wiki/MD5>`__ of the
+            `SSl` certificate
+        :rtype: str
         """
         return self.ssl_data.get('md5', None)
 
     @property
     def ssl_sha1(self):
         """
-        SHA-1 sum
+        :returns: the `SHA-1 hash <https://en.wikipedia.org/wiki/SHA-1>`__ of
+            the `SSL` certificate
+        :rtype: str
         """
         return self.ssl_data.get('sha1', None)
 
     @property
     def ssl_not_before(self):
         """
-        not valid before
+        :returns: the `Not Before` value of the `SSL` certificate
+        :rtype: datetime.datetime
         """
         return make_aware(
             parse_datetime(
@@ -282,7 +399,8 @@ class SslProbe(NmapProbe):
     @property
     def ssl_not_after(self):
         """
-        not valid after
+        :returns: the `Not After` value of the `SSL` certificate
+        :rtype: datetime.datetime
         """
         return make_aware(
             parse_datetime(
@@ -295,13 +413,13 @@ def to_hex(input_string=None):
     :returns: the hex representation of the input string
     :rtype: str
 
-    we need this mostly to reduce md5 and sha1 hashes to some fixed length
-    output so that we can avoid truncation problems. it also makes database
-    idenxing work easier if all the column values have the same length
+    We need this mostly to reduce md5 and sha1 hashes to some fixed length
+    output so that we can avoid truncation problems. It also makes database
+    indexing work easier if all the column values have the same length
 
     :arg str input: the string to hex encode
 
-    :raises: ``TypeError`` if the input cannot be cast to a string
+    :raises: :exc:`TypeError` if the input cannot be cast to a string
     """
     if input_string is None:
         return None
@@ -318,6 +436,11 @@ def to_hex(input_string=None):
 def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
     """
     make datetime objects to timezone aware if needed
+
+    .. todo::
+
+        This is dupliccate code. Modify this module to use
+        :func:`p_soc_auto_base.utils.make_aware`
     """
     if timezone.is_aware(datetime_input):
         return datetime_input
@@ -327,6 +450,14 @@ def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
 
 
 def probe_for_state(dns_list=None):
+    """
+    try to connect to each DNS name in a list and save the results in
+    separate `CSV` files: one file for unresolved hosts, one file for hosts
+    known to the `DNS` servers that are not connectable, and one file
+    with connectable hosts
+
+    :arg lst dns_list: the :class:`lst` of DNS names
+    """
     if dns_list is None:
         dns_list = []
         with open('no_certs/no_certs.csv') as csv_file:
@@ -381,13 +512,14 @@ def probe_for_certs(dns_list=None, port_list=None):
     prepare a file with common name, port, expiration date;
     and a file with the dns list where no certs were found on any of the probed
     ports;
-    and a file with nmap errors (may or may not be useful
+    and a file with nmap errors (may or may not be useful)
 
     """
     field_names = ['dns', 'port', 'common_name', 'not_before', 'expires_on']
     """
-    :var field_names: use for the output csv file header row
+    header row for the csv file
     """
+
     if dns_list is None:
         dns_list = get_dns_list('certs.csv')
 
@@ -450,6 +582,20 @@ def probe_for_certs(dns_list=None, port_list=None):
 
 
 def get_dns_list(csv_file_name):
+    """
+    get the list DNS names from a comma-separated file exported from
+    `Microsoft Excel <https://en.wikipedia.org/wiki/Microsoft_Excel>`__
+
+    Note that this is a very specialized function that depends on having the
+    name of the column for DNS names in `UTF-8` format. That column name is
+    possibly specific, not only to `Excel`, but also to the particular file
+    used for extracting the informantion
+
+    :arg str csv_file_name:
+
+    :returns: a :class:`list` of :class:`strings <str>` with each item
+        representing a DNS name
+    """
     dns_list = []
     with open(csv_file_name) as csv_file:
         reader = csv.DictReader(csv_file)

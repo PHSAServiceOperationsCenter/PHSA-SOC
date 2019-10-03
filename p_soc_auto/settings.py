@@ -845,11 +845,29 @@ SSL_PROBE_OPTIONS = '-Pn -p %s --script ssl-cert'
 """
 command line switches used by `nmap <https://nmap.org/>`_ for probing
 ``SSL`` certificates
+
+As shown here, we are running an `NMAP <https://nmap.org/>`__ scan with the
+following options:
+
+* `-Pn`
+
+  do not `ping
+  <https://en.wikipedia.org/wiki/Ping_(networking_utility)>`__ the target
+  
+* `-p %`
+
+  this is not a wide scan, just probe the specified port
+
+* `--script ssl-cert`
+  
+  Use the `ssl-cert <https://nmap.org/nsedoc/scripts/ssl-cert.html>`__ `Lua
+  <https://www.lua.org/>`__ script for scanning
+  
 """
 
 SSL_DEFAULT_PORT = 443
 """
-default network port for ``SSL`` `nmap <https://nmap.org/>`_ probes
+default network port for ``SSL`` `nmap <https://nmap.org/>`__ probes
 """
 
 EVENT_TYPE_SORT = {

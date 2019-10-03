@@ -97,7 +97,8 @@ intersphinx_mapping = {
     'django': ('http://docs.djangoproject.com/en/2.2/',
                'http://docs.djangoproject.com/en/2.2/_objects/'),
     'urllib3': ('http://urllib3.readthedocs.org/en/latest', None),
-    'requests': ('https://2.python-requests.org/en/master/', None), }
+    'requests': ('https://2.python-requests.org/en/master/', None),
+    'libnmap': ('https://libnmap.readthedocs.io/en/latest/', None), }
 
 autodoc_default_options = {
     'member-order': 'bysource',

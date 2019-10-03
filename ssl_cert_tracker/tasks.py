@@ -1,7 +1,8 @@
 """
-.. _tasks:
+.. _ssl_cert_tracker_tasks:
 
 celery tasks for the ssl_certificates app
+-----------------------------------------
 
 :module:    ssl_cert_tracker.tasks
 

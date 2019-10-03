@@ -301,8 +301,9 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     <https://docs.djangoproject.com/en/2.2/topics/email/#module-django.core.mail>`_)
 
     This class allows for using `Django templates
-    <https://docs.djangoproject.com/en/2.2/ref/templates/language/>`_ when creating
-    multi-part (text and html) email messages by way of the `django-templated-email
+    <https://docs.djangoproject.com/en/2.2/ref/templates/language/>`_ when
+    creating multi-part (text and html) email messages by way of the
+    `django-templated-email
     <https://github.com/vintasoftware/django-templated-email>`_ package.
 
     The class assumes that all email messages are based on tabular data coming
@@ -312,8 +313,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     a `context
     <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_.
 
-    See :ref:`Email template sample` for an example of a `Django template` to be
-    plugged into an instance of this class
+    See :ref:`Email template sample` for an example of a `Django template`
+    to be plugged into an instance of this class
     """
 
     def _get_headers_with_titles(self):
@@ -321,40 +322,41 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         prepares the headers for the columns that will be rendered in the email
         message body
 
-        This method will infer the column names from the field names stored under
-        the :attr:`ssl_cert_tracker.models.Subscription.headers` field. The method
-        assumes that the field names in the :attr:`headers
+        This method will infer the column names from the field names stored
+        under the :attr:`ssl_cert_tracker.models.Subscription.headers` field.
+        The metho assumes that the field names in the :attr:`headers
         <ssl_cert_tracker.models.Subscription.headers>` field will match field
         names in the :attr:`Email.data`
         :class:`queryset <django.db.models.query.QuerySet>`.
 
-        In most cases the field names in a `queryset` are the same as the fields
-        in the :class:`django.db.models.Model` that was used to construct it. Such
-        fields have a :attr:`verbose_name` attribute that is used to provide human
-        readable named for the fields. We retrieve the :attr:`verbose_name` for each
-        field using the `Model _meta API
+        In most cases the field names in a `queryset` are the same as the
+        fields in the :class:`django.db.models.Model` that was used to
+        construct it. Such fields have a :attr:`verbose_name` attribute that
+        is used to provide human readable names for the fields. We retrieve
+        the :attr:`verbose_name` for each field using the `Model _meta API
         <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
 
-        Some field names in the `queryset` will contain one or more occurrences of
-        the "__" substring. In this case, the field represents a relationship
-        and the relevant `verbose_name` attribute is present in a different model.
-        Under the current implementation, this method will create the column name
-        by replacing "__" with ": ". If there are "_" substrings as well (classic
-        Pythn convention for attribute names), they will be replaced with " ".
+        Some field names in the `queryset` will contain one or more occurrences
+        of the "__" substring. In this case, the field represents a
+        relationship and the relevant `verbose_name` attribute is present in
+        a different model. Under the current implementation, this method will
+        create the column n by replacing "__" with ": ". If there are "_"
+        substrings as well (classic Python convention for attribute names),
+        they will be replaced with " ".
 
-        Some fields in the `queryset` are calculated (and created) on the fly when
-        the `queryset` is `evaluated
+        Some fields in the `queryset` are calculated (and created) on the fly
+        when the `queryset` is `evaluated
         <https://docs.djangoproject.com/en/2.2/topics/db/queries/#querysets-are-lazy>`_.
-        In this case, we cannot make any reasonable guesses about the field names,
-        except that they may contain the "_" substring as a (convention based)
-        separator. Column headers for these field will be based on replacing the
-        "_" occurrences with " " (spaces).
+        In this case, we cannot make any reasonable guesses about the field
+        names, except that they may contain the "_" substring as a
+        (convention based) separator. Column headers for these field will be
+        based on replacing the "_" occurrences with " " (spaces).
 
         All column headers are capitalized using :meth:`str.title`.
 
-        :returns: a :class:`dictionary <dict>` in which the keys are the field names
-            from :attr:`ssl_cert_tracker.models.Subscription.headers` and the
-            values are created using the rules above
+        :returns: a :class:`dictionary <dict>` in which the keys are the field
+            names from :attr:`ssl_cert_tracker.models.Subscription.headers`
+            and the values are created using the rules above
 
         """
         field_names = [
@@ -374,16 +376,17 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
     def prepare_csv(self):
         """
-        generate a comma-separated file with the values in the :attr:`Email.data`
-        if required via the :attr:`Email.add_csv` attribute value
+        generate a comma-separated file with the values in the
+        :attr:`Email.data` if required via the :attr:`Email.add_csv` attribute
+        value
 
         If the :attr:`data` is empty, the comma-separated file will not be
         created.
 
         The file will be named by linking the value of the :attr:`email subject
         <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
-        :attr:`Email.subscripttion_obj` instance member with a time stamp. The file
-        will be saved under the path described by
+        :attr:`Email.subscripttion_obj` instance member with a time stamp.
+        The file will be saved under the path described by
         :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
         """
         if not self.add_csv:
@@ -419,30 +422,32 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             instance
 
             Will contain all the metadata required to build and send the email
-            message. This includes template information and pure SMTP data (like
-            email addresses and stuff).
+            message. This includes template information and pure SMTP data
+            (like email addresses and stuff).
 
         :arg logger: a :class:`logging.logger` object
 
             If one is not provided, the constructor will create one
 
-        :arg bool add_csv: generate the csv file from :attr:`Email.data` and attach
-            it to the email message?
+        :arg bool add_csv: generate the csv file from :attr:`Email.data` and
+            attach it to the email message?
 
-        :arg dict extra_context: additional data required by the `Django template
+        :arg dict extra_context: additional data required by the
+            `Django template
             <https://docs.djangoproject.com/en/2.2/topics/templates/#module-django.template>`_
             for rendering the email message
 
-            If this argument is present, the {key: value,} pairs therein will be
-            appended to the :attr:`Email.context` :class:`dictionary <dict>`.
+            If this argument is present, the {key: value,} pairs therein will
+            be appended to the :attr:`Email.context`
+            :class:`dictionary <dict>`.
 
         :raises: :exc:`Exception` if the email message cannot be prepared
         """
 
         self.add_csv = add_csv
         """
-        :class:`bool` attribute controlling whether a comma-separated file is to
-        be created and attached to the email message
+        :class:`bool` attribute controlling whether a comma-separated file is
+        to be created and attached to the email message
         """
 
         self.csv_file = None
@@ -481,27 +486,34 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.headers = self._get_headers_with_titles()
         """
-        a :class:`dictionary <dict>` that maps human readable column names (headers)
-        to the fields in the :attr:`data` :class:`django.db.models.query.QuerySet`
+        a :class:`dictionary <dict>` that maps human readable column names
+        (headers) to the fields in the :attr:`data`
+        :class:`django.db.models.query.QuerySet`
         """
 
         self.prepare_csv()
 
         self.prepared_data = []
         """
-        :class:`lst of :class:`dictionaries <dict>` where each item represents a
-        row in the :attr:`Email.data` :class:`django.db.models.query.QuerySet`
-        with the human readable format of the field name (as represented by the
-        values in the :attr:`Email.headers` :class:`dictionary <dict>`) as the key
-        and the contents of the field as values
+        :class:`lst of :class:`dictionaries <dict>` where each item represents
+        a row in the :attr:`Email.data`
+        :class:`django.db.models.query.QuerySet` with the human readable format
+        of the field name (as represented by the values in the
+        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and the
+        contents of the field as values
 
-        For example, if the `queryset` has one entry with dog_name: `jimmy`, the
-        corresponding entry in :attr:`Email.heasers` is {'dog_name': 'Dog name'},
-        and the item in this list will end up as {'Dog name': 'jimmy'}.
+        For example, if the `queryset` has one entry with dog_name: `jimmy`,
+        the corresponding entry in :attr:`Email.heasers` is
+        {'dog_name': 'Dog name'}, and the item in this list will end up as
+        {'Dog name': 'jimmy'}.
         """
+
+        # pylint: disable=consider-iterating-dictionary
         for data_item in data.values(*self.headers.keys()):
             self.prepared_data.append(
-                {key: data_item[key] for key in self.headers.keys()})  # pylint: disable=consider-iterating-dictionary
+                {key: data_item[key] for key in self.headers.keys()})
+
+        # pylint: enable=consider-iterating-dictionary
 
         self.context = dict(
             report_date_time=timezone.now(),
@@ -544,20 +556,20 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
     def set_tags(self):
         """
-        format the contents of the :attr:`ssl_sert_tracker.models.Subscription.tags`
-        of the :attr:`Eamil.subscription_obj`
-        to something like "[TAG`][TAG2]etc"
+        format the contents of the
+        :attr:`ssl_sert_tracker.models.Subscription.tags` of the
+        :attr:`Eamil.subscription_obj` to something like "[TAG`][TAG2]etc"
 
-        By convention, the :attr:`ssl_sert_tracker.models.Subscription.tags` value
-        is a list of comma separated words or phrases. This method converts that
-        value to [TAGS][][], etc.
+        By convention, the :attr:`ssl_sert_tracker.models.Subscription.tags`
+        value is a list of comma separated words or phrases. This method
+        converts that value to [TAGS][][], etc.
         A tag containing the hostname of the :ref:`SOC Automation Server` host
-        will show as a [$hostname] tag to help with identifying the source of the
-        email message.
+        will show as a [$hostname] tag to help with identifying the source of
+        the email message.
 
-        In a `DEBUG` environment, this method will prefix all the other tags with a
-        [DEBUG] tag. A `DEBUG` environemnt is characterized by the value of
-        :attr:`p_soc_auto.settings.DEBUG`.
+        In a `DEBUG` environment, this method will prefix all the other tags
+        with a [DEBUG] tag. A `DEBUG` environemnt is characterized by the
+        value of :attr:`p_soc_auto.settings.DEBUG`.
         """
         tags = ''
 

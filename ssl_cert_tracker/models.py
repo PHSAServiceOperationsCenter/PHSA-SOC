@@ -337,7 +337,8 @@ class SslNotYetValid(SslCertificate):
 
 class Subscription(BaseModel):
     """
-    Data model with all the details required to create and send an email message
+    Data model with all the details required to create and send an email
+    message
 
     This :class:`django.db.models.Model` is used across all the applications
     running on the :ref:`SOC Automation Server`.
@@ -351,15 +352,16 @@ class Subscription(BaseModel):
 
     emails_list = models.TextField('subscribers', blank=False, null=False)
     """
-    comma-separated string with the email addresses to which the email will be sent
+    comma-separated string with the email addresses to which the email will be
+    sent
     """
 
     from_email = models.CharField(
         'from', max_length=255, blank=True, null=True,
         default=settings.DEFAULT_FROM_EMAIL)
     """
-    email address to be placed in the `FROM` email header; default will be picked
-    from :attr:`p_soc_auto.settings.DEFAULT_FROM_EMAIL`
+    email address to be placed in the `FROM` email header; default will be
+    picked from :attr:`p_soc_auto.settings.DEFAULT_FROM_EMAIL`
     """
 
     template_dir = models.CharField(
@@ -376,15 +378,16 @@ class Subscription(BaseModel):
     """
     the short name of the template file used to render this type of email
 
-    The extension is picked from the configuration of the `django-templated-mail`
-    package in `p_soc_auto.settings`.
+    The extension is picked from the configuration of the
+    `django-templated-mail` package in `p_soc_auto.settings`.
     """
 
     template_prefix = models.CharField(
         'email template prefix', max_length=64, blank=False, null=False,
         default='email/')
     """
-    the subdirectory under :attr:`templatedir` where email templates are located
+    the subdirectory under :attr:`templatedir` where email templates are
+    located
     """
 
     email_subject = models.TextField(
@@ -395,16 +398,17 @@ class Subscription(BaseModel):
     """
     the strings to be used as the core of the email subject line
 
-    The application will most probably pre-pend and/or append various other strings
-    to the subject line.
+    The application will most probably pre-pend and/or append various other
+    strings to the subject line.
 
-    There is no limit on the length of the subject line but in this application but
-    according to `RFC 2822 <http://www.faqs.org/rfcs/rfc2822.html>`_, section 2.1.1,
-    this field must not be longer than 998 characters, and should not be longer than
+    There is no limit on the length of the subject line but in this application
+    but according to `RFC 2822
+    <http://www.faqs.org/rfcs/rfc2822.html>`_, section 2.1.1, this field must
+    not be longer than 998 characters, and should not be longer than
     78 characters (we are nowhere near respecting the later).
 
-    This value is used as an email subject line only if the rendering template is
-    invoked with a `context
+    This value is used as an email subject line only if the rendering template
+    is invoked with a `context
     <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_
     that includes a reference to it.
     """
@@ -417,11 +421,11 @@ class Subscription(BaseModel):
 
     This value is subject to the same rules as :attr:`email_subject`.
 
-    We include this value because in some cases the same template will render with
-    different subject lines based on various conditions. E.g. if the :attr:`data`
-    is not ``None``, the subject line will include some references to the its
-    content, otherwise the subject line would be like 'Move along, nothing to see
-    here'.
+    We include this value because in some cases the same template will render
+    with different subject lines based on various conditions. E.g. if the
+    :attr:`data is not ``None``, the subject line will include some references
+    to the its content, otherwise the subject line would be like 'Move along,
+    nothing to see here'.
     """
 
     headers = models.TextField(
@@ -443,8 +447,9 @@ class Subscription(BaseModel):
     """
     a string af tags that will be pre-pended to the email subject line
     
-    The application will not do any processing on this value. If one expects tags
-    to look like[TAG1][TAG2], this value must be created using this pattern.
+    The application will not do any processing on this value. If one expects
+    tags to look like[TAG1][TAG2], this value must be created using this
+    pattern.
     """
 
     def __str__(self):

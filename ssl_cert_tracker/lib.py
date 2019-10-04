@@ -1,7 +1,11 @@
 """
-.. _lib:
+.. _ssl_lib:
 
-library module for the ssl_certificates app
+:ref:`SSL Certificate Tracker Application` Library
+--------------------------------------------------
+
+This module contains classes and functions used by other modules in the
+application.
 
 :module:    ssl_certificates.lib
 
@@ -34,11 +38,18 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 
 
 LOG = getLogger('ssl_cert_tracker')
+"""
+fall-back :class:`logging.Logger` object
+
+If any class or function needs a :class:`logging.Logger` object and if one is
+**not** provided by the caller, then this :class:`logging.Logger` object will be
+used.
+"""
 
 
 class State(Enum):
     """
-    enumeration for state values
+    Enumeration class for state control attributes
     """
     VALID = 'valid'
     EXPIRED = 'expired'
@@ -47,47 +58,69 @@ class State(Enum):
 
 CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
-:var CASE_EXPIRED:
+a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
-    a representation of an SQL WHEN snippet looking for certificates
-    that have expired already
+See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
 
-:vartype: :class:`<django.db.models.When>`
+In this particular case, if the value of
+:attr:`ssl_cert_tracker.models.SslCertificate.not_after` is less than the current
+moment, the `SSL` certificate is expired.
 """
 
 
 CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
                           then=Value(State.NOT_YET_VALID))
 """
-:var CASE_NOT_YET_VALID: a representation of an SQL WHEN snippet looking for
-                    certificates that are not yet valid
+a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
-:vartype: :class:`<django.db.models.When>`
+See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
+
+In this particular case, if the value of
+:attr:`ssl_cert_tracker.models.SslCertificate.not_before` is greater than the
+current moment, the `SSL` certificate is not yet valid.
 """
 
 STATE_FIELD = Case(
     CASE_EXPIRED, CASE_NOT_YET_VALID, default=Value(State.VALID),
     output_field=CharField())
 """
-:var STATE_FIELD: a representation of an SQL CASE snipped that used the
-                  WHEN snippetys from above to categorize SSL certificates by
-                  their validity state
+a representation of an SQL CASE snippet using the SQL WHEN snippets from above
 
-:vartype: :class:`<django.db.models.Case>`
+See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+for detail about :class:`django.db.models.When` and :class:`django.db.models.When`.
+
+In this particular case, we are tracking the `STATE` of the
+:class:`ssl_cert_tracker.models.SslCertificate` instance with regards to validity
+and expiration dates. The possible cases are:
+
+* :attr:`State.NOT_YET_VALID` (not yet valid)
+
+* :attr:`State.VALID` (the default state)
+
+* :attr:`State.EXPIRED`
+
 """
 
 
 class DateDiff(Func):  # pylint: disable=abstract-method
     """
-    django wrapper for the MariaDB function DATEDIFF(). see
+    Subclass of the `Django` :class:`django.db.models.Func` class; used as a
+    wrapper for the `MariaDB` `DATEDIFF()
+    <https://mariadb.com/kb/en/library/datediff/>`__
 
-    `<https://mariadb.com/kb/en/library/datediff/>`_
+    See `Func() expressions
+    <https://docs.djangoproject.com/en/2.2/ref/models/expressions/#func-expressions>`__
+    in the `Django` docs for more details about wrappers for functions provided
+    by the database server.
 
-    need to use the database function to avoid uncaught conversion errors
+    We are using the database function for `date` arithmetic in order to avoid
+    conversion errors that cannot be caught and handled at the `Django` level.
 
-    the DATEDIFF() function returns for some un-blessed reason a string so we
-    need to use a char field which will impose another annotation to
-    convert the result to ints for sorting purposes
+    For some un-blessed reason, the `DATEDIFF()` function returns  a string.
+    If one wants to use the values returned by `DATEDIFF()` for sorting, one
+    will have to worry about the sort order between `strings` and `numbers`.
     """
     function = 'DATEDIFF'
     output_field = CharField()
@@ -95,15 +128,31 @@ class DateDiff(Func):  # pylint: disable=abstract-method
 
 def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
-    get untrusted certificates
+    :returns:
 
-    the arguments are required because this and the other queryset returning
-    functions in this module are written so that we can pull data from either
-    the old certificate model or the new, refoctored certificate models.
+        a :class:`django.db.models.query.QuerySet` based on the
+        :class:`ssl_cert_tracker.models.SslCertificate` filtered on the
+        `untrusted` state of each `SSL` certificate in
+        the :class:`django.db.models.query.QuerySet`
+
+        The :class:`django.db.models.query.QuerySet` will include a calculated
+        field that highlights the `untrusted` state of each `SSL` certificate.
+
+        Observe the  `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        `alert_body` field used as an argument for the
+        :meth:`django.db.models.query.QuerySet.annotate` method of the
+        :class:`django.db.models.query.QuerySet`.
+
+    :rtype: :class:`django.db.models.query.QuerySet`
+
+    The arguments for this function have not been hard-coded because we want to
+    be able to reuse the function even if :mod:`ssl_cert_tracker.models` changes.
 
     :arg str app_label:
 
     :arg str model_name:
+
     """
     return get_ssl_base_queryset(app_label, model_name).\
         filter(issuer__is_trusted=False).\
@@ -113,18 +162,32 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
 def get_base_queryset(app_label, model_name, url_annotate=True):
     """
-    get a basic queryset object and also annotate with the absolute
-    django admin change URL
+    get the initial :class:`django.db.models.query.QuerySet`; also `annotate
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__ it
+    with the absolute path of the `URL` for
+    the related :class:`Django admin <django.contrib.admin.ModelAdmin>` instance
+    in a calculated field named `url` if required
+
+
+    See `Reversing admin URLs
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.
+
+    Note that this fail if the `Django Admin Site
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`_
+    is not enabled.
+
 
     :arg str app_label:
 
     :arg str model_name:
 
-    :returns:
+    :arg bool url_annonate:
 
-        a django queryset that includes a field named 'url' containing
-        tbe absolute URL for the django admin change page associated with
-        the row
+    .. todo::
+
+        This is duplicate code. Replace this with
+        :func:`p_soc_auto_base.utils.get_base_queryset` and
+        :func:`p_soc_auto_base.utils.url_annotate`.
     """
     queryset = apps.get_model(app_label,
                               model_name).objects.filter(enabled=True)
@@ -146,15 +209,29 @@ def get_base_queryset(app_label, model_name, url_annotate=True):
 def get_ssl_base_queryset(
         app_label, model_name, url_annotate=True, issuer_url_annotate=True):
     """
-    annotate with the absolute url to the certificate issuer row
+    :returns:
 
-    we put this in a separate function because get_base_queryset is
-    supposed to be pristine with no dependencies to any specific model
-    whatsoever
+        a :class:`django.db.models.query.QuerySet` based on the
+        :class:`ssl_cert_tracker.models.SslCertificate` and `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the absolute path of the `URL` for the
+        :class:`Django admin <django.contrib.admin.ModelAdmin>` instance based on
+        the related entry in :class:`ssl_cert_tracker.models.SslCertificateIssuer`
 
-    this cannot be abstracted to generate annotations for each
-    foreign key field  because the annotation name cannot be passed as
-    a variable
+        The annotation is present in a field named `url_issuer`.
+
+    This function cannot be abstracted to generate annotations for one or more
+    foreign key fields  because the `annotation` names cannot be passed as
+    variables
+
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :arg bool url_annotate:
+
+    :arg bool issuer_url_annotate:
+
     """
     queryset = get_base_queryset(app_label, model_name, url_annotate)
     if issuer_url_annotate \
@@ -177,15 +254,53 @@ def get_ssl_base_queryset(
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
                lt_days=None, logger=None):
     """
-    annotation function that prepares a query with calculated values
+    :returns:
 
-    the SQL equivalent is something along the lines of
-    SELECT DATEDIFF(not_after, NOW()) AS expires_in_x_days FROM table WHERE
-    state = 'valid' ORDER BY expires_in_x_days;
+        a :class:`django.db.models.query.QuerySet` based on the
+        :class:`ssl_cert_tracker.models.SslCertificate`
 
-    :returns: a django queryset that has access to all the field in
-              NmapCertData plus a state field, an expires_in_x_days field, and
-              a field with the value returned by the MySql SQL function NOW()
+        The :class:`django.db.models.query.QuerySet` returned by this function is:
+
+        * `filtered
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          to show only the :attr:`State.VALID` `SSL` certificates
+
+        * optionally `filtered
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          for the interval before the `SSL` certificates will expire
+
+          Note that the parameter for this filter is measured in `days` and
+          cannot be smaller than 2.
+
+          If this `filter
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          is applied, the :class:`django.db.models.query.QuerySet` will be
+          `annotated
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          with the value of the parameter in a field named `expires_in_less_than`,
+          and with a field named `alert_body` that contains a corresponding
+          alert message
+
+        * `annotated
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          with the :attr:`STATE_FIELD` in a field named `state`, and a
+          :class:`django.db.models.BigIntegerField` field named `expires_in_x_days`
+
+        * ordered ascending on the `expires_in_x_days` field
+
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :arg int lt_days:
+
+        filter by the number of days remaining until the `SSL` certificate
+        expires
+
+        If less than 2, set to 2.
+
+    :arg `logging.Logger` logger: the :class:`logging.Logger` object
+
     """
     if logger is None:
         logger = LOG
@@ -220,10 +335,31 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
 
 def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
-    annotation function that returns data calculated at the database level
-    for expired certificates
+    :returns:
 
-    :returns: a django queryset
+        a :class:`django.db.models.query.QuerySet` based on the
+        :class:`ssl_cert_tracker.models.SslCertificate`
+
+        The :class:`django.db.models.query.QuerySet` returned by this function is:
+
+        * `filtered
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          to show only the :attr:`State.EXPIRED` `SSL` certificates
+
+        * `annotated
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          with the :attr:`STATE_FIELD` in a field named `state`, and a
+          :class:`django.db.models.BigIntegerField` field named
+          `has_expired_x_days_ago`
+
+        * ordered descending on the `has_expired_x_days_ago` field
+
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :arg `logging.Logger` logger: the :class:`logging.Logger` object
+
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
@@ -244,10 +380,31 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 def is_not_yet_valid(
         app_label='ssl_cert_tracker', model_name='sslcertificate'):
     """
-    annotation function that returns data calculated at the database level
-    for certificates that are not yet valid
+    :returns:
 
-    :returns: a django queryset
+        a :class:`django.db.models.query.QuerySet` based on the
+        :class:`ssl_cert_tracker.models.SslCertificate`
+
+        The :class:`django.db.models.query.QuerySet` returned by this function is:
+
+        * `filtered
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          to show only the :attr:`State.NOT_YET_VALID` `SSL` certificates
+
+        * `annotated
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          with the :attr:`STATE_FIELD` in a field named `state`, and a
+          :class:`django.db.models.BigIntegerField` field named
+          'will_become_valid_in_x_days'
+
+        * ordered descending on the 'will_become_valid_in_x_days' field
+
+    :arg str app_label:
+
+    :arg str model_name:
+
+    :arg `logging.Logger` logger: the :class:`logging.Logger` object
+
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\

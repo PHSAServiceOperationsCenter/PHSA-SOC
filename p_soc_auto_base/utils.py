@@ -118,8 +118,8 @@ def get_queryset_values_keys(model):
 def url_annotate(queryset):
     """
     annotate each row in a :class:`Django queryset
-    <django.db.models.query.QuerySet>` with the absolute path of the admin url
-    of the underlying :class:`Django model <django.db.models.Model>` instance
+    <django.db.models.query.QuerySet>` with the absolute path of the `URL` for
+    the related :class:`Django admin <django.contrib.admin.ModelAdmin>` instance
 
     See `Reversing admin URLs
     <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.

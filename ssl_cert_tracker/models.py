@@ -1,16 +1,21 @@
 """
 .. _ssl_cert_tracker_models:
 
-django models for the ssl_certificates app
+`Django models` for the :ref:`SSL Certificate Tracker Application`
+------------------------------------------------------------------
+
+This module contains the :class:`models <django.db.models.Model` and :class:`model
+managers <django.db.models.Manager>` used by the :ref:`SSL Certificate Tracker
+Application`.
 
 :module:    ssl_certificates.models
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    ali.rahmat@phsa.ca
+:contact:    serban.teodorescu@phsa.ca
 
 """
 import socket
@@ -29,45 +34,71 @@ from p_soc_auto_base.models import BaseModel
 from .lib import expires_in, has_expired, is_not_yet_valid
 
 
+# pylint: disable=too-few-public-methods, no-self-use
+
+
 class ExpiresIn(models.Manager):
     """
-    custom manager class
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`SslExpiresIn` model
     """
 
     def get_queryset(self):
         """
-        return only valid certificates sorted by expiration date ascending
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
         """
         return expires_in()
 
 
 class ExpiredSince(models.Manager):
     """
-    show expired SSL certificates
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`SslHasExpired` model
     """
 
     def get_queryset(self):
         """
-        only expired certificates
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
         """
         return has_expired()
 
 
 class NotYetValid(models.Manager):
     """
-    custom manager class to show certificates that are not yet valid
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`SslNotYetValid` model
     """
 
     def get_queryset(self):
         """
-        need to override this method to return our stuff
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
         """
         return is_not_yet_valid()
+
+# pylint: enable=too-few-public-methods, no-self-use
 
 
 class SslCertificateBase(BaseModel, models.Model):
     """
-    base model for SSL certificate models
+    `Abstract base
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
+    :class:`django.db.models.Model` used by some
+    :class:`models <django.db.models.Model>` in this module
     """
     common_name = models.CharField(
         _('common name'), db_index=True, max_length=253, blank=True,
@@ -85,7 +116,16 @@ class SslCertificateBase(BaseModel, models.Model):
 
 class SslProbePort(BaseModel, models.Model):
     """
-    probe fro SSL certs on all these ports
+    :class:`django.db.models.Model` class used for storing network port
+    information in the database
+
+    Under normal use, only `enabled` instances of this `model` are used for
+    running `NMAP <https://nmap.org/>`__ `SSL server certificates
+    <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`__
+    scans.
+
+    `Network Port fields
+    <../../../admin/doc/models/ssl_cert_tracker.sslprobeport/>`__
     """
     port = models.PositiveIntegerField(
         _('port'), unique=True, db_index=True, blank=False, null=False)
@@ -101,7 +141,13 @@ class SslProbePort(BaseModel, models.Model):
 
 class SslCertificateIssuer(SslCertificateBase, models.Model):
     """
-    model for SSL certificate issujing authorities
+    :class:`django.db.models.Model` class used for storing information about the
+    `Certificate authorities
+    <https://en.wikipedia.org/wiki/Public_key_certificate#Certificate_authorities>`__
+    that have issued known :class:`SSL Certificates <SslCertificate>`
+
+    `Issuing Authority for SSL Certificates fields
+    <../../../admin/doc/models/ssl_cert_tracker.sslcertificateissuer>`__
     """
     is_trusted = models.BooleanField(
         _('is trusted'), db_index=True, default=False, null=False, blank=False,
@@ -112,9 +158,27 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
     def get_or_create(
             cls, ssl_issuer, username=settings.NMAP_SERVICE_USER):
         """
-        create and return an issuing authority if it doesn't already exist
+        create (if it doesn't exist already) and retrieve a
+        :class:`SslCertificateIssuer` instance
 
-        if it exists already, just return it
+        :arg dict ssl_issuer:
+
+            data about the `Certificate authority
+            <https://en.wikipedia.org/wiki/Public_key_certificate#Certificate_authorities>`__
+
+        :arg str username:
+
+            the key for the :class:`django.contrib.auth.models.User` (or its
+            `replacement
+            <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__
+            instance representing the user that is maintaining the
+            :class:`SslCertificateIssuer` instance
+
+            By default, this value is picked from
+            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER` and if that user doesn't
+            exit, it will be created.
+
+        :returns: a :class:`SslCertificateIssuer` instance
         """
         ssl_certificate_issuer = cls._meta.model.objects.\
             filter(common_name__iexact=ssl_issuer.get('commonName'))

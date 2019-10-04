@@ -286,7 +286,7 @@ class SslProbe(NmapProbe):
     .. todo::
 
         Both :attr:`p_soc_auto.settings.SSL_PROBE_OPTIONS` and
-        :atr:`p_soc_auto.settings.SSLDEFAULT_PORT` need to be extended with
+        :attr:`p_soc_auto.settings.SSLDEFAULT_PORT` need to be extended with
         `dynamic preferences` and the :meth:`constructor <__init__>` of this
         class needs to use said `dynamic preference` when initializing.
 

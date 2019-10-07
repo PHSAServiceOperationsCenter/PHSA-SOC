@@ -21,3 +21,16 @@
 .. autoclass:: ssl_cert_tracker.models.SslCertificateIssuer
    :members: get_or_create
    :show-inheritance:
+   
+.. autoclass:: ssl_cert_tracker.models.SslCertificate
+   :members: create_or_update, node_admin_url, absolute_url, orion_node_url
+   :show-inheritance:
+   
+.. autoclass:: ssl_cert_tracker.models.SslExpiresIn
+   :show-inheritance:
+   
+.. autoclass:: ssl_cert_tracker.models.SslHasExpired
+   :show-inheritance:
+
+.. autoclass:: ssl_cert_tracker.models.SslNotYetValid
+   :show-inheritance:

@@ -2,7 +2,7 @@
 .. _nmap:
 
 NMAP classes and functions
-==========================
+--------------------------
 
 Classes and functions used by the :ref:`SSL Certificate Tracker Application`
 to control and monitor `NMAP <https://nmap.org/>`__ scans

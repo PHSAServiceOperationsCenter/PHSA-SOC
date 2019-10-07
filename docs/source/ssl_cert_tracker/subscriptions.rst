@@ -45,3 +45,10 @@ The Subscription model
 .. autoclass:: ssl_cert_tracker.models.Subscription
    :members:
    :no-show-inheritance:
+   
+The Subscription `Django admin` interface
+-----------------------------------------
+
+.. autoclass:: ssl_cert_tracker.admin.SubscriptionAdmin
+   :members: formfield_for_foreignkey, add_view, change_view, get_readonly_fields,
+       has_add_permission, has_delete_permission

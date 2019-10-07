@@ -1,7 +1,11 @@
 """
-.. _admin:
+.. ssl_admin:
 
-django admin for the ssl_cert_tracker app
+`Django Admin` classes for the :ref:`SSL Certificate Tracker Application`
+-------------------------------------------------------------------------
+
+See `The Django admin site
+<https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`__.
 
 :module:    p_soc_auto.ssl_cert_tracker.admin
 
@@ -31,14 +35,17 @@ from .models import (
 
 class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
-    base class for admin classes in this application
+    Base :class:`django.contrib.admin.ModelAdmin` class for all the other classes
+    in this module
     """
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
         overload
-        admin.ModelAdmin.formfield_for_foreignkey(
-            self, db_field, request, **kwargs)
+        meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+
+        provide specialized drop-down values for `created_by`, `updated_by`,
+        `issuer`, and `port` `ForeignKey` fields.
         """
         if db_field.name in ['created_by', 'updated_by', ]:
             kwargs['queryset'] = get_user_model().objects.\
@@ -57,7 +64,11 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         """
-        overload to populate the user fields from the request object
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.add_view`
+
+        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
+        of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -69,7 +80,11 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload to populate updated_by from the request object
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.change_view`
+
+        pre-populate `updated_by` from the :attr:`user` attribute
+        of the `request` object.
         """
         data = request.GET.copy()
         data['updated_by'] = request.user
@@ -78,17 +93,24 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
         return super().change_view(
             request, object_id, form_url=form_url, extra_context=extra_context)
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request):
         """
-        all these things are populated from orion
+        overload
+        :meth:`django.contrib.admin.has_add_permission`
 
-        do not allow any tom, dick, and harriet to add stuff on their own
+        Nobody is allowed to create any instance using forms that inherit from
+        this class.
+        All the data is maintained by background processes.
         """
         return False
 
     def get_readonly_fields(self, request, obj=None):
         """
-        overload to make sure that some fields are always readonly
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+
+        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        are always read only.
         """
         if obj is not None:
             return self.readonly_fields + \
@@ -100,7 +122,8 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 @admin.register(SslCertificate)
 class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
     """
-    admin forms for SSL certificates
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslCertificate` model
     """
     list_display = ['common_name', 'organization_name',
                     'country_name', 'enabled', 'is_trusted', 'port',
@@ -152,7 +175,7 @@ class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
 
     def is_trusted(self, obj):
         """
-        is this a trusted certificate
+        calculated display field showing the trust placed in the certificate
         """
         return obj.issuer.is_trusted
     is_trusted.format_short_description = _('Is Trusted?')
@@ -161,7 +184,8 @@ class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
 @admin.register(SslCertificateIssuer)
 class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
     """
-    admin forms for SSL certificate issuers
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslCertificateIssuer` model
     """
     list_display = ['link_field', 'common_name', 'organization_name',
                     'country_name', 'enabled', 'is_trusted']
@@ -191,9 +215,10 @@ class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
         }, ),
     )
 
-    def link_field(self, obj):
+    def link_field(self, obj):  # pylint: disable=no-self-use
         """
-        link on something that is never empty
+        calculated field with issuing authority data used on the summary page for
+        linking to detail pages
         """
         return 'CN: %s, O: %s' % (obj.common_name, obj.organization_name)
     link_field.short_description = _('Issuing Authority')
@@ -202,7 +227,12 @@ class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
 @admin.register(SslProbePort)
 class SslProbePortAdmin(admin.ModelAdmin):
     """
-    admin forms for SSL scanning ports
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslProbePort` model
+
+    .. todo::
+
+        Fix inheritance.
     """
     list_display = ['port', 'enabled', 'updated_on', 'updated_by', ]
     list_edit = ['enabled', ]
@@ -225,20 +255,30 @@ class SslProbePortAdmin(admin.ModelAdmin):
         }, ),
     )
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request):
         """
-        revert the overload from the base class
+        overload
+        :meth:`django.contrib.admin.has_add_permission`
+
+        Let everybody create :class:`ssl_cert_tracker.models.SslProbePort`
+        instances.
         """
         return True
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.Subscription` model
+    """
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
         overload
-        admin.ModelAdmin.formfield_for_foreignkey(
-            self, db_field, request, **kwargs)
+        meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+
+        provide specialized drop-down values for `created_by` and `updated_by`.
         """
         if db_field.name in ['created_by', 'updated_by', ]:
             kwargs['queryset'] = get_user_model().objects.\
@@ -249,7 +289,11 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         """
-        overload to populate the user fields from the request object
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.add_view`
+
+        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
+        of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -261,7 +305,11 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload to populate updated_by from the request object
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.change_view`
+
+        Pre-populate `updated_by` from the :attr:`user` attribute
+        of the `request` object.
         """
         data = request.GET.copy()
         data['updated_by'] = request.user
@@ -272,7 +320,15 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """
-        overload to make sure that some fields are always readonly
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+
+        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        are always read only.
+
+        .. todo::
+
+            This method may be a duplicate and/or redundant.
         """
         if obj is not None:
             return self.readonly_fields + \
@@ -280,13 +336,31 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
         return self.readonly_fields
 
-    def has_add_permission(self, request, obj=None):
+    def has_add_permission(self, request):
+        """
+        overload
+        :meth:`django.contrib.admin.has_add_permission`
+
+        Only a `superuser
+        <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__
+        can create :class:`ssl_cert_tracker.models.Subscription` instances using
+        this form
+        """
         if request.user.is_superuser:
             return True
 
         return False
 
     def has_delete_permission(self, request, obj=None):
+        """
+        overload
+        :meth:`django.contrib.admin.has_delete_permission`
+
+        Only a `superuser
+        <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__
+        can delete :class:`ssl_cert_tracker.models.Subscription` instances using
+        this form
+        """
         if request.user.is_superuser:
             return True
 
@@ -305,7 +379,8 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 @admin.register(SslExpiresIn)
 class SslExpiresInAdmin(SslCertificateAdmin):
     """
-    only valid SSL certificates sorted by expiration date ascending
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslExpiresIn` model
     """
     readonly_fields = ('expires_in_days',)
     list_display = ['common_name', 'organization_name', 'enabled',
@@ -321,7 +396,8 @@ class SslExpiresInAdmin(SslCertificateAdmin):
 @admin.register(SslHasExpired)
 class SslHasExpiredAdmin(SslCertificateAdmin):
     """
-    only expired SSL certificates sorted by expiration date ascending
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslHasExpired` model
     """
     readonly_fields = ('has_expired_days_ago',)
     list_display = ['common_name', 'organization_name', 'enabled',
@@ -335,9 +411,10 @@ class SslHasExpiredAdmin(SslCertificateAdmin):
 
 
 @admin.register(SslNotYetValid)
-class SslNotYetValiddAdmin(SslCertificateAdmin):
+class SslNotYetValidAdmin(SslCertificateAdmin):
     """
-    only not yet valid SSL certificates sorted by expiration date ascending
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.SslNotYetValid` model
     """
     readonly_fields = ('valid_in_days',)
     list_display = ['common_name', 'organization_name', 'enabled',

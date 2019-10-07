@@ -170,7 +170,7 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
 
             the key for the :class:`django.contrib.auth.models.User` (or its
             `replacement
-            <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__
+            <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__)
             instance representing the user that is maintaining the
             :class:`SslCertificateIssuer` instance
 
@@ -207,7 +207,13 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
 
 class SslCertificate(SslCertificateBase, models.Model):
     """
-    SSL certificate data
+    :class:`django.db.models.Model` class used for storing information about
+    `SSL server certificates
+    <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`_
+
+    `SSL Certificate fields
+    <../../../admin/doc/models/ssl_cert_tracker.sslcertificate>`__
+
     """
     orion_id = models.BigIntegerField(
         _('orion node identifier'), blank=False, null=False, db_index=True,
@@ -249,13 +255,61 @@ class SslCertificate(SslCertificateBase, models.Model):
     def create_or_update(cls, orion_id, ssl_certificate,
                          username=settings.NMAP_SERVICE_USER):
         """
-        create or update the representation of an SSL certificate in the
-        database
+        create or update a :class:`SslCertificate` instance
 
-        if the SSL certificate already exists, just update the last_seen
-        field
+        Currently, we are uniquely identifying an `SSL` certificate by the
+        ('network address', 'network port') tuple where the certificate is being
+        served. This approach is fully justified from an operational perspective;
+        it is not possible to serve more than one certificate per the network
+        tuple.
 
-        return the SSL certificate
+        However, a (valid) SSL certificate is an ephemeral construct. When it
+        expires, it cannot be extended. It can only be replaced by a new `SSL`
+        certificate. This method needs to be able to detect such a change and
+        handle the instance update accordingly.
+
+        In this method, we look for the network tuple in the underlying table:
+
+        * if not found, this is a new `SSL` certificate, the method creates a
+          new :class:`SslCertificate` instance
+
+        * if found, compare the `MD5 <https://en.wikipedia.org/wiki/MD5>`_
+          checksum already present in the :class:`SslCertificate` instance as
+          :attr:`pk_md5` with the one present in the :attr:`ssl_md5` attribute
+          of the `ssl_certificate` argument
+
+          * if the `MD5` values match, the whole `SSL` certificate matches; the
+            mehtod will only update the :attr:`SslCertificate.last_seen` field
+
+          * if the `MD5` values don't match, this is a new `SSL` certificate; the
+            method will update all the fields in the :class:`SslCertificate`
+            instance
+
+        :Note:
+
+            In :class:`SslCetificate`, the network address is hiding behind the
+            :attr:`SslCertificate.orion_id` which is a
+            :class:`django.db.models.ForeignKey` to
+            :class:`orion_integration.models.OrionNode`.
+
+        :arg int orion_id: the reference to the
+            :class:`orion_integration.models.OrionNode` instance for the
+            network node from where the `SSL` certificate is served
+
+        :arg ssl_certificate: all the data collected by the `NMAP
+            <https://nmap.org/>`_ scan
+        :type ssl_certificate: :class:`ssl_cert_tracker.nmap.SslProbe`
+
+        :arg str username: the :attr:`django.contrib.auth.models.User.username`
+            of the user (or its
+            `replacement
+            <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__)
+            maintaining the :class:`SslCertificate` instance
+
+            The default value is picked from
+            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER`. If a matching
+            :class:`django.contrib.auth.models.User` instance doesn't exist, one
+            will be created.
         """
         user = cls.get_or_create_user(username)
         issuer = SslCertificateIssuer.get_or_create(
@@ -316,7 +370,10 @@ class SslCertificate(SslCertificateBase, models.Model):
     @mark_safe
     def node_admin_url(self):
         """
-        admin link to the Orion node where the certificate resides
+        absolute `URL` for the `Django admin change`
+        :class:`django.contrib.admin.ModelAmin` form for the
+        :class:`orion_integration.models.OrionNode` instance of the network node
+        that is serving this `SSL` certificate
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -332,7 +389,9 @@ class SslCertificate(SslCertificateBase, models.Model):
     @mark_safe
     def absolute_url(self):
         """
-        we need the absolute url to pass around
+        absolute `URL` for the `Django admin change`
+        :class:`django.contrib.admin.ModelAmin` form for this
+        :class:`SslCertificate` instance
         """
         return '<a href="{proto}://{host}:{port}/{path}'.format(
             proto=settings.SERVER_PROTO, host=socket.getfqdn(),
@@ -344,7 +403,8 @@ class SslCertificate(SslCertificateBase, models.Model):
     @mark_safe
     def orion_node_url(self):
         """
-        link to the Orion Node object on the Orion server
+        absolute `SolarWinds Orion <https://www.solarwinds.com/solutions/orion>`__
+        `URL` for the network node serving this :class:`SslCertificate` instance
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -358,14 +418,18 @@ class SslCertificate(SslCertificateBase, models.Model):
 
     class Meta:
         app_label = 'ssl_cert_tracker'
-        verbose_name = _('SSL Certificate (new)')
-        verbose_name_plural = _('SSL Certificates (new)')
+        verbose_name = _('SSL Certificate')
+        verbose_name_plural = _('SSL Certificates')
         unique_together = (('orion_id', 'port'),)
 
 
 class SslExpiresIn(SslCertificate):
     """
-    proxy model for valid SSL certificates sorted by expiration date
+    `Proxy model 
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`SslCertificate`
+
+    Show valid `SSL` certificates sorted by expiration date.
     """
     objects = ExpiresIn()
 
@@ -377,7 +441,11 @@ class SslExpiresIn(SslCertificate):
 
 class SslHasExpired(SslCertificate):
     """
-    proxy model for valid SSL certificates sorted by expiration date
+    `Proxy model 
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`SslCertificate`
+
+    Show expired `SSL` certificates sorted by expiration date.
     """
     objects = ExpiredSince()
 
@@ -389,7 +457,11 @@ class SslHasExpired(SslCertificate):
 
 class SslNotYetValid(SslCertificate):
     """
-    proxy model for not yet valid SSL certificates
+    `Proxy model 
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`SslCertificate`
+
+    Show not yet valid `SSL` certificates sorted by the `Not before` date.
    """
     objects = NotYetValid()
 

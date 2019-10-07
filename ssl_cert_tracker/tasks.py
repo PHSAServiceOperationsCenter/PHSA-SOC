@@ -36,30 +36,19 @@ from .nmap import (
 
 
 LOG = get_task_logger(__name__)
+"""
+fall-back logging object for this module
 
-
-class NmapXMLError(Exception):
-    """
-    raise when the XML report from nmap cannot be processed
-    """
-
-
-class NoSSLCertOnNodeError(Exception):
-    """
-    raise if there is no SSL certificate on the node probed by nmap
-    """
-
-
-class SSLDatabaseError(Exception):
-    """
-    raise if one cannot update the database with the SSL certificate
-    collected with nmap
-    """
+All the functions and methods in this module will use this `Logger` instance
+if they are not called with a `logger` argument.
+"""
 
 
 class OrionDataError(Exception):
     """
-    raise when there are no orion nodes available for nmap probing
+    Custom :exc:`Exception` class raises when there are no `Orion
+    <https://www.solarwinds.com/solutions/orion>`__ nodes available
+    for `NMAP <https://nmap.org/>`_
     """
 
 

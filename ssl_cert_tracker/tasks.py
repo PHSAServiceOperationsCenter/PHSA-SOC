@@ -1,8 +1,8 @@
 """
 .. _ssl_cert_tracker_tasks:
 
-celery tasks for the ssl_certificates app
------------------------------------------
+Celery tasks for the :ref:`SSL Certificate Tracker Application`
+---------------------------------------------------------------
 
 :module:    ssl_cert_tracker.tasks
 

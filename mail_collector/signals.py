@@ -86,7 +86,13 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
         site.save()
 
     from_domain = instance.sent_from.split('@')[1]
+
+    if not instance.received_by:
+        # the receive event is incomplete thus it failed, bail
+        return None
+
     to_domain = instance.received_by.split('@')[1]
+
     last_updated_from_node_id = instance.event.source_host.orion_id
 
     verified_mail = MailBetweenDomains.objects.filter(

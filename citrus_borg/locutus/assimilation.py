@@ -1,7 +1,8 @@
 """
 .. _assimilation:
 
-functions and classes for uploading windows events to the citrus_borg app
+Functions for parsing `Windows` log events to `Python` structures
+-----------------------------------------------------------------
 
 :module:    citrus_borg.locutus.assimilation
 
@@ -26,56 +27,43 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 
 
 def _get_logger():
+    """
+    :returns: a private :class:`logging.Logger` to be used for other functions
+        in this modulethat require a `logging` object and are not invoked with
+        one provided by the caller
+    """
     return logging.getLogger('citrus_borg')
 
 
 def get_ip_for_host_name(host_name=None, ip_list=None):
     """
-    :returns: the IP address that goes with a known host name or ``None``
+    :returns: the IP address that goes with a known host name if it can be
+        resolved or `None` otherwise
 
     :arg str host_name: the host name as reported from external sources
 
-    :arg list ip_list: a list of ip addresses for a host as returned from
-                       external sources
+    :arg list ip_list: a list of ip addresses for the host
 
     :raises:
 
-        :exception:`<ValueError>` if either argument is missing
+        :exc:`ValueError` if the `host_naame` is missing
 
-        :exception:`<TypeError>` if ip_list is not a ``list`` or ``tuple``
-
-    the input are the values for the name and ip keys in the host dictionary
-    returned by the winlogbeat + logstash combination for a given windows
-    event. Here is a sample:
-
-    host: {
-        'name': 'baby_d',
-        'mac': ['02:00:4c:4f:4f:50', '9e:b6:d0:8a:23:df', 'ae:b6:d0:8a:23:df',
-                '9c:b6:d0:8a:23:df', '9c:b6:d0:8a:23:e0', '02:15:03:a1:a2:5e'],
-        'ip': ['fe80::449b:87fb:5758:b29', '169.254.11.41',
-               'fe80::bc38:afcd:34ba:8de2', '169.254.141.226',
-               'fe80::5181:28ba:b614:957a', '169.254.149.122',
-               'fe80::441f:c81b:f69b:e22b', '10.42.27.105',
-               'fe80::e947:1c6c:3ce9:ec12', '169.254.236.18',
-               'fe80::dd4c:609f:d278:2d75', '172.24.70.33'],
-        'id': 'e4ee2cbd-baa7-4e97-abfc-afd5a8e46730',
-        'architecture': 'x86_64',
-        'os': {
-            'version': '10.0', 'build': '17134.407', 'platform': 'windows',
-            'family': 'windows'
-        }
-    }
-
-    the function loops through the :arg:`<ip_list>` and returns
-    the one ip address that resolves to the :arg:`<host_name>`
+    This function loops through the items in the `ip_list` :class:`list` argument
+    and returns the one that will resolve to the value of the `host_name` argument.
+    The function uses :func:`socket.gethostbyaddr` to retrieve the resolved
+    host for each item in the `ip_list` :class:`list`. If the resolved host matches
+    the value of the `host_name`, the item in the `list` is the `IP` address
+    that we are looking for.
 
     """
     def _gethostbyname():
         """
-        the contortions below are to deal with multiple ip addresses
-        as returned by winlogbeat
+        this is the fall-back function for :func:`get_ip_for_host_name`
 
-        but sometimes one needs to KISS the principle
+        Sometimes there are no entries in the :class:`ip-list <list>`. We will try
+        to resolve the `host_name` argument using 
+        and we will return that. Or we will return`None` if
+        :func:`socket.gethostbyname` barfs.
         """
         try:
             return socket.gethostbyname(host_name)
@@ -113,8 +101,14 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
 
 def process_borg(body=None, logger=None):
     """
-    :returns; a ``colections.namedtuple`` object with all the properties of
-    the event log body
+    :returns; a :func:`colections.namedtuple` object
+
+    The `Borg` `object` has the following properties: 'source_host',
+    'record_number', 'opcode', 'level', 'event_source', 'windows_log',
+    'borg_message', 'mail_borg_message'.
+
+    The 'event-source' propety will determine which application will ingest the
+    `Windows` `event`.
     """
     if logger is None:
         logger = _get_logger()
@@ -149,6 +143,28 @@ def process_borg(body=None, logger=None):
 
 def process_borg_host(host=None):
     """
+    the input are the values for the name and ip keys in the host dictionary
+    returned by the winlogbeat + logstash combination for a given windows
+    event. Here is a sample:
+
+    host: {
+        'name': 'baby_d',
+        'mac': ['02:00:4c:4f:4f:50', '9e:b6:d0:8a:23:df', 'ae:b6:d0:8a:23:df',
+                '9c:b6:d0:8a:23:df', '9c:b6:d0:8a:23:e0', '02:15:03:a1:a2:5e'],
+        'ip': ['fe80::449b:87fb:5758:b29', '169.254.11.41',
+               'fe80::bc38:afcd:34ba:8de2', '169.254.141.226',
+               'fe80::5181:28ba:b614:957a', '169.254.149.122',
+               'fe80::441f:c81b:f69b:e22b', '10.42.27.105',
+               'fe80::e947:1c6c:3ce9:ec12', '169.254.236.18',
+               'fe80::dd4c:609f:d278:2d75', '172.24.70.33'],
+        'id': 'e4ee2cbd-baa7-4e97-abfc-afd5a8e46730',
+        'architecture': 'x86_64',
+        'os': {
+            'version': '10.0', 'build': '17134.407', 'platform': 'windows',
+            'family': 'windows'
+        }
+    }
+
     :returns: a namedtuple with the host properties that we need
     """
     if host is None:

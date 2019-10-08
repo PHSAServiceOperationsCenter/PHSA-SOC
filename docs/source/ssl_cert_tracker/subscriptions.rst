@@ -52,3 +52,20 @@ The Subscription `Django admin` interface
 .. autoclass:: ssl_cert_tracker.admin.SubscriptionAdmin
    :members: formfield_for_foreignkey, add_view, change_view, get_readonly_fields,
        has_add_permission, has_delete_permission
+       
+Dynamic Preferences for email services
+--------------------------------------
+
+* `Destination Email Addresses When In Debug Mode
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=to_emails>`__:
+  
+  In :attr:`p_soc_auto.settings.DEBUG` mode, it is not desirable to flood
+  production email inboxes with :ref:`SOC Automation Server` emails. The
+  :class:`ssl_cert_tracker.lib.Email` constructor will automatically replace the
+  destination email addresses in a :class:`ssl_cert_tracker.models.Subscription`
+  instance with the the value of this dynamic preference
+  
+* `Originating Email Address When in Debug Mode
+  <../../../admin/dynamic_preferences/globalpreferencemodel/?q=from_email>`__:
+  
+  Same as above but for the originating email address

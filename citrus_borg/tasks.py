@@ -1,7 +1,8 @@
 """
-.. _tasks:
+.. _citrus_tasks:
 
-celery tasks for the citrus_borg application
+tasks module
+------------
 
 :module:    citrus_borg.tasks
 
@@ -13,6 +14,10 @@ celery tasks for the citrus_borg application
 :contact:    serban.teodorescu@phsa.ca
 
 :updated: Nov. 22, 2018
+
+This module contains the `Celery tasks
+<https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
+used by the :ref:`Citrus Borg Application`
 
 """
 from smtplib import SMTPConnectError
@@ -47,16 +52,16 @@ LOGGER = get_task_logger(__name__)
 @shared_task(queue='citrus_borg', rate_limit='10/s')
 def store_borg_data(body):
     """
-    insert data collected from the logstash + rabbitmq combination into the
-    django database. we assume that the :arg:`<body>` is JSON encoded and is
-    castable to a ``dict``
+    task that maintains data collected from remote `Citrix` monitoring bot
 
-    hosts and citrix session servers identified in the event data are saved to
-    the database if first seen; otherwise the corresponding rows are updated
-    with a last seen time stamp
+    :arg dict body: the event data
 
-    generic :exception:`<Exception>` are raised and logged to the celery log
-    if anything goes amiss while processing the event data
+    :returns: the value of the :attr:`uuid`
+        attribute of the :class:`citrus_borg.models.WinlogEvent` instance
+        saved by the task
+
+    We are raising and logging multiple generic :exc:`Exceptions <Exception>`
+    if things go wrong.
     """
     def reraise(msg, body, error):
         LOGGER.error('%s %s: %s', msg, body, str(error))
@@ -120,7 +125,16 @@ def store_borg_data(body):
 @shared_task(queue='citrus_borg', rate_limit='3/s')
 def get_orion_id(pk):  # pylint: disable=invalid-name
     """
-    wrap around :methood:`<models.WinlogbeatHost.get_orion_id>`
+    task that wraps around :meth:`models.WinlogbeatHost.get_orion_id`
+
+    This will maintain the value of the
+    :attr:`citrus_borg.models.WinlogbeatHost.orion_id`
+
+    :arg int pk: the values of the primary key attribute of the
+        :class:citrus_borg.models.WinlogbeatHost`
+
+    :raises: generic :exc:`Exception`
+
     """
     instance = WinlogbeatHost.objects.get(pk=pk)
 
@@ -133,8 +147,14 @@ def get_orion_id(pk):  # pylint: disable=invalid-name
 @shared_task(queue='citrus_borg')
 def get_orion_ids():
     """
-    launch :method:`<get_orion_id>` for each object in
-    :class:`<models.WinlogbeatHost>`
+    task responsible for spawning :func:`get_orion_id` tasks
+
+    This task will spawn a separate :func:`get_orion_id` task for each
+    :class:`citrus_borg.models.WinlogbeatHost` instance that is `enabled`
+
+    :returns: a status string containing the number of
+        :class:`citrus_borg.models.WinlogbeatHost` instances
+
     """
     citrus_borg_pks = base_utils.get_pk_list(
         WinlogbeatHost.objects.filter(enabled=True))
@@ -147,7 +167,29 @@ def get_orion_ids():
 @shared_task(queue='citrus_borg')
 def expire_events():
     """
-    expire events
+    task that marks :class:`citrus_borg.models.WinlogEvent` instances as
+    expired; it will also delete `expired` instances if so configured
+
+    This task is configured by:
+
+    * `Mark Events As Expired If Older Than
+      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=expire_events_older_than>`__
+
+       This preference is defined by
+       :class:`citrus_borg.dynamic_preferences_registry.ExpireEvents`
+
+    * `Delete Expired Events
+      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=delete_expired_events>`__
+
+       The preference is defined by
+       :class:`citrus_borg.dynamic_preferences_registry.DeleteExpireEvents`
+
+    :returns: a status string about how many events were handles by the task,
+        the types of operations performed, and the threshold used for marking
+        events as expires (see `Mark Events As Expired If Older Than
+       <../../../admin/dynamic_preferences/globalpreferencemodel/?q=expire_events_older_than>`__
+    :rtype: str
+
     """
     expired = WinlogEvent.objects.filter(
         created_on__lt=timezone.now()

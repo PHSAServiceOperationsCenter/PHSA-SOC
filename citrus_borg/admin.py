@@ -1,7 +1,8 @@
 """
-.. _admin:
+.. _citrus_admin:
 
-django admin module for the citrus_borg app
+`Django admin` module for the :ref:`Citrus Borg Application`
+------------------------------------------------------------
 
 :module:    citrus_borg.admin
 

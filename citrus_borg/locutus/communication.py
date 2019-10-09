@@ -1,19 +1,10 @@
 """
 .. _communication:
 
-functions and classes for generating data from the citrus_borg app
+Communication module
+--------------------
 
-:module:    citrus_borg.locutus.communication
-
-:copyright:
-
-    Copyright 2018 Provincial Health Service Authority
-    of British Columbia
-
-:contact:    serban.teodorescu@phsa.ca
-
-:updated:    nov. 128, 2018
-
+This module contains database functions for the :ref:`Citrus Borg Application`.
 
 notes for filtering
 
@@ -40,6 +31,17 @@ missing and send email for each missing
 same thing but for sites
 
 and same thing for brokers
+
+:module:    citrus_borg.locutus.communication
+
+:copyright:
+
+    Copyright 2018 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    nov. 128, 2018
 
 """
 import datetime
@@ -77,7 +79,7 @@ def get_dead_bots(now=None, time_delta=None):
 
     :returns: a django queryset with the bots qualifying or ``None``
 
-    :raises: :exception:`<TypeError>` if the arguments are not of valid
+    :raises: :exc:`<TypeError>` if the arguments are not of valid
              `datetime` types
 
     grrrr, queryset.difference(*querysets) doesn't work on mariadb
@@ -424,10 +426,10 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     :raises:
 
-        :exception:`<TypeError>` if :arg:`<now>` is not a
+        :exc:`<TypeError>` if :arg:`<now>` is not a
         `datetime.datetime` instance
 
-        :exception:`<TypeError>` if  :arg:`<time_delta>` or
+        :exc:`<TypeError>` if  :arg:`<time_delta>` or
         :arg:`<ux-alert_threshold>` are not `datetime.timedelta` instances
 
     """
@@ -556,7 +558,7 @@ def login_states_by_site_host_hour(
 
     :raises:
 
-        :exception:`<Exception>` if :arg:`<now>` or :arg:`<time_delta>` are
+        :exc:`<Exception>` if :arg:`<now>` or :arg:`<time_delta>` are
         not of the specified types
     """
     try:
@@ -646,10 +648,10 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
 
     :raises:
 
-        :exception:`<TypeError>` if :arg:`<now>` is not a
+        :exc:`<TypeError>` if :arg:`<now>` is not a
         `datetime.datetime` instance
 
-        :exception:`<TypeError>` if  :arg:`<time_delta>` is not
+        :exc:`<TypeError>` if  :arg:`<time_delta>` is not
         `datetime.timedelta` instances
 
 

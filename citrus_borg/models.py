@@ -1,7 +1,8 @@
 """
-.. _models:
+.. _citrus_models:
 
-django models for the citrus_borg app
+`Django` `models` for the :ref:`Citrus Borg Application`
+--------------------------------------------------------
 
 :module:    citrus_borg.models
 

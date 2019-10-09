@@ -1,102 +1,34 @@
 """
 .. _consumers:
 
-consumers module: functions and classes for consuming AMQP messages sent
-by the logstash server (relaying windows events to citrus_borg
+consumers module
+----------------
 
-:module:    p_soc_auto.orion_integration.apps
+:module:    citrus_borg.consumers
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    nov. 16, 2018
+:updated:    Oct. 9, 2019
 
+This module contains functions and classes that allow a `Django Celery
+<https://docs.celeryproject.org/en/latest/django/first-steps-with-django.html#using-celery-with-django>`__
+to consume `AMQP  <https://www.amqp.org/>`__ messages emanating from arbitrary
+sources.
 
-message structure
-=================
+See :ref:`Logstash Server` for a discussion about the source of the `AMQP
+<https://www.amqp.org/>`__ messages.
 
-this is the message that is available on the rabbitmq exchange. it is a plain
-text representation of the windows event as captured by a winlogbeat service
-running on a citrix bot. the exchange receives the messages from all the bots
-by way of the logstash server.
+The data collection architecture is described in :ref:`Mail Collector Data
+Collection`. This module is shared between the :ref:`Citrus Borg Application`
+and the :ref:`Mail Collector Application`.
 
-**note that this is a string despite the fact that it looks like JSON.**
-using the JSON encoder provided by logstash leads to rabbitmq failures.
-
-**However**, converting this string to a JSON structure in the consumer
-listed below seems to work and therefore we have not implemented a dedicated
-parser for it.
-
-    Note:
-
-        we are using \ as line continuation characters.
-
-message from a successful logon event
--------------------------------------
-
-{"opcode":"Info",
-"@version":"1",
-"log_name":"Application",
-"@timestamp":"2018-11-19T19:09:59.122Z",
-"keywords":["Classic"],
-"event_data":
-    {"param1":"Successful logon: \
-    to resource: PMOffice - CST Brokered by device: \
-    PHSACDCTX29 \
-    \n\nTest Details:\n----------------------\n\
-    Latest Test Result: True\
-    \nStorefront Connection Time: 00:00:02.4438449\
-    \nReceiver Startup: 00:00:01.1075926\
-    \nConnection Time: 00:00:00.4127132\
-    \nLogon Time: 00:00:06.7571505\
-    \nLogoff Time: 00:00:05.3776091"
-    },
-"tags":["beats_input_codec_plain_applied"],
-"level":"Warning",
-"computer_name":"baby_d",
-"type":"wineventlog",
-"beat":{"hostname":"baby_d","version":"6.5.0","name":"baby_d"},
-
-"message": \
-"Successful logon: to resource: PMOffice - CST Brokered by device: PHSACDCTX29
-          \n
-          \nTest Details:
-          \n----------------------
-          \nLatest Test Result: True
-          \nStorefront Connection Time: 00:00:02.4438449\
-          \nReceiver Startup: 00:00:01.1075926\
-          \nConnection Time: 00:00:00.4127132
-          \nLogon Time: 00:00:06.7571505
-          \nLogoff Time: 00:00:05.3776091",
-"event_id":1000,
-"source_name":"ControlUp Logon Monitor",
-"host":{
-    "name":"baby_d",
-    "os":{
-        "version":"10.0","platform":"windows","build":"17134.407",
-        "family":"windows"
-        },
-    "ip":["fe80::449b:87fb:5758:b29","169.254.11.41",
-          "fe80::bc38:afcd:34ba:8de2",
-          "169.254.141.226","fe80::5181:28ba:b614:957a","169.254.149.122",
-          "fe80::441f:c81b:f69b:e22b","10.42.27.105",
-          "fe80::e947:1c6c:3ce9:ec12","169.254.236.18",
-          "fe80::dd4c:609f:d278:2d75",
-          "172.24.70.33"],
-    "architecture":"x86_64",
-    "id":"e4ee2cbd-baa7-4e97-abfc-afd5a8e46730",
-    "mac":["02:00:4c:4f:4f:50","9e:b6:d0:8a:23:df","ae:b6:d0:8a:23:df",
-           "9c:b6:d0:8a:23:df","9c:b6:d0:8a:23:e0","02:15:03:a1:a2:5e"]
-    },
-"record_number":"19516"}
-
-the string above is collected from a windows 10 pro host that is not an
-official bot host. it has been observed that events collected from official
-bots do not include all the info in the **host:** section
+This module uses the `celery-message-consumer
+<https://github.com/depop/celery-message-consumer>`__ package.
 
 """
 import json
@@ -106,22 +38,40 @@ from event_consumer import message_handler
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 
-_logger = get_task_logger(__name__)
+_logger = get_task_logger(__name__)  # pylint: disable=invalid-name
+"""
+:class:`logging.Logger` instance used in this module
+
+.. todo::
+
+    The way this attribute is initialized means that log messages from this
+    module will be scattered amongst various celery log files. Maybe it would
+    make sense to use a dedicated hard-coded `Django` logger. This way when we
+    want to keep track of incoming events, we will not have to chase through
+    tens of log files.
+
+"""
 
 
 @message_handler('logstash', exchange='default')
 def process_win_event(body):
     """
-    consume AMQP messages sent by the logstash server
+    consume `Windows` log events delivered as `AMQP` messages
 
-    basically it's a callback that gets called every time there is a new
-    message placed on the logstash RabbitMQ exchange
+    This function is a callback that gets invoked every time there is a new
+    message placed on the `logstash` `RabbitMQ <https://www.rabbitmq.com/>`__
+    `exchange`.
 
-    :arg str body: the message; it is a string because the
-                   winlogbeat + logstash combination use a plain text coded
-                   for the data
+    See `Routing Tasks
+    <https://docs.celeryproject.org/en/latest/userguide/routing.html>`__ in the
+    `Celery` docs for a primer on `exchanges` and `queues`.
 
-    :returns: to be determined
+    :arg str body: the message to be consumed
+
+        It is a string because the :ref:`WinlogBeat Service` event collectors
+        and the :ref:`Logstash Server` are configured to encode `Windows` log
+        events as plain text
+
     """
     from .models import AllowedEventSource
     from .tasks import store_borg_data

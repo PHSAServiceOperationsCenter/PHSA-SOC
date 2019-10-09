@@ -1,7 +1,8 @@
 """
-.. _apps:
+.. _citrus_apps:
 
-django apps module for the citrus_borg app
+`Django` application configuration for the :REF:`Citrus Borg Application`
+-------------------------------------------------------------------------
 
 :module:    p_soc_auto.citrus_borg.apps
 

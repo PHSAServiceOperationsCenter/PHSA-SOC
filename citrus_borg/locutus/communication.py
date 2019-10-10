@@ -1,36 +1,8 @@
 """
 .. _communication:
 
-Communication module
+communication module
 --------------------
-
-This module contains database functions for the :ref:`Citrus Borg Application`.
-
-notes for filtering
-
-WinlogEvent.objects.filter(
-    event_state__iexact='failed',
-    created_on__gt=timezone.now() - timezone.timedelta(minutes=1000)).count()
-
-group this by host and count for each host
-send one report like this for a fixed period of time
-
-and raise alarm if for given timedelta, count per host is greater than X
-
-
-repeat the same thing but per site instead of per host
-
-
-- other stuff
-
-for the last x minutes get the hosts with pass and see if there is a diff
-with the hosts from the host model
-looks like if item not in list(distinct) and item in host model, append to
-missing and send email for each missing
-
-same thing but for sites
-
-and same thing for brokers
 
 :module:    citrus_borg.locutus.communication
 
@@ -42,6 +14,8 @@ and same thing for brokers
 :contact:    serban.teodorescu@phsa.ca
 
 :updated:    nov. 128, 2018
+
+This module contains database functions for the :ref:`Citrus Borg Application`.
 
 """
 import datetime
@@ -63,7 +37,7 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 
 class GroupBy(Enum):
     """
-    enumeration for specifying the group by time sequence details
+    Enumeration class for specifying the `group by` time sequence details
     """
     NONE = None
     HOUR = 'hour'
@@ -72,22 +46,60 @@ class GroupBy(Enum):
 
 def get_dead_bots(now=None, time_delta=None):
     """
-    get the bot hosts not seen during the interval defined by the arguments
+    get the bot hosts that have not sent any `ControlUp` events during
+    the interval defined by the arguments
 
-    :arg now: the initial date-time moment
-    :arg time_delta: the time interval to consider
+    "Interval defined by the arguments" is a hoity toity way of saying
+    "over the last $x seconds/minutes/hours (etc)".
 
-    :returns: a django queryset with the bots qualifying or ``None``
+    The idea behind this function is to return the difference between a
+    list of all the bot hosts and a list of the bot hosts that have been heard
+    from during the defined interval.
+    The result will be the list of bots that have **not** been heard from
+    during the defined interval.
 
-    :raises: :exc:`<TypeError>` if the arguments are not of valid
-             `datetime` types
+    This function is an excellent candidate for using the `difference()
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#difference>`__
+    method of the :class:`django.db.models.query.QuerySet` but, unfortunately,
+    that method doesn't work with `MariaDB` databases.
 
-    grrrr, queryset.difference(*querysets) doesn't work on mariadb
+    The workaround is to cast the diffing :class:`QuerySets
+    <django.db.models.query.QuerySet>` to :class:`lists <list>` using the
+    `values_list()
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#values-list>`__
+    method.
+    Diff the :class:`lists <list>` using the `symmetric_difference()
+    <https://docs.python.org/3.6/library/stdtypes.html#frozenset.symmetric_difference>`__
+    method of the `Python set class
+    <https://docs.python.org/3.6/library/stdtypes.html#set-types-set-frozenset>`__,
+    and then cast the result to a :class:`django.db.models.query.QuerySet`.
 
-    we need to do list=list - list or something
+    The list of live bots is extracted from the
+    :class:`citrus_borg.models.WinlogEvent`
 
-    use? https://mariadb.com/kb/en/library/timediff/ to annotate with the diff
-    on the queryset?
+    :arg datetime.datetime now: the initial moment
+
+        By default (and in most useful cases for functions that return
+        historical data), the initial moment should be the value of
+        :meth:`datetime.datetime.now`. In `Django` applications, it is
+        recommended to use :meth:`django.utils.timezone.now` which is
+        what all the functions in this module do
+
+    :arg datetime.timedelta time_delta: the time interval to consider
+
+        By default, this will be retrieved from the dynamic preference
+        `Bot not seen alert threshold
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_bot_after>`__
+
+    :returns: a :class:`django.db.models.query.QuerySet` based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model
+
+        The :class:`django.db.models.query.QuerySet` is `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the arguments defining the interval.
+
+    :raises: :exc:`TypeError` if the function arguments are not of the expected
+        types
 
     """
     if now is None:
@@ -127,8 +139,18 @@ def get_dead_bots(now=None, time_delta=None):
 
 def get_dead_brokers(now=None, time_delta=None):
     """
-    return a queryset with the Citrix session hosts that have not been
-    observed for a while
+    get the `Citrix` session hosts that have not serviced any requests during
+    the interval defined by the arguments
+
+    This function is very similar to :func:`get_dead_bots`.
+    The only differences are:
+
+    * The data is pulled from the
+      :class:`citrus_borg.models.KnownnBrokeringDevice`
+
+    * The default value for the `time_delta` argument is picked from the
+      dynamic preference `Session host not seen alert threshold
+      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_session_host_after>`__
     """
     if now is None:
         now = timezone.now()
@@ -163,8 +185,19 @@ def get_dead_brokers(now=None, time_delta=None):
 
 def get_dead_sites(now=None, time_delta=None):
     """
-    return a queryset with the sites that are monitored but have not been
-    seen for the specified time interval
+    ge the remote sites from where no `ControlUp` events have been delivered
+    during the interval defined by the arguments
+
+    This function is very similar to :func:`get_dead_bots`.
+    The only differences are:
+
+    * The data is pulled from the
+      :class:`citrus_borg.models.BorgSite`
+
+    * The default value for the `time_delta` argument is picked from the
+      dynamic preference `Site not seen alert threshold
+      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_site_after>`__
+
     """
     if now is None:
         now = timezone.now()
@@ -197,14 +230,22 @@ def get_dead_sites(now=None, time_delta=None):
 
 def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
     """
-    data source for the bot reports
+    get the number of failed events and successful events during the interval
+    defined by the arguments for each monitoring site aggregated by hour
 
-    :returns: a queryset with the list of bots ordered by site, grouped by
-              hour, and including counts for failed and successful logon
-              events
+    :arg datetime.datetime now: the initial moment
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
 
-    :arg now:
-    :arg time_delta:
+    :arg datetime.timedelta time_delta: the time interval to consider
+        By default, this will be retrieved from the dynamic preference
+        `Dead if not seen for more than
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_after>`__
+
+    :returns: a :class:`django.db.models.query.QuerySet` based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model
+
+
     """
     if now is None:
         now = timezone.now()
@@ -241,13 +282,73 @@ def raise_ux_alarm(
         time_delta=get_preference('citrusborgux__ux_alert_interval'),
         ux_alert_threshold=get_preference('citrusborgux__ux_alert_threshold')):
     """
-    :returns:
+    The `Windows` log events generated by the `ControlUp` client provide
+    timing values for multiple `Citrix` events.
+    Such timing values can be used for evaluating the performance of the
+    `Citrix` application(s).
 
-        a queryset with rows where the average storefront connection or the
-        average logon duration are greater than or equal to the value of
-        :ux_alert_threshold
+    This function will return the `ControlUp` hosts, sorted by site, where
+    `ControlUp` events with timings worse than the value of the
+    `ux_alert_threshold` argument averaged over the interval defined by the
+    arguments `now` and `time_delta` have occurred.
+    The timings considered when executing this function are:
+
+    * The `Citrix` logon time
+
+    * The store front connection time
+
+    The data returned by the function is grouped by minute.
+
+    :arg datetime.datetime now: the initial moment
+
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
+
+    :arg datetime.timedelta time_delta: the time interval to consider
+
+        By default, this will be retrieved from the dynamic preference
+        `Alert monitoring interval for citrix events
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_interval>`__
+
+    :arg str site: filter the :class:`django.db.models.query.QuerySet` by
+        `site` using the value of this argument if not `None`
+
+    :arg str host_name: filter the :class:`django.db.models.query.QuerySet` by
+        `host_name` using the value of this argument if not `None`
+
+    :arg group_by: how do you want to group the data in the
+        :class:`django.db.models.query.QuerySet`?
+    :type group_by: :class:`GoupBy`
+
+    :arg datetime.timedelta ux_alert_threshold: the threshold for triggering
+        this alert
+
+        By default, this will be retrieved from the dynamic preference
+        `Maximum acceptable response time for citrix events
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
 
 
+    :returns: a :class:`django.db.models.query.QuerySet` based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model
+
+        The :class:`django.db.models.query.QuerySet`  is `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the value of the `ux_alert_threshold` argument
+
+    :Note:
+
+        In the :ref:`Citrus Borg Application`, the terms `Citrix performance`,
+        `user experience`, and `Citrix response time` are considered more or
+        less interchangeable.
+
+    :Note:
+
+        This function is using a relatively complex chain of function calls
+        and can be considered an example of why `Django` query functions
+        should be very specific even at the expense of code duplication.
+        For example, this function returns a `Django` `queryset` but is
+        impossible to determine the underlying `Django` `model` by looking
+        at the source code of the function.
     """
     try:
         queryset = _by_site_host_hour(
@@ -280,7 +381,46 @@ def raise_ux_alarm(
 
 def _include_event_counts(queryset):
     """
-    annotate a queryset with the counts for event states
+    `annotate
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+    a :class:`django.db.models.query.QuerySet` based on the
+    :class:`citrus_borg.models.WinlogbeatHost` model with the counts for event
+    states (states are `failed` and `successful`)
+
+    :arg queryset: the :class:`django.db.models.query.QuerySet`
+
+    :returns: a :class:`django.db.models.query.QuerySet`
+
+    :Note:
+
+        This function looks like a very abstract function but cannot be used
+        anywhere but within this module and this application.
+        This is specific to many `Django` based functions because of the
+        conventional nature of `Django` programming. For example, one
+        can access properties across models (classes) by using the
+        `local_property__remote_property` convention.
+        In this particular function, see `winlogevent__event_state__iexact`
+        in the source code, which is an even more egregious example of a
+        convention that will only work in `Django`:
+
+        * `winlogevent` is not even defined by the programmer in the
+          :class:`citrus_borg.models.WinlogbeatHost` code. `Django` will
+          add it transparently as a reverse relationship to the
+          :class:`citrus_borg.models.WinlogEvent` class
+
+        * `__event_state` means that we only care about
+          :attr:`citrus_borg.models.WinlogEvent.event_state`. Again this
+          only works in `Django`
+
+        * `__iexact` means that we are actually requesting a lookup against
+          the field on the left hand side of the '__' token using a case
+          insensitive exact match. This also only works in `Django` although
+          there are other `Python` packages out there that have implemented
+          this convention. E.g. the `Exchange Web Services client library
+          <https://github.com/ecederstrand/exchangelib>`__ `Python` module
+          implements this convention for searching within `Exchange` inbox
+          data stores.
+
     """
     return queryset.\
         annotate(
@@ -299,7 +439,31 @@ def _include_event_counts(queryset):
 
 def _include_ux_stats(queryset):
     """
-    annotate a queryset with min, avg, max, and stddev for subevent duration
+    `annotate
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+    a :class:`django.db.models.query.QuerySet` based on the
+    :class:`citrus_borg.models.WinlogbeatHost` model with statistical values
+    for `Citrix` application response times extracted from the
+    :class:`citrus_borg.models.WinlogEvent` model
+
+    The statistical functions used are: :class:`django.db.models.Avg',
+    :class:`django.db.models.Min`, :class:`django.db.models.Max` and
+    :class:`django.db.models.StdDev`.
+
+    The data items aggregated by this function are:
+
+    * The store front connection duration
+
+    * The receiver startup duration
+
+    * The connection achieved duration
+
+    * The logon achieved duration
+
+    :arg queryset: the :class:`django.db.models.query.QuerySet`
+
+    :returns: a :class:`django.db.models.query.QuerySet`
+
     """
     return queryset.annotate(
         min_storefront_connection_time=Min(
@@ -359,78 +523,87 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
                        include_event_counts=True, include_ux_stats=True,
                        group_by=GroupBy.HOUR):
     """
-    :returns:
+    create a complex :class:`django.db.models.query.QuerySet` based on the
+    :class:`citrus_borg.models.WinlogbeatHost` model that is `annotated
+    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+    with statistical `aggregations
+    <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__
+    extracted from the :class:`citrus_borg.models.WinlogEvent` model
 
-        a queryset grouped by site and host
+    :arg datetime.datetime now: the initial moment
 
-        if requested:
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
 
-        *    the queryset will be grouped by hourly increments
+    :arg datetime.timedelta time_delta: the time interval to consider
 
-        *    the queryset will include counts of failed and successful logins
+        By default, this will be retrieved from the dynamic preference
+        `Ignore events created older than
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ignore_events_older_than>`__
+        but it most cases this argument needs to be specified when invoking
+        this function
 
-        *    the queryset will include user experience estimates based on
-             the min, max, and avg valaues of the durations associated with
-             each subevent (connect to storefront, start receiver,
-             logon achieved, connection achieved)
-
-        *    the queryset will be filtered on the failed event count using
-             the gte operator
-
-        *    the queryset will be filtered on the average storefront connection
-             duration or the average logon connection duration using a
-             (gte or gte) operator combination
-
-    :rtype: `<django.db.models.query.QuerySet>`
-
-    :arg `datetime.datetime` now: the reference time point for the report
-
-    :arg `datetime.timedelta` time_delta:
-
-        the period to report upon, measured backwards from :now:
-
-    :arg str site:
+    :arg str site: if present, filter the data that will be returned by `site`,
+        otherwise return data for all known sites
 
         filter by site; default ``None`` meaning return data for all sites
 
-    :arg str host_name:
+    :arg str host_name: if present, filter the data that will be returned by
+        'host_name`, otherwise return data for all known hosts
 
-        filter by host name; default ``None`` meaning return data for all the
-        bots
+        Be careful when using the `site` and `host_name` arguments together.
+        It is possible to come up with a combination of values for which
+        no data can be returned (one filters by a host that lives at a site
+        that was filtered out already). This function considers such a
+        combination valid and will happily return an empty
+        :class:`django.db.models.query.QuerySet` when invoked with such a
+        cobination
 
-    :arg int logon_alert_trehsold:
+    :arg int logon_alert_trehsold: if present, filter the data to be returned
+        on the :class:`django.dn.models.Count` aggregation for `failed` events;
+        only return records where the `failed` `Count` is greater than the
+        value of this argument
 
-        only return rows where the failed event count is gte to this
+    :arg `datetime.timedelta` ux_alert_threshold: if present, filter the data
+        to by the :class:`django.dn.models.Avg` aggregation for event timings;
+        only return rows where the average store front connection or the
+        average logon duration are greater than or equal to the value of this
         argument
 
-    :arg `datetime.timedelta` ux_alert_threshold:
+    :arg bool include_event_counts: `annotate` with `Count` for event states
+        (successful and failed); default is `True`
 
-        only return rows where the average storefront connection or the
-        average logon duration are gte to this argument
+    :arg bool include_ux_stats: `annotate` with the timing stats for
+        `ControlUp` events; default is `True`
 
-    :arg bool include_event_counts:
+    :arg :class:`GroupBy` group_by: group the data to be returned by a time
+        sequence; default is :attr:`GroupBy.HOUR`
 
-        include count for event states (successful and failed)
+        Note this will affect `aggregations
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__.
+        Normally, `aggregations` are calculated for the interval dfiend by the
+        `now` and `time_delta` arguments but when this argumen is present,
+        the `aggregations` will be calculated for the time sequence value
+        of the argument.
 
-    :arg bool include_ux_stats:
+        The resulting `queryset` will look something like this:
 
-        include min, max, avg, and stdev for all the subevent durations
-        provided by ControlUp, default ``True``
+        ==== ================== =========== ============= ======================
+        site host               count fails count success hour
+        ==== ================== =========== ============= ======================
+        LGH  lgh01.healthbc.org 0           14            Aug. 1, 2019, midnight
+        LGH  lgh01.healthbc.org 0           14            Aug. 1, 2019, 1 a.m.
+        ==== ================== =========== ============= ======================
 
-    :arg group_by:
-
-        the kind of sequence to use, if any, when grouping by time,
-        default is by hour
-
-    :argtype group_by: :enum:`<GroupBy>`
+    :returns: a :class:`django.db.models.query.QuerySet`
 
     :raises:
 
-        :exc:`<TypeError>` if :arg:`<now>` is not a
-        `datetime.datetime` instance
+        :exc:`TypeError` if the `now`, `time_delta`, and `ux_alert_threshold`
+            are not of the expected type
 
-        :exc:`<TypeError>` if  :arg:`<time_delta>` or
-        :arg:`<ux-alert_threshold>` are not `datetime.timedelta` instances
+        :exc:`ValueError` if the `logon_alert_threshold` argument is not
+            an :class:`int`
 
     """
     if now is None:
@@ -502,14 +675,39 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 def _group_by(queryset,
               group_field='winlogevent__created_on', group_by=GroupBy.NONE):
     """
-    group the rows in a queryset by time and annotate them with the grouping
-    interval. support group by hour or group by minute.
+    group the rows in a :classL:`django.db.models.query.QuerySet` by a time
+    sequence and `annotate` it with the time value
 
-    :arg queryset: a django queryset that contains a datetime field
+    See `Trunc
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#trunc>`__
+    and `TimeField truncation
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#timefield-truncation>`__
+    in the `Django` docs.
 
-    :arg group_field: the dtaetime queryset field containing the data for grouping
+    The resulting `queryset` will look something like this:
 
-    :arg group-by: group by hour, by minute, or don't group
+    ==== ================== =========== ============= ======================
+    site host               count fails count success hour
+    ==== ================== =========== ============= ======================
+    LGH  lgh01.healthbc.org 0           14            Aug. 1, 2019, midnight
+    LGH  lgh01.healthbc.org 0           14            Aug. 1, 2019, 1 a.m.
+    ==== ================== =========== ============= ======================
+
+
+    :arg queryset: the :class:`django.db.models.query.QuerySet`
+
+    :arg str group_field: the name of the :class:`django.db.models.Model`
+        field that contains time data; this field must be a
+        :class:`django.db.models.DateTimeField` or a
+        :class:`django.db.models.DateTimeField` field
+
+        Default is 'winlogevent__created_on'.
+
+    :arg :class:`GroupBy` group_by: group the data to be returned by a time
+        sequence; default is :attr:`GroupBy.HOUR`
+
+    :returns: a :class:`django.db.models.query.QuerySet`
+
     """
     if group_by == GroupBy.HOUR:
         return queryset.\
@@ -523,10 +721,9 @@ def _group_by(queryset,
 
 
 def login_states_by_site_host_hour(
-        now=None,
-        time_delta=get_preference(
-            'citrusborgevents__ignore_events_older_than'),
-        site=None, host_name=None):
+        now=None, time_delta=get_preference(
+            'citrusborgevents__ignore_events_older_than'), site=None,
+        host_name=None):
     """
     :returns:
 
@@ -539,7 +736,7 @@ def login_states_by_site_host_hour(
     :arg `datetime.datetime` now:
 
         the reference time point for the report, by default it is the moment
-        returned by :function:`<django.utils.timezone.now>`
+        returned by :func:`<django.utils.timezone.now>`
 
     :arg `datetime.timedelta` time_delta:
 

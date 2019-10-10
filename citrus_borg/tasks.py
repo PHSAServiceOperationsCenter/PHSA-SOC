@@ -211,14 +211,14 @@ def expire_events():
 def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
     """
     send out alerts about borgs that have not been seen within the date-time
-    interval defined by :arg:`<now>` - :arg:`<**dead_for>`
+    interval defined by argument `<now>` - argument `<**dead_for>`
 
     :arg now: the reference moment in time. by default this is the value
-              returned by :method:`<django.utils.timezone.now>` but any
+              returned by :meth:`<django.utils.timezone.now>` but any
               valid ``datetime.datetime`` value is acceptable
 
     :arg **dead_for: dictionary style arguments suitable for
-                     :method:`<django.utils.timezone.timedelta>`. examples:
+                     :meth:`<django.utils.timezone.timedelta>`. examples:
 
                      * 10 minutes: minutes=10
                      * 10 hours: hours=10
@@ -267,14 +267,14 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
 def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
     """
     send out reports about borgs that have not been seen within the date-time
-    interval defined by :arg:`<now>` - :arg:`<**dead_for>`
+    interval defined by argument `<now>` - argument `<**dead_for>`
 
     :arg now: the reference moment in time. by default this is the value
-              returned by :method:`<django.utils.timezone.now>` but any
+              returned by :meth:`<django.utils.timezone.now>` but any
               valid ``datetime.datetime`` value is acceptable
 
     :arg **dead_for: dictionary style arguments suitable for
-                     :method:`<django.utils.timezone.timedelta>`. examples:
+                     :meth:`<django.utils.timezone.timedelta>`. examples:
 
                      * 10 minutes: minutes=10
                      * 10 hours: hours=10
@@ -323,7 +323,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
     :arg datetime.datetime now: the reference moment in time, default now()
 
     :arg **dead_for: dictionary style arguments suitable for
-                     :method:`<django.utils.timezone.timedelta>`. examples:
+                     :meth:`<django.utils.timezone.timedelta>`. examples:
 
                      * 10 minutes: minutes=10
                      * 10 hours: hours=10

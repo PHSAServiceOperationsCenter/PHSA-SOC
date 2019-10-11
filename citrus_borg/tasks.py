@@ -17,7 +17,7 @@ tasks module
 
 This module contains the `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
-used by the :ref:`Citrus Borg Application`
+used by the :ref:`Citrus Borg Application`.
 
 """
 from smtplib import SMTPConnectError
@@ -52,7 +52,8 @@ LOGGER = get_task_logger(__name__)
 @shared_task(queue='citrus_borg', rate_limit='10/s')
 def store_borg_data(body):
     """
-    task that maintains data collected from remote `Citrix` monitoring bot
+    task responsible for saving the data collected from remote `ControlUp`
+    monitoring bot to various models in the :mod:`citrus_borg.models` module
 
     :arg dict body: the event data
 
@@ -125,10 +126,11 @@ def store_borg_data(body):
 @shared_task(queue='citrus_borg', rate_limit='3/s')
 def get_orion_id(pk):  # pylint: disable=invalid-name
     """
-    task that wraps around :meth:`models.WinlogbeatHost.get_orion_id`
+    task that is responsible for maintaining Orion information in the
+    :class:`citrus_borg.models.WinlogbeatHost` model
 
-    This will maintain the value of the
-    :attr:`citrus_borg.models.WinlogbeatHost.orion_id`
+    This task is a wrapper for the :meth:`models.WinlogbeatHost.get_orion_id`
+    instance method.
 
     :arg int pk: the values of the primary key attribute of the
         :class:citrus_borg.models.WinlogbeatHost`
@@ -186,8 +188,8 @@ def expire_events():
 
     :returns: a status string about how many events were handles by the task,
         the types of operations performed, and the threshold used for marking
-        events as expires (see `Mark Events As Expired If Older Than
-       <../../../admin/dynamic_preferences/globalpreferencemodel/?q=expire_events_older_than>`__
+        events as expired (see `Mark Events As Expired If Older Than
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=expire_events_older_than>`__)
     :rtype: str
 
     """
@@ -210,22 +212,88 @@ def expire_events():
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
     """
-    send out alerts about borgs that have not been seen within the date-time
-    interval defined by argument `<now>` - argument `<**dead_for>`
+    send out alerts about `Citrix` monitoring bots that have not been seen within
+    the time interval defined by arguments `now` and `dead_for` via email
 
-    :arg now: the reference moment in time. by default this is the value
-              returned by :meth:`<django.utils.timezone.now>` but any
-              valid ``datetime.datetime`` value is acceptable
+    :arg now: the initial moment
 
-    :arg **dead_for: dictionary style arguments suitable for
-                     :meth:`<django.utils.timezone.timedelta>`. examples:
+        By default (and in most useful cases for functions that return
+        historical data), the initial moment should be the value of
+        :meth:`datetime.datetime.now` (:meth:`django.utils.timezone.now` in
+        `Django` applications).
 
-                     * 10 minutes: minutes=10
-                     * 10 hours: hours=10
-                     * 10 hours and 10 minutes: hours=10, minutes=10
+        :Note:
 
-                     valid keys are days, hours, minutes, seconds and
-                     valid values are ``float`` numbers
+            **We are not using this argument in the current implementation of the
+            :ref:`Citrus Borg Application`.**
+
+            The current code base expects that `now` is either a :class:`NoneType`
+            object or a :class:`datetime.datetime` object.
+            Unfortunately, :class:`datetime.datetime` objects cannot be serialized
+            to `JSON <https://www.json.org/>`__ and the mechanism used to invoke this
+            task is using `JSON` for passing arguments.
+
+            .. todo::
+
+                Extend :meth:`p_soc_auto_base.utils.MomentOfTime.now` to accept
+                data types are `JSON` serializable.
+
+            It is possible to use this argument if the task is `called
+            <https://docs.celeryproject.org/en/latest/userguide/calling.html#basics>`__
+            with `apply_async()
+            <https://docs.celeryproject.org/en/latest/reference/celery.app.task.html#celery.app.task.Task.apply_async>`__
+            with the `serializer` argument set to 'pickle'.
+
+    :arg dict dead_for: optional `Keyword Arguments
+        <https://docs.python.org/3.6/tutorial/controlflow.html#keyword-arguments>`__
+        used for initializing a :class:`datetime.timedelta` object
+
+        This is the equivalent of the `time_delta` argument used by
+        :func:`citrus_borg.locutus.communication.get_dead_bots` and most of the
+        other functions in that module.
+
+        This argument must match the arguments required by the
+        :class:`datetime.timedelta` constructor, e.g.
+
+        .. ipython::
+
+            In [5]: from django.utils import timezone
+
+            In [6]: time_delta=timezone.timedelta(hours=4, minutes=10)
+
+            In [7]: time_delta
+            Out[7]: datetime.timedelta(0, 15000)
+
+            In [8]: print(time_delta)
+            4:10:00
+
+            In [9]:
+
+        The reason for this approach is the same as above.
+        :class:`datetime.timedelta` objects are not `JSON` serializable.
+
+        Valid names for the `Keyword Arguments
+        <https://docs.python.org/3.6/tutorial/controlflow.html#keyword-arguments>`__
+        defined by `dead_for` are `days`, `hours`, `minutes`, and `seconds`. All
+        the values passed via these `keyword arguments` must be of type
+        :class:`float` (or castable to :class:`float`, e.g. :class:`int`).
+
+        By default the `dead_for` is not present. In this case, the function will
+        pick the `time_delta` value from the dynamic preference
+        `Bot not seen alert threshold
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_bot_after>`__
+
+    :arg bool send_no_news: this argument determines whether emails will be sent
+        even if there are no alerts
+
+        Sending emails with "all is well" is atractive because it provides
+        something similar to a heartbeat for the application. The problem
+        with that is the number of emails not containing any relevant information
+        that will clog inboxes and reduce user attention.
+
+        By default, the value of this argument will be picked from dynamic
+        preference `Do not send empty citrix alert emails
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=send_no_news>`__
     """
     now = base_utils.MomentOfTime.now(now)
 

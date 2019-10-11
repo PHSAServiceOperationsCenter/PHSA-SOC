@@ -546,7 +546,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
 
-        filter by site; default ``None`` meaning return data for all sites
+
 
     :arg str host_name: if present, filter the data that will be returned by
         'host_name`, otherwise return data for all known hosts
@@ -675,7 +675,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 def _group_by(queryset,
               group_field='winlogevent__created_on', group_by=GroupBy.NONE):
     """
-    group the rows in a :classL:`django.db.models.query.QuerySet` by a time
+    group the rows in a :class:`django.db.models.query.QuerySet` by a time
     sequence and `annotate` it with the time value
 
     See `Trunc
@@ -699,12 +699,13 @@ def _group_by(queryset,
     :arg str group_field: the name of the :class:`django.db.models.Model`
         field that contains time data; this field must be a
         :class:`django.db.models.DateTimeField` or a
-        :class:`django.db.models.DateTimeField` field
+        :class:`django.db.models.TimeField` field
 
         Default is 'winlogevent__created_on'.
 
-    :arg :class:`GroupBy` group_by: group the data to be returned by a time
+    :arg group_by: group the data to be returned by a time
         sequence; default is :attr:`GroupBy.HOUR`
+    :type group_by: :class:`GroupBy`
 
     :returns: a :class:`django.db.models.query.QuerySet`
 
@@ -725,38 +726,44 @@ def login_states_by_site_host_hour(
             'citrusborgevents__ignore_events_older_than'), site=None,
         host_name=None):
     """
-    :returns:
+    :returns: a :class:`django.db.models.query.QuerySet` based on the
+        :class:`citru_borg.models.WinlogbeatHost` `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with all the `aggregations
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__
+        extracted from the :class:`citrus_borg.models.WinlogEvent` model
+        calculated on a per hour basis for the interval defined by the
+        `now` and `time_delta` arguments
 
-        a queryset grouped by site, host, and time in hour increments
+    :arg datetime.datetime now: the initial moment
 
-        the queryset is sorted by site, host, and time descending.
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
 
-    :rtype: `<django.db.models.query.QuerySet>`
+    :arg datetime.timedelta time_delta: the time interval to consider
 
-    :arg `datetime.datetime` now:
+        By default, this will be retrieved from the dynamic preference
+        `Ignore events created older than
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ignore_events_older_than>`__
 
-        the reference time point for the report, by default it is the moment
-        returned by :func:`<django.utils.timezone.now>`
+    :arg str site: if present, filter the data that will be returned by `site`,
+        otherwise return data for all known sites
 
-    :arg `datetime.timedelta` time_delta:
 
-        the period to report upon, measured backwards from :now:, the efault
-        is picked from the django settings file, specifically from
-        `settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN`
 
-    :arg str site:
+    :arg str host_name: if present, filter the data that will be returned by
+        'host_name`, otherwise return data for all known hosts
 
-        filter by site; default ``None`` meaning return data for all sites
+        Be careful when using the `site` and `host_name` arguments together.
+        It is possible to come up with a combination of values for which
+        no data can be returned (one filters by a host that lives at a site
+        that was filtered out already). This function considers such a
+        combination valid and will happily return an empty
+        :class:`django.db.models.query.QuerySet` when invoked with such a
+        combination
 
-    :arg str host_name:
+    :raises: :exc:`Exception` when failing
 
-        filter by host name; default ``None`` meaning return data for all the
-        bots
-
-    :raises:
-
-        :exc:`<Exception>` if :arg:`<now>` or :arg:`<time_delta>` are
-        not of the specified types
     """
     try:
         queryset = _by_site_host_hour(now, time_delta, site, host_name)
@@ -769,14 +776,43 @@ def login_states_by_site_host_hour(
 def raise_failed_logins_alarm(
         now=None, time_delta=None, failed_threshold=None):
     """
-    return a queryset of Citrix bots for which the number of failed logon
-    events over the specified period of time exceeds the failed threshold
+    :returns: alert data for failed logins
 
-    :arg now: the referencce time moment,
-              by default `django.utils.timezone.now`
+        The subject of such an alert is the monitoring bot. The alert is
+        calculated based on the number of failed `ControlUp` failed logon events
+        over a fixed interval.
 
-    :arg time_delta: the time interval to be considered, by default
-                     `settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL`
+        E.G. if a bot reports 2 or more failed logon events over a period of
+        10 minutes, an alert will be raised.
+
+        The alert information is returned via a
+        :class:`django.db.models.query.QuerySet` based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model and `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the data for the failed events extracted from the
+        :class:`citrus_borg.models.WinlogEvent` model, and with the alert
+        evaluation parameters (threshold and period)
+
+    :arg datetime.datetime now: the initial moment
+
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
+
+    :arg datetime.timedelta time_delta: the time interval to consider
+
+        By default, this will be retrieved from the dynamic preference
+        `Logon alert after
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_after>`__
+
+    :arg int failed_threshold: the number of failed logons that will trigger the
+        alert
+
+        By default, this will be retrieved from the dynamic preference
+        `Failed logon events count alert threshold
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_threshold>`__
+
+    :raises: :exc:`TypeError` if any of the function arguments do not satisfy type
+        requirements
 
     """
     if now is None:
@@ -819,38 +855,44 @@ def raise_failed_logins_alarm(
 
 def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
     """
-    :returns: a queryset extracted from :class:`<models.WinlogEvent>`
-    :rtype: `<django.db.models.query.QuerySet>`
+    :returns: a :class:`django.db.models.query.QuerySet` containing detailed data
+        about failed `ControlUp` logon events
 
-    :arg `datetime.datetime` now:
+        The :class:`django.db.models.query.QuerySet` is based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model and on the
+        :class:`citrus_borg.models.WinlogEvent` model and is `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the event counts (`failed` events and `successful` events)
 
-        the reference time point for the report; default is ``None`` in which
-        case the value returned by the django equivalent of
-        `datetime.dateime.now` is used
+    :arg datetime.datetime now: the initial moment
 
-    :arg `datetime.timedelta` time_delta:
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
 
-        the period to report upon, measured backwards from :now:; default is
-        ``None`` in which case a default value configured in
-        :module:`<settings>` is used
+    :arg datetime.timedelta time_delta: the time interval to consider
 
-    :arg str site:
+        By default, this will be retrieved from the dynamic preference
+        `Logon reporting period
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_report_period>`__
 
-        filter by site; default ``None`` meaning return data for all sites
+    :arg str site: if present, filter the data that will be returned by `site`,
+        otherwise return data for all known sites
 
-    :arg str host_name:
 
-        filter by host name; default ``None`` meaning return data for all the
-        bots
 
-    :raises:
+    :arg str host_name: if present, filter the data that will be returned by
+        'host_name`, otherwise return data for all known hosts
 
-        :exc:`<TypeError>` if :arg:`<now>` is not a
-        `datetime.datetime` instance
+        Be careful when using the `site` and `host_name` arguments together.
+        It is possible to come up with a combination of values for which
+        no data can be returned (one filters by a host that lives at a site
+        that was filtered out already). This function considers such a
+        combination valid and will happily return an empty
+        :class:`django.db.models.query.QuerySet` when invoked with such a
+        combination
 
-        :exc:`<TypeError>` if  :arg:`<time_delta>` is not
-        `datetime.timedelta` instances
-
+    :raises: :exc:`TypeError` if the `now` argument or the `time_delta` do not
+        satisfy type requirements
 
     """
     if now is None:
@@ -881,10 +923,53 @@ def get_failed_ux_events(
         now=None, time_delta=None, site=None, host_name=None,
         ux_alert_threshold=None):
     """
-    get response time (ux i.e. user experience) events
+    :returns: a :class:`django.db.models.query.QuerySet` containing detailed data
+        about `ControlUp` logon events with timings that do not satisfy user
+        response time requirements
 
-    for the purposes of ux,  we define a user experience event as a
-    response time larger than an arbitrary value
+        The :class:`django.db.models.query.QuerySet` is based on the
+        :class:`citrus_borg.models.WinlogbeatHost` model and on the
+        :class:`citrus_borg.models.WinlogEvent` model and is `annotated
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        with the event timing stats
+
+    :arg datetime.datetime now: the initial moment
+
+        By default the initial moment is the value returned by
+        :meth:`django.utils.timezone.now`
+
+    :arg datetime.timedelta time_delta: the time interval to consider
+
+        By default, this will be retrieved from the dynamic preference
+        `User experience reporting period
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_reporting_period>`__
+
+    :arg str site: if present, filter the data that will be returned by `site`,
+        otherwise return data for all known sites
+
+
+
+    :arg str host_name: if present, filter the data that will be returned by
+        'host_name`, otherwise return data for all known hosts
+
+        Be careful when using the `site` and `host_name` arguments together.
+        It is possible to come up with a combination of values for which
+        no data can be returned (one filters by a host that lives at a site
+        that was filtered out already). This function considers such a
+        combination valid and will happily return an empty
+        :class:`django.db.models.query.QuerySet` when invoked with such a
+        combination
+
+    :arg datetime.timedelta ux_alert_threshold: the user response time failure
+        threshold
+
+        By default, this will be retrieved from the dynamic preference
+        `User experience alert threshold
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
+
+    :raises: :exc:`TypeError` if the `now` argument, the `time_delta` or the
+        `ux_alert_threshold` arguments do not satisfy type requirements
+
     """
     if now is None:
         now = timezone.now()

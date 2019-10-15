@@ -1,7 +1,7 @@
 .. automodule:: citrus_borg.admin
 
 .. autoclass:: citrus_borg.admin.CitrusBorgBaseAdmin
-   :members: formfiled_for_foreignkey, add_view, change_view, get_readonly_fields
+   :members: formfield_for_foreignkey, add_view, change_view, get_readonly_fields
    :show-inheritance:
    
 .. autoclass: citrus_borg.admin.AllowedEventSourceAdmin

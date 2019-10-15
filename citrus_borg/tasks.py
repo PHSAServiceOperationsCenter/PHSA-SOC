@@ -294,6 +294,10 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
         By default, the value of this argument will be picked from dynamic
         preference `Do not send empty citrix alert emails
         <../../../admin/dynamic_preferences/globalpreferencemodel/?q=send_no_news>`__
+
+    This task used the subscription at `Dead Citrix monitoring bots
+    <../../../admin/ssl_cert_tracker/subscription/?q=Dead+Citrix+monitoring+bots>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -334,22 +338,18 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
     """
-    send out reports about borgs that have not been seen within the date-time
-    interval defined by argument `<now>` - argument `<**dead_for>`
+    generate and email reports about `Citrix` monitoring bots that have not been seen within
+    the time interval defined by arguments `now` and `dead_for` via email
 
-    :arg now: the reference moment in time. by default this is the value
-              returned by :meth:`<django.utils.timezone.now>` but any
-              valid ``datetime.datetime`` value is acceptable
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Reporting period for dead nodes
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=node_forgotten_after>`__
 
-    :arg **dead_for: dictionary style arguments suitable for
-                     :meth:`<django.utils.timezone.timedelta>`. examples:
-
-                     * 10 minutes: minutes=10
-                     * 10 hours: hours=10
-                     * 10 hours and 10 minutes: hours=10, minutes=10
-
-                     valid keys are days, hours, minutes, seconds and
-                     valid values are ``float`` numbers
+    This task used the subscription at `Dead Citrix monitoring bots
+    <../../../admin/ssl_cert_tracker/subscription/?q=Dead+Citrix+monitoring+bots>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -381,24 +381,19 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
     """
-    email alerts about dead sites
+    send out alerts about remote sites where all the `Citrix` monitoring bots that
+    have not been seen within the time interval defined by arguments `now` and
+    `dead_for` via email
 
-    all the email foo about citrus_borg entities look the same and could be
-    condensed into a single function but it is easier to configure the
-    task invocation from the django periodic tasks application if one
-    doesn't have to provide a lot of complex arguments
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Site not seen alert threshold
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_site_after>`__.
 
-    :arg datetime.datetime now: the reference moment in time, default now()
-
-    :arg **dead_for: dictionary style arguments suitable for
-                     :meth:`<django.utils.timezone.timedelta>`. examples:
-
-                     * 10 minutes: minutes=10
-                     * 10 hours: hours=10
-                     * 10 hours and 10 minutes: hours=10, minutes=10
-
-                     valid keys are days, hours, minutes, seconds and
-                     valid values are ``float`` numbers
+    This task used the subscription at `Dead Citrix client sites
+    <../../../admin/ssl_cert_tracker/subscription/?q=Dead+Citrix+client+sites>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -439,9 +434,19 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
     """
-    send reports about dead Ctirix client sites
+    generate and email reports about remote sites where`Citrix` monitoring bots
+    have not been seen within the time interval defined by arguments `now` and
+    `dead_for` via email
 
-    see other similar tasks for details
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Reporting period for dead nodes
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=node_forgotten_after>`__
+
+    This task used the subscription at `Dead Citrix client sites
+    <../../../admin/ssl_cert_tracker/subscription/?q=Dead+Citrix+client+sites>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -473,9 +478,19 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
     """
-    send reports about dead Citrix app hosts
+    generate and email reports about `Citrix` application servers that have not
+    service any requests during the time interval defined by arguments `now` and
+    `dead_for` via email
 
-    see other similar tasks for details
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Reporting period for dead nodes
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=node_forgotten_after>`__
+
+    This task used the subscription at `Missing Citrix farm hosts
+    <../../../admin/ssl_cert_tracker/subscription/?q=Missing+Citrix+farm+hosts>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -507,9 +522,19 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
     """
-    send reports about dead Citrix app hosts
+    send out alerts about `Citrix` application servers that have not
+    service any requests during the time interval defined by arguments `now` and
+    `dead_for` via email
 
-    see other similar tasks for details
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Reporting period for dead nodes
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=node_forgotten_after>`__
+
+    This task used the subscription at `Missing Citrix farm hosts
+    <../../../admin/ssl_cert_tracker/subscription/?q=Missing+Citrix+farm+hosts>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -550,9 +575,22 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_borg_login_summary_report(now=None, **dead_for):
     """
-    send reports reports about logon events for each Citrix bot
+    prepare and email a report with all the logon events generated by the `Citrix`
+    bots
 
-    see other similar tasks for details
+    The report includes events that occurred during the interval defined by the
+    arguments `now` and `dead_for`. The report includes counts for `failed` and
+    `successful` events.
+
+    This task is almost identical to :func:`email_dead_borgs_alert` with the
+    exception of the default value for the :class:`datetime.timedelta` object
+    created when `dead_for` is not present.
+    This value is picked from dynamic preference `Ignore events created older than
+    <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ignore_events_older_than>`__.
+
+    This task used the subscription at `Citrix logon event summary
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+logon+event+summary>`__
+    to render the emails being sent.
     """
     if not dead_for:
         time_delta = get_preference(
@@ -575,9 +613,30 @@ def email_borg_login_summary_report(now=None, **dead_for):
 def email_sites_login_ux_summary_reports(now=None, site=None,
                                          borg_name=None, **reporting_period):
     """
-    send reports reports about logon events for each Citrix bot
+    spawn an instance of the :func:`email_login_ux_summary` task for a
+    `site` and `borg_name`
 
-    see other similar tasks for details
+    :arg str site: if `None`, spawn tasks for all sites
+
+    :arg str borg_name: the short host name of the bot host
+
+        If `None`, spawn a task for each `borg_name` on the `site`.
+
+        Note that it is possible to pick `site` and `borg_name` combinations that
+        will result in no data being generated.
+
+        In most cases this `task` is used to spawn an instance of the
+        :func:`email_login_ux_summary` task for each `enabled` bot on each
+        `enabled` site known to the system.
+
+    :arg now: see :func:`email_dead_borgs_alert`
+
+    :arg dict reporting_period: see the `dead_for` argument of the
+        :func:`email_dead_borgs_alert` task
+
+        If this argument is  not present, the reporting interval is picked from
+        dynamic preference `User experience reporting period
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_reporting_period>`__
 
     """
     if not reporting_period:
@@ -624,7 +683,23 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_login_ux_summary(now, time_delta, site_host_args):
     """
-    email a login event state count and ux evaluation for a given site and host
+    generate and send a report with login event state counts and user experience
+    stats for the site and host combination specified by `site_host_args` over the
+    interval defined by `now` and `time_delta`
+
+    :arg tuple site_host_args: the `site` and `host_name`
+
+    :arg datetime.datetime now: the initial moment for calculating the data in
+        the report
+
+    :arg datetime.timedelta time_delta: the reporting interval used for calculating
+        the data in the report
+
+    :raises: a generic :exc:`Exception`
+
+    This report used the subscription at `Citrix logon event and ux summary
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+logon+event+and+ux+summary>`__
+    to render the emails being sent.
     """
     try:
         return base_utils.borgs_are_hailing(
@@ -640,12 +715,51 @@ def email_login_ux_summary(now, time_delta, site_host_args):
 
 
 @shared_task(queue='borg_chat')
-def email_ux_alarms(now=None, site=None, borg_name=None,
+def email_ux_alarms(now=None, site=None, borg_name=None,  # pylint: disable=too-many-branches
                     send_no_news=None,
                     ux_alert_threshold=None, **reporting_period):
     """
-    bootstrap the process of sending email alerts about user experience
-    faults
+    spawn an instance of the :func:`email_ux_alarm` task for the `site` and
+    `borg_name` combination.
+
+    If 'site' and/or `borg_name` are `None`, spawn an instance of the
+    :func:`email_ux_alarm` task for each `enabled` `site` and `borg_name` known
+    to the system
+
+    :arg str site: if `None`, spawn tasks for all sites
+
+    :arg str borg_name: the short host name of the bot host
+
+        If `None`, spawn a task for each `borg_name` on the `site`.
+
+        Note that it is possible to pick `site` and `borg_name` combinations that
+        will result in no data being generated.
+
+        In most cases this `task` is used to spawn an instance of the
+        :func:`email_login_ux_summary` task for each `enabled` bot on each
+        `enabled` site known to the system.
+
+    :arg now: see :func:`email_dead_borgs_alert`
+
+    :arg bool send_no_news: see :func:`email_dead_borgs_alert`
+
+    :arg datetime.timedelta ux_alert_threshold: the threshold for triggering
+        a user experience alert
+
+        By default, this will be retrieved from the dynamic preference
+        `Maximum acceptable response time for citrix events
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
+
+    :arg dict reporting_period: see the `dead_for` argument of the
+        :func:`email_dead_borgs_alert` task
+
+        If this argument is  not present, the reporting interval is picked from
+        dynamic preference `alert monitoring interval for citrix events
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_interval>`__
+
+    .. todo::
+
+        see `<https://trello.com/c/FeGO5Vqf>`__
 
     """
     now = base_utils.MomentOfTime.now(now)
@@ -676,7 +790,6 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
         ux_alert_threshold = base_utils.MomentOfTime.time_delta(
             **ux_alert_threshold)
 
-    # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
     sites = BorgSite.objects.filter(enabled=True)
     if site:
         sites = sites.filter(site__iexact=site)
@@ -718,7 +831,15 @@ def email_ux_alarms(now=None, site=None, borg_name=None,
 def email_ux_alarm(
         now, time_delta, send_no_news, ux_alert_threshold, site_host_args):
     """
-    email an ux alarm for a given site and host
+    raise user experience alert and send by email for each `site` and `host` in
+    `site_host_args`
+
+    :arg tuple site_host_args: `site` and `host_name` to which the alert is bound
+
+    See the "func'`email_us_alarms` taks for details about the other arguments.
+
+    This alert used the subscription at `Citrix UX Alert
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+UX+Alert>`__.
     """
     now = base_utils.MomentOfTime.now(now)
     site, host_name = site_host_args
@@ -751,9 +872,19 @@ def email_ux_alarm(
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
     """
-    email alerts about failed logins
+    raise alert about failed `Citrix` logon events and send it via email
 
-    see other similar tasks for details
+    :arg int failed_threshold: the number of failed logons that will trigger the
+        alert
+
+        By default, this will be retrieved from the dynamic preference
+        `Failed logon events count alert threshold
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_threshold>`__
+
+    See the :func:`email_dead_borgs_alert` for details about the other arguments.
+
+    This alert used the subscription at `Citrix logon alert
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+logon+alert>`__.
     """
     if failed_threshold is None:
         failed_threshold = get_preference(
@@ -791,7 +922,13 @@ def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
     """
-    send out the report with all known failed logon events
+    generate and email a report with all the failed `Citrix` logon events
+
+    See the :func:`email_dead_borgs_alert` for details about the arguments to this
+    task.
+
+    This report uses the subscription at `Citrix Failed Logins Report
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+Failed+Logins+Report>`__.
     """
     if not dead_for:
         time_delta = get_preference('citrusborglogon__logon_report_period')
@@ -825,8 +962,30 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
 def email_failed_ux_report(now=None, send_no_news=False,
                            ux_threshold_seconds=None, **dead_for):
     """
-    send out the report with all known failed ux events i.e.
-    all logon subevents that took longer than expected
+    prepare and email a report with all the `Citrix` logon timings that do not
+    satisfy the user response time threshold
+
+    :arg now: see :func:`email_dead_borgs_alert`
+
+    :arg bool send_no_news: see :func:`email_dead_borgs_alert`
+
+    :arg datetime.timedelta ux_alert_threshold: the threshold for triggering
+        a user experience alert
+
+        By default, this will be retrieved from the dynamic preference
+        `Maximum acceptable response time for citrix events
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
+
+    :arg dict dead_for: see the `dead_for` argument of the
+        :func:`email_dead_borgs_alert` task
+
+        If this argument is  not present, the reporting interval is picked from
+        dynamic preference `User experience reporting period
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_reporitng_period>`__
+
+    This report uses the subscription at `Citrix Failed UX Event Components Report
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+Failed+UX+Event+Components+Report>`__
+    to render the emails being sent.
     """
     if not dead_for:
         time_delta = get_preference('citrusborgux__ux_reporting_period')
@@ -871,14 +1030,43 @@ def email_failed_login_sites_report(
         now=None, site=None, borg_name=None,
         send_no_news=False, **reporting_period):
     """
-    bootstrap emails for per site and bot failed login reports
+    spawn an instance of the :func:`email_failed_login_site_report` task for the
+    `site` and `borg_name` combination.
+
+    If `site` and/or `borg_name` are `None`, spawn an instance of the
+    :func:`email_ux_alarm` task for each `enabled` `site` and `borg_name` known
+    to the system
+
+    :arg str site: if `None`, spawn tasks for all sites
+
+    :arg str borg_name: the short host name of the bot host
+
+        If `None`, spawn a task for each `borg_name` on the `site`.
+
+        Note that it is possible to pick `site` and `borg_name` combinations that
+        will result in no data being generated.
+
+        In most cases this `task` is used to spawn an instance of the
+        :func:`email_login_ux_summary` task for each `enabled` bot on each
+        `enabled` site known to the system.
+
+    :arg now: see :func:`email_dead_borgs_alert`
+
+    :arg bool send_no_news: see :func:`email_dead_borgs_alert`
+
+    :arg dict reporting_period: see the `dead_for` argument of the
+        :func:`email_dead_borgs_alert` task
+
+        If this argument is  not present, the reporting interval is picked from
+        dynamic preference `Logon events reporting period
+        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_report_period>`__
+
     """
     if not reporting_period:
         time_delta = get_preference('citrusborglogon__logon_report_period')
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
-        # TODO: refactor this; see https://trello.com/c/FeGO5Vqf
     sites = BorgSite.objects.filter(enabled=True)
     if site:
         sites = sites.filter(site__iexact=site)
@@ -920,7 +1108,22 @@ def email_failed_login_sites_report(
 def email_failed_login_site_report(
         now, time_delta, send_no_news, site_host_args):
     """
-    email a report with the failed logon events for a specific site, bot pair
+    prepare and email a report with the `Citrix` failed logins details for the
+    `site` and `bot` combination specified in `site_host_args`
+
+    :arg tuple site_host_args: the `site` and 'bot` for which the report is
+        prepared
+
+    :arg now: see :func:`email_dead_borgs_alert`
+
+    :arg bool send_no_news: see :func:`email_dead_borgs_alert`
+
+    :arg dict reporting_period: see the `dead_for` argument of the
+        :func:`email_dead_borgs_alert` task
+
+    This report uses the subscription at `Citrix Failed Logins per Report
+    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+Failed+Logins+per+Report>`__
+    to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
     site, host_name = site_host_args

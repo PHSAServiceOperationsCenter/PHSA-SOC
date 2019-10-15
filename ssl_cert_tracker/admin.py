@@ -42,7 +42,7 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
         overload
-        meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
 
         provide specialized drop-down values for `created_by`, `updated_by`,
         `issuer`, and `port` `ForeignKey` fields.

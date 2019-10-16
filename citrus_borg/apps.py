@@ -1,8 +1,12 @@
 """
 .. _citrus_apps:
 
-`Django` application configuration for the :ref:`Citrus Borg Application`
--------------------------------------------------------------------------
+citrus_borg.apps module
+-----------------------
+
+This module contains the `Django` application configuration for the
+:ref:`Citrus Borg Application`.
+
 
 :module:    p_soc_auto.citrus_borg.apps
 

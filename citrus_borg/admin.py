@@ -1,8 +1,11 @@
 """
 .. _citrus_admin:
 
-`Django admin` module for the :ref:`Citrus Borg Application`
-------------------------------------------------------------
+citrus_borg.admin module
+------------------------
+
+This module contains the `Django admin` classes for the
+:ref:`Citrus Borg Application`.
 
 :module:    citrus_borg.admin
 
@@ -31,8 +34,8 @@ from mail_collector.models import ExchangeConfiguration
 
 class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
-    Base :class:`django.contrib.admin.ModelAdmin` class for all the other classes
-    in this module
+    Base :class:`django.contrib.admin.ModelAdmin` class for all the other
+    classes in this module
     """
     list_per_page = 50
 
@@ -130,6 +133,14 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('last_seen', 'excgh_last_seen',)
 
     def last_seen(self, obj):  # pylint: disable=no-self-use
+        """
+        calculated display for :attr:`field
+        <citrus_borg.models.BorgSite.last_seen>`
+
+        Warns the user to allocate at least one
+        :class:`citrus_borg.models.WinlogbeatHost` instance pointing to a
+        remote host running `ControlUp`.
+        """
         first_bot = obj.winlogbeathost_set.\
             filter(last_seen__isnull=False).first()
         if first_bot:
@@ -137,9 +148,15 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         return 'Please allocate at least one Citrix bot to this site'
     last_seen.short_description = 'last seen'
 
-    def excgh_last_seen(self, obj):
+    def excgh_last_seen(self, obj):  # pylint: disable=no-self-use
         """
-        for those sites that have exchange client bots
+        calculated display for :attr:`field
+        <citrus_borg.models.BorgSite.excgh_last_seen>`
+
+        Warns the user to allocate at least one
+        :class:`citrus_borg.models.WinlogbeatHost` instance pointing to a
+        remote host running the :ref:`Mail Borg Client Application`.
+
         """
         first_bot = obj.winlogbeathost_set.\
             filter(excgh_last_seen__isnull=False).first()
@@ -194,14 +211,16 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 @admin.register(KnownBrokeringDeviceNotSeen)
 class KnownBrokeringDeviceNotSeenAdmin(KnownBrokeringDeviceAdmin):
     """
-    admin class for citrix session hosts that have not been seen for a while
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`citrus_borg.models.KnownBrokeringDeviceNotSeen`
     """
 
 
 @admin.register(CitrixHost)
 class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     """
-    admin forms for citrix bots
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`citrus_borg.models.WinlogbeatHost`
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'exchange_client_config', 'resolved_fqdn', 'last_seen',
@@ -216,24 +235,50 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
     def has_add_permission(self, request):  # @UnusedVariable
         """
-        these bots are created from data collected via logstash.
-        adding manually will just add more noise to the database
+        overload
+        :meth:`django.contrib.admin.has_add_permission`
+
+        Nobody is allowed to create any instance using this class.
+        Bots are created and maintained by background processes.
+
         """
         return False
 
 
 @admin.register(WinlogbeatHostNotSeen)
 class WinlogbeatHostNotSeenAdmin(WinlogbeatHostAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`citrus_borg.models.WinlogbeatHostNotSeen`
+    """
     pass
 
 
 @admin.register(WinlogEvent)
 class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`citrus_borg.models.WinlogEvent`
+    """
 
     def has_add_permission(self, request):
+        """
+        overload
+        :meth:`django.contrib.admin.has_add_permission`
+
+        Nobody is allowed to create any instance using this class.
+        Events are created and maintained by background processes.
+        """
         return False
 
     def has_delete_permission(self, request, obj=None):
+        """
+        overload
+        :meth:`django.contrib.admin.has_delete_permission`
+
+        Nobody is allowed to delete any instance using this class.
+        Events are deleted by background processes.
+        """
         return False
 
     list_display_links = ('uuid',)

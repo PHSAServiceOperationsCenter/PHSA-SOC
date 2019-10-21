@@ -1,14 +1,10 @@
 """
-.. _ssl_cert_tracker_models:
+ssl_cert_tracker.models
+-----------------------
 
-`Django models` for the :ref:`SSL Certificate Tracker Application`
-------------------------------------------------------------------
-
-This module contains the :class:`models <django.db.models.Model` and :class:`model
+This module contains the :class:`models <django.db.models.Model>` and :class:`model
 managers <django.db.models.Manager>` used by the :ref:`SSL Certificate Tracker
 Application`.
-
-:module:    ssl_certificates.models
 
 :copyright:
 
@@ -425,7 +421,7 @@ class SslCertificate(SslCertificateBase, models.Model):
 
 class SslExpiresIn(SslCertificate):
     """
-    `Proxy model 
+    `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     for :class:`SslCertificate`
 
@@ -441,7 +437,7 @@ class SslExpiresIn(SslCertificate):
 
 class SslHasExpired(SslCertificate):
     """
-    `Proxy model 
+    `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     for :class:`SslCertificate`
 
@@ -457,7 +453,7 @@ class SslHasExpired(SslCertificate):
 
 class SslNotYetValid(SslCertificate):
     """
-    `Proxy model 
+    `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     for :class:`SslCertificate`
 

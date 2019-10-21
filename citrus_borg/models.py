@@ -1,10 +1,9 @@
 """
-.. _citrus_models:
+citrus_borg.models
+------------------
 
-`Django` `models` for the :ref:`Citrus Borg Application`
---------------------------------------------------------
-
-:module:    citrus_borg.models
+This module contains the :class:`models <django.db.models.Model>` and :class:`model
+managers <django.db.models.Manager>` used by the :ref:`Citrus Borg Application`.
 
 :copyright:
 
@@ -34,9 +33,9 @@ from p_soc_auto_base.models import BaseModel
 
 def get_uuid():
     """
-    provide default value for UUID fields
+    provide default values for UUID fields
 
-    :returns: an instance of :class:`<uuid.UUID>` that ca  be used as a
+    :returns: an instance of :class:`uuid.UUID` that ca  be used as a
               unique identifier
     """
     return uuid.uuid4()
@@ -44,7 +43,8 @@ def get_uuid():
 
 class OrionNodeIDError(ValueError):
     """
-    raise if we cannot grab the orion node id in :class:`<WinlogbeatHost>`
+    Custom :exc:`ValueError` class raised if we cannot retrieve the orion node id
+    of a host described by a :class:`WinlogbeatHost` instance
     """
 
 # pylint: disable=too-few-public-methods,no-self-use
@@ -52,12 +52,30 @@ class OrionNodeIDError(ValueError):
 
 class BorgSiteNotSeenManager(models.Manager):
     """
-    custom manager for :class:`<BorgSite>`
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`BorgSiteNotSeen` model
     """
 
     def get_queryset(self):
         """
-        override the get_queryset method
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`BorgSite` instances that have not sent any events for the
+            period defined by
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+
+        .. todo::
+
+            Extend
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
+            a dynamic preference.
+
         """
         return BorgSite.objects.\
             exclude(winlogbeathost__last_seen__gt=now() -
@@ -66,12 +84,30 @@ class BorgSiteNotSeenManager(models.Manager):
 
 class WinlogbeatHostNotSeenManager(models.Manager):
     """
-    model manager for bot hosts not seen for a while
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`WinlogbeatHostNotSeen` model
     """
 
     def get_queryset(self):
         """
-        override method for custom model managers
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`WinlogbeatHost` instances that have not sent any events for the
+            period defined by
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+
+        .. todo::
+
+            Extend
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
+            a dynamic preference.
+
         """
         return WinlogbeatHost.objects.\
             exclude(last_seen__gt=now() -
@@ -80,14 +116,30 @@ class WinlogbeatHostNotSeenManager(models.Manager):
 
 class KnownBrokeringDeviceNotSeenManager(models.Manager):
     """
-    model manager for citrix app servers
-
-    yes, i know the class name is misleading
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`KnownBrokeringDeviceNotSeen` model
     """
 
     def get_queryset(self):
         """
-        overloaded method for custom model managers
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`KnownBrokeringDevice` instances that have not sent any events
+            for the period defined by
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+
+        .. todo::
+
+            Extend
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
+            a dynamic preference.
+
         """
         return KnownBrokeringDevice.objects.\
             exclude(last_seen__gt=now() -
@@ -96,12 +148,30 @@ class KnownBrokeringDeviceNotSeenManager(models.Manager):
 
 class CitrixHostManager(models.Manager):
     """
-    get only citrix bots
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`CitrixHost` model
     """
 
     def get_queryset(self):
         """
-        override get_queryset to return only citrix bots
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`CitrixHost` instances that have not sent any events for the
+            period defined by
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+
+        .. todo::
+
+            Extend
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
+            a dynamic preference.
+
         """
         return WinlogbeatHost.objects.exclude(last_seen__isnull=True)
 
@@ -110,7 +180,11 @@ class CitrixHostManager(models.Manager):
 
 class BorgSite(BaseModel, models.Model):
     """
-    sites with with citrix bots
+    :class:`django.db.models.Model` class used for storing information about the
+    remote sites where various data collection bots are hosted
+
+    `Bot Site fields
+    <../../../admin/doc/models/citrus_borg.borgsite>`__
     """
     site = models.CharField(
         _('site name'), max_length=64, db_index=True, unique=True,
@@ -127,7 +201,11 @@ class BorgSite(BaseModel, models.Model):
 
 class BorgSiteNotSeen(BorgSite):
     """
-    sites not seen for a while
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`BorgSiteNotSeen`
+
+    See :class:`BorgSiteNotSeenManager`.
     """
     objects = BorgSiteNotSeenManager()
 
@@ -140,7 +218,13 @@ class BorgSiteNotSeen(BorgSite):
 
 class WinlogbeatHost(BaseModel, models.Model):
     """
-    hosts where the winlogbeat daemon is collecting windows events
+    :class:`django.db.models.Model` class used for storing information about the
+    remote hosts where various data collection bots are running
+
+    Data in this `model` is maintained primarily by background processes.
+
+    `Remote Monitoring Bot fields
+    <../../../admin/doc/models/citrus_borg.winlogbeathost>`__
     """
     host_name = models.CharField(
         _('host name'), max_length=63, db_index=True, unique=True,
@@ -169,7 +253,10 @@ class WinlogbeatHost(BaseModel, models.Model):
     @mark_safe
     def orion_node_url(self):
         """
-        link to the Orion Node object on the Orion server
+        :returns: an instance property with the `URL` of the `Django Admin change`
+            form for the :class:`orion_integration.models.OrionNode` instance
+            representing the host
+
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -184,20 +271,39 @@ class WinlogbeatHost(BaseModel, models.Model):
     @property
     def resolved_fqdn(self):
         """
-        try to acquire the fqdn of the bot
+        :returns: an instance property with the `FQDN
+            <https://en.wikipedia.org/wiki/Fully_qualified_domain_name>`__ of the
+            host if it can be resolved or `None`
+
         """
         return socket.getfqdn(self.ip_address) if self.ip_address else None
 
     def get_orion_id(self):
         """
-        use the resolved_fqdn or the ip address to ask the orion server
-        for the orion id
+        get the `SolarWinds Orion <https://www.solarwinds.com/solutions/orion>`__
+        server unique identifier for the network node and save it to the
+        :attr:`WinlogbeatHost.orion_id` field
 
-        the normal way to call this method is to wrap it a celery task
-        that is part of a celery group.
+        Because this method accesses data over the network, the proper way to call
+        it is to wrap it in a `Celery task
+        <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__.
+        Within the :ref:`Citrus Borg Application` this method is called from the
+        :func:`citrus_borg.tasks.get_orion_id` task.
 
-        we may want to have the nodes tagged with a custom property
-        application name and use that one as SWSQL key
+        The method depends on the instance having a valid `IP address` that
+        resolves to the host `FQDN
+        <https://en.wikipedia.org/wiki/Fully_qualified_domain_name>`__ known to
+        the `SolarWinds Orion <https://www.solarwinds.com/solutions/orion>`__
+        server.
+
+        The method will not query the `SolarWinds Orion
+        <https://www.solarwinds.com/solutions/orion>`__ server if the instance is
+        `disabled`.
+
+        :returns: the instance `host_name` for the retrieved `Orion` `NodeId`,
+            or an information message if the node cannot be found on the
+            `Orion` server, or `None` if the :attr:`WinlogbeatHost.ip_address`
+            field is null
 
         """
         orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
@@ -208,12 +314,6 @@ class WinlogbeatHost(BaseModel, models.Model):
             return None
 
         if self.resolved_fqdn is None and self.ip_address is None:
-            # there is no way to identify the node in orion
-            # how does orion handle unamanaged nodes? is it possible
-            # to ignore network identification?
-
-            # TODO: this is an error condition, must integrate with
-            # https://trello.com/c/1Aadwukn
             return None
 
         if self.resolved_fqdn:
@@ -246,13 +346,23 @@ class WinlogbeatHost(BaseModel, models.Model):
     @classmethod
     def get_or_create_from_borg(cls, borg):
         """
-        get the host object based on host information in the windows event
+        maintain the host information based on data in the `Windows` log event
 
-        if the host object doesn't exist, create it first
+        If a :class:`WinlogbeatHost` instance matching the information in the
+        `borg` argument doesn't exist, one will be created.
 
-        :arg borg: the namedtuple containing the windows event data
+        This `class method
+        <https://docs.python.org/3.6/library/functions.html?highlight=classmethod#classmethod>`__
+        is invoked from the :func:`citrus_borg.tasks.store_borg_data` task.
 
-        :returns: a host object
+        :arg borg: a :func:`collections.namedtuple` with the processed `Windows`
+            log event data
+
+            See the functions in the :mod:`citrus_borg.locutus.assimilation`
+            module for the structure of the :func:`namedtuple
+            <collections.namedtuple>`.
+
+        :returns: the :class:`WinlogbeatHost` instance
         """
         last_seen = now() \
             if borg.event_source in ['ControlUp Logon Monitor'] else None
@@ -286,7 +396,12 @@ class WinlogbeatHost(BaseModel, models.Model):
 
 class CitrixHost(WinlogbeatHost):
     """
-    only citrix bots
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`WinlogbeatHost` that will show only hosts where a `ControlUp`
+    bot is running
+
+    See :class:`CitrixHostManager`.
     """
     objects = CitrixHostManager()
 
@@ -300,7 +415,11 @@ class CitrixHost(WinlogbeatHost):
 
 class WinlogbeatHostNotSeen(WinlogbeatHost):
     """
-    bots not seen for a while
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`WinlogbeatHost`
+
+    See :class:`WinlogbeatHostNotSeenManager`.
     """
     objects = WinlogbeatHostNotSeenManager()
 
@@ -312,8 +431,14 @@ class WinlogbeatHostNotSeen(WinlogbeatHost):
 
 class AllowedEventSource(BaseModel, models.Model):
     """
-    only save events originating from specific Log_name and source_name
-    combinations
+    :class:`django.db.models.Model` class used for storing information about the
+    `Windows` log event `Application` property
+
+    Only events with a matching value for the `Application` property will be
+    processed.
+
+    `Allowed Event Source fields
+    <../../../admin/doc/models/citrus_borg.allowedeventsource>`__
     """
     source_name = models.CharField(
         _('source name'), max_length=253, db_index=True, blank=False,
@@ -332,7 +457,14 @@ class AllowedEventSource(BaseModel, models.Model):
 
 class WindowsLog(BaseModel, models.Model):
     """
-    windows log names lookup
+    :class:`django.db.models.Model` class used for storing information about the
+    `Windows` log
+
+    Only events from `Windows` logs with names matching entries in this model
+    will be processed.
+
+    `Supported Windows Log fields
+    <../../../admin/doc/models/citrus_borg.windowslog>`__
     """
     log_name = models.CharField(
         _('Log Name'), max_length=64, unique=True, db_index=True, blank=False,
@@ -348,7 +480,13 @@ class WindowsLog(BaseModel, models.Model):
 
 class KnownBrokeringDevice(BaseModel, models.Model):
     """
-    keep a list of brokers returned by the logon simulator
+    :class:`django.db.models.Model` class used for storing information about the
+    `Citrix` application servers
+
+    This model is maintained by background processes.
+
+    `Known Brokering Device fields
+    <../../../admin/doc/models/citrus_borg.known_brokering_device>`__
     """
     broker_name = models.CharField(
         _('server name'), max_length=15, unique=True, db_index=True,
@@ -365,13 +503,24 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     @classmethod
     def get_or_create_from_borg(cls, borg):
         """
-        get the broker object based on host information in the windows event
+        maintain the `Citrix` application servers information based on data in the
+        `Windows` log event
 
-        if the broker object doesn't exist, create it first
+        If a :class:`KnownBrokeringDevice` instance matching the information in the
+        `borg` argument doesn't exist, one will be created.
 
-        :arg borg: the namedtuple containing the windows event data
+        This `class method
+        <https://docs.python.org/3.6/library/functions.html?highlight=classmethod#classmethod>`__
+        is invoked from the :func:`citrus_borg.tasks.store_borg_data` task.
 
-        :returns: a host object
+        :arg borg: a :func:`collections.namedtuple` with the processed `Windows`
+            log event data
+
+            See the functions in the :mod:`citrus_borg.locutus.assimilation`
+            module for the structure of the :func:`namedtuple
+            <collections.namedtuple>`.
+
+        :returns: the :class:`KnownBrokeringDevice` instance
         """
         if borg.borg_message.broker is None:
             return None
@@ -398,7 +547,11 @@ class KnownBrokeringDevice(BaseModel, models.Model):
 
 class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
     """
-    citrix app servers not seen for a while
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    for :class:`KnownBrokeringDeviceNotSeen`
+
+    See :class:`KnownBrokeringDeviceNotSeenManager`.
     """
     objects = KnownBrokeringDeviceNotSeenManager()
 
@@ -410,7 +563,12 @@ class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
 
 class WinlogEvent(BaseModel, models.Model):
     """
-    windows logs events
+    :class:`django.db.models.Model` class used for storing `Citrix`  events
+
+    The data stored in this model is maintained entirely via background processes.
+
+    `Citrix Bot Windows Log Event fields
+    <../../../admin/doc/models/citrus_borg.winlogEvent>`__
     """
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,

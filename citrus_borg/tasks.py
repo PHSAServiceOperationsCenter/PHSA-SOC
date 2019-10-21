@@ -1,10 +1,10 @@
 """
-.. _citrus_tasks:
+citrus_borg.tasks
+-----------------
 
-tasks module
-------------
-
-:module:    citrus_borg.tasks
+This module contains the `Celery tasks
+<https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
+used by the :ref:`Citrus Borg Application`.
 
 :copyright:
 
@@ -14,10 +14,6 @@ tasks module
 :contact:    serban.teodorescu@phsa.ca
 
 :updated: Nov. 22, 2018
-
-This module contains the `Celery tasks
-<https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
-used by the :ref:`Citrus Borg Application`.
 
 """
 from smtplib import SMTPConnectError

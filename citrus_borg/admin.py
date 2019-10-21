@@ -1,13 +1,9 @@
 """
-.. _citrus_admin:
-
-citrus_borg.admin module
-------------------------
+citrus_borg.admin
+-----------------
 
 This module contains the `Django admin` classes for the
 :ref:`Citrus Borg Application`.
-
-:module:    citrus_borg.admin
 
 :copyright:
 

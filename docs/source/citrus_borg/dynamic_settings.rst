@@ -1,2 +1,0 @@
-Citrus Borg Dynamic Preferences
-===============================

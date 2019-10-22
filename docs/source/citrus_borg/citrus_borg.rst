@@ -29,7 +29,5 @@ are provided via the :ref:`Email Services` component.
    alerts.rst
    reports.rst
    celery.rst
-   settings.rst
-   dynamic_settings.rst
    modules.rst
 

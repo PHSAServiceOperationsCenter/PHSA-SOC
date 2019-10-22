@@ -99,7 +99,10 @@ intersphinx_mapping = {
     'urllib3': ('http://urllib3.readthedocs.org/en/latest', None),
     #    'requests': ('https://2.python-requests.org/en/master/', None),
     'requests': ('https://requests.kennethreitz.org/en/master/', None),
-    'libnmap': ('https://libnmap.readthedocs.io/en/latest/', None), }
+    'libnmap': ('https://libnmap.readthedocs.io/en/latest/', None),
+    'dynamic_preferences':
+        ('https://django-dynamic-preferences.readthedocs.io/en/latest/', None),
+}
 
 autodoc_default_options = {
     'member-order': 'bysource',

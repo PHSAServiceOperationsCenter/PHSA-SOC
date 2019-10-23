@@ -365,12 +365,14 @@ def process_borg_message(message=None, logger=None):
         `logon_achieved_duration`, `logoff_achieved_duration`, `failure_reason`,
         `failure_details`, `raw_message`
 
+    .. todo::
+
+        In case the message is `None`, create a dynamic preference for the
+        raw_message property of the `namedtuple`.
+
     """
     if logger is None:
         logger = _get_logger()
-
-    if message is None:
-        raise ValueError('message argument is mandatory')
 
     borg_message = collections.namedtuple(
         'BorgMessage', [
@@ -380,6 +382,23 @@ def process_borg_message(message=None, logger=None):
             'failure_reason', 'failure_details', 'raw_message'
         ]
     )
+
+    if message is None:
+        # this is an error case
+        logger.error('a message was not provided with this event')
+        borg_message.raw_message = 'a message was not provided with this event'
+        borg_message.state = 'undetermined'
+        borg_message.broker = None
+        borg_message.test_result = False
+        borg_message.storefront_connection_duration = None
+        borg_message.receiver_startup_duration = None
+        borg_message.connection_achieved_duration = None
+        borg_message.logon_achieved_duration = None
+        borg_message.logoff_achieved_duration = None
+        borg_message.failure_reason = None
+        borg_message.failure_details = None
+
+        return borg_message
 
     borg_message.raw_message = str(message)
     message = message.split('\n')

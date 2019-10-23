@@ -832,7 +832,7 @@ def email_ux_alarm(
 
     :arg tuple site_host_args: `site` and `host_name` to which the alert is bound
 
-    See the "func'`email_us_alarms` taks for details about the other arguments.
+    See the :func:`email_us_alarms` task for details about the other arguments.
 
     This alert used the subscription at `Citrix UX Alert
     <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+UX+Alert>`__.

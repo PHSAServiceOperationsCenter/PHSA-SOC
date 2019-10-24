@@ -1,9 +1,9 @@
 """
-.. _models:
+orion_integration.models
+------------------------
 
-django models for the orion_integration app
-
-:module:    p_soc_auto.orion_integration.models
+This module contains the :class:`djangodb.models.Model` models for the
+:ref:`Orion Integration Application`.
 
 :copyright:
 
@@ -12,7 +12,7 @@ django models for the orion_integration app
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Aug. 21, 2019
+:updated:    Oct. 24, 2019
 
 """
 import logging
@@ -43,9 +43,6 @@ class OrionCernerCSTNodeManager(models.Manager):
         """
         override the default get_queryset() method
 
-        when using `django.queryset.objects` this method makes sure
-        that a filter is applied without having to explicitly call
-        :method:`django.queryset.filter`
         """
         return super().\
             get_queryset().filter(
@@ -90,26 +87,19 @@ class OrionBaseModel(BaseModel, models.Model):
 
     def exists_in_orion(self):
         """
-        is this orion entity instance still available on the orion server?
+        verify that the `Orion` entity instance still matches on entity on the
+        `Orion` server
 
-        if the entity is present on the Orion server, just return
+        If the entity is present on the Orion server, reset the `not_seen_sice`
+        field and return `True`
 
-        if this is the first time the orion entity is not available on the
-        Orion server, set the :var:`not_seen_since` to
-        ``django.utils.timezone.now``.
+        Otherwise, this method will try to delete the local entity and return
+        `False`.
 
-        if this is not the first time the entity has not been seen, return
+        :returns: `True` or `False`
+        :rtype: bool
 
-        if the orion entity is seen again, reset the :var:`not_seen_since`
-        to ``None``
-
-        uses an orion query looking for the orion entity identified by
-        the :var:`orion_id.` value of the instance. the query needs to be
-        defined in :var:`orion_id_query`
-
-        :returns: a ``tuple`` with the first member being "exists" or
-                  "not seen since: :attr:`not_seen_since`" and the
-                  instance ``values_list``
+        :raises: :exc:`Exception` if the instance cannot be deleted
 
         """
         data = OrionClient.query(orion_query='%s = %s' % (self.orion_id_query,
@@ -134,39 +124,38 @@ class OrionBaseModel(BaseModel, models.Model):
     @classmethod
     def update_or_create_from_orion(cls, username=settings.ORION_USER):
         """
-        class method to update or create orion model instances
+        update or create instances of :class:`django.db.models.Model` classes
+        inheriting from this class using data from the `Orion`  server
 
-        update or create entries in orion models using data from the Orion
-        server
+        :arg str username: the :attr:`username` of the
+            :class:`django.contrib.auth.models.User` instance when creating the
+            model instance
 
-        :arg cls: the model class
+            .. todO::
 
-            note that this method is defined in a base class so that it can
-            be invoked from all the classes inheriting form that particular
-            base class
-
-            see notes about :var:`orion_query` and :var:`orion_mappings`. this
-            method expects that the classes supporting it have those variables
-            defined
+                We are picking the default value for this argument from the
+                `Djanog` `settings` file. We need to use a dynamic preference
+                instead.
 
         :raises:
 
-            :exception:`OrionQueryError` if :var:`orion_query` is not
-            defined in the calling model
+            :exc:`OrionQueryError` if the :attr:`orion_query` attribute is not
+            defined in the model
 
-            :exception:`OrionMappnngsError` if :var:`orion_mappings` is not
-            defined in the calling class
+            :exc:`OrionMappingsError` if the :attr:`orion_mappings` attribute
+            is not defined in the model
 
-        :returns: a ``dict`` with these keys
-                :key status:
-                :key model:
-                :key orion_rows: the number of rows returned by the Orion call
-                :key updated_records: the number of objects that have been
-                                      updated during the Orion call
-                :key created_records: the number of objects that have been
-                                      created during the Orion call
-                :key errored_records: the number of objects that
-                                      threw an error during the Orion call
+        :returns: a :class:`dictionary <dict>` with these keys
+
+            :key status:
+            :key model:
+            :key orion_rows: the number of rows returned by the Orion call
+            :key updated_records: the number of objects that have been
+                                  updated during the Orion call
+            :key created_records: the number of objects that have been
+                                  created during the Orion call
+            :key errored_records: the number of objects that
+                                  threw an error during the Orion call
         """
         return_dict = dict(
             status='pending', model=cls._meta.verbose_name, orion_rows=0,
@@ -236,8 +225,11 @@ class OrionBaseModel(BaseModel, models.Model):
 
 class OrionNode(OrionBaseModel, models.Model):
     """
-    reference:
-    `Orion Node<http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`_
+    :class:`django.db.models.Model` class with the representation of a node
+    on the `Orion` server
+
+    The reference for `Orion` nodes:
+    `Orion Node <http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`__
 
     """
     #: the Orion query to verify if objects from this model exist in Orion

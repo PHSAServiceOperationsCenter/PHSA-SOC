@@ -180,8 +180,7 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
     def has_add_permission(self, request):  # @UnusedVariable
         """
-        overload
-        :meth:`django.contrib.admin.has_add_permission`
+        overload :meth:`django.contrib.admin.has_add_permission`
 
         Nobody is allowed to create any instance using this class.
         All the data is maintained by background processes.

@@ -1,18 +1,17 @@
 """
-.. _orion:
+orion_integration.orion
+-----------------------
 
-orion classes for the orion_integration app
-
-:module:    p_soc_auto.orion_integration.orion
+This module provides the `HTTP(S)` client for the `Orion REST API`.
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Aug. 8, 2018
+:updated:    Oct. 24, 2019
 
 """
 import json
@@ -26,11 +25,9 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 
 SESSION = Session()
 """
-:var SESSION: cached Session object to be reused by all Orion queries
-
-    this way we will take advantage of http connection pooling
-
-:vartype SESSION: `<request.Session.`
+cached :class:`requests.Session` object that allows the client to take advantage
+of `HTTP persistent connections
+<https://en.wikipedia.org/wiki/HTTP_persistent_connection>`__
 """
 
 SESSION.headers = {'Content-Type': 'application/json'}
@@ -41,8 +38,19 @@ if not SESSION.verify:
 
 def serialize_custom_json(obj):
     """
-    datetime objects need to be in ISO format before the json module can
-    serialize them
+    custom `JSON encoder
+    <https://docs.python.org/3.6/library/json.html?highlight=json#json.JSONEncoder>`__
+    for :class:`datetime.datetime` objects; see `default(o)
+    <https://docs.python.org/3.6/library/json.html?highlight=json#json.JSONEncoder.default>`__ 
+
+    The `json module
+    <https://docs.python.org/3.6/library/json.html?highlight=json#module-json>`__
+    cannot serialize :class:`datetime.datetime` objects directly because `JSON
+    <https://www.json.org/>`__ doesn't have a suitable data type. This function
+    converts :class:`datetime.datetime` objects to `ISO 8601
+    <https://en.wikipedia.org/wiki/ISO_8601>`__ strings which can then be encoded
+    by the `json module
+    <https://docs.python.org/3.6/library/json.html?highlight=json#module-json>`__.
     """
     _ = None
     if isinstance(obj, datetime):
@@ -63,20 +71,22 @@ def serialize_custom_json(obj):
 
 class OrionClient():
     """
-    :class OrionClient: a class that acts as a REST client for the Orion SDK
+    `REST <https://en.wikipedia.org/wiki/Representational_state_transfer>`__
+    client class for the `Orion SDK
+    <https://github.com/solarwinds/orionsdk-python#orion-sdk-for-python>`__
     """
 
     @classmethod
     def query(cls, orion_query, **params):
         """
-        query the Orion server
+        query the `Orion` server
 
         :arg str query: the query string
         :arg dict params: the query params
 
-        :returns: a `dict`
+        :returns: the data that matches the query
+        :rtype: dict
 
-        :raises:
         """
 
         # need to configure the SESSION object here because the

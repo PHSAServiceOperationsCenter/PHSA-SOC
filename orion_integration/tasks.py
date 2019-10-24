@@ -1,18 +1,19 @@
 """
-.. _tasks:
+orion_integration.tasks
+-----------------------
 
-celery tasks for the orion_integration app
-
-:module:    p_soc_auto.orion_integration.tasks
+This module contains the `Celery tasks
+<https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__ for the
+:ref:`Orion Integration Application`.
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Sep. 5, 2018
+:updated:    Oct. 24, 2019
 
 """
 from requests.exceptions import HTTPError
@@ -27,17 +28,11 @@ from orion_integration.models import (
 @shared_task(queue='shared')
 def populate_from_orion():
     """
-    update the models in orion_integration from the orion server
-
-    the models are provided as an internal ``list``
-
-    this task needs to be registered with celery and needs to be
-    controlled via celery beat because currently it is not being
-    invoked any where else. it is also responsible for pre-populating
-    all the orion data caching models
+    this task will create and/or update the `Orion` data cached by the
+    :ref:`Orion Integration Application`
 
     :returns: a list of models that were updated
-
+    :rtype: list
     """
     ret = []
     for model in [OrionNodeCategory, OrionNode, OrionAPMApplication, ]:
@@ -58,19 +53,17 @@ def populate_from_orion():
     result_serializer='pickle', rate_limit='0.5/s', queue='orion')
 def orion_entity_exists(model_name, primary_key):
     """
-    task that answers the question "does this thing still exist in orion?"
+    this task will verify if an `Orion` entity cached by the models of
+    the :ref:`Orion Integration Application` is still present on the `Orion` server
 
-    this task is per-instance task: for each orion integration model instance
-    another instance of this task is invoked
+    :arg str model_name: the name of :class:`django.db.models.Model` model
+        where the `Orion` entity is cached
 
-    :arg str model_name: the name of the orion objects model
-    :arg int pk: the primary key of the object
+    :arg int pk: the primary key of the `Orion` entity
 
-    :returns: a representation of the orion object tagged with "exists" or
-              with "not seen since:"
-
-              see
-              :method:`<orion_integration.models.OrionBaseModel.exists_in_orion>`
+    :returns: `True` or `False`; see
+        :meth:`orion_integration.models.OrionBaseModel.exists_in_orion`
+    :rtype: bool
     """
     return apps.get_model('orion_integration', model_name).objects.\
         get(pk=primary_key).exists_in_orion()
@@ -79,15 +72,15 @@ def orion_entity_exists(model_name, primary_key):
 @shared_task(queue='shared')
 def verify_known_orion_data():
     """
-    group task that is responsible for launching the
-    :function:`<orion_entity_exists>`
-
-    see
-    `<http://docs.celeryproject.org/en/latest/userguide/canvas.html?highlight=groups#groups>`_
-    for details about celery groups
+    this task that is using the `Celery group primitive
+    <https://docs.celeryproject.org/en/latest/userguide/canvas.html#groups>`__ in
+    order to launc a :func:`orion_entity_exists` task for each known `Orion`
+    entity
 
     :returns: a list with the orion objects models and the number of objects
-              for each model
+        for each model
+
+    :rtype: list
     """
     ret = []
     for model in [OrionNodeCategory, OrionAPMApplication, OrionNode]:

@@ -1,2 +1,0 @@
-SOC Automation System Configuration
-===================================

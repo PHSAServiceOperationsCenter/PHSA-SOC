@@ -1,18 +1,18 @@
 """
-.. _apps:
+orion_integration.apps
+----------------------
 
-django apps module for the orion integration app
-
-:module:    p_soc_auto.orion_integration.apps
+This module contains the `Django` application configuration for the
+:ref:`Orion Integration Application`.
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    aug. 7, 2018
+:updated:    Oct. 24, 2019
 """
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
@@ -20,7 +20,11 @@ from django.utils.translation import gettext_lazy as _
 
 class OrionIntegrationConfig(AppConfig):
     """
-    App class for the orion_integration django app
+    Configuration class for the :ref:`Orion Integration Application`
+
+    See `Configuring applications
+    <https://docs.djangoproject.com/en/2.2/ref/applications/#projects-and-applications>`__
+    in the `Django docs <https://docs.djangoproject.com/en/2.2/>`__
     """
     name = 'orion_integration'
     verbose_name = _(
@@ -28,7 +32,10 @@ class OrionIntegrationConfig(AppConfig):
 
     def ready(self):
         """
-        in case of circular imports or app not ready place imports
-        in this method
+        use this method for initialization purposes and to avoid `Django`
+        circular import errors
+
+        See `AppConfig.ready()
+        <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`__.
         """
-        pass
+        pass  # pylint: disable=unnecessary-pass

@@ -1,21 +1,18 @@
 """
-.. _lib:
+orion_integration.lib
+---------------------
 
-api classes and functions for the orion_integration app
-
-the classes and methods from this module constitute the formal, public, and
-published API provided by this application
-
-:module:    p_soc_auto.orion_integration.lib
+This module contains the public API provided by the :ref:`Orion Integration
+Application`.
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    aug. 14, 2018
+:updated:    Oct. 24, 2019
 """
 from citrus_borg.dynamic_preferences_registry import get_preference
 
@@ -23,70 +20,95 @@ from .models import OrionNode, OrionCernerCSTNode
 
 
 class OrionSslNode():
-    # pylint:disable=C0301
-
     '''
-    class with methods for retrieving orion nodes information from models
-    defined in this application
-
-    :classvar ssl_filters:
-
-            django field lookups available for all the methods defined in
-            this class
-
-            see
-            `Field lookups<https://docs.djangoproject.com/en/2.1/ref/models/querysets/#field-lookups>`_
-            for details
+    Class with methods for retrieving `Orion` data cached by the :ref:`Orion
+    Integration Application`
     '''
-    # pylint:enable=C0301
-
     ssl_filters = dict(
         orionapmapplication__application_name__icontains=get_preference(
             'orionfilters__ssl_app'))
+    """
+    `Django field lookups
+    <https://docs.djangoproject.com/en/2.1/ref/models/querysets/#field-lookups>`__
+    that can be used by any method in this class
+
+    """
 
     @classmethod
     def nodes(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
-        # pylint:disable=C0301
         """
-        get the orion nodes cached in
-        :model:`orion_integration.models.OrionNode`
+        get the orion nodes cached in :class:`orion_integration.models.OrionNode`
 
-        :arg bool cerner_cst: only return the Orion nodes that have the
-                              Cerner-CST attribute set on the Orion server
+        :arg bool cerner_cst: only return the `Orion` nodes that have the
+            `Cerner-CST` attribute set on the `Orion` server; default: `True`
 
-                              default: `True`
+        :arg bool orion_ssl: only return `Orion` nodes that are linked to an
+            :class:`orion_integration.models.OrionAPMApplication` instance pointing
+            to an `orion APM` node with `SSL` properties; default: `False`
 
-        :arg bool orion_ssl: only return Orion nodes that are linked to an
-                             OrionAPMApplication object defined as being an
-                             SSL application
+        :arg bool servers_only: only return `Orion` nodes that are known as servers
 
-                             default: `False`
+        :returns: a :class:`django.db.models.query.QuerySet` based on the
+            :class:`orion_integration.models.OrionNode`
 
-        :arg bool servers_only: only return orion nodes that are known servers
+        get all the nodes that are known Cerner-CST nodes example:
 
-        :returns: a django queryset of orion node instances
+        .. code-block:: ipython
 
-        get all the nodes that are known Cerner-CST nodes example::
+            In [1]: from orion_integration.lib import OrionSslNode
 
-            .. code-block:: python
+            In [3]: OrionSslNode.nodes().values()[0]
+            Out[3]:
+            {'id': 9104,
+             'created_by_id': 3,
+             'updated_by_id': 3,
+             'created_on': datetime.datetime(2019, 6, 20, 1, 0, 41, 164415, tzinfo=<UTC>),
+             'updated_on': datetime.datetime(2019, 10, 24, 13, 0, 25, 229959, tzinfo=<UTC>),
+             'enabled': True,
+             'notes': 'net-snmp - Linux',
+             'orion_id': 6436,
+             'not_seen_since': None,
+             'address': '888 West 28th Avenue',
+             'building': 'Ambulatory Care Building - Data Centre',
+             'city': 'Vancouver',
+             'closet': 'Flr: 0  RM: K0-160 - Data Center',
+             'comments': None,
+             'device_type': 'ACS',
+             'ha': 'PHSA',
+             'hardware_incident_status': None,
+             'incident_status': None,
+             'make': 'Cisco',
+             'node_owner': 'HSSBC Security',
+             'out_of_band': None,
+             'program_application': 'Cerner-CST',
+             'program_application_type': 'Network_ISE',
+             'provider': None,
+             'region': 'Vancouver',
+             'site': 'Children and Womens (CW)',
+             'site_contact_name': None,
+             'site_hours': '24hx7d',
+             'site_phone': None,
+             'site_type': 'Acute-DC',
+             'wan_bandwidth': None,
+             'wan_node': 'False',
+             'wan_provider': None,
+             'node_caption': 'cw-phsa-isep01',
+             'category_id': 9,
+             'sensor': 'SNMP',
+             'ip_address': '10.1.14.7',
+             'node_name': 'Cisco Application Deployment Engine',
+             'node_dns': '',
+             'node_description': '',
+             'vendor': 'net-snmp',
+             'location': 'CW',
+             'machine_type': 'net-snmp - Linux',
+             'status': 'Node status is Up, eth0 is in an Unknown state.',
+             'status_orion_id': 1,
+             'details_url': '/Orion/NetPerfMon/NodeDetails.aspx?NetObject=N:6436'}
 
-            from orion_integrattion.lib import OrionSslNode
-
-            def get_nodes():
-                return list(OrionSslNode.nodes().values(
-                    'orion_nodeid', 'node_name', 'ip_address', 'site'))
-
-
-        this will return a `list` of `dict` where each `dict` looks like::
-
-            {'orion_id': 54,
-             'node_name': 'HP Comware Platform S ... velopment Company, L.P.',
-             'ip_address': '10.26.101.11',
-             'site': 'Squamish General Hospital'}
+            In [4]:
 
         """
-        # pylint:enable=C0301
-
         queryset = OrionNode.objects.filter(enabled=True)
 
         if cerner_cst is None:
@@ -114,10 +136,10 @@ class OrionSslNode():
     @classmethod
     def count(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         """
-        :returns: the number of SSL nodes
+        :returns: the count of `orion` nodes for a given query
         :rtype: int
 
-        see :method:`<nodes>` for argument details
+        see :meth:`nodes` for argument details
         """
         return cls.nodes(
             cerner_cst=cerner_cst,
@@ -126,10 +148,10 @@ class OrionSslNode():
     @classmethod
     def ip_addresses(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         """
-        :returns: the list of ip addresses for orion ssl nodes
+        :returns: the list of ip addresses for the `Orion` nodes in the query
         :rtype: list
 
-        see :method:`<nodes>` for argument details
+        see :meth:`nodes` for argument details
         """
         return list(
             cls.nodes(

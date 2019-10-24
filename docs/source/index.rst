@@ -43,7 +43,6 @@ SOC Automation Server Infrastructure
 
    p_soc_auto/p_soc_auto.rst
    p_soc_auto_base/p_soc_auto_base.rst
-   configs/config.rst
    ssl_cert_tracker/subscriptions.rst
    ssl_cert_tracker/email_services.rst
    

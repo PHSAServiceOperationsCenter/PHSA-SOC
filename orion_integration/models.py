@@ -20,7 +20,6 @@ import logging
 from django.apps import apps
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -36,12 +35,23 @@ LOGGER = logging.getLogger('orion_integration_log')
 
 class OrionCernerCSTNodeManager(models.Manager):
     """
-    django custom manager that adds a filter on Cerner-CST by default
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`OrionCernerCSTNode` model
     """
 
     def get_queryset(self):
         """
-        override the default get_queryset() method
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`OrionNode` instances that map to `Orion` nodes tagged as
+            `Cerner-CST` nodes
+
 
         """
         return super().\
@@ -53,27 +63,56 @@ class OrionCernerCSTNodeManager(models.Manager):
 
 class OrionQueryError(Exception):
     """
-    raise if the model doesn't have an orion_query attribute
+    Custom :exc:`Exception` raised if a :class:`django.db.models.Model` that
+    inherits from :class:`OrionBaseModel` model doesn't have an
+    :attr:`orion_query` attribute
+
+    The :attr:`orion_query` attribute is the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    that is used when populating and/or maintaining the model.
+
     """
 
 
 class OrionMappingsError(Exception):
     """
-    raise if the model doesn't have an orion_mappings attribute
+    Custom :exc:`Exception` raised if a :class:`django.db.models.Model` that
+    inherits from :class:`OrionBaseModel` model doesn't have an
+    :attr:`orion_mappings` attribute
+
+    The :attr:`orion_mappings` attribute is used for mapping the fields
+    returned by an `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    to the fields of the model.
     """
 
 
 class OrionBaseModel(BaseModel, models.Model):
     """
-    use this class as the parent for all the models that are caching Orion
-    entities
+    :class:`django.db.models.Model` base class for other `Model` classes in
+    this module
 
-    most (if not all) Orion objects need an orion_id key that comes from the
-    Orion server; this class provides that field
     """
     orion_query = None
+    """
+    place-holder for the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    used for populating and/or maintaining the `model`
+    """
+
     orion_mappings = []
+    """
+    place-holder for the mapping between the fields returned by an `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    and the fields of the model
+    """
+
     orion_id_query = None
+    """
+    place-holder for the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    used for querying the `Orion` server about a known `model` instance
+    """
 
     orion_id = models.BigIntegerField(
         _('Orion Object Id'), db_index=True, unique=True, blank=False,
@@ -90,8 +129,8 @@ class OrionBaseModel(BaseModel, models.Model):
         verify that the `Orion` entity instance still matches on entity on the
         `Orion` server
 
-        If the entity is present on the Orion server, reset the `not_seen_sice`
-        field and return `True`
+        If the entity is present on the Orion server, reset the
+        `not_seen_since` field and return `True`
 
         Otherwise, this method will try to delete the local entity and return
         `False`.
@@ -147,15 +186,21 @@ class OrionBaseModel(BaseModel, models.Model):
 
         :returns: a :class:`dictionary <dict>` with these keys
 
-            :key status:
-            :key model:
-            :key orion_rows: the number of rows returned by the Orion call
-            :key updated_records: the number of objects that have been
-                                  updated during the Orion call
-            :key created_records: the number of objects that have been
-                                  created during the Orion call
-            :key errored_records: the number of objects that
-                                  threw an error during the Orion call
+            * status
+
+            * model: the `model` that executed this method
+
+            * orion_rows: the number of rows returned by the `Orion` `REST`
+              call
+
+            * updated_records: the number of objects that have been updated
+              during the `Orion` `REST` call
+
+            * created_records: the number of objects that have been created
+              during the `Orion` `REST` call
+
+            * errored_records: the number of objects that threw an error
+              during the `Orion` `REST` call
         """
         return_dict = dict(
             status='pending', model=cls._meta.verbose_name, orion_rows=0,
@@ -228,14 +273,18 @@ class OrionNode(OrionBaseModel, models.Model):
     :class:`django.db.models.Model` class with the representation of a node
     on the `Orion` server
 
-    The reference for `Orion` nodes:
-    `Orion Node <http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`__
+    The reference for `Orion` nodes: `Orion Node
+    <http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`__
 
     """
-    #: the Orion query to verify if objects from this model exist in Orion
     orion_id_query = ('SELECT NodeID FROM Orion.Nodes WHERE NodeID')
+    """
+    the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    used for verifying that an instance of this
+    :class:`django.db.models.Model` model matches an `Orion` node
+    """
 
-    #: the Orion query used to populate this model
     orion_query = (
         'SELECT ons.NodeID, ons.ObjectSubType, ons.IPAddress, ons.Caption,'
         ' ons.NodeDescription, ons.Description, ons.DNS, ons.Category,'
@@ -253,13 +302,13 @@ class OrionNode(OrionBaseModel, models.Model):
         ' LEFT JOIN Orion.NodesCustomProperties(nolock=true) oncp'
         ' on ons.NodeID = oncp.NodeID'
     )
+    """
+    the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+    used for creating or maintaining an instance of this
+    :class:`django.db.models.Model` model from an `Orion` node
+    """
 
-    #: mapping between model fields and data returned by the Orion query
-    #: must be a 3 variables tuple: the first variable is the name of the
-    #: field, the second variable is the name of the column in the Orion
-    #: schema, and the third column describes a foreign key mapping
-    #: if necessary; it is formatted as app_lable.ModelName and it will
-    #: prepare a Model.objects.filter().get() to retrieve the foreign key
     orion_mappings = (('orion_id', 'NodeID', None),
                       ('node_caption', 'Caption', None),
                       ('sensor', 'ObjectSubType', None),
@@ -301,6 +350,34 @@ class OrionNode(OrionBaseModel, models.Model):
                       ('wan_bandwidth', 'WANbandwidth', None),
                       ('wan_node', 'WANnode', None),
                       ('wan_provider', 'WANProvider', None))
+    """
+    mapping between this `model's` fields and data returned by the `SWQL query
+    <https://support.solarwinds.com/SuccessCenter/s/article/Use-SolarWinds-Query-Language-SWQL>`__
+
+    This attribute is a :class:`tuple` where each item represents a `model`
+    field.
+    Each item of the :class:`tuple` above is also a :class:`tuple` that
+    contains 3 variables:
+
+    * The first variable is the name of the :class:`model
+      <django.db.models.Model>` field
+
+    * The second variable is the name of the column in the `Orion Node schema
+      <http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`__.
+
+      It is possible to mix schemas for multiple `Orion` related entities,
+      e.g. `Orion Node
+      <http://solarwinds.github.io/OrionSDK/schema/Orion.Nodes.html>`__ and
+      `Orion Node Custom Properties
+      <https://solarwinds.github.io/OrionSDK/schema/Orion.NodesCustomProperties.html>`__
+
+    * The third column is used when the :class:`django.db.models.Model` field
+      is a :class:`django.db.models.ForeignKey` field and it describes the
+      `Related object
+      <https://docs.djangoproject.com/en/2.2/topics/db/queries/#related-objects>`__
+      using the `app_label.ModelName` convention
+
+    """
 
     address = models.CharField(
         _('Address'), db_index=True, blank=True, max_length=254, null=True)
@@ -401,16 +478,18 @@ class OrionNode(OrionBaseModel, models.Model):
     @classmethod
     def update_or_create_from_orion(cls):  # pylint:disable=W0221
         """
-        override :method:`OrionBaseModel.update_or_create_from_orion` to make
-        sure that the foreign keys are already available in
+        overrides the :meth:`OrionBaseModel.update_or_create_from_orion`
+        method to make sure that the `Related objects
+        <https://docs.djangoproject.com/en/2.2/topics/db/queries/#related-objects>`__
+        required for creating the instance are already available in
         :class:`OrionNodeCategory`
 
-        this basically calls a chain of
-        :method:`OrionBaseModel.update_or_create_from_orion`, one for each
+        This method basically calls a chain of
+        :meth:`OrionBaseModel.update_or_create_from_orion`, one for each
         model required for referential integrity
 
-        :returns: a list of the returns for each call in the chain
-        :rtype: ``list`` of ``dict``
+        :returns: a list of the return results for each call in the chain
+        :rtype: list
         """
         ret = []
         if not OrionNodeCategory.objects.count():
@@ -433,10 +512,10 @@ class OrionNode(OrionBaseModel, models.Model):
 
 class OrionCernerCSTNode(OrionNode):
     """
-    proxy model to show just the Cerner CST nodes
+    Proxy `model` to show just the `Cerner CST` nodes
 
-    see
-    `Django proxy models<https://docs.djangoproject.com/en/2.1/topics/db/models/#proxy-models>`_
+    see `Django proxy models
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     """
     objects = OrionCernerCSTNodeManager()
 
@@ -448,15 +527,31 @@ class OrionCernerCSTNode(OrionNode):
 
 class OrionNodeCategory(OrionBaseModel, models.Model):
     """
-    query:
-    SELECT Description FROM Orion.NodeCategories
+    :class:`django.db.models.Model` class with the representation of node
+    categories on the `Orion` server
+
+    The reference for `Orion` nodes: `Orion Node Categories
+    <http://solarwinds.github.io/OrionSDK/schema/Orion.NodeCategories.html>`__
+
     """
     orion_id_query = (
         'SELECT CategoryID FROM Orion.NodeCategories WHERE CategoryID'
     )
+    """
+    the `SWQL` query for verifying that there is a matching category on the
+    `Orion` server
+    """
+
     orion_query = 'SELECT CategoryID, Description FROM Orion.NodeCategories'
+    """
+    the `SWQL` query used to populate this `model` from the `Orion` server
+    """
+
     orion_mappings = (('orion_id', 'CategoryID', None),
                       ('category', 'Description', None))
+    """
+    mapping between this `model's` fields and data returned by the `SWQL` query
+    """
     category = models.CharField(
         _('Orion Node Category'), db_index=True, unique=True, null=False,
         blank=False, max_length=254, help_text=_(
@@ -476,15 +571,37 @@ class OrionNodeCategory(OrionBaseModel, models.Model):
 
 class OrionAPMApplication(OrionBaseModel, models.Model):
     """
-    Application monitored by Orion
+    :class:`django.db.models.Model` class with the representation of
+    applications on the `Orion` server. See `Server & Application Monitor
+    <https://www.solarwinds.com/server-application-monitor>`__
+
+    In our particular case, this structure contains data for isolating `Orion`
+    nodes that provide services over `SSL` (which, admittedly, is not how
+    the `Orion APM module
+    <https://www.solarwinds.com/server-application-monitor>`__ should be used.
+    After all, `SSL` is protocol, not an application.).
+
+    The schema reference for the `Orion APM Application` component is
+    available at `Orion.APM.Application
+    <https://solarwinds.github.io/OrionSDK/schema/Orion.APM.Application.html>`__.
+
     """
     orion_id_query = (
         'SELECT ApplicationID FROM Orion.APM.Application WHERE ApplicationID'
     )
+    """
+    the `SWQL` query for verifying that there is a matching application on the
+    `Orion` server
+    """
+
     orion_query = (
         'SELECT ApplicationID, Name, NodeID, DetailsUrl, FullyQualifiedName,'
         ' Description, Status, StatusDescription FROM Orion.APM.Application'
     )
+    """
+    the `SWQL` query used to populate this `model` from the `Orion` server
+    """
+
     orion_mappings = (('orion_id', 'ApplicationID', None),
                       ('application_name', 'Name', None),
                       ('node', 'NodeID', 'orion_integration.OrionNode'),
@@ -493,6 +610,9 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
                       ('notes', 'Description', None),
                       ('status_orion_id', 'Status', None),
                       ('status', 'StatusDescription', None))
+    """
+    mapping between this `model's` fields and data returned by the `SWQL` query
+    """
 
     application_name = models.CharField(
         _('Application Name'), max_length=254, db_index=True, blank=False,
@@ -517,9 +637,14 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
     @classmethod
     def update_or_create_from_orion(cls):  # pylint:disable=W0221
         """
-        override :method:`OrionBaseModel.update_or_create_from_orion` to make
-        sure that the foreign keys are already available in
-        :class:`OrionNodeCategory`
+        overrides the :meth:`OrionBaseModel.update_or_create_from_orion`
+        method to make sure that the `Related objects
+        <https://docs.djangoproject.com/en/2.2/topics/db/queries/#related-objects>`__
+        required for creating the instance are already available in
+        :class:`OrionNode`
+
+        :returns: a list of the return results for each call in the chain
+        :rtype: list
 
         """
         ret = []

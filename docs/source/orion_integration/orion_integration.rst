@@ -10,5 +10,6 @@ caching information about `SolarWinds Orion
    
    orion_rest.rst
    celery.rst
-   modules.rst
    dynamic_preferences.rst
+   modules.rst
+   

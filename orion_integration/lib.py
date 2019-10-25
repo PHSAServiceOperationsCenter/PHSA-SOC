@@ -37,21 +37,24 @@ class OrionSslNode():
     @classmethod
     def nodes(cls, cerner_cst=None, orion_ssl=None, servers_only=None):
         """
-        get the orion nodes cached in :class:`orion_integration.models.OrionNode`
+        get the orion nodes cached in
+        :class:`orion_integration.models.OrionNode`
 
         :arg bool cerner_cst: only return the `Orion` nodes that have the
             `Cerner-CST` attribute set on the `Orion` server; default: `True`
 
         :arg bool orion_ssl: only return `Orion` nodes that are linked to an
-            :class:`orion_integration.models.OrionAPMApplication` instance pointing
-            to an `orion APM` node with `SSL` properties; default: `False`
+            :class:`orion_integration.models.OrionAPMApplication` instance
+            pointing to an `orion APM` node with `SSL` properties;
+            default: `False`
 
-        :arg bool servers_only: only return `Orion` nodes that are known as servers
+        :arg bool servers_only: only return `Orion` nodes that are known as
+            servers
 
         :returns: a :class:`django.db.models.query.QuerySet` based on the
             :class:`orion_integration.models.OrionNode`
 
-        get all the nodes that are known Cerner-CST nodes example:
+        Usage example:
 
         .. code-block:: ipython
 
@@ -112,13 +115,13 @@ class OrionSslNode():
         queryset = OrionNode.objects.filter(enabled=True)
 
         if cerner_cst is None:
-            cerner_cst = get_preference('orionprobe__cerner_cst')
+            cerner_cst = get_preference('orionprobedefaults__cerner_cst')
 
         if servers_only is None:
-            servers_only = get_preference('orionprobe__servers_only')
+            servers_only = get_preference('orionprobedefaults__servers_only')
 
         if orion_ssl is None:
-            orion_ssl = get_preference('orionprobe__orion_ssl')
+            orion_ssl = get_preference('orionprobedefaults__orion_ssl')
 
         if cerner_cst:
             queryset = OrionCernerCSTNode.objects.filter(enabled=True)

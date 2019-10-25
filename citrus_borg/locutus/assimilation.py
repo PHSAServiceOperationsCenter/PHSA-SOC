@@ -37,14 +37,14 @@ function.
 **Note that this message is a string despite the fact that it looks like
 `JSON <https://www.json.org/>`__.** Using the `JSON` encoder provided by the
 :ref:`Logstash server` will lead to :ref:`RabbitMQ Server` failures.
-However, the :func:`json.loads` function is happy to deserialize this string to a
-`Python` `object` without any problems.
+However, the :func:`json.loads` function is happy to deserialize this string
+to a `Python` `object` without any problems.
 
 We are converting the message to a `JSON` structure in the
 :func:`citrus_borg.consumers.process_win_event` function.
 
-`Windows` log events produced by the :ref:`Mail Borg Client Application` are very
-similar to the message below.
+`Windows` log events produced by the :ref:`Mail Borg Client Application` are
+very similar to the message below.
 
 The most relevant parts of a `Windows` log event as far as we are concerned are
 under the

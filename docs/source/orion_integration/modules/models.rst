@@ -12,18 +12,23 @@
   
 .. autoclass:: orion_integration.models.OrionBaseModel
    :show-inheritance:
-   :members: exists_in_orion, update_or_create_from_orion
+   :members: orion_query, orion_mappings, orion_id_query, exists_in_orion,
+      update_or_create_from_orion
    
 .. autoclass:: orion_integration.models.OrionNode
    :show-inheritance:
-   :members: update_or_create_from_orion
+   :members: orion_query, orion_mappings, orion_id_query,
+      update_or_create_from_orion
    
 .. autoclass:: orion_integration.models.OrionCernerCSTNode
    :show-inheritance:
    
-.. autoclass: orion_integration.models.OrionNodeCategory
+.. autoclass:: orion_integration.models.OrionNodeCategory
    :show-inheritance:
+   :members: orion_query, orion_mappings, orion_id_query,
+      update_or_create_from_orion
    
-.. autoclass: orion_integration.models.OrionAPMApplication
+.. autoclass:: orion_integration.models.OrionAPMApplication
    :show-inheritance:
-   :members: update_or_create_from_orion
+   :members: orion_query, orion_mappings, orion_id_query,
+      update_or_create_from_orion

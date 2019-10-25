@@ -18,12 +18,9 @@ Celery tasks for the :ref:`SSL Certificate Tracker Application`
 
 """
 from smtplib import SMTPConnectError
-import xml.dom.minidom
 
 from celery import shared_task, group
-from celery.exceptions import MaxRetriesExceededError
 from celery.utils.log import get_task_logger
-from libnmap.process import NmapProcess
 
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode

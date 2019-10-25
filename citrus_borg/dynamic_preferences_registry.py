@@ -47,12 +47,12 @@ from dynamic_preferences.types import (
 
 
 # pylint: disable=E1101,C0103
-#=========================================================================
+# =========================================================================
 # E1101: instance of '__proxy__' has no 'title' member caused by using .title()
 # on returns from gettext_lazy()
 #
 # C0103: asr PEP8 module level variables are constants and should be upper-case
-#=========================================================================
+# =========================================================================
 citrus_borg_common = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
 
@@ -379,7 +379,8 @@ class CitrusBorgEventSource(StringPreference):
 class EmailFromWhenDebug(StringPreference):
     """
     Dynamic preferences class controlling the `FROM:` email address used by the
-    :class:`ssl_cert_tracker.lib.Email` class when sending emails in `DEBUG` mode
+    :class:`ssl_cert_tracker.lib.Email` class when sending emails in `DEBUG`
+    mode
 
     This preference applies to all the applications in the project.
 
@@ -398,7 +399,8 @@ class EmailFromWhenDebug(StringPreference):
 class EmailToWhenDebug(StringPreference):
     """
     Dynamic preferences class controlling the `TO:` email address used by the
-    :class:`ssl_cert_tracker.lib.Email` class when sending emails in `DEBUG` mode
+    :class:`ssl_cert_tracker.lib.Email` class when sending emails in `DEBUG`
+    mode
 
     This preference applies to all the applications in the project.
 
@@ -456,7 +458,8 @@ class OrionProbeKnownSslOnly(BooleanPreference):
 class OrionProbeServersOnly(BooleanPreference):
     """
     Dynamic preferences class controlling whether `NMAP` `SSL` probes are
-    executed against `Orion` nodes tagged as`server nodes` on the `Orion` server
+    executed against `Orion` nodes tagged as`server nodes` on the `Orion`
+    server
 
     This preference is used by the :ref:`Orion Integration Application`.
 
@@ -552,11 +555,11 @@ class OrionServerUrl(LongStringPreference):
 @global_preferences_registry.register
 class OrionServerRestUrl(LongStringPreference):
     """
-    Dynamic preferences class controlling the `URL` for the `REST` `API` provided
-    by the `Orion server`
+    Dynamic preferences class controlling the `URL` for the `REST` `API`
+    provided by the `Orion server`
 
-    This preference is used by several applications in this project to query the
-    `Orion` server for data about `Orion` nodes.
+    This preference is used by several applications in this project to query
+    the `Orion` server for data about `Orion` nodes.
 
     :access_key: 'orionserverconn__orion_rest_url'
     """
@@ -588,8 +591,8 @@ class OrionServer(StringPreference):
 @global_preferences_registry.register
 class OrionServerUser(StringPreference):
     """
-    Dynamic preference class for storing the username used for accessing the `REST`
-    `API` provided by the `Orion` server
+    Dynamic preference class for storing the username used for accessing the
+    `REST` `API` provided by the `Orion` server
 
     :access_key: 'orionserverconn__orion_user'
     """
@@ -605,8 +608,8 @@ class OrionServerUser(StringPreference):
 @global_preferences_registry.register
 class OrionServerPassword(StringPreference):
     """
-    Dynamic preference class for storing the password used for accessing the `REST`
-    `API` provided by the `Orion` server
+    Dynamic preference class for storing the password used for accessing the
+    `REST` `API` provided by the `Orion` server
 
     :access_key: 'orionserverconn__orion_password'
     """
@@ -714,8 +717,8 @@ class OrionServerRetryBackoff(FloatPreference):
 class ServiceUser(StringPreference):
     """
     Dynamic preferences class used for storing the name of the service user
-    that the background processes in the :ref:`Citrus Borg Application` are using
-    when accessing the database
+    that the background processes in the :ref:`Citrus Borg Application` are
+    using when accessing the database
 
     :access_key: 'citrusborgcommon__service_user'
     """
@@ -735,9 +738,9 @@ class ServiceUser(StringPreference):
 @global_preferences_registry.register
 class SendNoNews(BooleanPreference):
     """
-    Dynamic preferences class used for controlling whether the :ref:`Citrus Borg
-    Application` will send email notifications when no alert conditions are
-    detected
+    Dynamic preferences class used for controlling whether the :ref:`Citrus
+    Borg Application` will send email notifications when no alert conditions
+    are detected
 
     :access_key: 'citrusborgcommon__send_no_news'
     """
@@ -805,8 +808,8 @@ class IgnoreEvents(DurationPreference):
 @global_preferences_registry.register
 class ExpireEvents(DurationPreference):
     """
-    Dynamic preferences class controlling how old `Citrix` events are before they
-    are marked as `expired`
+    Dynamic preferences class controlling how old `Citrix` events are before
+    they are marked as `expired`
 
     :access_key: 'citrusborgevents__expire_events_older_than'
     """
@@ -824,8 +827,8 @@ class ExpireEvents(DurationPreference):
 @global_preferences_registry.register
 class DeleteExpireEvents(BooleanPreference):
     """
-    Dynamic preferences class controlling whether `expired` `Citrix` events will
-    be deleted
+    Dynamic preferences class controlling whether `expired` `Citrix` events
+    will be deleted
 
     :access_key: 'citrusborgevents__delete_expired_events'
     """
@@ -884,8 +887,8 @@ class UxAlertInterval(DurationPreference):
 @global_preferences_registry.register
 class UxReportingPeriod(DurationPreference):
     """
-    Dynamic preferences class used for storing the interval used when generating
-    reports about `Citrix` response times
+    Dynamic preferences class used for storing the interval used when
+    generating reports about `Citrix` response times
 
     :access_key: 'citrusborgux__ux_reporting_period'
     """
@@ -905,8 +908,9 @@ class UxReportingPeriod(DurationPreference):
 @global_preferences_registry.register
 class NodeForgottenAfter(DurationPreference):
     """
-    Dynamic preferences class used for storing the interval used when generating
-    reports about `Citrix` entities that have not been seen for a while
+    Dynamic preferences class used for storing the interval used when
+    generating reports about `Citrix` entities that have not been seen for a
+    while
 
     :access_key: 'citruxborgnode__node_forgotten_after'
     """
@@ -1010,8 +1014,8 @@ class FailedLogonAlertInterval(DurationPreference):
 @global_preferences_registry.register
 class FailedLogonAlertThreshold(IntPreference):
     """
-    Dynamic preferences class controlling the alert threshold for failed `Citrix`
-    logon events
+    Dynamic preferences class controlling the alert threshold for failed
+    `Citrix` logon events
 
     This preference is used if one want to ignore random, unrepeated failed
     `Citrix` logon events.

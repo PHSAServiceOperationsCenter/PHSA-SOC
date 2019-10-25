@@ -21,9 +21,7 @@ See `The Django admin site
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
-from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
-
-from simple_history.admin import SimpleHistoryAdmin
+from rangefilter.filter import DateTimeRangeFilter
 
 from p_soc_auto_base.admin import BaseAdmin
 

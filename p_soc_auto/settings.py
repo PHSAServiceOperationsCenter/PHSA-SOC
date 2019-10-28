@@ -205,8 +205,9 @@ INSTALLED_APPS = [
     'templated_email',
     'timedeltatemplatefilter',
     'dynamic_preferences',
-    #    'dynamic_preferences.users.apps.UserPreferencesConfig',
+    'grappelli.dashboard',
     'grappelli',
+    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -877,6 +878,10 @@ EVENT_TYPE_SORT = {
 """
 Mapping required to provide a custom sort order for event types
 """
+
+GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'
+
+FILEBROWSER_DIRECTORY = CSV_MEDIA_ROOT
 
 if __name__ == '__main__':
     pass

@@ -151,7 +151,7 @@ class OrionBaseModel(BaseModel, models.Model):
 
         try:
             self.delete()
-        except Exception as error:
+        except Exception as error:  # pylint: disable=broad-except
             LOGGER.exception(str(error))
 
         LOGGER.info('removed orion entity %s. not found in Orion',

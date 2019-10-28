@@ -201,9 +201,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_template_check',
     'django_mysql',
-    #    'simple_history',
-    #    'dal',
-    #    'dal_select2',
     'rangefilter',
     'templated_email',
     'timedeltatemplatefilter',
@@ -229,7 +226,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'p_soc_auto.urls'

@@ -133,8 +133,13 @@ class DomainAccount(_BaseModel, models.Model):
     def get_default():
         """
         get the default instance for this model
+
+        :returns: the default instance of this model or `None`
         """
-        return DomainAccount.objects.filter(is_default=True).get()
+        try:
+            return DomainAccount.objects.filter(is_default=True).get()
+        except DomainAccount.DoesNotExist:
+            return None
 
     class Meta:
         app_label = 'mail_collector'
@@ -297,9 +302,12 @@ class ExchangeConfiguration(_BaseModel, models.Model):
     @staticmethod
     def get_default():
         """
-        return the default instance of this model
+        :returns: the default instance of this model or `None`
         """
-        return ExchangeConfiguration.objects.filter(is_default=True).get()
+        try:
+            return ExchangeConfiguration.objects.filter(is_default=True).get()
+        except ExchangeConfiguration.DoesNotExist:
+            return None
 
     class Meta:
         verbose_name = _('Exchange Monitoring Client Configuration')

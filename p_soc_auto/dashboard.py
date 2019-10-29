@@ -81,6 +81,9 @@ class CustomIndexDashboard(Dashboard):
                 {'title': _('SOC Automation Documentation'),
                  'url': '/soc_docs/',
                  'external': False, },
+                {'title': _('SOC Automation Source Control Documentation'),
+                 'url': '/soc_docs/p_soc_auto/git.html',
+                 'external': False, },
                 {'title': ('Configuring SSL Alerts and SSL Monitoring on the'
                            ' Automation Server'),
                  'url': ('http://our.healthbc.org/sites/gateway/team/TSCSTHub/'

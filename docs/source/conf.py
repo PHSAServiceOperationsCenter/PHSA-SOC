@@ -19,6 +19,8 @@ from django.conf import settings
 
 sys.path.insert(0, os.path.abspath('../../mail_borg'))
 sys.path.insert(0, os.path.abspath('../../'))
+import p_soc_auto
+#sys.path.insert(0, os.path.abspath('../../p_soc_auto'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings'
 django.setup()
 
@@ -36,7 +38,7 @@ copyright = (
 author = 'serban teodorescu, serban.teodoresch@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.6-dev'
+release = p_soc_auto.__version__
 
 
 # -- General configuration ---------------------------------------------------

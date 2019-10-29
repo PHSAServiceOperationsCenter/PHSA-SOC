@@ -24,6 +24,7 @@ readily scaled horizontally via virtualization or containerization.
    :caption: Components
    
    socauto.rst
+   git.rst
    memcached.rst
    nginx.rst
    uwsgi.rst

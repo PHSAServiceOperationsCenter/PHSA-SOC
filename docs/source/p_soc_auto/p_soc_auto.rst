@@ -20,7 +20,7 @@ readily scaled horizontally via virtualization or containerization.
     security protocols for inter-component communication.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Components
    
    socauto.rst
@@ -32,4 +32,5 @@ readily scaled horizontally via virtualization or containerization.
    rabbitmq.rst
    logstash.rst
    winlogbeat.rst
+   modules.rst
 

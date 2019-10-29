@@ -1,17 +1,36 @@
-"""p_soc_auto URL Configuration
+"""
+p_soc_auto.urls
+---------------
+
+This module contains the `URL` configuration for the :ref:`SOC Automation Server`.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.1/topics/http/urls/
+`URL dispatcher
+<https://docs.djangoproject.com/en/2.2/topics/http/urls/#url-dispatcher>`__.
+
 Examples:
-Function views
+
+* Function views
     1. Add an import:  from my_app import views
     2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
+
+* Class-based views
     1. Add an import:  from other_app.views import Home
     2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
+
+* Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Oct. 29, 2019
+
 """
 from django.conf.urls import url, include
 from django.contrib import admin

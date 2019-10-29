@@ -1,16 +1,6 @@
 """
-.. _settings:
-
-:module:     p_soc_auto.settings
-
-:contact:    serban.teodorescu@phsa.ca
-
-:copyright:
-
-    Copyright 2018 - 2019 Provincial Health Service Authority
-    of British Columbia
-
-:updated:    Sep. 24, 2019
+p_soc_auto.settings
+-------------------
 
 Django settings for the :ref:`SOC Automation Server`
 
@@ -21,6 +11,16 @@ For more information on this file, see
 
 For the full list of settings and their values, see
 `Settings <https://docs.djangoproject.com/en/2.2/ref/settings/>`__
+
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Oct. 29, 2019
 
 """
 
@@ -880,8 +880,9 @@ Mapping required to provide a custom sort order for event types
 """
 
 GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'
-
-FILEBROWSER_DIRECTORY = CSV_MEDIA_ROOT
+"""
+Custom `Django Admin` dashboard class location
+"""
 
 if __name__ == '__main__':
     pass

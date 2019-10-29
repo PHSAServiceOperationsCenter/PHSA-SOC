@@ -34,12 +34,13 @@ Currently, the :ref:`SOC Automation Server` is running on a `CentOS 7.5
 Django settings
 ---------------
 
-See :ref:`Django settings module` for a detailed description of the
-configuration used by the :ref:`SOC Automation Server`.
+See the :mod:`Django settings <p_soc_auto.settings>` for a detailed description
+of the configuration used by the :ref:`SOC Automation Server`.
 
 :Note:
 
-    The :ref:`Django settings module` is mandatory reading for developers.
+    The :mod:`Django settings module <p_soc_auto.settings>` is mandatory reading
+    for developers.
 
 Building the SOC Automation documentation
 -----------------------------------------

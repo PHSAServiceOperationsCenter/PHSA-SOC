@@ -24,12 +24,15 @@ decorator==4.4.0
 defusedxml==0.6.0
 Django==2.2.3
 django-admin-rangefilter==0.5.0
+django-admin-tools==0.8.1
 django-autocomplete-light==3.4.1
 django-celery-beat==1.5.0
 django-celery-results==1.1.2
 django-celerybeat-status==0.0.10
 django-dynamic-preferences==1.7
-django-grappelli==2.13.1
+django-feedparser==0.2.1
+django-filebrowser==3.11.1
+django-grappelli==2.12.3
 django-mysql==3.2.0
 django-phonenumber-field==3.0.1
 django-pyodbc-azure==2.1.0.0
@@ -51,6 +54,7 @@ exchangelib==1.12.5
 execnet==1.6.1
 factory-boy==2.12.0
 Faker==2.0.0
+feedparser==5.2.1
 flexisettings==1.0.3
 flower==0.9.3
 frozendict==1.2

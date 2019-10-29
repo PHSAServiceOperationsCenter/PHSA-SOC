@@ -1,10 +1,25 @@
 """
-WSGI config for p_soc_auto project.
+p_soc_auto.wsgi
+---------------
 
-It exposes the WSGI callable as a module-level variable named ``application``.
+The `WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`__ configuration for
+the :ref:`SOC AUtomation Server`.
 
-For more information on this file, see
-https://docs.djangoproject.com/en/2.0/howto/deployment/wsgi/
+It exposes the `WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`__ callable
+as a module-level variable named ``application``.
+
+For more information on this file, see `How to deploy with WSGI
+<https://docs.djangoproject.com/en/2.2/howto/deployment/wsgi/#how-to-deploy-with-wsgi>`__.
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Oct. 29, 2019
+
 """
 
 import os

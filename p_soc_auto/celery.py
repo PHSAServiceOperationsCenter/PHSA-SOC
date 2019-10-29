@@ -1,18 +1,19 @@
 """
-.. _celery:
+p_soc_auto.celery
+-----------------
 
-celery applications configuration
-
-:module:    p_soc_auto.celery
+This module contains the `Celery application
+<https://docs.celeryproject.org/en/latest/django/first-steps-with-django.html>`__
+configuration.
 
 :copyright:
 
-    Copyright 2018 Provincial Health Service Authority
+    Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    nov. 16, 2018
+:updated:    Oct. 29, 2019
 
 """
 import os

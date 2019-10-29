@@ -1,9 +1,23 @@
 """
-This file was generated with the customdashboard management command and
-contains the class for the main dashboard.
+p_soc_auto.dashboard
+--------------------
 
-To activate your index dashboard add the following to your settings.py::
-    GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'
+This module contains the custom main dashboard class that replaces the
+`Django Admin` home page.
+
+See the `Grappelli Dashboard
+<https://django-grappelli.readthedocs.io/en/latest/index.html#dashboard>`__
+documentation for details.
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    Oct. 29, 2019
+
 """
 
 from django.utils.translation import ugettext_lazy as _
@@ -15,7 +29,7 @@ from grappelli.dashboard.utils import get_admin_site_name
 
 class CustomIndexDashboard(Dashboard):
     """
-    Custom index dashboard for www.
+    Custom dashboard class
     """
 
     def init_with_context(self, context):
@@ -26,14 +40,22 @@ class CustomIndexDashboard(Dashboard):
             column=1, collapsible=False,
             children=[
                 modules.ModelList(
-                    _('Citrix Remote Monitors'), collapsible=True,
+                    _('Citrix Remote Monitoring'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('citrus_borg.models.*',)),
+                modules.ModelList(
+                    _('Exchange Remote Monitoring'), collapsible=True,
+                    css_classes=('collapse closed',),
+                    models=('mail_collector.models.*',)),
                 modules.ModelList(
                     _('SSL Certificates Tracker'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('ssl_cert_tracker.models.*',),
-                    exclude=('ssl_cert_tracker.models.Subscription',),), ]))
+                    exclude=('ssl_cert_tracker.models.Subscription',)),
+                modules.ModelList(
+                    _('Orion Integration'), collapsible=True,
+                    css_classes=('collapse closed',),
+                    models=('orion_integration.models.*',)), ]))
 
         self.children.append(modules.Group(
             _('Administration'), column=2, collapsible=True,

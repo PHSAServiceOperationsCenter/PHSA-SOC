@@ -1,0 +1,1 @@
+.. automodule:: p_soc_auto.urls

@@ -238,13 +238,30 @@ class ExchangeConfiguration(_BaseModel, models.Model):
     check_mx_timeout = models.DurationField(
         _('Verify MX timeout'), default=timezone.timedelta(seconds=5))
     min_wait_receive = models.DurationField(
-        _('Wait before check receive'),
-        default=timezone.timedelta(seconds=3))
+        _('Minimum wait when retrying an Exchange action'),
+        default=timezone.timedelta(seconds=3),
+        help_text=_(
+            'The Exchange client is using a'
+            ' `Retry Pattern With Exponential Back-off` mechanism when sending'
+            ' a message or when checking for a received message. This field'
+            ' contains the minimum wait time before retrying such and action'))
     backoff_factor = models.IntegerField(
-        _('Back-off factor for check receive'), default=3)
+        _('Back-off factor for retrying an Exchange action'), default=3,
+        help_text=_(
+            'The Exchange client is using a'
+            ' `Retry Pattern With Exponential Back-off` mechanism when sending'
+            ' a message or when checking for a received message. This field'
+            ' contains the back-off factor used when retrying such and'
+            ' action'))
     max_wait_receive = models.DurationField(
-        _('Check receive timeout'),
-        default=timezone.timedelta(seconds=120))
+        _('Maximum time to wait before giving up on an Exchange action'),
+        default=timezone.timedelta(seconds=120),
+        help_text=_(
+            'The Exchange client is using a'
+            ' `Retry Pattern With Exponential Back-off` mechanism when sending'
+            ' a message or when checking for a received message. This field'
+            ' contains the maximum time to wait before giving up on retrying'
+            ' such and action'))
     tags = models.TextField(
         _('Optional tags'), blank=True, null=True)
     email_subject = models.CharField(

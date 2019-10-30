@@ -653,16 +653,73 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         return tags
 
-    def send(self):
+    def send(self, min_wait_receive=None, step_wait_receive=None,
+             max_wait_receive=None):
         """
-        send out the exchange monitoring messages
+        loop through the Exchange messages in the :attr:`messages` instance
+        attribute and send out each message
 
-        if there are no messages, log an error
+        If there are no messages, log an error.
 
-        if sending a particular message raises an error,
-        log it, drop it from the list of messages in the instance, and keep
-        sending the rest of the messages
+        If sending a particular message raises an error,
+        log it, drop the message from the list of messages under the
+        :attr:`messages` instance attribute, and keep sending the rest of
+        the messages.
+
+        This method uses a pattern known as `retry with exponential back-off
+        and circuit breaker
+        <https://dzone.com/articles/understanding-retry-pattern-with-exponential-back>`__
+        to control connections to the `EWS
+        <https://docs.microsoft.com/en-us/exchange/client-developer/exchange-web-services/start-using-web-services-in-exchange>`__
+        server.
+
+        :arg int wait_receive: minimum wait when retrying an Exchange action;
+            in this case, this is the minimum retry wait for resending the
+            Exchange message measured in seconds
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+        :arg int step_wait_receive: back-off factor for retrying an Exchange
+            action
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+        :arg int max_wait_receive: maximum time to wait before giving up
+            on an Exchange action
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+
         """
+        if min_wait_receive is None:
+            min_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('min_wait_receive'))
+
+        if step_wait_receive is None:
+            step_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('backoff_factor'))
+
+        if max_wait_receive is None:
+            max_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('max_wait_receive'))
+
+        @retry((ErrorTooManyObjectsOpened,), delay=int(min_wait_receive),
+               max_delay=int(max_wait_receive), backoff=int(step_wait_receive))
+        def send_message(message):
+            """
+            send the Exchange message using the `retry with exponential
+            back-off and circuit breaker` pattern`
+
+            The typical exception that triggers the retry is when the
+            `EWS ResponseMessage
+            <https://docs.microsoft.com/en-us/exchange/client-developer/web-service-reference/responsemessage>`__
+            contains an `ErrorTooManyObjectsOpened` error.
+            """
+            message.message.send()
+
         if self._abort:
             if self.update_window_queue:
                 self.update_window_queue.put_nowait(('abort',))
@@ -684,7 +741,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         messages = self.messages
         for message in messages:
             try:
-                message.message.send()
+
+                send_message(message)
 
                 self.logger.info(
                     dict(type='send', status='PASS',
@@ -736,18 +794,28 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
               cannot communicate from ``message.account.smtp_address``
               to ``account.inbox.smtp_adddress``
 
-        :arg int wait_receive: minimum delay for searching the ``inboxx``
-            measured in seconds seconds
+        This method uses a pattern known as `retry with exponential back-off
+        and circuit breaker
+        <https://dzone.com/articles/understanding-retry-pattern-with-exponential-back>`__
+        to control connections to the `EWS
+        <https://docs.microsoft.com/en-us/exchange/client-developer/exchange-web-services/start-using-web-services-in-exchange>`__
+        server.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int wait_receive: minimum wait when retrying an Exchange action;
+            in this case, this is the minimum retry wait for searching the
+            Exchange account `inbox` measured in seconds
 
-        :arg int step_wait_receive: back-off factor
+            If `None`, pick the value from the :attr:`config` attribute.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int step_wait_receive: back-off factor for retrying an Exchange
+            action
 
-        :arg int max_wait_receive: maximum delay for searching the ``inbox``
+            If `None`, pick the value from the :attr:`config` attribute.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int max_wait_receive: maximum time to wait before giving up
+            on an Exchange action
+
+            If `None`, pick the value from the :attr:`config` attribute.
 
         """
         if min_wait_receive is None:

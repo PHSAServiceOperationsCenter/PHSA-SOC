@@ -59,7 +59,7 @@ from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import (
-    ServiceAccount, Message, Account, Configuration, DELEGATE,
+    Credentials, Message, Account, Configuration, DELEGATE, FaultTolerance,
 )
 from exchangelib.errors import ErrorTooManyObjectsOpened
 from retry import retry
@@ -372,7 +372,7 @@ def get_accounts(logger=None, **config):
                 exchange_account.get('smtp_address'), logger=logger, **config):
             continue
 
-        credentials = ServiceAccount(
+        credentials = Credentials(
             username='{}\\{}'.format(
                 exchange_account.get('domain_account').get('domain'),
                 exchange_account.get('domain_account').get('username')),
@@ -380,24 +380,31 @@ def get_accounts(logger=None, **config):
         )
 
         exc_config = None
-        if not exchange_account.get('exchange_autodiscover', True):
-            exc_config = Configuration(
-                server=exchange_account.get('autodiscover_server'),
-                credentials=credentials)
 
         try:
+
             if exchange_account.get('exchange_autodiscover', True):
+                exc_config = Configuration(
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
                 accounts.append(Account(
                     primary_smtp_address=exchange_account.get('smtp_address'),
-                    credentials=credentials,
-                    autodiscover=True,
-                    access_type=DELEGATE))
+                    config=exc_config, autodiscover=True, access_type=DELEGATE)
+                )
+
             else:
+                exc_config = Configuration(
+                    server=exchange_account.get('autodiscover_server'),
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
                 accounts.append(Account(
                     primary_smtp_address=exchange_account.get('smtp_address'),
-                    config=exc_config,
-                    autodiscover=False,
-                    access_type=DELEGATE))
+                    config=exc_config, autodiscover=False,
+                    access_type=DELEGATE)
+                )
+
             logger.info(
                 dict(type='connection', status='PASS',
                      wm_id=config.get('wm_id'),
@@ -408,6 +415,7 @@ def get_accounts(logger=None, **config):
                              'domain_account').get('username'),
                          exchange_account.get('smtp_address')))
             )
+
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 dict(type='connection', status='FAIL',

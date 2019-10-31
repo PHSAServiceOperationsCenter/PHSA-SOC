@@ -43,6 +43,10 @@ from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
 
+# pylint: disable=unnecessary-comprehension
+# PySimpleGUI.Spin() likes comprehensions for populating the spinner even if
+# pylint disapproves
+
 
 def get_window():
     """
@@ -99,10 +103,15 @@ def get_window():
                 key='check_mx', enable_events=True),
         ],
         [gui.Text('Verify MX Timeout:', justification='left'), ],
-        [gui.Text('Minimum Wait for Check Receive:', justification='left'), ],
-        [gui.Text('Multiply Factor for Check Receive:',
-                  justification='left'), ],
-        [gui.Text('Check Receive Timeout:', justification='left'), ],
+        [gui.Text(
+            'Min. wait to retry Exchange action:',
+            justification='left'), ],
+        [gui.Text(
+            'Back-off retry factor for Exchange action:',
+            justification='left'), ],
+        [gui.Text(
+            'Max. time to retry an Exchange action:',
+            justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
         [gui.Text('Mail Subject:', size=(None, 1), justification='left'), ],
         [gui.Multiline(config.get(
@@ -128,7 +137,8 @@ def get_window():
             default=config.get('exchange_client_config').get('utf8_email'),
             key='utf8_email', enable_events=True), ],
         [gui.Spin(
-            [i for i in range(1, 20)], key='check_mx_timeout',
+            [i for i in range(1, 20)],
+            key='check_mx_timeout',
             initial_value=config.get(
                 'exchange_client_config').get('check_mx_timeout'),
             size=(3, 1), enable_events=True),
@@ -150,8 +160,8 @@ def get_window():
                 'exchange_client_config').get('max_wait_receive'),
             size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
-        [gui.InputText(config.get('site').get('site'), key='site', size=(32, 1),
-                       disabled=True), ],
+        [gui.InputText(config.get('site').get('site'), key='site',
+                       size=(32, 1), disabled=True), ],
         [gui.Text('Additional Email Tags:',
                   size=(None, 1), justification='left'), ],
         [gui.Multiline(config.get(
@@ -233,6 +243,8 @@ def get_window():
     window.Layout(layout).Finalize()
 
     return base_config, config, window
+
+# pylint: enable=unnecessary-comprehension
 
 
 def _accounts_to_table(accounts, window):

@@ -1,19 +1,9 @@
 """
-.. _mailer:
-
-:module:    mail_borg.mailer
-
-:copyright:
-
-    Copyright 2018 - 2019 Provincial Health Service Authority
-    of British Columbia
-
-:contact:    serban.teodorescu@phsa.ca
-
-:updated:    may 14, 2019
+mail_borg.mailer
+----------------
 
 This module provides a specialize email only client library for accessing an
-`Exchange Web Services (EWS) 
+`Exchange Web Services (EWS)
 <https://searchwindowsserver.techtarget.com/definition/Exchange-Web-Services-EWS>`_
 end point.
 
@@ -44,6 +34,16 @@ Exchange server*.
 Most members of this module make use of an attribute named
 ``config``. This attribute is the Python representation of the structure
 described in the :ref:`borg_client_config`.
+
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    serban.teodorescu@phsa.ca
+
+:updated:    may 14, 2019
+
 
 """
 import collections

@@ -207,7 +207,6 @@ INSTALLED_APPS = [
     'dynamic_preferences',
     'grappelli.dashboard',
     'grappelli',
-    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',

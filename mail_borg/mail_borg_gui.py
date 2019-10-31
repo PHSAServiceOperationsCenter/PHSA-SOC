@@ -104,13 +104,13 @@ def get_window():
         ],
         [gui.Text('Verify MX Timeout:', justification='left'), ],
         [gui.Text(
-            'Minimum wait when retrying an Exchange action:',
+            'Min. wait to retry Exchange action:',
             justification='left'), ],
         [gui.Text(
-            'Back-off factor for retrying an Exchange action:',
+            'Back-off retry factor for Exchange action:',
             justification='left'), ],
         [gui.Text(
-            'maximum time to wait before giving up on an Exchange action:',
+            'Max. time to retry an Exchange action:',
             justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
         [gui.Text('Mail Subject:', size=(None, 1), justification='left'), ],

@@ -32,7 +32,7 @@ The workflow for rendering an email message is as follows:
 Email template sample
 ---------------------
 
-.. literalinclude:: ../../../mail_collector/templates/email/mail_events_by_bot.email
+.. literalinclude:: ../../../ssl_cert_tracker/templates/email/mail_events_by_bot.email
    :language: django
    
 This particular template is used by the `Exchange Failed Send Receive By Bot

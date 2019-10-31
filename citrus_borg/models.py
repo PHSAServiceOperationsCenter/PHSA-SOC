@@ -383,7 +383,7 @@ class WinlogbeatHost(BaseModel, models.Model):
             winloghost = cls(
                 host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
-                exch_last_seen=exch_last_seen, updated_by=user)
+                excgh_last_seen=exch_last_seen, updated_by=user)
 
         winloghost.save()
         return winloghost

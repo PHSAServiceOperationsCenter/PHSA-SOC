@@ -474,6 +474,20 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     to be plugged into an instance of this class
     """
 
+    def _debug_init(self):
+        """
+        dump all the info about the email before actually creating the
+        email object
+        """
+        self._debug_logger.debug('headers: %s', self.headers)
+        self._debug_logger.debug('data sample: %s', self.prepared_data[0])
+
+        context_for_log = dict(self.context)
+        context_for_log.pop('headers', None)
+        context_for_log.pop('data', None)
+
+        self._debug_logger.debug('context: %s', context_for_log)
+
     def _get_headers_with_titles(self):
         """
         prepares the headers for the columns that will be rendered in the email
@@ -567,6 +581,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             write_csv(self.data.values(*self.headers.keys()),
                       csv_file, field_header_map=self.headers)
 
+        self._debug_logger.debug('attachment %s ready', filename)
+
         self.csv_file = filename
 
     def __init__(
@@ -607,6 +623,17 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         to be created and attached to the email message
         """
 
+        if logger:
+            self.logger = logger
+            """
+            :class:`logging.Logger` instance
+            """
+        else:
+            self.logger = LOG
+            """
+            :class:`logging.Logger` instance
+            """
+
         self.csv_file = None
         """
         :class:`str` attribute for the name of the comma-separared file
@@ -614,12 +641,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         This attribute is set in the :meth:`prepare_csv`.
         """
 
-        if logger is None:
-            self.logger = LOG
-            """:class:`logging.Logger` instance"""
-        else:
-            self.logger = logger
-            """:class:`logging.Logger` instance"""
+        self._debug_logger = getLogger('django_smtp')
+        """
+        :class:`logging.Logger` instance for debug purposes
+        """
 
         if data is None:
             self.logger.error('no data was provided for the email')
@@ -693,6 +718,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         if extra_context:
             self.context.update(**extra_context)
 
+        self._debug_init()
+
         try:
             self.email = get_templated_mail(
                 template_name=subscription_obj.template_name,
@@ -704,8 +731,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
                 if settings.DEBUG
                 else subscription_obj.emails_list.split(','),
                 context=self.context, create_link=True)
+            self._debug_logger.debug('email object is ready')
         except Exception as err:
             self.logger.error(str(err))
+            self._debug_logger.error(str(err))
             raise err
 
         if self.csv_file:
@@ -765,8 +794,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             self.logger.error(str(err))
             raise err
 
-        self.logger.debug(
-            'sent email with subject %s and body %s',
-            self.email.subject, self.email.body)
+        self._debug_logger.debug(
+            'sent email with subject %s', self.email.subject)
 
         return sent

@@ -28,8 +28,9 @@ import csv
 import logging
 import socket
 
+from dateutil import parser
+
 from django.conf import settings
-from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
 from libnmap.process import NmapProcess
@@ -392,7 +393,7 @@ class SslProbe(NmapProbe):
         :rtype: datetime.datetime
         """
         return make_aware(
-            parse_datetime(
+            parser.parse(
                 self.ssl_data.get('validity', None).get('notBefore', None)
             ))
 
@@ -403,7 +404,7 @@ class SslProbe(NmapProbe):
         :rtype: datetime.datetime
         """
         return make_aware(
-            parse_datetime(
+            parser.parse(
                 self.ssl_data.get('validity', None).get('notAfter', None)
             ))
 

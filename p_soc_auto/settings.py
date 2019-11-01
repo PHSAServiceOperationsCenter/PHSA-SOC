@@ -55,10 +55,14 @@ ALLOWED_HOSTS = ['*', ]
 
 ADMINS = [('Serban Teodorescu', 'serban.teodorescu@phsa.ca'), ]
 
-LOG_DIR = os.path.join(BASE_DIR, 'logs')
+LOG_DIR = '/var/log/phsa/django'
 """
 log file will be placed under this directory
 """
+
+pathlib.Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
+# note that this will not work in Python <3.5
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -125,6 +129,13 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'django_smtp_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'django_smtp.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -168,6 +179,11 @@ LOGGING = {
         },
         'orion_integration': {
             'handlers': ['orion_integration_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django_smtp': {
+            'handlers': ['django_smtp_log', 'console'],
             'level': 'DEBUG',
             'propagate': True,
         },

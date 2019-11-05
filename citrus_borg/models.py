@@ -73,8 +73,8 @@ class BorgSiteNotSeenManager(models.Manager):
         .. todo::
 
             Extend
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
-            a dynamic preference.
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+            with a dynamic preference.
 
         """
         return BorgSite.objects.\

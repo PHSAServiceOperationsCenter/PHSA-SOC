@@ -74,7 +74,8 @@ CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
 """
 a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
-See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+See `Django Conditional Expressions
+<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
 for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
 
 In this particular case, if the value of
@@ -88,7 +89,8 @@ STATE_FIELD = Case(
 """
 a representation of an SQL CASE snippet using the SQL WHEN snippets from above
 
-See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+See `Django Conditional Expressions
+<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
 for detail about :class:`django.db.models.When` and :class:`django.db.models.When`.
 
 In this particular case, we are tracking the `STATE` of the

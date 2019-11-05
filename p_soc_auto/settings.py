@@ -136,6 +136,13 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'ldap_probe_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'ldap_probe.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -187,6 +194,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'ldap_probe': {
+            'handlers': ['ldap_probe_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 """
@@ -207,6 +219,7 @@ memcached connection configuration
 
 # Application definition
 INSTALLED_APPS = [
+    'ldap_probe.apps.LdapProbeConfig',
     'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',

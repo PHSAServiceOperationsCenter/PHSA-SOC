@@ -23,6 +23,9 @@
 .. autoclass:: orion_integration.models.OrionCernerCSTNode
    :show-inheritance:
    
+.. autoclass:: orion_integration.models.OrionDomainControllerNode
+   :show-inheritance:
+
 .. autoclass:: orion_integration.models.OrionNodeCategory
    :show-inheritance:
    :members: orion_query, orion_mappings, orion_id_query,

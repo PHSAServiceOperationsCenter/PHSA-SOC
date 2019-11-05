@@ -111,7 +111,8 @@ class OrionCernerCSTNodeAdmin(OrionBaseAdmin, admin.ModelAdmin):
                    ('not_seen_since', DateRangeFilter),
                    'program_application',
                    'program_application_type', 'site', 'region']
-    search_fields = ['site', 'node_caption']
+    search_fields = ['site', 'node_caption', 'node_dns', 'ip_address',
+                     'program_application', 'program_application_type', ]
 
 
 @admin.register(OrionNode)

@@ -38,6 +38,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 from dynamic_preferences.preferences import Section
 from dynamic_preferences.registries import global_preferences_registry
 from dynamic_preferences.types import (
@@ -490,6 +491,26 @@ class OrionCernerCSTFilter(StringPreference):
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('Query Filter for Cerner CST Orion nodes').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class OrionDomainControllerNodeFilter(StringPreference):
+    """
+    Dynamic preferences class controlling the filter parameters used to extract
+    `Windows domain controller` `Orion` nodes
+
+    This preference is used by the :ref:`Orion Integration Application`.
+
+    :access_key: 'orionfilters__domaincontroller'
+    """
+    section = orion_filters
+    name = 'domaincontroller'
+    default = 'DomainController'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Query Filter for Windows domain controller Orion nodes').title()
     """verbose name for this dynamic preference"""
 
 

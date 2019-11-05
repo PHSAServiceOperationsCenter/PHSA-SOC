@@ -480,7 +480,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         email object
         """
         self._debug_logger.debug('headers: %s', self.headers)
-        self._debug_logger.debug('data sample: %s', self.prepared_data[0])
+        if self.prepared_data:
+            self._debug_logger.debug('data sample: %s', self.prepared_data[0])
+        else:
+            self._debug_logger.debug('no data')
 
         context_for_log = dict(self.context)
         context_for_log.pop('headers', None)

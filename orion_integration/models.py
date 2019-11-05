@@ -2,7 +2,7 @@
 orion_integration.models
 ------------------------
 
-This module contains the :class:`djangodb.models.Model` models for the
+This module contains the :class:`django.db.models.Model` models for the
 :ref:`Orion Integration Application`.
 
 :copyright:
@@ -12,7 +12,7 @@ This module contains the :class:`djangodb.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Oct. 24, 2019
+:updated:    Nov. 5, 2019
 
 """
 import logging
@@ -58,6 +58,33 @@ class OrionCernerCSTNodeManager(models.Manager):
             get_queryset().filter(
                 program_application__exact=get_preference(
                     'orionfilters__cerner_cst'))
+
+
+class OrionDomainControllerNodeManager(models.Manager):
+    """
+    `Custom manager
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    class used in the :class:`OrionDomainControllerNode` model
+    """
+
+    def get_queryset(self):
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`OrionNode` instances that are `Windows domain
+            controllers`
+
+        """
+        return OrionNode.objects.\
+            filter(program_application_type=get_preference(
+                'orionfilters__domaincontroller')).\
+            exclude(enabled=False)
+
 # pylint:enable=R0903
 
 
@@ -506,8 +533,8 @@ class OrionNode(OrionBaseModel, models.Model):
 
     class Meta:
         app_label = 'orion_integration'
-        verbose_name = 'Orion Node'
-        verbose_name_plural = 'Orion Nodes'
+        verbose_name = _('Orion Node')
+        verbose_name_plural = _('Orion Nodes')
 
 
 class OrionCernerCSTNode(OrionNode):
@@ -521,8 +548,24 @@ class OrionCernerCSTNode(OrionNode):
 
     class Meta:
         proxy = True
-        verbose_name = 'Orion Cerner CST Node'
-        verbose_name_plural = 'Orion Cerner CST Nodes'
+        verbose_name = _('Orion Cerner CST Node')
+        verbose_name_plural = _('Orion Cerner CST Nodes')
+
+
+class OrionDomainControllerNode(OrionNode):
+    """
+    Proxy `model` to show just the `Windows domain controller` `Orion` nodes
+    that are `enabled`
+
+    see `Django proxy models
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    """
+    objects = OrionDomainControllerNodeManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Windows domain controller')
+        verbose_name_plural = _('Windows domain controllers')
 
 
 class OrionNodeCategory(OrionBaseModel, models.Model):

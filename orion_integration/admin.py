@@ -20,6 +20,7 @@ from rangefilter.filter import DateRangeFilter
 
 from .models import (
     OrionNode, OrionNodeCategory, OrionAPMApplication, OrionCernerCSTNode,
+    OrionDomainControllerNode,
 )
 from p_soc_auto_base.admin import BaseAdmin
 
@@ -120,6 +121,15 @@ class OrionNodeAdmin(OrionCernerCSTNodeAdmin, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`OrionNode` model
+    """
+
+
+@admin.register(OrionDomainControllerNode)
+class OrionDomainControllerNodeAdmin(
+        OrionCernerCSTNodeAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`OrionDomainControllerNode` model
     """
 
 

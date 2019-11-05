@@ -309,7 +309,7 @@ def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
     make sure that a :class:`datetime.datetime` object is `timezone aware
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_
 
-    :arg `datetime.datetime datetime_input:
+    :arg `datetime.datetime` datetime_input:
 
     :arg `django.utils.timezone` use_timezone: the timezone to use
 
@@ -334,7 +334,7 @@ class MomentOfTime():
     :meth:`datetime.dateime.now` method but sometimes we need something else.
 
     Note that this class uses the `django.utils.timezone
-    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`_
+    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`__
     module instead of the `Python datetime
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_ module.
     Therefore, it should not be used outside `Django applications`.
@@ -343,7 +343,7 @@ class MomentOfTime():
     def now(now):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`__
         for calculating the reference moment
 
         :arg `datetime.datetime` now: the reference moment; if ``None``, use the
@@ -378,7 +378,7 @@ class MomentOfTime():
 
         :arg dict kw_time_delta: a :class:`dict` suitable for creating a
             :class:`datetime.timedelta` object. See
-            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_.
+            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__.
 
         :raises:
 

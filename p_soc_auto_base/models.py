@@ -15,6 +15,7 @@ Abstract base model classes
 __updated__ = '2018_08_08'
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -26,8 +27,12 @@ class BaseModel(models.Model):
     Abstract base model class
 
     All the fields defined in this class will show in :class:`Django models
-    <django.db.models.Model>` inheriting from this class as if they were
-    defined in the child class.
+    <django.db.models.Model>` models inheriting from this class as if they
+    were defined directly in the child class.
+
+    See `Abstract base classes
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
+    in the `Django` docs.
     """
     created_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,
@@ -66,7 +71,7 @@ class BaseModel(models.Model):
                     ' excluded from any active operation'))
     """
     use this field to avoid deleting rows
-    
+
     When this field is ``False``, any computation against the
     :class:`Django model <django.db.models.Model>` containing this field will
     treat the corresponding as if it doesn't exist
@@ -106,6 +111,80 @@ class BaseModel(models.Model):
             get_user_model().objects.create_user(username)
 
         return user.get()
+
+    class Meta:
+        abstract = True
+
+
+class BaseModelWithDefaultInstance(BaseModel, models.Model):
+    """
+    Abstract model class that extends :class:`BaseModel` with support for
+    a default instance
+
+    A default instance is the most used instance in a (non-abstract)
+    :class:`model <django.db.models.Model>`. A :class:`model
+    <django.db.models.Model>` can only have one default instance. It is
+    acceptable to have :class:`models <django.db.models.Model>` inheriting
+    from this class that do not have a default instance.
+    """
+    is_default = models.BooleanField(
+        _('default windows account'),
+        db_index=True, blank=False, null=False, default=False)
+    """
+    if this field is set to `True` in a :class:`model
+    <django.db.models.Model>` inheriting from this class, the instance
+    containing the field is considered to be the `default` instance
+    """
+
+    def clean(self):
+        """
+        override :meth:`django.db.models.Model.clean` to
+        make sure that only one instance is the default instance
+
+        The default/non-default state of an instance is tracked using the
+        :attr:`is_default` attribute. This method is looking through all
+        the saved instances and is raising an error if there already
+        is a default instance present in the model.
+
+        :raises: :exc:`django.core.exceptions.ValidationError`
+        """
+        if not self.is_default:
+            return
+
+        if self._meta.model.objects.filter(is_default=True).\
+                exclude(pk=self.pk).exists():
+            raise ValidationError(
+                {'is_default': _('A default %s already exists'
+                                 % self._meta.model_name.title())}
+            )
+
+        return
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        override :meth:`django.db.models.Model.save` to invoke
+        :meth:`django.db.models.Model.full_clean`. otherwise the
+        :meth:`clean` will not be invoked
+        """
+        try:
+            self.full_clean()
+        except ValidationError as error:
+            raise error
+
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def get_default():
+        """
+        get the default instance for this model
+
+        :returns: the default instance of this model or `None`
+        """
+        try:
+            return BaseModelWithDefaultInstance.objects.\
+                filter(is_default=True).get()
+        except BaseModelWithDefaultInstance.DoesNotExist:
+            return None
 
     class Meta:
         abstract = True

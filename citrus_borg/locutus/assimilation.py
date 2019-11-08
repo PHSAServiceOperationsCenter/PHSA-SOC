@@ -168,10 +168,10 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
         """
         this is the fall-back function for :func:`get_ip_for_host_name`
 
-        Sometimes there are no entries in the :class:`ip-list <list>`. We will try
-        to resolve the `host_name` argument using 
-        and we will return that. Or we will return`None` if
-        :func:`socket.gethostbyname` barfs.
+        Sometimes there are no entries in the :class:`ip-list <list>`. We will
+        try to resolve the `host_name` argument using the
+        :func:`socket.gethostbyname` function. If that is not possible,
+        we will return`None`.
         """
         try:
             return socket.gethostbyname(host_name)

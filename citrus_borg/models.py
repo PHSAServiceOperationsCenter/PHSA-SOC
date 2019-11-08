@@ -29,16 +29,7 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode
 from orion_integration.orion import OrionClient
 from p_soc_auto_base.models import BaseModel
-
-
-def get_uuid():
-    """
-    provide default values for UUID fields
-
-    :returns: an instance of :class:`uuid.UUID` that ca  be used as a
-              unique identifier
-    """
-    return uuid.uuid4()
+from p_soc_auto_base.utils import get_uuid
 
 
 class OrionNodeIDError(ValueError):
@@ -85,7 +76,7 @@ class BorgSiteNotSeenManager(models.Manager):
 class WinlogbeatHostNotSeenManager(models.Manager):
     """
     `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`__
     class used in the :class:`WinlogbeatHostNotSeen` model
     """
 
@@ -98,15 +89,15 @@ class WinlogbeatHostNotSeenManager(models.Manager):
         in the `Django` docs.
 
         :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`WinlogbeatHost` instances that have not sent any events for the
-            period defined by
+            :class:`WinlogbeatHost` instances that have not sent any events
+            for the period defined by
             :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
 
         .. todo::
 
             Extend
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
-            a dynamic preference.
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+            with a dynamic preference.
 
         """
         return WinlogbeatHost.objects.\
@@ -117,7 +108,7 @@ class WinlogbeatHostNotSeenManager(models.Manager):
 class KnownBrokeringDeviceNotSeenManager(models.Manager):
     """
     `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`__
     class used in the :class:`KnownBrokeringDeviceNotSeen` model
     """
 
@@ -130,15 +121,15 @@ class KnownBrokeringDeviceNotSeenManager(models.Manager):
         in the `Django` docs.
 
         :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`KnownBrokeringDevice` instances that have not sent any events
-            for the period defined by
+            :class:`KnownBrokeringDevice` instances that have not sent any
+            events for the period defined by
             :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
 
         .. todo::
 
             Extend
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER` with
-            a dynamic preference.
+            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
+            with a dynamic preference.
 
         """
         return KnownBrokeringDevice.objects.\
@@ -149,7 +140,7 @@ class KnownBrokeringDeviceNotSeenManager(models.Manager):
 class CitrixHostManager(models.Manager):
     """
     `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`__
     class used in the :class:`CitrixHost` model
     """
 

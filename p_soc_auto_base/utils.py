@@ -10,7 +10,7 @@
 
 :contact:    serban.teodorescu@phsa.ca
 
-:update:    Jul. 15, 2019
+:update:    Nov. 7, 2019
 
 This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
@@ -19,6 +19,7 @@ This module contains utility `Python` classes and functions used by the
 import logging
 import socket
 import time
+import uuid
 
 from django.apps import apps
 from django.core.exceptions import FieldError
@@ -106,6 +107,16 @@ class DataTargetFieldsAttributeError(Exception):
     custom :exc:`Exception class raised when the
     :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`
     """
+
+
+def get_uuid():
+    """
+    provide default values for UUID fields
+
+    :returns: an instance of :class:`uuid.UUID` that can  be used as a
+              unique identifier
+    """
+    return uuid.uuid4()
 
 
 def get_model(destination):

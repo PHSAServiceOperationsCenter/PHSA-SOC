@@ -18,6 +18,7 @@ This module contains utility `Python` classes and functions used by the
 """
 import logging
 import socket
+import time
 
 from django.apps import apps
 from django.core.exceptions import FieldError
@@ -31,6 +32,66 @@ from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
 LOGGER = logging.getLogger('django')
+
+
+class Timer():
+    """
+    `Context manager
+    <https://docs.python.org/3/library/stdtypes.html#context-manager-types>`__
+    class that provides timing functionality for evaluating the performance
+    and/or response time of a `Python` `function
+    <https://docs.python.org/3/library/stdtypes.html#functions>`__ or
+    `method
+    <https://docs.python.org/3/library/stdtypes.html#methods>`__
+    """
+
+    def __init__(self, description='method timing context manager'):
+        """
+        constructor for the :class:`Timer` class
+        """
+        self.description = description
+        """
+        provide a :class:`str` description for the context manager
+
+        Default:'method timing context manager'
+        """
+
+        self.start = None
+        """the start time"""
+
+        self.end = None
+        """the end time"""
+
+        self.elapsed = None
+        """
+        the time elapsed while executing the method or function invoked
+        with the :class:`Timer` context manager
+
+        This is a :class:`float` value expressed in seconds
+        """
+
+    def __enter__(self):
+        """
+        start the timer and expose the instance attributes to the outside
+        world
+
+        `return self` ensures that the :attr:`elapsed` instance attribute
+        (as well as all the other instance attributes) will be available
+        once the context manager goes out of scope.
+        """
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """
+        stop the timer and update the :attr:`elapsed` instance attribute
+
+        'return False` ensures that exceptions raised within the context
+        manager scope will propagate to the outside world.
+        """
+        self.end = time.perf_counter()
+        self.elapsed = self.end - self.start
+        return False
 
 
 class UnknownDataTargetError(Exception):

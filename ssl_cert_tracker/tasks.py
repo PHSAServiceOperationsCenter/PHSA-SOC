@@ -181,7 +181,7 @@ def _email_report(
         raise err
 
 
-@shared_task(task_serializer='pickle', rate_limit='10/s', queue='shared')
+@shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')
 def get_ssl_for_node(orion_node):
     """
     task that spawns separate :func:`get_ssl_for_node_port` tasks for each

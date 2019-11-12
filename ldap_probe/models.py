@@ -21,11 +21,20 @@ from django.db import models
 from django.core import validators
 from django.utils.translation import gettext_lazy as _
 
+from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.models import BaseModel, BaseModelWithDefaultInstance
 from p_soc_auto_base.utils import get_uuid
 
 
 LOGGER = logging.getLogger('ldap_probe_log')
+
+
+def _get_default_ldap_search_base():
+    """
+    get the default value for the :attr:`LDAPBindCred.ldap_search_base`
+    attribute
+    """
+    return get_preference('ldapprobe__search_dn_default')
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
@@ -46,6 +55,9 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
         validators=[validators.validate_slug])
     password = models.CharField(
         _('password'), max_length=64, blank=False, null=False)
+    ldap_search_base = models.CharField(
+        _('DN search base'), max_length=128, blank=False, null=False,
+        default=_get_default_ldap_search_base)
 
     def __str__(self):
         return '%s\\%s' % (self.domain, self.username)
@@ -59,7 +71,39 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
         verbose_name_plural = _('LDAP Bind Credentials Sets')
 
 
-class OrionNode(BaseModel, models.Model):
+class BaseADNode(BaseModel, models.Model):
+    """
+    `Django abastract model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
+    for storing information about `Windows` domain controller hosts
+    """
+    ldap_bind_cred = models.ForeignKey(
+        'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
+        default=LDAPBindCred.get_default, on_delete=models.PROTECT,
+        verbose_name=_('LDAP Bind Credentials'))
+
+    def get_node(self):
+        """
+        get node network information in either `FQDN` or `IP` address format
+
+        We need this function mostly for retrieving node address information
+        from `Orion` nodes. `Orion` nodes are guaranteed to have an `IP`
+        address but sometimes they don't have a valid `FQDN`.
+        """
+        if hasattr(self, 'node_dns'):
+            return getattr(self, 'node_dns')
+
+        elif hasattr(self, 'node'):
+            node = getattr(self, 'node')
+            if node.node_dns:
+                return node.node_dns
+            return node.ip_address
+
+    class Meta:
+        abstract = True
+
+
+class OrionADNode(BaseADNode, models.Model):
     """
     :class:`django.db.models.Model` class used for storing DNS information
     about `Windows` domain controller hosts defined on the `Orion`
@@ -72,9 +116,6 @@ class OrionNode(BaseModel, models.Model):
         'orion_integration.OrionDomainControllerNode', db_index=True,
         blank=False, null=False, on_delete=models.PROTECT,
         verbose_name=_('Orion Node for Domain Controller'))
-    ldap_bind_cred = models.ForeignKey(
-        'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
-        on_delete=models.PROTECT, verbose_name=_('LDAP Bind Credentials'))
 
     def __str__(self):
         if self.node.node_dns:
@@ -88,7 +129,7 @@ class OrionNode(BaseModel, models.Model):
         verbose_name_plural = _('Domain Controllers from Orion')
 
 
-class NonOrionNode(BaseModel, models.Model):
+class NonOrionADNode(BaseADNode, models.Model):
     """
     :class:`django.db.models.Model` class used for storing DNS information
     about `Windows` domain controller hosts not available on the `Orion`
@@ -106,9 +147,6 @@ class NonOrionNode(BaseModel, models.Model):
             ' `RFC1123 <http://www.faqs.org/rfcs/rfc1123.html>`__,'
             ' section 2.1')
     )
-    ldap_bind_cred = models.ForeignKey(
-        'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
-        on_delete=models.PROTECT, verbose_name=_('LDAP Bind Credentials'))
 
     def __str__(self):
         return self.node_dns

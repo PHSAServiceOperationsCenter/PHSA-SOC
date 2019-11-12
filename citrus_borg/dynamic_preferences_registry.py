@@ -49,10 +49,11 @@ from dynamic_preferences.types import (
 
 # pylint: disable=E1101,C0103
 # =========================================================================
-# E1101: instance of '__proxy__' has no 'title' member caused by using .title()
-# on returns from gettext_lazy()
+# E1101: instance of '__proxy__' has no 'title' member caused by using
+# .title() on returns from gettext_lazy()
 #
-# C0103: asr PEP8 module level variables are constants and should be upper-case
+# C0103: as per PEP8 module level variables are constants and should be
+# upper-case
 # =========================================================================
 citrus_borg_common = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
@@ -90,6 +91,11 @@ exchange = Section('exchange',
                    verbose_name=_(
                        'Options for the PHSA Service Operations Center'
                        ' Exchange Monitoring Application'))
+
+ldap_probe = Section('ldapprobe',
+                     verbose_name=_(
+                         'Options for the PHSA Service Operations Center'
+                         ' Domain Controller Monitoring Application'))
 
 # pylint: enable=C0103
 
@@ -1075,7 +1081,33 @@ class LogonReportsInterval(DurationPreference):
         "{}<br>{}",
         _('logon reports are calculated, created, and sent over this'),
         _('time interval'))
-# pylint: disable=too-few-public-methods
+
+
+@global_preferences_registry.register
+class LdapSearchBaseDNDefault(StringPreference):
+    """
+    Dynamic preferences class controlling the default value for the 
+    base DN argument used by LDAP search functions
+
+    For example, an LDAP search for the `LoginPI01` account can  be initiated
+    from `'dc=vch,dc=ca'`.
+
+    :access_key: 'ldapprobe__search_dn_default'
+    """
+    section = ldap_probe
+    name = 'search_dn_default'
+    default = 'dc=vch,dc=ca'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Default search base DN').title()
+    """verbose name for this dynamic preference"""
+    help_text = format_html(
+        "{}<br>{}",
+        _('Default value for the base DN argument used by'),
+        _('LDAP search functions'))
+
+
+# pylint: enable=too-few-public-methods
 # pylint: enable=E1101
 
 

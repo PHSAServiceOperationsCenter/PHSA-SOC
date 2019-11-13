@@ -1086,7 +1086,7 @@ class LogonReportsInterval(DurationPreference):
 @global_preferences_registry.register
 class LdapSearchBaseDNDefault(StringPreference):
     """
-    Dynamic preferences class controlling the default value for the 
+    Dynamic preferences class controlling the default value for the
     base DN argument used by LDAP search functions
 
     For example, an LDAP search for the `LoginPI01` account can  be initiated
@@ -1106,6 +1106,24 @@ class LdapSearchBaseDNDefault(StringPreference):
         _('Default value for the base DN argument used by'),
         _('LDAP search functions'))
 
+
+@global_preferences_registry.register
+class LdapServiceUser(StringPreference):
+    """
+    Dynamic preferences class controlling the service user to be used by
+    :ref:`Domain Controllers Monitoring Application` background processes
+
+    :access_key: 'ldapprobe__service_user'
+    """
+    section = ldap_probe
+    name = 'service_user'
+    default = 'ldap_probe_service_user'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Service user for Domain Controllers Monitoring Application'
+        ' background processes').title()
+    """verbose name for this dynamic preference"""
 
 # pylint: enable=too-few-public-methods
 # pylint: enable=E1101

@@ -82,7 +82,7 @@ class BaseADNode(BaseModel, models.Model):
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
 
-    def get_node(self):
+    def get_node(self):  # pylint: disable=inconsistent-return-statements
         """
         get node network information in either `FQDN` or `IP` address format
 
@@ -93,7 +93,7 @@ class BaseADNode(BaseModel, models.Model):
         if hasattr(self, 'node_dns'):
             return getattr(self, 'node_dns')
 
-        elif hasattr(self, 'node'):
+        if hasattr(self, 'node'):
             node = getattr(self, 'node')
             if node.node_dns:
                 return node.node_dns
@@ -178,3 +178,35 @@ class LdapProbeLog(models.Model):
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,
         default=get_uuid)
+    ad_orion_node = models.ForeignKey(
+        OrionADNode, db_index=True, blank=True, null=True,
+        on_delete=models.CASCADE, verbose_name=_('AD controller (Orion)'))
+    ad_node = models.ForeignKey(
+        NonOrionADNode, db_index=True, blank=True, null=True,
+        on_delete=models.CASCADE, verbose_name=_('AD controller'))
+    elapsed_initialize = models.DurationField(
+        _('LDAP initialization duration'), blank=True, null=True)
+    elapsed_bind = models.DurationField(
+        _('LDAP bind duration'), blank=True, null=True)
+    elapsed_anon_bind = models.DurationField(
+        _('LDAP anonymous bind duration'), blank=True, null=True)
+    elapsed_read_root = models.DurationField(
+        _('LDAP read root DSE duration'), blank=True, null=True)
+    elapsed_search_ext = models.DurationField(
+        _('LDAP extended search duration'), blank=True, null=True)
+    errors = models.TextField(
+        _('Errors'), blank=True, null=True)
+
+    def __str__(self):
+        node = None
+        if self.ad_orion_node:
+            node = self.ad_orion_node.get_node()
+        else:
+            node = self.ad_node.get_node()
+
+        return f'LDAP probe {self.uuid} to {node}'
+
+    class Meta:
+        app_label = 'ldap_probe'
+        verbose_name = _('AD service probe')
+        verbose_name_plural = _('AD service probes')

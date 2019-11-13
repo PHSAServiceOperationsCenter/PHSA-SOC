@@ -173,17 +173,17 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
 
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def get_default():
+    @classmethod
+    def get_default(cls):
         """
         get the default instance for this model
 
         :returns: the default instance of this model or `None`
         """
         try:
-            return BaseModelWithDefaultInstance.objects.\
+            return cls.objects.\
                 filter(is_default=True).get()
-        except BaseModelWithDefaultInstance.DoesNotExist:
+        except cls.DoesNotExist:
             return None
 
     class Meta:

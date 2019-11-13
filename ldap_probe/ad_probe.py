@@ -63,17 +63,26 @@ class ADProbe():
     """
 
     def __init__(self, ad_controller=None, logger=LOGGER):
+        self._abort = False
+        """
+        state variable
+
+        If `True`, no other LDAP operations will be executed.
+        """
+
         self.logger = logger
         """private `logging.Logger` instance"""
 
         if ad_controller is None:
             raise exceptions.ADProbeControllerError(
                 'One must provide a domain controller if one wants to'
-                ' probe a domain controller'
+                ' probe a domain controller. Abandoning the AD probe...'
             )
 
         if not isinstance(ad_controller, models.BaseADNode):
-            raise TypeError(f'Invalid object type {type(ad_controller)!r}!')
+            raise TypeError(
+                f'Invalid object type {type(ad_controller)!r}!'
+                f' Abandoning the AD probe...')
 
         self.ad_controller = ad_controller
         """the AD controller object"""
@@ -84,29 +93,61 @@ class ADProbe():
         self.ldap_object = self.get_ldap_object()
         """the :class:`ldap.LDAPObject`"""
 
+        self.errors = None
+        """store operational errors if any"""
+
     def get_ldap_object(self):
         """
         initialize the :class:`ldap.LDAPObject`
         """
         with Timer() as timing:
             try:
-                connection = ldap.initialize(self.ad_controller.get_node())
-            except Exception as err:
-                raise exceptions.ADProbeOperationalError(err)
+                connection = ldap.initialize(
+                    f'ldaps://{self.ad_controller.get_node()}')
+            except Exception as err:  # pylint: disable=broad-except
+                self.errors = exceptions.ADProbeInitializationError(err)
+                self._abort = True
 
-        self.elapsed.elapsed_initialize = timing
+        self.elapsed.elapsed_initialize = timing.elapsed
         return connection
 
     def bind(self):
         """
+        execute an :meth:`ldap.LDAPObject.bind_s` call
+        and measure how long it took
         """
 
     def bind_anonym(self):
         """
-        execute an anonymous :meth:`ldap.LDAPObject.bind_s` call and measure
-        how long it took
+        execute an anonymous :meth:`ldap.LDAPObject.simple_bind_s` call
+        and measure how long it took
         """
-        with Timer() as timing:
-            self.ldap_object.bind_s()
+        if self._abort:
+            return
 
-        self.elapsed.elapsed_anon_bind = timing
+        with Timer() as timing:
+            try:
+                self.ldap_object.simple_bind_s()
+            except ldap.SERVER_DOWN as err:
+                self._abort = True
+                self.errors += f'\n{str(err)}'
+                self.diagnose_error(err)
+                return
+            except Exception as err:  # pylint: disable=broad-except
+                self._abort = True
+                self.errors += f'\n{str(err)}'
+                return
+
+        self.elapsed.elapsed_anon_bind = timing.elapsed
+
+    def diagnose_error(self, err):
+        """
+        SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 2, 'info': 'No such file or directory'}
+        bad dns name
+
+        SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 107, 'info': 'Transport endpoint is not connected'}
+        bad port
+
+
+        """
+        pass

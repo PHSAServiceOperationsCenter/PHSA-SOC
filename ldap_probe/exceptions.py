@@ -26,22 +26,3 @@ class ADProbeControllerError(Exception):
 
     This is a fatal error as far as an AD probe operation is concerned.
     """
-
-
-class ADProbeOperationalError(Exception):
-    """
-    Custom :exc:`exceptions.Exception` class raised when an
-    instance of the :class:`ldap_probe.ad_probe.ADProbe` class throws an
-    exception that is not otherwise handled
-    """
-
-
-class ADProbeInitializationError(Exception):
-    """
-    Custom :exc:`exceptions.Exception` class raised when an
-    instance of the :class:`ldap_probe.ad_probe.ADProbe` class throws an
-    exception when trying to execute :meth:`ldap.initialize`
-
-    This is a very rare exception since :meth:`ldap.initialize` does not
-    touch the network.
-    """

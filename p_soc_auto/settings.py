@@ -397,7 +397,8 @@ default URL path for linking Orion nodes as defined in this project to the
 node definitions on the `SolarWinds Orion server
 <https://www.solarwinds.com/solutions/orion>`__
 
-This variable is exposed by the :attr:`citrus_borg.dynamic_preferences_registry.OrionServerUrl.default`
+This variable is exposed by the
+:attr:`citrus_borg.dynamic_preferences_registry.OrionServerUrl.default`
 attribute of the :class:`citrus_borg.dynamic_preferences_registry.OrionServer`
 dynamic preference.
 

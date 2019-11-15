@@ -6,6 +6,15 @@ This module contains the `Active Directory
 <https://en.wikipedia.org/wiki/Active_Directory>`__ client used by the
 :ref:`Domain Controllers Monitoring Application`.
 
+The :mod:`ldap` is configured to use `TLS` by setting the
+:attr:`ldap.OPT_X_TLS_REQUIRE_CERT` attribute but to not verify the `TLS`
+certificate by setting the :attr:`ldap.OPT_X_TLS_NEVER` attribute.
+
+As per the `python-ldap FAQ
+<https://www.python-ldap.org/en/latest/faq.html#usage>`__ we are disabling
+referrals on the :class:`ldap.LDAPObject` object because we are connecting
+to a `Windows` `AD` controller.
+
 :copyright:
 
     Copyright 2018 - 2019 Provincial Health Service Authority
@@ -25,6 +34,7 @@ from p_soc_auto_base.utils import Timer
 
 
 LOGGER = logging.getLogger('ldap_probe_log')
+"""default :class:`logging.Logger` instance"""
 
 
 ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
@@ -37,6 +47,9 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
     """
 
     def __init__(self):
+        """
+        :class:`_ADProbeElapsed` constructor
+        """
         self.elapsed_initialize = None
         """elapsed time for :meth:`ldap.initialize`"""
 
@@ -58,20 +71,30 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
 
 class ADProbe():
     """
-    Utility class with timed methods that wrap around
-    :class:`ldap.LDAPObject` methods of interest to us
+    Class that wrap around :class:`ldap.LDAPObject` methods of interest
+    to us and adds timing facilities to each of them
     """
 
     def __init__(self, ad_controller=None, logger=LOGGER):
+        """
+        :class:`ADProbe` constructor
+        """
         self._abort = False
         """
         state variable
 
-        If `True`, no other LDAP operations will be executed.
+        If `True`, data collected by this :class:`ADProbe` instance will
+        be made available for saving to the database but no other LDAP
+        operations will be executed.
         """
 
         self.logger = logger
-        """private `logging.Logger` instance"""
+        """
+        private `logging.Logger` instance
+
+        This should be provided by the caller but we do fall back to
+        the instance provided by :attr:`LOGGER` if we have to.
+        """
 
         if ad_controller is None:
             raise exceptions.ADProbeControllerError(
@@ -90,57 +113,136 @@ class ADProbe():
         self.elapsed = _ADProbeElapsed()
         """keep track of all elapsed times for LDAP ops"""
 
-        self.ldap_object = self.get_ldap_object()
+        self.ldap_object = None
         """the :class:`ldap.LDAPObject`"""
 
         self.errors = None
         """store operational errors if any"""
 
+        self.ad_response = None
+        """did we get anything from the `AD` controller?"""
+
+        self.get_ldap_object()
+
     def get_ldap_object(self):
         """
         initialize the :class:`ldap.LDAPObject`
         """
+        self.logger.debug(
+            'initialize ldap with %s', self.ad_controller.get_node())
+
         with Timer() as timing:
             try:
-                connection = ldap.initialize(
+                self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
             except Exception as err:  # pylint: disable=broad-except
-                self.errors = exceptions.ADProbeInitializationError(err)
-                self._abort = True
+                self._set_abort(
+                    error_message=f'LDAP Initialization error: {str(err)}')
+                return
 
         self.elapsed.elapsed_initialize = timing.elapsed
-        return connection
+        self.ldap_object.set_option(ldap.OPT_REFERRALS, ldap.OPT_OFF)
 
-    def bind(self):
+    def _set_abort(self, error_message=None):
+        """
+        set the abort flag and update the :attr:`errors` value
+        """
+        self.abort = True
+        self.errors += f'\nAD probe aborted. {error_message}'
+
+    def bind_and_search(self):
         """
         execute an :meth:`ldap.LDAPObject.bind_s` call
         and measure how long it took
-        """
 
-    def bind_anonym(self):
+        If :meth:`ldap.LDAPObject.bind_s` fails with
+        :exc:`ldap.INVALID_CREDENTIALS`, we will fall back and try an
+        anonymous bind with :meth:`bind_anonym`
+        """
+        if self.abort:
+            return
+
+        with Timer() as timing:
+            try:
+                self.ldap_object.bind_s(
+                    self.ad_controller.ldap_bind_cred.username,
+                    self.ad_controller.ldap_bind_cred.password)
+            except ldap.SERVER_DOWN as err:
+                self._diagnose_network(err)
+                return
+
+            except ldap.INVALID_CREDENTIALS as err:
+                self._fallback(err)
+                return
+
+            except Exception as err:  # pylint: disable=broad-except
+                self._set_abort(error_message=f'Error: {str(err)}.')
+                return
+
+        self.elapsed.elapsed_bind = timing.elapsed
+
+        with Timer() as timing:
+            try:
+                self.ad_response = self.ldap_object.search_ext_s(
+                    self.ad_controller.ldap_bind_cred.ldap_search_base,
+                    ldap.SCOPE_SUBTREE,
+                    (f'(sAMAccountName='
+                     f'{self.ad_controller.ldap_bind_cred.username})')
+                )
+            except Exception as err:
+                self._set_abort(
+                    error_message=f'Extended search error: {str(err)}')
+                return
+
+        self.elapsed.elapsed_search_ext = timing.elapsed
+
+    def _fallback(self, err):
+        """
+        try to fall back :meth:`bind_anonym` if :meth:`bind` fails
+
+        When :meth:`ldap.LDAPObject.bind_s` because the credentials are
+        not known to the `AD` server, it is still possible to validate
+        that said `AD` server is up if it will accept an anonymous bind.
+        """
+        self.errors += f'\nTrying fall back from {str(err)}.'
+
+        if not err.get('info') in ['Unknown credentials']:
+            self._set_abort(error_message='Fall back not possible.')
+            return
+
+        self.bind_anonym_and_read()
+
+    def bind_anonym_and_read(self):
         """
         execute an anonymous :meth:`ldap.LDAPObject.simple_bind_s` call
         and measure how long it took
         """
-        if self._abort:
+        if self.abort:
             return
 
         with Timer() as timing:
             try:
                 self.ldap_object.simple_bind_s()
             except ldap.SERVER_DOWN as err:
-                self._abort = True
-                self.errors += f'\n{str(err)}'
-                self.diagnose_error(err)
+                self._diagnose_network(err)
                 return
+
             except Exception as err:  # pylint: disable=broad-except
-                self._abort = True
-                self.errors += f'\n{str(err)}'
+                self._set_abort(error_message=f'Error: {str(err)}')
                 return
 
         self.elapsed.elapsed_anon_bind = timing.elapsed
 
-    def diagnose_error(self, err):
+        with Timer() as timing:
+            try:
+                self.ldap_object.read_rootdse_s()
+            except Exception as err:  # pylint: disable=broad-except
+                self._set_abort(error_message=f'Error: {str(err)}')
+                return
+
+        self.elapsed.elapsed_read_root = timing.elapsed
+
+    def _diagnose_network(self, err):
         """
         SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 2, 'info': 'No such file or directory'}
         bad dns name
@@ -150,4 +252,17 @@ class ADProbe():
 
 
         """
+        self._set_abort(error_message=f'Network error: {str(err)}')
+
+        # do stuff
+        if err.get('errno') == 107:
+            self.errors += (
+                '\nBad network port or using ldaps://hostname for host'
+                ' that only supports ldap')
+        elif err.get('errno') == 2:
+            self._diagnose_ip_or_dns(err)
+        else:
+            self.errors += '\nUnknown network error'
+
+    def _diagnose_ip_or_dns(self, err):
         pass

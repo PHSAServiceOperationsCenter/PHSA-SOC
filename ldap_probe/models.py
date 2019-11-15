@@ -12,7 +12,7 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 5, 2019
+:updated:    Nov. 15, 2019
 
 """
 import logging
@@ -194,6 +194,8 @@ class LdapProbeLog(models.Model):
         _('LDAP read root DSE duration'), blank=True, null=True)
     elapsed_search_ext = models.DurationField(
         _('LDAP extended search duration'), blank=True, null=True)
+    ad_response = models.TextField(
+        _('AD controller response'), blank=True, null=True)
     errors = models.TextField(
         _('Errors'), blank=True, null=True)
 
@@ -210,3 +212,32 @@ class LdapProbeLog(models.Model):
         app_label = 'ldap_probe'
         verbose_name = _('AD service probe')
         verbose_name_plural = _('AD service probes')
+
+
+class LdapCredError(BaseModel, models.Model):
+    """
+    :class:`django.db.models.Model` class used for storing LDAP errors
+    related to invalid credentials
+
+    See `Common Active Directory Bind Errors
+    <https://ldapwiki.com/wiki/Common%20Active%20Directory%20Bind%20Errors>`__.
+
+    `LDAP Probe Log fields
+    <../../../admin/doc/models/ldap_probe.ldapcrederror>`__
+    """
+    error_unique_identifier = models.CharField(
+        _('LDAP Error Subcode'), max_length=3, db_index=True, unique=True,
+        blank=False, null=False)
+    short_descriptiom = models.CharField(
+        _('Short Description'), max_length=128, db_index=True, blank=False,
+        null=False)
+    comments = models.TextField(_('Comments'), blank=True, null=True)
+
+    def __str__(self):
+        return (
+            f'data {self.error_unique_identifier}: {self.short_description}')
+
+    class Meta:
+        app_label = 'ldap_probe'
+        verbose_name = _('Active Directory Bind Error')
+        verbose_name_plural = _('Common Active Directory Bind Errors')

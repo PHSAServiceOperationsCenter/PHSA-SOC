@@ -180,9 +180,11 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
 
         :returns: the default instance of this model or `None`
         """
+        if not hasattr(cls, 'objects'):
+            return None
+
         try:
-            return cls.objects.\
-                filter(is_default=True).get()
+            return cls.objects.filter(is_default=True).get()
         except cls.DoesNotExist:
             return None
 

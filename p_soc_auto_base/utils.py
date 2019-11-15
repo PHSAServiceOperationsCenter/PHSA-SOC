@@ -16,6 +16,7 @@ This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
 
 """
+import ipaddress
 import logging
 import socket
 import time
@@ -33,6 +34,52 @@ from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
 LOGGER = logging.getLogger('django')
+
+
+def diagnose_network_problem(host_spec, port=0):
+    """
+    diagnose problems with noetwork nodes
+
+    This function looks for:
+
+    * host names that are not in DNS
+
+      if the `host_spec` is not an `IP` address, this function will use
+      :meth:`socket.getaddrinfo` to simualte opening a socket to the
+      host. meth:`socket.getaddrinfo` will fail if the host name is not in
+      DNS
+
+    * host ip addresses that do not exist on the network
+
+      if the `host_spec` is an `IP` address, the function uses
+      :meth:`socket.gethostbyaddr` to verify that the host is on the
+      network
+
+    :arg str host_spec: the host name or IP address
+
+    :arg int port: the port argument to use with meth:`socket.getaddrinfo`,
+        default is 0
+
+    :returns: an explicit error message or a "can't find anything wrong"
+        message
+    :rtype: str
+    """
+    try:
+        ipaddress.ip_address(host_spec)
+        try:
+            socket.gethostbyaddr(host_spec)
+        except Exception as err:  # pylint: disable=broad-except
+            return (f'\nhost {host_spec} does not exist,'
+                    f' error {type(err)}: {str(err)}')
+
+    except ValueError:
+        try:
+            socket.getaddrinfo(host_spec, port)
+        except Exception as err:  # pylint: disable=broad-except
+            return (f'host name {host_spec} not in DNS,'
+                    f' error {type(err)}: {str(err)}')
+
+    return f'found no network problems with host: {host_spec}'
 
 
 class Timer():

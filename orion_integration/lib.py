@@ -115,13 +115,13 @@ class OrionSslNode():
         queryset = OrionNode.objects.filter(enabled=True)
 
         if cerner_cst is None:
-            cerner_cst = get_preference('orionprobedefaults__cerner_cst')
+            cerner_cst = get_preference('orionprobe__cerner_cst')
 
         if servers_only is None:
-            servers_only = get_preference('orionprobedefaults__servers_only')
+            servers_only = get_preference('orionprobe__servers_only')
 
         if orion_ssl is None:
-            orion_ssl = get_preference('orionprobedefaults__orion_ssl')
+            orion_ssl = get_preference('orionprobe__orion_ssl')
 
         if cerner_cst:
             queryset = OrionCernerCSTNode.objects.filter(enabled=True)

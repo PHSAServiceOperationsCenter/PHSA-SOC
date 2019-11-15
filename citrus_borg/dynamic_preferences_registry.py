@@ -430,13 +430,13 @@ class OrionProbeCSTOnly(BooleanPreference):
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__cerner_cst'
+    :access_key: 'orionprobe__cerner_cst'
     """
     section = orion_probe_defaults
     name = 'cerner_cst'
     default = True
     """default value for this dynamic preference"""
-    required = False
+    required = True
     verbose_name = _('Only probe Cerner CST Orion nodes').title()
     """verbose name for this dynamic preference"""
 
@@ -449,7 +449,7 @@ class OrionProbeKnownSslOnly(BooleanPreference):
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__orion_ssl'
+    :access_key: 'orionprobe__orion_ssl'
     """
     section = orion_probe_defaults
     name = 'orion_ssl'
@@ -470,7 +470,7 @@ class OrionProbeServersOnly(BooleanPreference):
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__servers_only'
+    :access_key: 'orionprobe__servers_only'
     """
     section = orion_probe_defaults
     name = 'servers_only'

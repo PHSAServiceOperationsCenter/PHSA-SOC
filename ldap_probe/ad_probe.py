@@ -22,7 +22,7 @@ to a `Windows` `AD` controller.
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 12, 2019
+:updated:    Nov. 15, 2019
 
 """
 import logging
@@ -30,7 +30,7 @@ import logging
 import ldap
 
 from ldap_probe import exceptions, models
-from p_soc_auto_base.utils import Timer
+from p_soc_auto_base.utils import Timer, diagnose_network_problem
 
 
 LOGGER = logging.getLogger('ldap_probe_log')
@@ -79,7 +79,7 @@ class ADProbe():
         """
         :class:`ADProbe` constructor
         """
-        self._abort = False
+        self.abort = False
         """
         state variable
 
@@ -116,7 +116,7 @@ class ADProbe():
         self.ldap_object = None
         """the :class:`ldap.LDAPObject`"""
 
-        self.errors = None
+        self.errors = ''
         """store operational errors if any"""
 
         self.ad_response = None
@@ -137,7 +137,7 @@ class ADProbe():
                     f'ldaps://{self.ad_controller.get_node()}')
             except Exception as err:  # pylint: disable=broad-except
                 self._set_abort(
-                    error_message=f'LDAP Initialization error: {str(err)}')
+                    error_message=f'LDAP Initialization error: {err}')
                 return
 
         self.elapsed.elapsed_initialize = timing.elapsed
@@ -176,7 +176,7 @@ class ADProbe():
                 return
 
             except Exception as err:  # pylint: disable=broad-except
-                self._set_abort(error_message=f'Error: {str(err)}.')
+                self._set_abort(error_message=f'Error: {err}.')
                 return
 
         self.elapsed.elapsed_bind = timing.elapsed
@@ -191,7 +191,7 @@ class ADProbe():
                 )
             except Exception as err:
                 self._set_abort(
-                    error_message=f'Extended search error: {str(err)}')
+                    error_message=f'Extended search error: {err}')
                 return
 
         self.elapsed.elapsed_search_ext = timing.elapsed
@@ -203,14 +203,22 @@ class ADProbe():
         When :meth:`ldap.LDAPObject.bind_s` because the credentials are
         not known to the `AD` server, it is still possible to validate
         that said `AD` server is up if it will accept an anonymous bind.
+
+        {'desc': 'Invalid credentials', 'info': '80090308: LdapErr: DSID-0C0903C5, comment: AcceptSecurityContext error, data 52e, v2580'}
+        valid user, bad password
+
+        {'desc': 'Invalid credentials', 'info': '80090308: LdapErr: DSID-0C090404, comment: AcceptSecurityContext error, data 525, v1773'}
+
         """
-        self.errors += f'\nTrying fall back from {str(err)}.'
+        import ipdb
+        ipdb.set_trace()
+        self.errors += (f'\nTrying fall back from LDAP error'
+                        f' {err.__class__.__name__}: {str(err)}.')
 
-        if not err.get('info') in ['Unknown credentials']:
-            self._set_abort(error_message='Fall back not possible.')
-            return
-
-        self.bind_anonym_and_read()
+        try:
+            self.bind_anonym_and_read()
+        except:
+            self._diagnose_ip_or_dns('Fall back failed as well')
 
     def bind_anonym_and_read(self):
         """
@@ -228,22 +236,23 @@ class ADProbe():
                 return
 
             except Exception as err:  # pylint: disable=broad-except
-                self._set_abort(error_message=f'Error: {str(err)}')
+                self._set_abort(error_message=f'Error: {err}')
                 return
 
         self.elapsed.elapsed_anon_bind = timing.elapsed
 
         with Timer() as timing:
             try:
-                self.ldap_object.read_rootdse_s()
+                self.ad_response = self.ldap_object.read_rootdse_s()
             except Exception as err:  # pylint: disable=broad-except
-                self._set_abort(error_message=f'Error: {str(err)}')
+                self._set_abort(error_message=f'Error: {err}')
                 return
 
         self.elapsed.elapsed_read_root = timing.elapsed
 
     def _diagnose_network(self, err):
         """
+        try to figure why LDAP 
         SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 2, 'info': 'No such file or directory'}
         bad dns name
 
@@ -252,17 +261,16 @@ class ADProbe():
 
 
         """
-        self._set_abort(error_message=f'Network error: {str(err)}')
+        self._set_abort(error_message=f'Network error: {err}')
 
-        # do stuff
         if err.get('errno') == 107:
             self.errors += (
                 '\nBad network port or using ldaps://hostname for host'
                 ' that only supports ldap')
         elif err.get('errno') == 2:
-            self._diagnose_ip_or_dns(err)
+            self.errors += (
+                f'\n'
+                f'{diagnose_network_problem(self.ad_controller.get_node())}'
+            )
         else:
             self.errors += '\nUnknown network error'
-
-    def _diagnose_ip_or_dns(self, err):
-        pass

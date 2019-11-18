@@ -96,17 +96,7 @@ class ADProbe():
         the instance provided by :attr:`LOGGER` if we have to.
         """
 
-        if ad_controller is None:
-            raise exceptions.ADProbeControllerError(
-                'One must provide a domain controller if one wants to'
-                ' probe a domain controller. Abandoning the AD probe...'
-            )
-
-        if not isinstance(ad_controller, models.BaseADNode):
-            raise TypeError(
-                f'Invalid object type {type(ad_controller)!r}!'
-                f' Abandoning the AD probe...')
-
+        self._raise_ad_controller(ad_controller)
         self.ad_controller = ad_controller
         """the AD controller object"""
 
@@ -123,6 +113,33 @@ class ADProbe():
         """did we get anything from the `AD` controller?"""
 
         self.get_ldap_object()
+
+    @staticmethod
+    def _raise_ad_controller(ad_controller=None):
+        if ad_controller is None:
+            raise exceptions.ADProbeControllerError(
+                'One must provide a domain controller if one wants to'
+                ' probe a domain controller. Abandoning the AD probe...'
+            )
+
+        if not isinstance(ad_controller, models.BaseADNode):
+            raise TypeError(
+                f'Invalid object type {type(ad_controller)!r}!'
+                f' Abandoning the AD probe...')
+
+    @classmethod
+    def probe(cls, ad_controller=None, logger=LOGGER):
+        """
+        `class method
+        <https://docs.python.org/3.6/library/functions.html#classmethod>`__
+        that creates the :class:`ADProbe` instance and runs the `LDAP` probe
+        in one shot
+        """
+        probe = cls(ad_controller, logger)
+
+        probe.bind_and_search()
+
+        return probe
 
     def get_ldap_object(self):
         """
@@ -147,6 +164,8 @@ class ADProbe():
         """
         set the abort flag and update the :attr:`errors` value
         """
+        self.logger.debug(
+            'aborting LDAP op for %s', self.ad_controller.get_node())
         self.abort = True
         self.errors += f'\nAD probe aborted. {error_message}'
 
@@ -159,6 +178,10 @@ class ADProbe():
         :exc:`ldap.INVALID_CREDENTIALS`, we will fall back and try an
         anonymous bind with :meth:`bind_anonym`
         """
+        self.logger.debug(
+            'trying bind ad search for %s with creds %s',
+            self.ad_controller.get_node(), self.ad_controller.ldap_bind_cred)
+
         if self.abort:
             return
 
@@ -204,14 +227,10 @@ class ADProbe():
         not known to the `AD` server, it is still possible to validate
         that said `AD` server is up if it will accept an anonymous bind.
 
-        {'desc': 'Invalid credentials', 'info': '80090308: LdapErr: DSID-0C0903C5, comment: AcceptSecurityContext error, data 52e, v2580'}
-        valid user, bad password
-
-        {'desc': 'Invalid credentials', 'info': '80090308: LdapErr: DSID-0C090404, comment: AcceptSecurityContext error, data 525, v1773'}
-
+        See `Common Active Directory Bind Errors
+        <https://ldapwiki.com/wiki/Common%20Active%20Directory%20Bind%20Errors>`__
+        for errors that will trigger a fall back.
         """
-        import ipdb
-        ipdb.set_trace()
         self.errors += (f'\nTrying fall back from LDAP error'
                         f' {err.__class__.__name__}: {str(err)}.')
 
@@ -225,6 +244,8 @@ class ADProbe():
         execute an anonymous :meth:`ldap.LDAPObject.simple_bind_s` call
         and measure how long it took
         """
+        self.logger.debug('trying anonymous bind for %s',
+                          self.ad_controller.get_node())
         if self.abort:
             return
 
@@ -252,12 +273,19 @@ class ADProbe():
 
     def _diagnose_network(self, err):
         """
-        try to figure why LDAP 
-        SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 2, 'info': 'No such file or directory'}
-        bad dns name
+        try to figure why the `LDAP` probe has returned a network error
 
-        SERVER_DOWN: {'desc': "Can't contact LDAP server", 'errno': 107, 'info': 'Transport endpoint is not connected'}
-        bad port
+        Possible network errors:
+
+        * :exc:`ldap.SERVER_DOWN`:
+
+         {'desc': "Can't contact LDAP server", 'errno': 2,
+         'info': 'No such file or directory'} may be a  bad dns name
+
+        * :exc:`ldap.SERVER_DOWN`:
+
+          {'desc': "Can't contact LDAP server", 'errno': 107,
+          'info': 'Transport endpoint is not connected'} may be a bad port
 
 
         """

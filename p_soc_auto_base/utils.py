@@ -16,6 +16,7 @@ This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
 
 """
+import datetime
 import ipaddress
 import logging
 import socket
@@ -93,7 +94,9 @@ class Timer():
     <https://docs.python.org/3/library/stdtypes.html#methods>`__
     """
 
-    def __init__(self, description='method timing context manager'):
+    def __init__(
+            self,
+            description='method timing context manager', use_duration=True):
         """
         constructor for the :class:`Timer` class
         """
@@ -118,6 +121,13 @@ class Timer():
         This is a :class:`float` value expressed in seconds
         """
 
+        self.use_duration = use_duration
+        """
+        use seconds or :class:`datetime.timedelta` objects for the timer
+        
+        Default (`True`) is to use :class:`datetime.timedelta` objects
+        """
+
     def __enter__(self):
         """
         start the timer and expose the instance attributes to the outside
@@ -139,6 +149,9 @@ class Timer():
         """
         self.end = time.perf_counter()
         self.elapsed = self.end - self.start
+        if self.use_duration:
+            self.elapsed = datetime.timedelta(seconds=self.elapsed)
+
         return False
 
 

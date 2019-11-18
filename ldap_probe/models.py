@@ -198,6 +198,9 @@ class LdapProbeLog(models.Model):
         _('AD controller response'), blank=True, null=True)
     errors = models.TextField(
         _('Errors'), blank=True, null=True)
+    created_on = models.DateTimeField(
+        _('created on'), db_index=True, auto_now_add=True,
+        help_text=_('object creation time stamp'))
 
     def __str__(self):
         node = None
@@ -207,6 +210,41 @@ class LdapProbeLog(models.Model):
             node = self.ad_node.get_node()
 
         return f'LDAP probe {self.uuid} to {node}'
+
+    @classmethod
+    def create_from_probe(cls, probe_data):
+        """
+        `class method
+        <https://docs.python.org/3.6/library/functions.html#classmethod>`__
+        that creates an instance of the :class:`LdapProbeLog`
+
+        :arg probe_data: the data returned by the LDAP probe
+        :type probe_data: :class:`ldap_probe.ad_probe.ADProbe`
+
+        :arg logger: :class:`logging.Logger instance
+
+        :returns: the new :class:`LdapProbeLog` instance 
+        """
+        ldap_probe_log_entry = cls(
+            elapsed_initialize=probe_data.elapsed.elapsed_initialize,
+            elapsed_bind=probe_data.elapsed.elapsed_bind,
+            elapsed_anon_bind=probe_data.elapsed.elapsed_anon_bind,
+            elapsed_read_root=probe_data.elapsed.elapsed_read_root,
+            elapsed_search_ext=probe_data.elapsed.elapsed_search_ext,
+            ad_response=probe_data.ad_response, errors=probe_data.errors
+        )
+
+        if isinstance(probe_data.ad_controller, OrionADNode):
+            ldap_probe_log_entry.ad_orion_node = probe_data.ad_controller
+        else:
+            ldap_probe_log_entry.ad_node = probe_data.ad_controller
+
+        try:
+            ldap_probe_log_entry.save()
+        except Exception as err:
+            raise err
+
+        return f'created {ldap_probe_log_entry}'
 
     class Meta:
         app_label = 'ldap_probe'

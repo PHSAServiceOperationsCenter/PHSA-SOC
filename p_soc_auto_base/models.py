@@ -43,8 +43,9 @@ class BaseModel(models.Model):
 
     See `User authentication in Django
     <https://docs.djangoproject.com/en/2.2/topics/auth/>`_ and `Referencing
-    the User model <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#referencing-the-user-model>`_
-    about details
+    the User model
+    <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#referencing-the-user-model>`__
+    about details.
     """
     updated_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,

@@ -228,7 +228,7 @@ class LdapCredError(BaseModel, models.Model):
     error_unique_identifier = models.CharField(
         _('LDAP Error Subcode'), max_length=3, db_index=True, unique=True,
         blank=False, null=False)
-    short_descriptiom = models.CharField(
+    short_description = models.CharField(
         _('Short Description'), max_length=128, db_index=True, blank=False,
         null=False)
     comments = models.TextField(_('Comments'), blank=True, null=True)

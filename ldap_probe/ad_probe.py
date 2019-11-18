@@ -25,6 +25,7 @@ to a `Windows` `AD` controller.
 :updated:    Nov. 15, 2019
 
 """
+import datetime
 import logging
 
 import ldap
@@ -57,22 +58,22 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
         """
         :class:`_ADProbeElapsed` constructor
         """
-        self.elapsed_initialize = None
+        self.elapsed_initialize = datetime.timedelta(seconds=0)
         """elapsed time for :meth:`ldap.initialize`"""
 
-        self.elapsed_bind = None
+        self.elapsed_bind = datetime.timedelta(seconds=0)
         """elapsed time for :meth:`ldap.LDAPObject.bind_s`"""
 
-        self.elapsed_anon_bind = None
+        self.elapsed_anon_bind = datetime.timedelta(seconds=0)
         """
         elapsed time for :meth:`ldap.LDAPObject.bind_s` when called
         anonymously
         """
 
-        self.elapsed_read_root = None
+        self.elapsed_read_root = datetime.timedelta(seconds=0)
         """elapsed time for :meth:`ldap.LDAPObject.read_rootdse_s`"""
 
-        self.elapsed_search_ext = None
+        self.elapsed_search_ext = datetime.timedelta(seconds=0)
         """elapsed time for :meth:`ldap.LDAPObject.search_ext_s`"""
 
 

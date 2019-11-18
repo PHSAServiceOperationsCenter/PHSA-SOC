@@ -44,6 +44,13 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
     """
     Private class for storing the various values of time elapsed while
     executing :class:`ldap.LDAPObject` methods of interest to us
+
+    .. todo::
+
+        Need to accept string for :attr:`ad_controller`, not just django
+        instances. Maybe sometim3e we want to call this without
+        touching models.
+
     """
 
     def __init__(self):

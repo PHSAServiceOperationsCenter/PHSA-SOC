@@ -16,6 +16,7 @@ This module contains the :class:`django.db.models.Model` models for the
 
 """
 import logging
+import socket
 
 from django.db import models
 from django.core import validators
@@ -151,15 +152,38 @@ class NonOrionADNode(BaseADNode, models.Model):
     def __str__(self):
         return self.node_dns
 
-    def remove_if_in_orion(self):
+    def remove_if_in_orion(self, logger=LOGGER):
         """
         if the domain controller host represented by this instance is also
         present on the `Orion` server, delete this istance
 
         We prefer to extract network node data from `Orion` instead of
         depending on some poor soul maintaining this model manually.
+
+        There are some `AD` nodes in Orion that will match entries in this
+        model but only if we consider the IP address. Since `AD` controllers
+        always use fixed IP addresses (they better be), we will use IP
+        addresses to eliminate the dupes.
         """
-        pass
+        ip_addresses = None
+
+        try:
+            ip_addresses = [
+                addr[4][0] for addr in socket.getaddrinfo(self.node_dns, 0)
+            ]
+        except:  # pylint: disable=bare-except
+            logger.error('Cannot resolve %s, deleting...', self)
+            self.delete()
+            return
+
+        if OrionADNode.objects.filter(
+                node__ip_address__in=ip_addresses).exists():
+
+            logger.info(
+                'Found %s within the Orion AD nodes, deleting...', self)
+            self.delete()
+
+        return
 
     class Meta:
         app_label = 'ldap_probe'

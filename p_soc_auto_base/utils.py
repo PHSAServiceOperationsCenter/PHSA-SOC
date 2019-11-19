@@ -124,7 +124,7 @@ class Timer():
         self.use_duration = use_duration
         """
         use seconds or :class:`datetime.timedelta` objects for the timer
-        
+
         Default (`True`) is to use :class:`datetime.timedelta` objects
         """
 
@@ -546,12 +546,12 @@ class MomentOfTime():
                   will use the value returned by :meth:`django.utils.timezone.now`.
 
             :time_delta: contains the `datetime.timedelta` interval used to
-                         calculate the moment in the past.
+                calculate the moment in the past.
 
-                         If this key is not present, the method expects other keys
-                         as per
-                         `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_
-                         so that a `datetime.timedelta` interval can be calculated.
+                If this key is not present, the method expects other keys
+                as per
+                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_
+                so that a `datetime.timedelta` interval can be calculated
 
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \

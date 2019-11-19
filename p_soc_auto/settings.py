@@ -574,6 +574,8 @@ CELERY_QUEUES = (
     #    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
     Queue('mail_collector', Exchange('mail_collector'),
           routing_key='mail_collector'),
+    Queue('ldap_probe', Exchange('ldap_probe'), routing_key='ldap_probe'),
+    Queue('data_prune', Exchange('data_prune'), routing_key='data_prune'),
 )
 """
 celery queues

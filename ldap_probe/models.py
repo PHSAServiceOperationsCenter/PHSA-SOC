@@ -12,7 +12,7 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 15, 2019
+:updated:    Nov. 19, 2019
 
 """
 import logging
@@ -225,6 +225,9 @@ class LdapProbeLog(models.Model):
     created_on = models.DateTimeField(
         _('created on'), db_index=True, auto_now_add=True,
         help_text=_('object creation time stamp'))
+    is_expired = models.BooleanField(
+        _('Probe data has expired'), db_index=True, blank=False, null=False,
+        default=False)
 
     def __str__(self):
         node = None

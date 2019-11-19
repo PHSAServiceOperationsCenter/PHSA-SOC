@@ -1125,6 +1125,42 @@ class LdapServiceUser(StringPreference):
         ' background processes').title()
     """verbose name for this dynamic preference"""
 
+
+@global_preferences_registry.register
+class LdapExpireProbeLogEntries(DurationPreference):
+    """
+    Dynamic preferences class controlling how old `LDAP` probe log entries
+    are before they are marked as `expired`
+
+    :access_key: 'ldapprobe__ldap_expire_after'
+    """
+    section = ldap_probe
+    name = 'ldap_expire_after'
+    default = settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'mark LDAP probe log entries as expired if older than').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether `expired` `LDAP` probe
+    log entries will be deleted
+
+    :access_key: 'ldapprobe__ldap_delete_expired'
+    """
+    section = ldap_probe
+    name = 'ldap_delete_expired'
+    default = settings.CITRUS_BORG_DELETE_EXPIRED
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('delete expired LDAP probe log entries').title()
+    """verbose name for this dynamic preference"""
+
+
 # pylint: enable=too-few-public-methods
 # pylint: enable=E1101
 

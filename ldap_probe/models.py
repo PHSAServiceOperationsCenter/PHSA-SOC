@@ -250,7 +250,7 @@ class LdapProbeLog(models.Model):
 
         :arg logger: :class:`logging.Logger instance
 
-        :returns: the new :class:`LdapProbeLog` instance 
+        :returns: the new :class:`LdapProbeLog` instance
         """
         ldap_probe_log_entry = cls(
             elapsed_initialize=probe_data.elapsed.elapsed_initialize,

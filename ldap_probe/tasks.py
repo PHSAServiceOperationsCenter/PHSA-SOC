@@ -62,7 +62,7 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
     try:
         created = models.LdapProbeLog.create_from_probe(
             ad_probe.ADProbe(
-                ad_model.objects.get(ad_pk))
+                ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
         logger.error(error)

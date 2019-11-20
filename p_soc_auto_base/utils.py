@@ -470,6 +470,13 @@ class MomentOfTime():
     module instead of the `Python datetime
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_ module.
     Therefore, it should not be used outside `Django applications`.
+
+    .. todo::
+
+        This class is time zone aware but only operates with UTC. Do we
+        need to make it work with other time zones and, particularly,
+        with the time zone defined in the Dajngo settings?
+
     """
     @staticmethod
     def now(now):
@@ -550,7 +557,7 @@ class MomentOfTime():
 
                 If this key is not present, the method expects other keys
                 as per
-                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_
+                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__
                 so that a `datetime.timedelta` interval can be calculated
 
         """

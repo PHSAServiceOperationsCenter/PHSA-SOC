@@ -120,6 +120,40 @@ def bootstrap_ad_probes(data_sources=None):
 @shared_task(queue='data_prune')
 def expire_entries(data_source=None, **age):
     """
+    mark row in the :class:`model <django.db.models.Model>` defined by
+    the data_source argument as expired if they were created before a
+    specific date and time
+
+    The assumption is that the :class:`model <django.db.models.Model>`
+    defined by the data_source argument has a filed named `created_on`
+    and a field named `is_expired`.
+
+    :arg str data_source: the name of a :class:`model
+        <django.db.models.Model>` in the `app_label.modelname` format
+
+        By default this argument will point to the
+        :class:`ldap_probe.models.LdapProbeLog` model
+
+    :arg age: named arguments that can be used for creating a
+        :class:`datetime.timedelta` object
+
+        See `Python docs for timedelta objects
+        <https://docs.python.org/3.6/library/datetime.html#timedelta-objects>`__
+
+    :returns: the name of the data source, the number of rows affected and
+        the date and time used for choosing the rows
+
+    :raises:
+
+        :exc:`p_soc-auto.base.utils.UnknownDataTargetError` if the
+        `data_source` argument cannot be resolved to a valid
+        :class:`django.db.models.Model`
+
+        :exc:`exceptions.AttributeError` if the
+            :class:`django.db.models.Model` resolved from the `data_source`
+            argument doesn't have both a `created_on` attribute and an
+            `is_expired` attribute
+
     """
     if data_source is None:
         data_source = 'ldap_probe.LdapProbeLog'
@@ -129,9 +163,77 @@ def expire_entries(data_source=None, **age):
     except utils.UnknownDataTargetError as error:
         raise error
 
-    if not hasattr(data_source, 'created'):
-        raise TypeError(
-            f'no age tracking field in {data_source._meta.model_name}')
+    if not hasattr(data_source, 'created_on'):
+        raise AttributeError(
+            f'Cannot do age tracking in the {data_source._meta.model_name}.'
+            ' It does not have a created_on field')
+
+    if not hasattr(data_source, 'is_expired'):
+        raise AttributeError(
+            f'Cannot expire rows in the {data_source._meta.model_name}.'
+            ' It does not have an is_expired field')
 
     if not age:
-        time_delta = get_preference('ldap_expire_after')
+        older_than = utils.MomentOfTime.past(
+            time_delta=get_preference('ldapprobe__ldap_expire_after'))
+    else:
+        older_than = utils.MomentOfTime.past(**age)
+
+    count_expired = data_source.objects.filter(created_on__lte=older_than).\
+        update(is_expired=True)
+
+    return (
+        f'Marked {count_expired} {data_source._meta.verbose_name} rows'  # pylint: disable=protected-access
+        f' created earlier than {older_than:%B %d, %Y at %H:%M} as expired.'
+    )
+
+
+@shared_task(queue='data_prune')
+def delete_expired_entries(data_source=None):
+    """
+    delete rows marked as expired from the :class:`model
+    <django.db.models.Model>` defined by the data_source argument
+
+    This task assumes that the :class:`model <django.db.models.Model>`
+    defined by the data_source argument has a :class:`bool` attribute named
+    `is_expred`.
+
+    :arg str data_source: the name of a :class:`model
+        <django.db.models.Model>` in the `app_label.modelname` format
+
+        By default this argument will point to the
+        :class:`ldap_probe.models.LdapProbeLog` model
+
+    :returns: the name of the data source and the number of deleted rows
+
+    :raises:
+
+        :exc:`p_soc-auto.base.utils.UnknownDataTargetError` if the
+        `data_source` argument cannot be resolved to a valid
+        :class:`django.db.models.Model`
+
+        :exc:`exceptions.AttributeError` if the
+            :class:`django.db.models.Model` resolved from the `data_source`
+            argument doesn't have an `is_expired` attribute
+
+    """
+    if data_source is None:
+        data_source = 'ldap_probe.LdapProbeLog'
+
+    try:
+        data_source = utils.get_model(data_source)
+    except utils.UnknownDataTargetError as error:
+        raise error
+
+    if not hasattr(data_source, 'is_expired'):
+        raise AttributeError(
+            f'There are no expired rows in the'
+            f' {data_source._meta.model_name}.'
+            ' It does not have an is_expired field')
+
+    count_deleted = data_source.objects.filter(is_expired=True).all().delete()
+
+    return (
+        f'Deleted {count_deleted} expired rows from'
+        f' {data_source._meta.verbose_name}'
+    )

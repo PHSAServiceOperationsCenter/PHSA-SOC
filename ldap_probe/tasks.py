@@ -18,6 +18,8 @@ used by the :ref:`Domain Controllers Monitoring Application`.
 :updated:    Nov. 19, 2019
 
 """
+from django.utils import timezone
+
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -55,8 +57,7 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
         raise error
 
     if not isinstance(ad_pk, int):
-        raise TypeError(
-            'Bad dog! No %s type biscuit for you', type(ad_pk))
+        raise TypeError(f'Bad dog! No {type(ad_pk)} type biscuit for you')
 
     try:
         created = models.LdapProbeLog.create_from_probe(
@@ -114,3 +115,23 @@ def bootstrap_ad_probes(data_sources=None):
             f'Will probe {len(pk_list)} AD controllers from {data_source}.')
 
     return '\n'.join(results)
+
+
+@shared_task(queue='data_prune')
+def expire_entries(data_source=None, **age):
+    """
+    """
+    if data_source is None:
+        data_source = 'ldap_probe.LdapProbeLog'
+
+    try:
+        data_source = utils.get_model(data_source)
+    except utils.UnknownDataTargetError as error:
+        raise error
+
+    if not hasattr(data_source, 'created'):
+        raise TypeError(
+            f'no age tracking field in {data_source._meta.model_name}')
+
+    if not age:
+        time_delta = get_preference('ldap_expire_after')

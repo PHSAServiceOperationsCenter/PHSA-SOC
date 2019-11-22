@@ -308,3 +308,4 @@ class LdapCredError(BaseModel, models.Model):
         app_label = 'ldap_probe'
         verbose_name = _('Active Directory Bind Error')
         verbose_name_plural = _('Common Active Directory Bind Errors')
+        ordering = ['error_unique_identifier', ]

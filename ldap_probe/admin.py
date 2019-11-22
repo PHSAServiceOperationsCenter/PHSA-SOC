@@ -17,6 +17,9 @@ classes for the :ref:`Domain Controllers Monitoring Application`.
 
 """
 from django.contrib import admin
+from django.forms.widgets import PasswordInput
+from django.utils.translation import gettext_lazy as _
+
 from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
 
 from ldap_probe import models
@@ -76,11 +79,33 @@ class NonOrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
 
 
 @admin.register(models.LDAPBindCred)
-class LDAPBindCredAdmin(admin.ModelAdmin):
+class LDAPBindCredAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LDAPBindCred`
     """
+    list_display_links = ('show_account',)
+    list_display = ('show_account', 'enabled', 'domain',
+                    'username',  'is_default', 'ldap_search_base',
+                    'updated_on', 'updated_by')
+    list_editable = ('enabled', 'domain', 'username', 'is_default',
+                     'ldap_search_base',)
+    list_filter = ('enabled', 'domain')
+    search_fields = ('domain', 'username')
+    readonly_fields = ('show_account', )
+
+    def show_account(self, obj):  # pylint: disable=no-self-use
+        """
+        display combined field for windows domain accounts
+        """
+        return '%s\\%s' % (obj.domain, obj.username)
+    show_account.short_description = _('Domain Account')
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name in ['password']:
+            kwargs['widget'] = PasswordInput(render_value=True)
+
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
 @admin.register(models.LdapProbeLog)
@@ -92,8 +117,14 @@ class LdapProbeLogAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.LdapCredError)
-class LdapCredErrorAdmin(admin.ModelAdmin):
+class LdapCredErrorAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapCredError`
     """
+    list_display = ('error_unique_identifier', 'enabled',
+                    'short_description', 'notes', 'comments', )
+    list_editable = ('enabled', 'notes', 'comments', )
+    list_filter = ('enabled', )
+    search_fields = ('error_unique_identifier', 'short_description', 'notes',
+                     'comments', )

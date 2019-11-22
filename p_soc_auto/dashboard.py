@@ -48,6 +48,10 @@ class CustomIndexDashboard(Dashboard):
                     css_classes=('collapse closed',),
                     models=('mail_collector.models.*',)),
                 modules.ModelList(
+                    _('AD Controllers Monitoring'), collapsible=True,
+                    css_classes=('collapse closed',),
+                    models=('ldap_probe.models.*',)),
+                modules.ModelList(
                     _('SSL Certificates Tracker'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('ssl_cert_tracker.models.*',),

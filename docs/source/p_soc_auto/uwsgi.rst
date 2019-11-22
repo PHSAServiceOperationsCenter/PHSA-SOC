@@ -43,3 +43,8 @@ at the same time
 
     [root@lvmsocq01 ~]# systemctl restart nginx;systemctl restart uwsgi-phsa-soc-app.service
     [root@lvmsocq01 ~]#
+
+.. note::
+
+    We are currently using a custom uwsgi executable. When setting up a
+    new system copy the uwsgi file located on lvmsockq01 in /usr/bin.

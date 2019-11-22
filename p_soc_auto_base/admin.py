@@ -18,6 +18,7 @@ Server` apps
 """
 from django.contrib import admin
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldDoesNotExist
 
 
@@ -94,6 +95,74 @@ class BaseAdmin(admin.ModelAdmin):
     actions_selection_counter = True
     save_on_top = True
     list_per_page = 50
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        override
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+
+        provide specialized drop-down values for `created_by`, `updated_by`,
+        `exchange_client_config`, and `site` `ForeignKey` fields.
+        """
+        if db_field.name in ['created_by', 'updated_by', ]:
+            kwargs['queryset'] = get_user_model().objects.\
+                filter(username=request.user.username)
+            kwargs['initial'] = kwargs['queryset'].get()
+
+        if db_field.name in ['site', ]:
+            kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
+
+        if db_field.name in ['exchange_client_config', ]:
+            kwargs['queryset'] = ExchangeConfiguration.objects.\
+                filter(enabled=True)
+            kwargs['initial'] = ExchangeConfiguration.get_default()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        """
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.add_view`
+
+        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
+        of the `request` object.
+        """
+        data = request.GET.copy()
+        data['created_by'] = request.user
+        data['updated_by'] = request.user
+        request.GET = data
+
+        return super().add_view(
+            request, form_url=form_url, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.change_view`
+
+        pre-populate `updated_by` from the :attr:`user` attribute
+        of the `request` object.
+        """
+        data = request.GET.copy()
+        data['updated_by'] = request.user
+        request.GET = data
+
+        return super().change_view(
+            request, object_id, form_url=form_url, extra_context=extra_context)
+
+    def get_readonly_fields(self, request, obj=None):  # @UnusedVariable
+        """
+        overload
+        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+
+        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        are always read only.
+        """
+        if obj is not None:
+            return self.readonly_fields + \
+                ('created_by', 'created_on', 'updated_on')
+
+        return self.readonly_fields
 
     def get_actions(self, request):
         """

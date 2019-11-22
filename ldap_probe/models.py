@@ -189,6 +189,8 @@ class NonOrionADNode(BaseADNode, models.Model):
         app_label = 'ldap_probe'
         verbose_name = _('Domain Controller not present in Orion')
         verbose_name_plural = _('Domain Controllers not present in Orion')
+        ordering = ['node_dns', ]
+        get_latest_by = 'updated_on'
 
 
 class LdapProbeLog(models.Model):

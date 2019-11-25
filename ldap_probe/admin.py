@@ -57,11 +57,108 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
 
 
 @admin.register(models.OrionADNode)
-class OrionADNodeAdmin(admin.ModelAdmin):
+class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.OrionADNode`
     """
+    list_display_links = ('show_node_caption', )
+    list_display = ('show_node_caption', 'node_dns', 'ip_address',
+                    'show_orion_admin_url', 'show_orion_url', 'site',
+                    'location', )
+    readonly_fields = ('show_node_caption', 'node_dns', 'ip_address',
+                       'show_orion_admin_url', 'show_orion_url', 'site',
+                       'location', )
+    search_fields = ('node__node_caption', 'node__node_dns',
+                     'node__ip_address', 'node__location', 'node__site')
+    list_filter = ('node__site', 'node__location', )
+
+    actions = None
+
+    def has_add_permission(self, request):
+        """
+        :class:`ldap_probe.models.OrionADNode` instances are created
+        automatically in the background
+
+        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        to prevent anybody from using the admin forms to create such
+        instances.
+        """
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """
+        :class:`ldap_probe.models.OrionADNode` instances are maintained
+        automatically in the background
+
+        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        to prevent anybody from using the admin forms to delete such
+        instances.
+        """
+        return False
+
+    def show_node_caption(self, obj):
+        """
+        show the node caption as known to the `Orion` server
+        """
+        if obj.node.node_caption:
+            return obj.node.node_caption
+        return None
+    show_node_caption.short_description = _('AD Orion node')
+
+    def node_dns(self, obj):
+        """
+        show the node `FQDN` as known to the `Orion` server
+        """
+        if obj.node.node_dns:
+            return obj.node.node_dns
+        return None
+    node_dns.short_description = _('FQDN')
+
+    def show_orion_admin_url(self, obj):
+        """
+        show the `URL` to the `Django admin cbange form` associated with
+        this `AD` node
+        """
+        return obj.orion_admin_url
+    show_orion_admin_url.short_description = _(
+        'Local definition for this node')
+
+    def show_orion_url(self, obj):
+        """
+        show the `URL` to the definition of this `AD` controller on the
+        `Orion` server
+        """
+        return obj.orion_url
+    show_orion_url.short_description = _(
+        'Orion definition for this node')
+
+    def ip_address(self, obj):
+        """
+        show the `IP` address as known to the `Orion` server
+        """
+        if obj.node.ip_address:
+            return obj.node.ip_address
+        return None
+    ip_address.short_description = _('IP address')
+
+    def site(self, obj):
+        """
+        show the site of this `AD` controller as defined in Orion
+        """
+        if obj.node.site:
+            return obj.node.site
+        return None
+    site.short_description = _('Site')
+
+    def location(self, obj):
+        """
+        show the location of this `AD` controller as defined in Orion
+        """
+        if obj.node.location:
+            return obj.node.location
+        return None
+    location.short_description = _('Location')
 
 
 @admin.register(models.NonOrionADNode)
@@ -108,12 +205,72 @@ class LDAPBindCredAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
         return super().formfield_for_dbfield(db_field, request, **kwargs)
 
 
-@admin.register(models.LdapProbeLog)
-class LdapProbeLogAdmin(admin.ModelAdmin):
+class LdapProbeLogAdminBase(admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` base class for admin classes
+    used by `proxy models
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    that inherit from :class:`ldap_probe.models.LdapProbeLog`
+    """
+    actions = None
+
+    def has_add_permission(self, request):
+        """
+        :class:`ldap_probe.models.LdapProbeLog` instances are created
+        automatically in the background
+
+        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        to prevent anybody from using the admin forms to create such
+        instances.
+        """
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """
+        :class:`ldap_probe.models.LdapProbeLog` instances are maintained
+        automatically in the background
+
+        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        to prevent anybody from using the admin forms to delete such
+        instances.
+        """
+        return False
+
+
+@admin.register(models.LdapProbeFullBindLog)
+class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
-    :class:`ldap_probe.models.LdapProbeLog`
+    :class:`ldap_probe.models.LdapProbeFullBindLog`
     """
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'elapsed_initialize',
+                    'elapsed_bind', 'elapsed_search_ext', 'created_on', )
+    readonly_fields = ('uuid', 'ad_orion_node', 'ad_node',
+                       'elapsed_initialize',
+                       'elapsed_bind', 'elapsed_search_ext', 'created_on', )
+    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+                   ('created_on', DateTimeRangeFilter), )
+    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
+                     'ad_orion_node__node__node_caption',
+                     'ad_orion_node__node__ip_address',)
+
+
+@admin.register(models.LdapProbeAnonBindLog)
+class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ldap_probe.models.LdapProbeAnonBindLog`
+    """
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'elapsed_initialize',
+                    'elapsed_anon_bind', 'elapsed_read_root', 'created_on', )
+    readonly_fields = ('uuid', 'ad_orion_node', 'ad_node',
+                       'elapsed_initialize', 'elapsed_anon_bind',
+                       'elapsed_read_root', 'created_on', )
+    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+                   ('created_on', DateTimeRangeFilter), )
+    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
+                     'ad_orion_node__node__node_caption',
+                     'ad_orion_node__node__ip_address',)
 
 
 @admin.register(models.LdapCredError)

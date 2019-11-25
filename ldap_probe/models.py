@@ -20,6 +20,9 @@ import socket
 
 from django.db import models
 from django.core import validators
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -98,7 +101,7 @@ class BaseADNode(BaseModel, models.Model):
             node = getattr(self, 'node')
             if node.node_dns:
                 return node.node_dns
-            return node.ip_address
+            return node.node_caption
 
     class Meta:
         abstract = True
@@ -124,10 +127,41 @@ class OrionADNode(BaseADNode, models.Model):
 
         return self.node.node_caption
 
+    def sync_to_orion(self):
+        """
+        .. todo::
+
+            use this to keep this model in sync with OrionNode. Needs to
+            be wrapped in a task. Maybe it should not be an instance method
+        """
+
+    @property
+    @mark_safe
+    def orion_admin_url(self):
+        """
+        instance property containing the `URL` to the `Django admin` change
+        form for this `AD` controller
+        """
+        return '<a href="%s">%s</>' % (reverse(
+            'admin:orion_integration_orionnode_change', args=(self.node.id,)
+        ), self.node.node_caption)
+
+    @property
+    @mark_safe
+    def orion_url(self):
+        """
+        instance property containing the `URL` for the `Orion` node
+        associated with this `AD` controller
+        """
+        return '<a href="%s%s">%s</>' % (
+            get_preference('orionserverconn__orion_server_url'),
+            self.node.details_url, self.node.node_caption)
+
     class Meta:
         app_label = 'ldap_probe'
         verbose_name = _('Domain Controller from Orion')
         verbose_name_plural = _('Domain Controllers from Orion')
+        ordering = ('node__node_caption', )
 
 
 class NonOrionADNode(BaseADNode, models.Model):
@@ -191,6 +225,66 @@ class NonOrionADNode(BaseADNode, models.Model):
         verbose_name_plural = _('Domain Controllers not present in Orion')
         ordering = ['node_dns', ]
         get_latest_by = 'updated_on'
+
+
+class LdapProbeLogFullBindManager(models.Manager):
+    """
+    custom :class:`django.db.models.Manager` used by the
+    :class:`LdapProbeLogFullBind` model
+
+    We have observed that the default set of `Windows` domain credentials
+    will allow full LDAP binds for a limited number of `AD` controllers.
+    By design LDAP probe data collected from these `AD` controllers will
+    present with :attr:`LdapProbeLog.elapsed_bind` values that are not
+    0.
+    """
+
+    def get_queryset(self):  # pylint: disable=no-self-use
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`LdapProbeLog` instances that contain timing data for
+            `LDAP` full bind operations
+
+        """
+        return LdapProbeLog.objects.filter(
+            elapsed_bind__gt=timezone.timedelta(seconds=0))
+
+
+class LdapProbeLogAnonBindManager(models.Manager):
+    """
+    custom :class:`django.db.models.Manager` used by the
+    :class:`LdapProbeLogFullBind` model
+
+    We have observed that the default set of `Windows` domain credentials
+    will not allow full LDAP binds (see :class:`LdapProbeLogFullBindManager`)
+    for most of `AD` controllers.
+    By design LDAP probe data collected from these `AD` controllers will
+    present with :attr:`LdapProbeLog.elapsed_anon_bind` values that are not
+    0.
+
+    """
+
+    def get_queryset(self):  # pylint: disable=no-self-use
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`LdapProbeLog` instances that contain timing data for
+            `LDAP` anonymous bind operations
+
+        """
+        return LdapProbeLog.objects.filter(
+            elapsed_anon_bind__gt=timezone.timedelta(seconds=0))
 
 
 class LdapProbeLog(models.Model):
@@ -279,6 +373,37 @@ class LdapProbeLog(models.Model):
         app_label = 'ldap_probe'
         verbose_name = _('AD service probe')
         verbose_name_plural = _('AD service probes')
+        ordering = ('-created_on', )
+
+
+class LdapProbeFullBindLog(LdapProbeLog):
+    """
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    that shows only :class:`LdapProbeLog` instances with full `AD` probe
+    data
+    """
+    obejcts = LdapProbeLogFullBindManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('AD service probe with full data')
+        verbose_name_plural = _('AD service probes with full data')
+
+
+class LdapProbeAnonBindLog(LdapProbeLog):
+    """
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    that shows only :class:`LdapProbeLog` instances with limited `AD` probe
+    data
+    """
+    objects = LdapProbeLogAnonBindManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('AD service probe with limited data')
+        verbose_name_plural = _('AD service probes with limited data')
 
 
 class LdapCredError(BaseModel, models.Model):

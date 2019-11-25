@@ -274,17 +274,18 @@ class SslCertificate(SslCertificateBase, models.Model):
           :attr:`pk_md5` with the one present in the :attr:`ssl_md5` attribute
           of the `ssl_certificate` argument
 
-          * if the `MD5` values match, the whole `SSL` certificate matches; the
-            mehtod will only update the :attr:`SslCertificate.last_seen` field
+          * if the `MD5` values match, the whole `SSL` certificate matches;
+            the method will only update the :attr:`SslCertificate.last_seen`
+            field
 
-          * if the `MD5` values don't match, this is a new `SSL` certificate; the
-            method will update all the fields in the :class:`SslCertificate`
-            instance
+          * if the `MD5` values don't match, this is a new `SSL` certificate;
+            the method will update all the fields in the
+            :class:`SslCertificate` instance
 
         :Note:
 
-            In :class:`SslCetificate`, the network address is hiding behind the
-            :attr:`SslCertificate.orion_id` which is a
+            In :class:`SslCetificate`, the network address is hiding behind
+            the :attr:`SslCertificate.orion_id` which is a
             :class:`django.db.models.ForeignKey` to
             :class:`orion_integration.models.OrionNode`.
 
@@ -296,7 +297,7 @@ class SslCertificate(SslCertificateBase, models.Model):
             <https://nmap.org/>`_ scan
         :type ssl_certificate: :class:`ssl_cert_tracker.nmap.SslProbe`
 
-        :arg str username: the :attr:`django.contrib.auth.models.User.username`
+        :arg str username: :attr:`django.contrib.auth.models.User.username`
             of the user (or its
             `replacement
             <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__)
@@ -304,8 +305,8 @@ class SslCertificate(SslCertificateBase, models.Model):
 
             The default value is picked from
             :attr:`p_soc_auto.settings.NMAP_SERVICE_USER`. If a matching
-            :class:`django.contrib.auth.models.User` instance doesn't exist, one
-            will be created.
+            :class:`django.contrib.auth.models.User` instance doesn't exist,
+            one will be created.
         """
         user = cls.get_or_create_user(username)
         issuer = SslCertificateIssuer.get_or_create(
@@ -368,8 +369,8 @@ class SslCertificate(SslCertificateBase, models.Model):
         """
         absolute `URL` for the `Django admin change`
         :class:`django.contrib.admin.ModelAmin` form for the
-        :class:`orion_integration.models.OrionNode` instance of the network node
-        that is serving this `SSL` certificate
+        :class:`orion_integration.models.OrionNode` instance of the network
+        node that is serving this `SSL` certificate
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -399,8 +400,9 @@ class SslCertificate(SslCertificateBase, models.Model):
     @mark_safe
     def orion_node_url(self):
         """
-        absolute `SolarWinds Orion <https://www.solarwinds.com/solutions/orion>`__
-        `URL` for the network node serving this :class:`SslCertificate` instance
+        absolute `SolarWinds Orion
+        <https://www.solarwinds.com/solutions/orion>`__ `URL` for the
+        network node serving this :class:`SslCertificate` instance
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():

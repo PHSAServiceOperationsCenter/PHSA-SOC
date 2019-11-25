@@ -17,6 +17,9 @@ or for a separate database server, see the `GRANT
 <https://mariadb.com/kb/en/library/documentation/sql-statements-structure/sql-statements/account-management-sql-commands/grant/>`_
 command.
 
+Our system relies on timezone definitions being installed on the database, for MariaDB they must be installed manually.
+To do this run the following command :command:`mysql_tzinfo_to_sql /usr/share/zoneinfo`
+
 MariaDB security
 ----------------
 

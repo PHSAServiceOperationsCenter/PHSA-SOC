@@ -61,8 +61,7 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
 
     try:
         created = models.LdapProbeLog.create_from_probe(
-            ad_probe.ADProbe(
-                ad_model.objects.get(pk=ad_pk))
+            ad_probe.ADProbe.probe(ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
         logger.error(error)
@@ -182,10 +181,12 @@ def expire_entries(data_source=None, **age):
     count_expired = data_source.objects.filter(created_on__lte=older_than).\
         update(is_expired=True)
 
+    # pylint: disable=protected-access
     return (
-        f'Marked {count_expired} {data_source._meta.verbose_name} rows'  # pylint: disable=protected-access
+        f'Marked {count_expired} {data_source._meta.verbose_name} rows'
         f' created earlier than {older_than:%B %d, %Y at %H:%M} as expired.'
     )
+    # pylint: enable=protected-access
 
 
 @shared_task(queue='data_prune')
@@ -237,3 +238,17 @@ def delete_expired_entries(data_source=None):
         f'Deleted {count_deleted} expired rows from'
         f' {data_source._meta.verbose_name}'
     )
+
+
+@shared_task(queue='data_prune')
+def trim_ad_controller_duplicates():
+    """
+    this function makes sure that if the definition for an `AD` node is
+    present in both :class:`ldap_probe.models.OrionADNode` and
+    :class;`ldap_probe.models.NonOrionADNode`, the later will be deleted
+
+    The advantage of considering the `AD` definitions in
+    :class:`ldap_probe.models.OrionADNode` to be the `truthy` ones is
+    that the data in that particular model is maintained automatically
+    as far as our application is concerned
+    """

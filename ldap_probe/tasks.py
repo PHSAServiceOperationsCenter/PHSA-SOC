@@ -241,7 +241,7 @@ def delete_expired_entries(data_source=None):
 
 
 @shared_task(queue='data_prune')
-def trim_ad_controller_duplicates():
+def trim_ad_duplicates():
     """
     this function makes sure that if the definition for an `AD` node is
     present in both :class:`ldap_probe.models.OrionADNode` and
@@ -252,3 +252,9 @@ def trim_ad_controller_duplicates():
     that the data in that particular model is maintained automatically
     as far as our application is concerned
     """
+    for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
+        try:
+            node.remove_if_in_orion(logger=LOG)
+        except Exception as error:
+            LOG.error(error)
+            raise error

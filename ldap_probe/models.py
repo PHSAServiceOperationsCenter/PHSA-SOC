@@ -186,14 +186,6 @@ class OrionADNode(BaseADNode, models.Model):
 
         return self.node.node_caption
 
-    def sync_to_orion(self):
-        """
-        .. todo::
-
-            use this to keep this model in sync with OrionNode. Needs to
-            be wrapped in a task. Maybe it should not be an instance method
-        """
-
     @property
     @mark_safe
     def orion_admin_url(self):

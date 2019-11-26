@@ -42,6 +42,64 @@ def _get_default_ldap_search_base():
     return get_preference('ldapprobe__search_dn_default')
 
 
+class LdapProbeLogFullBindManager(models.Manager):
+    """
+    custom :class:`django.db.models.Manager` used by the
+    :class:`LdapProbeLogFullBind` model
+
+    We have observed that the default set of `Windows` domain credentials
+    will allow full LDAP binds for a limited number of `AD` controllers.
+    By design LDAP probe data collected from these `AD` controllers will
+    present with :attr:`LdapProbeLog.elapsed_bind` values that are not
+    0.
+    """
+
+    def get_queryset(self):  # pylint: disable=no-self-use
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`LdapProbeLog` instances that contain timing data for
+            `LDAP` full bind operations
+
+        """
+        return LdapProbeLog.objects.filter(elapsed_bind__isnull=False)
+
+
+class LdapProbeLogAnonBindManager(models.Manager):
+    """
+    custom :class:`django.db.models.Manager` used by the
+    :class:`LdapProbeLogFullBind` model
+
+    We have observed that the default set of `Windows` domain credentials
+    will not allow full LDAP binds (see :class:`LdapProbeLogFullBindManager`)
+    for most of `AD` controllers.
+    By design LDAP probe data collected from these `AD` controllers will
+    present with :attr:`LdapProbeLog.elapsed_anon_bind` values that are not
+    0.
+
+    """
+
+    def get_queryset(self):  # pylint: disable=no-self-use
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`LdapProbeLog` instances that contain timing data for
+            `LDAP` anonymous bind operations
+
+        """
+        return LdapProbeLog.objects.filter(elapsed_anon_bind__isnull=False)
+
+
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
     """
     :class:`django.db.models.Model` class used for storing credentials used
@@ -119,7 +177,7 @@ class OrionADNode(BaseADNode, models.Model):
     """
     node = models.OneToOneField(
         'orion_integration.OrionDomainControllerNode', db_index=True,
-        blank=False, null=False, on_delete=models.PROTECT,
+        blank=False, null=False, on_delete=models.CASCADE,
         verbose_name=_('Orion Node for Domain Controller'))
 
     def __str__(self):
@@ -226,64 +284,6 @@ class NonOrionADNode(BaseADNode, models.Model):
         verbose_name_plural = _('Domain Controllers not present in Orion')
         ordering = ['node_dns', ]
         get_latest_by = 'updated_on'
-
-
-class LdapProbeLogFullBindManager(models.Manager):
-    """
-    custom :class:`django.db.models.Manager` used by the
-    :class:`LdapProbeLogFullBind` model
-
-    We have observed that the default set of `Windows` domain credentials
-    will allow full LDAP binds for a limited number of `AD` controllers.
-    By design LDAP probe data collected from these `AD` controllers will
-    present with :attr:`LdapProbeLog.elapsed_bind` values that are not
-    0.
-    """
-
-    def get_queryset(self):  # pylint: disable=no-self-use
-        """
-        override :meth:`django.db.models.Manager.get_queryset`
-
-        See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
-        in the `Django` docs.
-
-        :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`LdapProbeLog` instances that contain timing data for
-            `LDAP` full bind operations
-
-        """
-        return LdapProbeLog.objects.filter(elapsed_bind__isnull=False)
-
-
-class LdapProbeLogAnonBindManager(models.Manager):
-    """
-    custom :class:`django.db.models.Manager` used by the
-    :class:`LdapProbeLogFullBind` model
-
-    We have observed that the default set of `Windows` domain credentials
-    will not allow full LDAP binds (see :class:`LdapProbeLogFullBindManager`)
-    for most of `AD` controllers.
-    By design LDAP probe data collected from these `AD` controllers will
-    present with :attr:`LdapProbeLog.elapsed_anon_bind` values that are not
-    0.
-
-    """
-
-    def get_queryset(self):  # pylint: disable=no-self-use
-        """
-        override :meth:`django.db.models.Manager.get_queryset`
-
-        See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
-        in the `Django` docs.
-
-        :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`LdapProbeLog` instances that contain timing data for
-            `LDAP` anonymous bind operations
-
-        """
-        return LdapProbeLog.objects.filter(elapsed_anon_bind__isnull=False)
 
 
 class LdapProbeLog(models.Model):

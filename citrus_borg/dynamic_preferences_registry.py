@@ -436,7 +436,7 @@ class OrionProbeCSTOnly(BooleanPreference):
     name = 'cerner_cst'
     default = True
     """default value for this dynamic preference"""
-    required = True
+    required = False
     verbose_name = _('Only probe Cerner CST Orion nodes').title()
     """verbose name for this dynamic preference"""
 
@@ -1156,7 +1156,7 @@ class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
     name = 'ldap_delete_expired'
     default = settings.CITRUS_BORG_DELETE_EXPIRED
     """default value for this dynamic preference"""
-    required = True
+    required = False
     verbose_name = _('delete expired LDAP probe log entries').title()
     """verbose name for this dynamic preference"""
 

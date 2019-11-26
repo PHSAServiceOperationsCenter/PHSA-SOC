@@ -47,4 +47,8 @@ at the same time
 .. note::
 
     We are currently using a custom uwsgi executable. When setting up a
-    new system copy the uwsgi file located on lvmsockq01 in /usr/bin.
+    new system copy the uwsgi file located on lvmsocq01 and lvmsocq02 in /usr/bin.
+
+.. todo::
+
+    Use the default uWSGI repositories for CentOS.

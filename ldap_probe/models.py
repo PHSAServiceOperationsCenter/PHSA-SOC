@@ -15,6 +15,7 @@ This module contains the :class:`django.db.models.Model` models for the
 :updated:    Nov. 19, 2019
 
 """
+import decimal
 import logging
 import socket
 
@@ -252,8 +253,7 @@ class LdapProbeLogFullBindManager(models.Manager):
             `LDAP` full bind operations
 
         """
-        return LdapProbeLog.objects.filter(
-            elapsed_bind__gt=timezone.timedelta(seconds=0))
+        return LdapProbeLog.objects.filter(elapsed_bind__isnull=False)
 
 
 class LdapProbeLogAnonBindManager(models.Manager):
@@ -283,8 +283,7 @@ class LdapProbeLogAnonBindManager(models.Manager):
             `LDAP` anonymous bind operations
 
         """
-        return LdapProbeLog.objects.filter(
-            elapsed_anon_bind__gt=timezone.timedelta(seconds=0))
+        return LdapProbeLog.objects.filter(elapsed_anon_bind__isnull=False)
 
 
 class LdapProbeLog(models.Model):
@@ -304,16 +303,21 @@ class LdapProbeLog(models.Model):
     ad_node = models.ForeignKey(
         NonOrionADNode, db_index=True, blank=True, null=True,
         on_delete=models.CASCADE, verbose_name=_('AD controller'))
-    elapsed_initialize = models.DurationField(
-        _('LDAP initialization duration'), blank=True, null=True)
-    elapsed_bind = models.DurationField(
-        _('LDAP bind duration'), blank=True, null=True)
-    elapsed_anon_bind = models.DurationField(
-        _('LDAP anonymous bind duration'), blank=True, null=True)
-    elapsed_read_root = models.DurationField(
-        _('LDAP read root DSE duration'), blank=True, null=True)
-    elapsed_search_ext = models.DurationField(
-        _('LDAP extended search duration'), blank=True, null=True)
+    elapsed_initialize = models.DecimalField(
+        _('LDAP initialization duration'), max_digits=9, decimal_places=6,
+        blank=True, null=True)
+    elapsed_bind = models.DecimalField(
+        _('LDAP bind duration'), max_digits=9, decimal_places=6,
+        blank=True, null=True)
+    elapsed_anon_bind = models.DecimalField(
+        _('LDAP anonymous bind duration'), max_digits=9, decimal_places=6,
+        blank=True, null=True)
+    elapsed_read_root = models.DecimalField(
+        _('LDAP read root DSE duration'), max_digits=9, decimal_places=6,
+        blank=True, null=True)
+    elapsed_search_ext = models.DecimalField(
+        _('LDAP extended search duration'), max_digits=9, decimal_places=6,
+        blank=True, null=True)
     ad_response = models.TextField(
         _('AD controller response'), blank=True, null=True)
     errors = models.TextField(

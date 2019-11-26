@@ -58,22 +58,22 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
         """
         :class:`_ADProbeElapsed` constructor
         """
-        self.elapsed_initialize = datetime.timedelta(seconds=0)
+        self.elapsed_initialize = None
         """elapsed time for :meth:`ldap.initialize`"""
 
-        self.elapsed_bind = datetime.timedelta(seconds=0)
+        self.elapsed_bind = None
         """elapsed time for :meth:`ldap.LDAPObject.bind_s`"""
 
-        self.elapsed_anon_bind = datetime.timedelta(seconds=0)
+        self.elapsed_anon_bind = None
         """
         elapsed time for :meth:`ldap.LDAPObject.bind_s` when called
         anonymously
         """
 
-        self.elapsed_read_root = datetime.timedelta(seconds=0)
+        self.elapsed_read_root = None
         """elapsed time for :meth:`ldap.LDAPObject.read_rootdse_s`"""
 
-        self.elapsed_search_ext = datetime.timedelta(seconds=0)
+        self.elapsed_search_ext = None
         """elapsed time for :meth:`ldap.LDAPObject.search_ext_s`"""
 
 
@@ -156,7 +156,7 @@ class ADProbe():
         self.logger.debug(
             'initialize ldap with %s', self.ad_controller.get_node())
 
-        with Timer() as timing:
+        with Timer(use_duration=False) as timing:
             try:
                 self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
@@ -193,7 +193,7 @@ class ADProbe():
         if self.abort:
             return
 
-        with Timer() as timing:
+        with Timer(use_duration=False) as timing:
             try:
                 self.ldap_object.bind_s(
                     self.ad_controller.ldap_bind_cred.username,
@@ -212,7 +212,7 @@ class ADProbe():
 
         self.elapsed.elapsed_bind = timing.elapsed
 
-        with Timer() as timing:
+        with Timer(use_duration=False) as timing:
             try:
                 self.ad_response = self.ldap_object.search_ext_s(
                     self.ad_controller.ldap_bind_cred.ldap_search_base,
@@ -220,6 +220,15 @@ class ADProbe():
                     (f'(sAMAccountName='
                      f'{self.ad_controller.ldap_bind_cred.username})')
                 )
+            except ldap.REFERRAL as err:
+                self.elapsed.elapsed_search_ext = timing.elapsed
+                self._set_abort(
+                    error_message=(
+                        f'Extended search error: {err}. This means the'
+                        f' information is not available on this AD controller'
+                        f' {self.ad_controller.get_node()} but it is'
+                        f' available at {err.args[0].get("info")}'))
+                return
             except Exception as err:
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
@@ -257,7 +266,7 @@ class ADProbe():
         if self.abort:
             return
 
-        with Timer() as timing:
+        with Timer(use_duration=False) as timing:
             try:
                 self.ldap_object.simple_bind_s()
             except ldap.SERVER_DOWN as err:
@@ -270,7 +279,7 @@ class ADProbe():
 
         self.elapsed.elapsed_anon_bind = timing.elapsed
 
-        with Timer() as timing:
+        with Timer(use_duration=False) as timing:
             try:
                 self.ad_response = self.ldap_object.read_rootdse_s()
             except Exception as err:  # pylint: disable=broad-except
@@ -299,11 +308,11 @@ class ADProbe():
         """
         self._set_abort(error_message=f'Network error: {err}')
 
-        if err.get('errno') == 107:
+        if err.args[0].get('errno') == 107:
             self.errors += (
                 '\nBad network port or using ldaps://hostname for host'
                 ' that only supports ldap')
-        elif err.get('errno') == 2:
+        elif err.args[0].get('errno') == 2:
             self.errors += (
                 f'\n'
                 f'{diagnose_network_problem(self.ad_controller.get_node())}'

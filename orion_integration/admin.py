@@ -51,7 +51,8 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
         override
         :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
 
-        provide specialized drop-down values for `created_by`, `updated_by` fields.
+        provide specialized drop-down values for `created_by`, `updated_by`
+        fields.
         """
         if db_field.name in ['updated_by', 'created_by']:
             kwargs['queryset'] = get_user_model().objects.\
@@ -64,7 +65,8 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
         """
         overload :meth:`django.contrib.admin.has_add_permission`
 
-        All the data is maintained by background processes from the `Orion` server.
+        All the data is maintained by background processes from the `Orion`
+        server.
         Users are not allowed to create any records manually from the `Django
         admin` interface.
         """
@@ -75,9 +77,9 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
         overload
         :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
-        By default, all fields are read only. We make sure of this by pulling the
-        fields from the underlying :class:`django.db.models.Model` model using
-        the `Model _meta API
+        By default, all fields are read only. We make sure of this by
+        pulling the fields from the underlying
+        :class:`django.db.models.Model` model using the `Model _meta API
         <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`__
         and placing them into the :attr:`readonly_fields` attribute of the
         :class:`django.contrib.admin.ModelAdmin` instance.

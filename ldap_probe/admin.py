@@ -236,6 +236,12 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         """
         return False
 
+    def get_readonly_fields(self, request, obj=None):
+        """
+        all the fields on the `Django admin` forms must be read only
+        """
+        return [field.name for field in self.model._meta.fields]
+
 
 @admin.register(models.LdapProbeFullBindLog)
 class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
@@ -243,11 +249,9 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFullBindLog`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'elapsed_initialize',
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
+                    'elapsed_initialize',
                     'elapsed_bind', 'elapsed_search_ext', 'created_on', )
-    readonly_fields = ('uuid', 'ad_orion_node', 'ad_node',
-                       'elapsed_initialize',
-                       'elapsed_bind', 'elapsed_search_ext', 'created_on', )
     list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
@@ -261,11 +265,9 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeAnonBindLog`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'elapsed_initialize',
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
+                    'elapsed_initialize',
                     'elapsed_anon_bind', 'elapsed_read_root', 'created_on', )
-    readonly_fields = ('uuid', 'ad_orion_node', 'ad_node',
-                       'elapsed_initialize', 'elapsed_anon_bind',
-                       'elapsed_read_root', 'created_on', )
     list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',

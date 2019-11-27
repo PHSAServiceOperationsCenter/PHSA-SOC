@@ -218,18 +218,18 @@ class ADProbe():
                     self.ad_controller.ldap_bind_cred.ldap_search_base,
                     ldap.SCOPE_SUBTREE,
                     (f'(sAMAccountName='
-                     f'{self.ad_controller.ldap_bind_cred.username})')
-                )
+                     f'{self.ad_controller.ldap_bind_cred.username})'))
             except ldap.REFERRAL as err:
-                self.elapsed.elapsed_search_ext = timing.elapsed
-                self._set_abort(
-                    error_message=(
-                        f'Extended search error: {err}. This means the'
-                        f' information is not available on this AD controller'
-                        f' {self.ad_controller.get_node()} but it is'
-                        f' available at {err.args[0].get("info")}'))
-                return
-            except Exception as err:
+                self.ad_response = (
+                    'REFERRAL: %s'
+                    % err.args[0].get("info")[len("Referral:\n"):])
+
+                self.errors += (
+                    f'Extended search error: {err}. The information is'
+                    f' not available on the AD controller at'
+                    f' {self.ad_controller.get_node()}')
+
+            except Exception as err:  # pylint: disable=broad-except
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
                 return

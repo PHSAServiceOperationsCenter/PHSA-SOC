@@ -320,6 +320,9 @@ class LdapProbeLog(models.Model):
     is_expired = models.BooleanField(
         _('Probe data has expired'), db_index=True, blank=False, null=False,
         default=False)
+    failed = models.BooleanField(
+        _('Probe failed'), db_index=True, blank=False, null=False,
+        default=False)
 
     def __str__(self):
         node = None

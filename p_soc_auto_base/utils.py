@@ -664,7 +664,8 @@ def get_subscription(subscription):
         raise error
 
 
-def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
+def borgs_are_hailing(
+        data, subscription, logger=LOGGER, add_csv=True, **extra_context):
     """
     use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
     email from the :ref:`SOC Automation Server`
@@ -672,16 +673,19 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
 
     :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance used to render and address
-        the email
+        <ssl_cert_tracker.models.Subscription>` instance that will be used
+        for rendering and addressing the email
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain a descriptor for the `queryset` fields that will be
-        rendered in the email.
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain a descriptor for the `queryset` fields that
+        will be rendered in the email.
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain the name and location of the template that will be used to
-        render the email. 
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain the name and location of the template that
+        will be used to render the email.
+
+    :arg bool add_csv: attach a csv file with the contents of the `data`
+        argument to the email; default is `True`
 
     :arg LOGGER: a logging handlle
     :type LOGGER: :class:`logging.Logger`
@@ -705,7 +709,7 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     try:
         email_alert = Email(
             data=data, subscription_obj=subscription, logger=logger,
-            **extra_context)
+            add_csv=add_csv, **extra_context)
     except Exception as error:  # pylint: disable=broad-except
         logger.error('cannot initialize email object: %s', str(error))
         raise error

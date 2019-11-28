@@ -18,7 +18,8 @@ or for a separate database server, see the `GRANT
 command.
 
 Our system relies on timezone definitions being installed on the database, for MariaDB they must be installed manually.
-To do this run the following command :command:`mysql_tzinfo_to_sql /usr/share/zoneinfo`
+To do this run the following command :command:`mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u <username> -p mysql`,
+supplying the username and password as described under :attr:`p_soc_auto.settings.DATABASES`.
 
 MariaDB security
 ----------------

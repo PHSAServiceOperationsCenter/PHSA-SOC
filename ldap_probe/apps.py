@@ -40,4 +40,4 @@ class LdapProbeConfig(AppConfig):
         See `AppConfig.ready()
         <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`__.
         """
-        pass  # pylint: disable=unnecessary-pass
+        import ldap_probe.signals

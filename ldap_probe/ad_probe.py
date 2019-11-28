@@ -87,6 +87,14 @@ class ADProbe():
         """
         :class:`ADProbe` constructor
         """
+        self.failed = False
+        """
+        track probe failure state
+        
+        It is easier to determine it here than to calculate it at
+        the `Django model` level with a query against a text field.
+        """
+
         self.abort = False
         """
         state variable
@@ -161,6 +169,7 @@ class ADProbe():
                 self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
             except Exception as err:  # pylint: disable=broad-except
+                self.failed = True
                 self._set_abort(
                     error_message=f'LDAP Initialization error: {err}')
                 return
@@ -207,6 +216,7 @@ class ADProbe():
                 return
 
             except Exception as err:  # pylint: disable=broad-except
+                self.failed = True
                 self._set_abort(error_message=f'Error: {err}.')
                 return
 
@@ -230,6 +240,7 @@ class ADProbe():
                     f' {self.ad_controller.get_node()}')
 
             except Exception as err:  # pylint: disable=broad-except
+                self.failed = True
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
                 return
@@ -253,8 +264,8 @@ class ADProbe():
 
         try:
             self.bind_anonym_and_read()
-        except:
-            self._diagnose_ip_or_dns('Fall back failed as well')
+        except:  # pylint: disable=bare-except
+            self.failed = True
 
     def bind_anonym_and_read(self):
         """
@@ -270,10 +281,12 @@ class ADProbe():
             try:
                 self.ldap_object.simple_bind_s()
             except ldap.SERVER_DOWN as err:
+                self.failed = True
                 self._diagnose_network(err)
                 return
 
             except Exception as err:  # pylint: disable=broad-except
+                self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return
 
@@ -283,6 +296,7 @@ class ADProbe():
             try:
                 self.ad_response = self.ldap_object.read_rootdse_s()
             except Exception as err:  # pylint: disable=broad-except
+                self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return
 

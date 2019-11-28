@@ -29,12 +29,56 @@ from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
 from django.db.models.functions import Cast, Concat
 from django.db.models.query import QuerySet
+from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
 LOGGER = logging.getLogger('django')
+
+
+def get_absolute_admin_change_url(
+        admin_view, obj_pk, obj_anchor_name=None, root_url=None):
+    """
+    build and return an absolute `URL` for a `Django admin change` page
+
+    See `Reversing admin URLs
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`__.
+
+    :arg str admin_view: the name of the admin view
+    :arg int obj_pk: the primary key of the object in the view
+    :arg str obj_anchor_name: the string that should be placed inside
+        an <a>$obj_anchor_name</a> `HTML` tag; default is `None` and
+        in that case the function assumes that the HTML tag will be
+        <a></a>
+
+    :arg str root_url: an `URL` fragment to be placed before the
+        `Django admin` object path
+
+        It is supposed to look something like
+        '<a href="http://server:port/'. If this argument is set to `None`,
+        it will be populated from specific `Django` settings and the
+        value returned by :meth:`socket.getfqdn`
+
+    """
+    if root_url is None:
+        root_url = (
+            f'<a href="{settings.SERVER_PROTO}://{socket.getfqdn()}:'
+            f'{settings.SERVER_PORT}/')
+
+    if obj_anchor_name is None:
+        tail_url = '"></a>'
+    else:
+        tail_url = f'">{obj_anchor_name}</a>'
+
+    try:
+        admin_path = reverse(admin_view, args=(obj_pk,))
+    except NoReverseMatch as err:
+        return f'cannot resolve URL path for view {admin_view}. Error: {err}'
+
+    return f'{root_url}{admin_path}{tail_url}'
 
 
 def diagnose_network_problem(host_spec, port=0):
@@ -664,7 +708,8 @@ def get_subscription(subscription):
         raise error
 
 
-def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
+def borgs_are_hailing(
+        data, subscription, logger=LOGGER, add_csv=True, **extra_context):
     """
     use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
     email from the :ref:`SOC Automation Server`
@@ -672,16 +717,19 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
 
     :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance used to render and address
-        the email
+        <ssl_cert_tracker.models.Subscription>` instance that will be used
+        for rendering and addressing the email
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain a descriptor for the `queryset` fields that will be
-        rendered in the email.
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain a descriptor for the `queryset` fields that
+        will be rendered in the email.
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain the name and location of the template that will be used to
-        render the email. 
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain the name and location of the template that
+        will be used to render the email.
+
+    :arg bool add_csv: attach a csv file with the contents of the `data`
+        argument to the email; default is `True`
 
     :arg LOGGER: a logging handlle
     :type LOGGER: :class:`logging.Logger`
@@ -705,7 +753,7 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     try:
         email_alert = Email(
             data=data, subscription_obj=subscription, logger=logger,
-            **extra_context)
+            add_csv=add_csv, **extra_context)
     except Exception as error:  # pylint: disable=broad-except
         logger.error('cannot initialize email object: %s', str(error))
         raise error

@@ -1256,6 +1256,24 @@ class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
     """verbose name for this dynamic preference"""
 
 
+@global_preferences_registry.register
+class LdapErrorAlertSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error alerts
+
+    :access_key: 'ldapprobe__ldap_error_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_subscription'
+    default = 'LDAP: Error alerts subscription'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Alerts').title()
+    """verbose name for this dynamic preference"""
+
+
 # pylint: enable=too-few-public-methods
 # pylint: enable=E1101
 

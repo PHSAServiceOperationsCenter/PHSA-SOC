@@ -17,19 +17,17 @@ This module contains the :class:`django.db.models.Model` models for the
 """
 import logging
 import socket
-from string import Template
 
 from django.db import models
 from django.conf import settings
 from django.core import validators
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.models import BaseModel, BaseModelWithDefaultInstance
-from p_soc_auto_base.utils import get_uuid
+from p_soc_auto_base.utils import get_uuid, get_absolute_admin_change_url
 
 
 LOGGER = logging.getLogger('ldap_probe_log')
@@ -227,9 +225,9 @@ class OrionADNode(BaseADNode, models.Model):
         instance property containing the `URL` for the `Orion` node
         associated with this `AD` controller
         """
-        return '<a href="%s%s">%s</>' % (
+        return '<a href="%s%s">%s</a>' % (
             get_preference('orionserverconn__orion_server_url'),
-            self.node.details_url, self.node.node_caption)
+            self.node.details_url, self.get_node())
 
     class Meta:
         app_label = 'ldap_probe'
@@ -366,31 +364,25 @@ class LdapProbeLog(models.Model):
         """
         absolute `URL` for the `Django admin` form for this instance
 
-        yeah, template doesn't work here. we need to do 
-        root_url + reverse_path + tail_url
+        Note that there is no :class:`Django admin class
+        <django.contrib.admin.ModelAdmin>` matching this model. We will
+        have to use `admin views` pointing to the modles proxied from this
+        model.
+
+        :returns: the absolute `URL` for the admin pages showing this
+            instance
+
         """
-        url_template = Template(
-            '<a href="${proto}://${host}:${port}/${path}">${anchor_name}</a>'
-        )
-        url_template.substitute(
-            proto=settings.SERVER_PROTO, host=socket.getfqdn(),
-            port=settings.SERVER_PROTO, anchor_name=str(self))
-        import ipdb
-        ipdb.set_trace()
+        admin_view = 'admin:ldap_probe_ldapprobeanonbindlog_change'
 
         if self.failed:
-            return url_template.substitute(
-                path=reverse('admin:ldap_probe_ldapprobelogfailed_change',
-                             args=(self.id,)))
+            admin_view = 'admin:ldap_probe_ldapprobelogfailed_change'
 
         if self.elapsed_bind:
-            return '<a href="%s">%s</>' % (reverse(
-                'admin:ldap_probe_ldapprobefullbindlog_change',
-                args=(self.id,)), str(self))
+            admin_view = 'admin:ldap_probe_ldapprobefullbindlog_change'
 
-        return '<a href="%s">%s</>' % (reverse(
-            'admin:ldap_probe_ldapprobeanonbindlog_change', args=(self.id,)
-        ), str(self))
+        return get_absolute_admin_change_url(
+            admin_view=admin_view, obj_pk=self.id, obj_anchor_name=str(self))
 
     @property
     @mark_safe

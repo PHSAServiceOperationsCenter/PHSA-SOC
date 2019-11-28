@@ -26,3 +26,10 @@ class ADProbeControllerError(Exception):
 
     This is a fatal error as far as an AD probe operation is concerned.
     """
+
+
+class AlertArgsError(Exception):
+    """
+    Custom :exc:`Exception` class raised when an alert task is invoked
+    without a required argument
+    """

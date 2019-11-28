@@ -9,15 +9,15 @@
 Failure Details
 </h3>
 <div><p><ul>
-<li>Error occurred at {{ created_on }}</li>
+<li>Error occurred: {{ created_on }}</li>
 <li>Error occurred when probing the AD controller at {{ node }}</li>
 <li>Error details:<p>{{ data.errors }}</p></li>
-<li>Probe details available under {{ probe_url }}</li>
+<li>Probe details: {{ probe_url }}</li>
 <li>
 {% if orion_url %}
-Details for {{ node }} on the Orion server: {{ orion_url }}
+Orion node: {{ orion_url }}
 {% else %}
-{{ node }} is not defined on the Orion server.
+{{ node }} is not defined in Orion.
 {% endif %}
 </li>
 </ul></p></div>

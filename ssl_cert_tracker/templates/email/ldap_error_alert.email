@@ -1,0 +1,35 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{{ tags }} {{ level }}: {{ email_subject }} on {{ node }} observed on {{ created_on }}
+{% endblock %}
+
+{% block html %}
+<h3>
+Failure Details
+</h3>
+<div><p><ul>
+<li>Error occurred: {{ created_on }}</li>
+<li>Error occurred when probing the AD controller at {{ node }}</li>
+<li>Error details:<p>{{ data.errors }}</p></li>
+<li>Probe details: {{ probe_url }}</li>
+<li>
+{% if orion_url %}
+Orion node: {{ orion_url }}
+{% else %}
+{{ node }} is not defined in Orion.
+{% endif %}
+</li>
+</ul></p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

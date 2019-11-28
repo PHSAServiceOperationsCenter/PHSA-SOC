@@ -97,10 +97,105 @@ ldap_probe = Section('ldapprobe',
                          'Options for the PHSA Service Operations Center'
                          ' Domain Controller Monitoring Application'))
 
+common_alert_args = Section(
+    'commonalertargs',
+    verbose_name=_(
+        'Common Args for Alerts Raised by the PHSA'
+        ' Service Operatoins Center Automation Server'))
+
 # pylint: enable=C0103
 
 
 # pylint: disable=too-few-public-methods
+
+@global_preferences_registry.register
+class AlertArgsErrorLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `ERROR` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__error_level'
+
+    .. todo::
+
+        Refactor all uses of alert and report levels to use this, and related,
+        dynamic preferences.
+
+    """
+    section = common_alert_args
+    name = 'error_level'
+    default = 'ERROR'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying ERROR alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsWarnLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered a `WARNING` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__warn_level'
+
+    """
+    section = common_alert_args
+    name = 'warn_level'
+    default = 'WARNING'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying WARNING alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsInfoLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `INFO` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__info_level'
+
+    """
+    section = common_alert_args
+    name = 'info_level'
+    default = 'INFO'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying INFO alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsCriticalLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `CRITICAL` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__crit_level'
+
+    """
+    section = common_alert_args
+    name = 'crit_level'
+    default = 'CRITICAL'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying CRITICAL alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
 
 @global_preferences_registry.register
 class ExchangeExpireEvents(DurationPreference):
@@ -1158,6 +1253,24 @@ class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
     """default value for this dynamic preference"""
     required = False
     verbose_name = _('delete expired LDAP probe log entries').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapErrorAlertSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error alerts
+
+    :access_key: 'ldapprobe__ldap_error_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_subscription'
+    default = 'LDAP: Error alerts subscription'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Alerts').title()
     """verbose name for this dynamic preference"""
 
 

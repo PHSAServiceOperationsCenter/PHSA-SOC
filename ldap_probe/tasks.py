@@ -18,12 +18,14 @@ used by the :ref:`Domain Controllers Monitoring Application`.
 :updated:    Nov. 19, 2019
 
 """
+import json
+
 from django.utils import timezone
 
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
-from ldap_probe import ad_probe, models
+from ldap_probe import ad_probe, models, exceptions
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base import utils
 
@@ -258,3 +260,51 @@ def trim_ad_duplicates():
         except Exception as error:
             LOG.error(error)
             raise error
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
+    """
+    raise an email alert for a failed instance of the
+    :class:`ldap_probe.models.LdapProbeLog` model
+
+    :arg instance_uuid: the unique identifier of the instance
+    :type instance_uuid: :class:`uuid.UUID`
+
+
+    .. todo::
+
+        Create template
+
+    this is a weird one. we will have to pass all the data as extra_context
+    because this will not be a tabular email
+    """
+    if instance_pk is None:
+        raise exceptions.AlertArgsError(
+            'One must provide an LDAP probe identifier when raising this alert')
+
+    if subscription is None:
+        subscription = get_preference('ldapprobe__ldap_error_subscription')
+
+    subscription = utils.get_subscription(subscription)
+
+    data = utils.get_model('ldap_probe.ldapprobelog').objects.filter(
+        id=instance_pk)
+
+    ldap_probe = data.get()
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG, add_csv=False,
+            level=get_preference('commonalertargs__error_level'),
+            node=ldap_probe.node,
+            created_on=ldap_probe.created_on,
+            probe_url=ldap_probe.absolute_url,
+            orion_url=ldap_probe.ad_node_orion_url)
+    except Exception as error:
+        raise error
+
+    if not ret:
+        return f'could not raise alert for {ldap_probe}'
+
+    return f'raised alert for {ldap_probe}'

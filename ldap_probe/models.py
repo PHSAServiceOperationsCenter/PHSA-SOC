@@ -12,14 +12,15 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 19, 2019
+:updated:    Nov. 27, 2019
 
 """
-import decimal
 import logging
 import socket
+from string import Template
 
 from django.db import models
+from django.conf import settings
 from django.core import validators
 from django.urls import reverse
 from django.utils import timezone
@@ -51,7 +52,7 @@ class LdapProbeLogFullBindManager(models.Manager):
     will allow full LDAP binds for a limited number of `AD` controllers.
     By design LDAP probe data collected from these `AD` controllers will
     present with :attr:`LdapProbeLog.elapsed_bind` values that are not
-    0.
+    null (`None` in `Python` speak).
     """
 
     def get_queryset(self):  # pylint: disable=no-self-use
@@ -80,7 +81,7 @@ class LdapProbeLogAnonBindManager(models.Manager):
     for most of `AD` controllers.
     By design LDAP probe data collected from these `AD` controllers will
     present with :attr:`LdapProbeLog.elapsed_anon_bind` values that are not
-    0.
+    null (`None` in `Python` speak).
 
     """
 
@@ -98,6 +99,28 @@ class LdapProbeLogAnonBindManager(models.Manager):
 
         """
         return LdapProbeLog.objects.filter(elapsed_anon_bind__isnull=False)
+
+
+class LdapProbeLogFailedManager(models.Manager):
+    """
+    custom :class:`django.db.models.Manager` used by the
+    :class:`LdapProbeLogFailed` model
+
+    """
+
+    def get_queryset(self):  # pylint: disable=no-self-use
+        """
+        override :meth:`django.db.models.Manager.get_queryset`
+
+        See `Modifying a manager's initial QuerySet
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        in the `Django` docs.
+
+        :returns: a :class:`django.db.models.query.QuerySet` with the
+            :class:`LdapProbeLog` failed instances
+
+        """
+        return LdapProbeLog.objects.filter(failed=True)
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
@@ -225,7 +248,7 @@ class NonOrionADNode(BaseADNode, models.Model):
     <../../../admin/doc/models/ldap_probe.nonorionnode>`__
     """
     node_dns = models.CharField(
-        _('FUlly Qualified Domain Name (FQDN)'), max_length=255,
+        _('Fully Qualified Domain Name (FQDN)'), max_length=255,
         db_index=True, unique=True, blank=False, null=False,
         help_text=_(
             'The FQDN of the domain controller host. It must respect the'
@@ -325,13 +348,60 @@ class LdapProbeLog(models.Model):
         default=False)
 
     def __str__(self):
-        node = None
-        if self.ad_orion_node:
-            node = self.ad_orion_node.get_node()
-        else:
-            node = self.ad_node.get_node()
+        return f'LDAP probe {self.uuid} to {self.node}'
 
-        return f'LDAP probe {self.uuid} to {node}'
+    @property
+    def node(self):
+        """
+        return the node that was the target of this `LDAP` probe
+        """
+        if self.ad_orion_node:
+            return self.ad_orion_node.get_node()
+
+        return self.ad_node.get_node()
+
+    @property
+    @mark_safe
+    def absolute_url(self):
+        """
+        absolute `URL` for the `Django admin` form for this instance
+
+        yeah, template doesn't work here. we need to do 
+        root_url + reverse_path + tail_url
+        """
+        url_template = Template(
+            '<a href="${proto}://${host}:${port}/${path}">${anchor_name}</a>'
+        )
+        url_template.substitute(
+            proto=settings.SERVER_PROTO, host=socket.getfqdn(),
+            port=settings.SERVER_PROTO, anchor_name=str(self))
+        import ipdb
+        ipdb.set_trace()
+
+        if self.failed:
+            return url_template.substitute(
+                path=reverse('admin:ldap_probe_ldapprobelogfailed_change',
+                             args=(self.id,)))
+
+        if self.elapsed_bind:
+            return '<a href="%s">%s</>' % (reverse(
+                'admin:ldap_probe_ldapprobefullbindlog_change',
+                args=(self.id,)), str(self))
+
+        return '<a href="%s">%s</>' % (reverse(
+            'admin:ldap_probe_ldapprobeanonbindlog_change', args=(self.id,)
+        ), str(self))
+
+    @property
+    @mark_safe
+    def ad_node_orion_url(self):
+        """
+        the `URL` for the `Orion` definition of the `AD` controller
+        that was the destination of this probe
+        """
+        if self.ad_orion_node:
+            return self.ad_orion_node.orion_url
+        return None
 
     @classmethod
     def create_from_probe(cls, probe_data):
@@ -353,7 +423,8 @@ class LdapProbeLog(models.Model):
             elapsed_anon_bind=probe_data.elapsed.elapsed_anon_bind,
             elapsed_read_root=probe_data.elapsed.elapsed_read_root,
             elapsed_search_ext=probe_data.elapsed.elapsed_search_ext,
-            ad_response=probe_data.ad_response, errors=probe_data.errors
+            ad_response=probe_data.ad_response, errors=probe_data.errors,
+            failed=probe_data.failed
         )
 
         if isinstance(probe_data.ad_controller, OrionADNode):
@@ -373,6 +444,21 @@ class LdapProbeLog(models.Model):
         verbose_name = _('AD service probe')
         verbose_name_plural = _('AD service probes')
         ordering = ('-created_on', )
+
+
+class LdapProbeLogFailed(LdapProbeLog):
+    """
+    `Proxy model
+    <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
+    that shows only :class:`LdapProbeLog` instances with full `AD` probe
+    data
+    """
+    obejcts = LdapProbeLogFailedManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = _('Failed AD service probe')
+        verbose_name_plural = _('Failed AD service probes')
 
 
 class LdapProbeFullBindLog(LdapProbeLog):

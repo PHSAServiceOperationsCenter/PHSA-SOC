@@ -243,6 +243,21 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         return [field.name for field in self.model._meta.fields]
 
 
+@admin.register(models.LdapProbeLogFailed)
+class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ldap_probe.models.LdapProbeFailed`
+    """
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors',
+                    'created_on', )
+    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+                   ('created_on', DateTimeRangeFilter), )
+    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
+                     'ad_orion_node__node__node_caption',
+                     'ad_orion_node__node__ip_address',)
+
+
 @admin.register(models.LdapProbeFullBindLog)
 class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """

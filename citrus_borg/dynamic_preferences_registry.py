@@ -34,6 +34,8 @@ function. For example:
 :updated:    jan. 3, 2019
 
 """
+import decimal
+
 from django.conf import settings
 from django.utils import timezone
 from django.utils.html import format_html
@@ -43,7 +45,7 @@ from dynamic_preferences.preferences import Section
 from dynamic_preferences.registries import global_preferences_registry
 from dynamic_preferences.types import (
     BooleanPreference, StringPreference, DurationPreference, IntPreference,
-    LongStringPreference, FloatPreference,
+    LongStringPreference, FloatPreference, DecimalPreference,
 )
 
 
@@ -1273,6 +1275,59 @@ class LdapErrorAlertSubscription(StringPreference):
     verbose_name = _('Email Subscription for LDAP Error Alerts').title()
     """verbose name for this dynamic preference"""
 
+
+@global_preferences_registry.register
+class LdapPerfAlertSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` performance alerts
+
+    :access_key: 'ldapprobe__ldap_perf_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_subscription'
+    default = 'LDAP: Performance alerts subscription'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Performance Alerts').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfAlertTreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` performance alerts
+
+    :access_key: 'ldapprobe__ldap_perf_alert'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_alert'
+    default = decimal.Decimal('0.500')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('LDAP Performance Alert Threshold (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfWarnTreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` performance warnings
+
+    :access_key: 'ldapprobe__ldap_perf_warn'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_warn'
+    default = decimal.Decimal('0.050')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('LDAP Performance Warning Threshold (in seconds)').title()
+    """verbose name for this dynamic preference"""
 
 # pylint: enable=too-few-public-methods
 # pylint: enable=E1101

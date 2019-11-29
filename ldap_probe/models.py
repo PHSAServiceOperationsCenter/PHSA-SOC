@@ -40,6 +40,8 @@ def _get_default_ldap_search_base():
     """
     return get_preference('ldapprobe__search_dn_default')
 
+# pylint: disable=too-few-public-methods
+
 
 class LdapProbeLogFullBindManager(models.Manager):
     """
@@ -119,6 +121,8 @@ class LdapProbeLogFailedManager(models.Manager):
 
         """
         return LdapProbeLog.objects.filter(failed=True)
+
+# pylint: enable=too-few-public-methods
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):

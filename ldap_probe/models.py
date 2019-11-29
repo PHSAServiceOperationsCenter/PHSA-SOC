@@ -359,6 +359,54 @@ class LdapProbeLog(models.Model):
         return self.ad_node.get_node()
 
     @property
+    def perf_alert(self):
+        """
+        flag for considering if an instance of this class must trigger a
+        performance alert
+
+        :returns: `True/False`
+        :rtype: bool
+        """
+        return any(
+            [
+                elapsed for elapsed in
+                [
+                    self_elapsed for self_elapsed in
+                    [
+                        self.elapsed_bind, self.elapsed_anon_bind,
+                        self.elapsed_search_ext, self.elapsed_read_root
+                    ]
+                    if self_elapsed is not None
+                ]
+                if elapsed >= get_preference('ldapprobe__ldap_perf_alert')
+            ]
+        )
+
+    @property
+    def perf_warn(self):
+        """
+        flag for considering if an instance of this class must trigger a
+        performance warning
+
+        :returns: `True/False`
+        :rtype: bool
+        """
+        return any(
+            [
+                elapsed for elapsed in
+                [
+                    self_elapsed for self_elapsed in
+                    [
+                        self.elapsed_bind, self.elapsed_anon_bind,
+                        self.elapsed_search_ext, self.elapsed_read_root
+                    ]
+                    if self_elapsed is not None
+                ]
+                if elapsed >= get_preference('ldapprobe__ldap_perf_warn')
+            ]
+        )
+
+    @property
     @mark_safe
     def absolute_url(self):
         """

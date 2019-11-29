@@ -17,9 +17,21 @@ or for a separate database server, see the `GRANT
 <https://mariadb.com/kb/en/library/documentation/sql-statements-structure/sql-statements/account-management-sql-commands/grant/>`_
 command.
 
-Our system relies on timezone definitions being installed on the database, for MariaDB they must be installed manually.
-To do this run the following command :command:`mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u <username> -p mysql`,
-supplying the username and password as described under :attr:`p_soc_auto.settings.DATABASES`.
+Timezone Definitions
+---------------------
+
+Our system relies on timezone definitions being installed on the database, but
+MariaDB does not install them by default. To install the timezone definitions
+run the below command, supplying the username and password as described under
+:attr:`p_soc_auto.settings.DATABASES` (or any other user that has permissions
+to modify the database).
+
+.. code-block::
+
+ /usr/share/zoneinfo | mysql -u <username> -p mysql
+
+For more information see the `MariaDB article on mysql_tzinfo_to_sql
+<https://mariadb.com/kb/en/library/mysql_tzinfo_to_sql/>`_
 
 MariaDB security
 ----------------

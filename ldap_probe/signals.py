@@ -31,13 +31,28 @@ def invoke_raise_ldap_failed_alert(sender, instance, *args, **kwargs):
     is in a failed state and invoke the `Celery task` that is responsible
     for dispatching the alert
 
-    Note that the `instance.uuid` value must be cast to :class:`str` so
-    that it can be serialized to `JSON` and passed to the `Celery task`.
     """
     if not instance.failed:
         return
 
     tasks.raise_ldap_probe_failed_alert.delay(instance.id)
 
+
+@receiver(post_save, sender=models.LdapProbeLog)
+def invoke_raise_ldap_perf_alert(sender, instance, *args, **kwargs):
+    """
+    evaluate whether the :class:`ldap_probe.models.LdapProbeLog` instance
+    is showing a performance problem and invoke the `Celery task` responsible
+    for dispatching a performance alert
+
+    """
+    if instance.perf_alert:
+        tasks.raise_ldap_probe_perf_alert.delay(instance.id)
+        return
+
+    if instance.perf_warn:
+        tasks.raise_ldap_probe_perf_warn.delay(instance.id)
+
+    return
 
 # pylint: enable=unused-argument

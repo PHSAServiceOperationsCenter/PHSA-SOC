@@ -361,7 +361,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     :arg ldap_probe: the :class:`ldap_probe.models.LdapProbeLog` instance
         that is subject to the alert
 
-    :returns: an interpretation of the retung of the
+    :returns: an interpretation of the return value of the
         :meth:`ssl_cert_trqcker.lib.Email.send` operation
 
     :raises: generic :exc:`exceptions.Exception` for whatever error is

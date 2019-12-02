@@ -286,7 +286,7 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
         level=get_preference('commonalertargs__error_level'))
 
 
-@shared_task(queue='mail', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s')
 def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
     """
     raise an email alert for an instance of the
@@ -311,7 +311,7 @@ def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
         level=get_preference('commonalertargs__error_level'))
 
 
-@shared_task(queue='mail', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s')
 def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
     """
     raise an email alert for an instance of the

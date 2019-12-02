@@ -341,7 +341,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     invoke the email sending mechanism for an `LDAP` alert
 
     This is an unusual usage for :class:`ssl_cert_tracker.lib.Email`.
-    The data is not exactly tabular and most of hte email data must be
+    The data is not exactly tabular and most of the email data must be
     provided using :attr:`ssl_cert_tracker.lib.Email.extra_context`
     because it is not generated at the database level but at the `Python`
     level.

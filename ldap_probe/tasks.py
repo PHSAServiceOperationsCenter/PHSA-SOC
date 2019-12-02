@@ -268,25 +268,108 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
     raise an email alert for a failed instance of the
     :class:`ldap_probe.models.LdapProbeLog` model
 
-    :arg instance_uuid: the unique identifier of the instance
-    :type instance_uuid: :class:`uuid.UUID`
+    :arg int instance_pk: the primary key of the instance
 
+    :arg str subscription: the value of the :attr:`subscription
+        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        used to retrieve the
+        :class:`ssl_cert_tracker.models.Subscription` instance required
+        for raising this alert via email
 
-    .. todo::
-
-        Create template
-
-    this is a weird one. we will have to pass all the data as extra_context
-    because this will not be a tabular email
     """
-    if instance_pk is None:
-        raise exceptions.AlertArgsError(
-            'One must provide an LDAP probe identifier when raising this alert')
-
     if subscription is None:
         subscription = get_preference('ldapprobe__ldap_error_subscription')
 
-    subscription = utils.get_subscription(subscription)
+    return _raise_ldap_alert(
+        instance_pk=instance_pk,
+        subscription=utils.get_subscription(subscription),
+        level=get_preference('commonalertargs__error_level'))
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
+    """
+    raise an email alert for an instance of the
+    :class:`ldap_probe.models.LdapProbeLog` model that shows performance
+    error problems
+
+    :arg int instance_pk: the primary key of the instance
+
+    :arg str subscription: the value of the :attr:`subscription
+        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        used to retrieve the
+        :class:`ssl_cert_tracker.models.Subscription` instance required
+        for raising this alert via email
+
+    """
+    if subscription is None:
+        subscription = get_preference('ldapprobe__ldap_perf_subscription')
+
+    return _raise_ldap_alert(
+        instance_pk=instance_pk,
+        subscription=utils.get_subscription(subscription),
+        level=get_preference('commonalertargs__error_level'))
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
+    """
+    raise an email alert for an instance of the
+    :class:`ldap_probe.models.LdapProbeLog` model that shows performance
+    warning problems
+
+    :arg int instance_pk: the primary key of the instance
+
+    :arg str subscription: the value of the :attr:`subscription
+        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        used to retrieve the
+        :class:`ssl_cert_tracker.models.Subscription` instance required
+        for raising this alert via email
+
+    """
+    if subscription is None:
+        subscription = get_preference('ldapprobe__ldap_perf_subscription')
+
+    return _raise_ldap_alert(
+        instance_pk=instance_pk,
+        subscription=utils.get_subscription(subscription),
+        level=get_preference('commonalertargs__warn_level'))
+
+
+def _raise_ldap_alert(subscription, level, instance_pk=None):
+    """
+    invoke the email sending mechanism for an `LDAP` alert
+
+    This is an unusual usage for :class:`ssl_cert_tracker.lib.Email`.
+    The data is not exactly tabular and most of the email data must be
+    provided using :attr:`ssl_cert_tracker.lib.Email.extra_context`
+    because it is not generated at the database level but at the `Python`
+    level.
+
+    :arg data: the data required for populating the email object
+    :type data: :class:`django.db.models.query.QuerySet`
+
+    :arg subscription: the subscription required for addressing and
+        rendering the email object
+    :type subscription: :class:`ssl_cert_tracker.models.Subscription`
+
+    :arg logger: the logger instance
+    :type logger: :class:`logging.Logger`
+
+    :arg str level: the level of the alert
+
+    :arg ldap_probe: the :class:`ldap_probe.models.LdapProbeLog` instance
+        that is subject to the alert
+
+    :returns: an interpretation of the retung of the
+        :meth:`ssl_cert_trqcker.lib.Email.send` operation
+
+    :raises: generic :exc:`exceptions.Exception` for whatever error is
+        raised by :meth:`ssl_cert_trqcker.lib.Email.send`
+    """
+    if instance_pk is None:
+        raise exceptions.AlertArgsError(
+            'Must provide LDAP probe identifier when raising this alert')
 
     data = utils.get_model('ldap_probe.ldapprobelog').objects.filter(
         id=instance_pk)
@@ -295,16 +378,24 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG, add_csv=False,
-            level=get_preference('commonalertargs__error_level'),
-            node=ldap_probe.node,
+            data=data, subscription=subscription, logger=LOG,
+            add_csv=False, level=level, node=ldap_probe.node,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url)
     except Exception as error:
         raise error
 
-    if not ret:
-        return f'could not raise alert for {ldap_probe}'
+    if ldap_probe.failed:
+        return_specification = 'error alert for'
 
-    return f'raised alert for {ldap_probe}'
+    elif ldap_probe.is_perf:
+        return_specification = 'performance alert for'
+
+    else:
+        return_specification = 'performance warning for'
+
+    if not ret:
+        return f'could not raise {return_specification} {ldap_probe}'
+
+    return f'raised {return_specification} {ldap_probe}'

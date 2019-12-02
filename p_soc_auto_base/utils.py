@@ -105,26 +105,26 @@ def diagnose_network_problem(host_spec, port=0):
     :arg int port: the port argument to use with meth:`socket.getaddrinfo`,
         default is 0
 
-    :returns: an explicit error message or a "can't find anything wrong"
-        message
-    :rtype: str
+    :returns: a tuple with an error code, and an explicit error message or
+        a "can't find anything wrong" message
+    :rtype: :class:`tuple`
     """
     try:
         ipaddress.ip_address(host_spec)
         try:
             socket.gethostbyaddr(host_spec)
         except Exception as err:  # pylint: disable=broad-except
-            return (f'\nhost {host_spec} does not exist,'
-                    f' error {type(err)}: {str(err)}')
+            return (1, (f'\nhost {host_spec} does not exist,'
+                        f' error {type(err)}: {str(err)}'))
 
     except ValueError:
         try:
             socket.getaddrinfo(host_spec, port)
         except Exception as err:  # pylint: disable=broad-except
-            return (f'host name {host_spec} not in DNS,'
-                    f' error {type(err)}: {str(err)}')
+            return (1, (f'host name {host_spec} not in DNS,'
+                        f' error {type(err)}: {str(err)}'))
 
-    return f'found no network problems with host: {host_spec}'
+    return (0, f'found no network problems with host: {host_spec}')
 
 
 class Timer():

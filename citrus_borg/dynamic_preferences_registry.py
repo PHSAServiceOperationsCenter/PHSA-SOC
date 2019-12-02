@@ -1329,6 +1329,24 @@ class LdapPerfWarnTreshold(DecimalPreference):
     verbose_name = _('LDAP Performance Warning Threshold (in seconds)').title()
     """verbose name for this dynamic preference"""
 
+
+@global_preferences_registry.register
+class LdapReportPeriod(DurationPreference):
+    """
+    Dynamic preferences class controlling the period used for generating
+    `LDAP` reports
+
+    :access_key: 'ldapprobe__ldap_reports_period'
+    """
+    section = ldap_probe
+    name = 'ldap_reports_period'
+    default = timezone.timedelta(hours=1)
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Time interval to use when generating LDAP reports').title()
+    """verbose name for this dynamic preference"""
+
 # pylint: enable=too-few-public-methods
 # pylint: enable=E1101
 

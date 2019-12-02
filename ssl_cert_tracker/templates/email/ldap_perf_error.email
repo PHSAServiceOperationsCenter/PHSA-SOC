@@ -1,0 +1,45 @@
+{% block subject %}
+{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }} 
+{% endblock %}
+
+{% block html %}
+<h3>AD Service Performance Degradation Details</h3>
+<div><p><ul>
+<li>AD service performance degradation occurred: {{ created_on }}</li>
+<li>AD service performance degradation observed for the AD controller on {{ node }}</li>
+<li>AD probe details: {{ probe_url }}</li>
+<li>
+{% if orion_url %}
+Orion node: {{ orion_url }}
+{% else %}
+{{ node }} is not defined in Orion.
+{% endif %}
+</li>
+<li>
+AD service performance degradation details (all values are measured in seconds):
+<p>
+<table style="border: 1px solid red;">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></li></ul></p></div>
+
+{% if email_uuid %}
+<div><p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a></p></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

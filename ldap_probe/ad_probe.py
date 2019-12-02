@@ -77,7 +77,7 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
         """elapsed time for :meth:`ldap.LDAPObject.search_ext_s`"""
 
 
-class ADProbe():
+class ADProbe():  # pylint: disable=too-many-instance-attributes
     """
     Class that wrap around :class:`ldap.LDAPObject` methods of interest
     to us and adds timing facilities to each of them
@@ -90,7 +90,7 @@ class ADProbe():
         self.failed = False
         """
         track probe failure state
-        
+
         It is easier to determine it here than to calculate it at
         the `Django model` level with a query against a text field.
         """
@@ -332,4 +332,10 @@ class ADProbe():
                 f'{diagnose_network_problem(self.ad_controller.get_node())}'
             )
         else:
-            self.errors += '\nUnknown network error'
+            network_diagnostics = diagnose_network_problem(
+                self.ad_controller.get_node())
+
+            if not network_diagnostics[0]:
+                self.errors += '\nUnknown network error'
+            else:
+                self.errors += network_diagnostics[1]

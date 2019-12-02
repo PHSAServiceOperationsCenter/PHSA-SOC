@@ -19,7 +19,8 @@ import logging
 import socket
 
 from django.db import models
-from django.conf import settings
+from django.db.models import Case, When, F, Value, TextField
+from django.db.models.functions import Concat
 from django.core import validators
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -232,6 +233,38 @@ class OrionADNode(BaseADNode, models.Model):
         return '<a href="%s%s">%s</a>' % (
             get_preference('orionserverconn__orion_server_url'),
             self.node.details_url, self.get_node())
+
+    @classmethod
+    def annotate_orion_url(cls):
+        """
+        annotate
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
+        a :class:`queryset <django.db.models.query.QuerySet>` based
+        on the :class:`OrionADNode` model with the absolute `URL` of the
+        node definition on the `orion` server
+
+        The name of this annotation will be 'orion_url'.
+
+        :returns: the :class:`django.db.models.query.QuerySet` with the
+            'orion_url' field included
+
+            Note that the :class:`django.db.models.query.QuerySet`is filtered
+            to return only `enabled` nodes
+        """
+        sql_case_dns = When(
+            node__node_dns__isnull=False, then=F('node__node_dns'))
+        sql_orion_anchor_field = Case(
+            sql_case_dns,
+            default=F('node__ip_address'), output_field=TextField())
+
+        queryset = cls.objects.filter(enabled=True).annotate(
+            orion_anchor=sql_orion_anchor_field)
+
+        return queryset.annotate(orion_url=Concat(
+            Value('<a href="'),
+            Value(get_preference('orionserverconn__orion_server_url')),
+            F('node__details_url'), Value('">AD node '), F('orion_anchor'),
+            Value(' on Orion</a>'), output_field=TextField()))
 
     class Meta:
         app_label = 'ldap_probe'

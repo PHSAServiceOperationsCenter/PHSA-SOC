@@ -18,8 +18,9 @@ This module contains the :class:`django.db.models.Model` models for the
 import logging
 import socket
 
+from django.conf import settings
 from django.db import models
-from django.db.models import Case, When, F, Value, TextField
+from django.db.models import Case, When, F, Value, TextField, URLField
 from django.db.models.functions import Concat
 from django.core import validators
 from django.urls import reverse
@@ -206,6 +207,31 @@ class OrionADNode(BaseADNode, models.Model):
         blank=False, null=False, on_delete=models.CASCADE,
         verbose_name=_('Orion Node for Domain Controller'))
 
+    sql_case_dns = When(
+        node__node_dns__isnull=False, then=F('node__node_dns'))
+    """
+    build an `SQL` `WHEN` clause
+    
+    See `Conditional Expressions
+    <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#the-conditional-expression-classes>`__.
+    
+    """
+
+    sql_orion_anchor_field = Case(
+        sql_case_dns,
+        default=F('node__ip_address'), output_field=TextField())
+    """
+    build an `SQL` `CASE` clause
+    
+    When used together with :attr:`sql_case_dns` this attribute allows us
+    to append a meaningfull field to a queryset. If
+    :attr:`orion_integration.models.OrionNode.node_dns` exists, it will
+    be placed in a :class:`django.db.models.query.QuerySet`. Otherwise,
+    the :attr:`orion_integration.models.OrionNode.ip_address` will be
+    used.
+    
+    """
+
     def __str__(self):
         if self.node.node_dns:
             return self.node.node_dns
@@ -235,7 +261,7 @@ class OrionADNode(BaseADNode, models.Model):
             self.node.details_url, self.get_node())
 
     @classmethod
-    def annotate_orion_url(cls):
+    def annotate_orion_url(cls, queryset=None):
         """
         annotate
         <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
@@ -251,20 +277,75 @@ class OrionADNode(BaseADNode, models.Model):
             Note that the :class:`django.db.models.query.QuerySet`is filtered
             to return only `enabled` nodes
         """
-        sql_case_dns = When(
-            node__node_dns__isnull=False, then=F('node__node_dns'))
-        sql_orion_anchor_field = Case(
-            sql_case_dns,
-            default=F('node__ip_address'), output_field=TextField())
+        if queryset is None:
+            queryset = cls.objects.filter(enabled=True)
 
-        queryset = cls.objects.filter(enabled=True).annotate(
-            orion_anchor=sql_orion_anchor_field)
+        return queryset.\
+            annotate(orion_anchor=cls.sql_orion_anchor_field).\
+            annotate(orion_url=Concat(
+                Value('<a href="'),
+                Value(get_preference('orionserverconn__orion_server_url')),
+                F('node__details_url'), Value('">AD node '),
+                F('orion_anchor'), Value(' on Orion</a>'),
+                output_field=TextField()))
 
-        return queryset.annotate(orion_url=Concat(
-            Value('<a href="'),
-            Value(get_preference('orionserverconn__orion_server_url')),
-            F('node__details_url'), Value('">AD node '), F('orion_anchor'),
-            Value(' on Orion</a>'), output_field=TextField()))
+    @classmethod
+    def annotate_full_probe_details(cls, queryset=None):
+        """
+        annotate a :class:`queryset <django.db.models.query.QuerySet>` based
+        on the :class:`OrionADNode` model with the absolute `URL` for the
+        details of the `LDAP` probes executed against each
+        :class:`OrionADNode` instance but only for probes that could execute
+        a full bind
+
+        Should look something like
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
+        'ldapprobefullbindlog/?ad_node__isnull=True' + \
+        '&ad_orion_node__id__exact=3388'
+        """
+        if queryset is None:
+            queryset = OrionADNode.annotate_orion_url()
+
+        return queryset.filter(ldapprobelog__elapsed_bind__isnull=False).\
+            annotate(probes_url=Concat(
+                Value('<a href="'),
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()), Value(':'),
+                Value(settings.SERVER_PORT),
+                Value(('/admin/ldap_probe/ldapprobefullbindlog/'
+                       '?ad_node__isnull=True&ad_orion_node__id__exact=')),
+                F('id'), Value('">LDAP probes for this node</a>'),
+                output_field=TextField()
+            ))
+
+    @classmethod
+    def annotate_partial_probe_details(cls, queryset=None):
+        """
+        annotate a :class:`queryset <django.db.models.query.QuerySet>` based
+        on the :class:`OrionADNode` model with the absolute `URL` for the
+        details of the `LDAP` probes executed against each
+        :class:`OrionADNode` instance but only for probes that could not
+        execute a full bind
+
+        Should look something like
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
+        'ldapprobeanonbindlog/?ad_node__isnull=True' + \
+        '&ad_orion_node__id__exact=3388'
+        """
+        if queryset is None:
+            queryset = OrionADNode.annotate_orion_url()
+
+        return queryset.filter(ldapprobelog__elapsed_bind__isnull=True).\
+            annotate(probes_url=Concat(
+                Value('<a href="'),
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()), Value(':'),
+                Value(settings.SERVER_PORT),
+                Value(('/admin/ldap_probe/ldapprobeanonbindlog/'
+                       '?ad_node__isnull=True&ad_orion_node__id__exact=')),
+                F('id'), Value('">LDAP probes for this node</a>'),
+                output_field=TextField()
+            ))
 
     class Meta:
         app_label = 'ldap_probe'

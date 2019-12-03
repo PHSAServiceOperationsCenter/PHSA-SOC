@@ -389,7 +389,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     if ldap_probe.failed:
         return_specification = 'error alert for'
 
-    elif ldap_probe.is_perf:
+    elif ldap_probe.perf_alert:
         return_specification = 'performance alert for'
 
     else:

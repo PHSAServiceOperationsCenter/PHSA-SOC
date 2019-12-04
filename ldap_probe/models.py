@@ -176,41 +176,6 @@ class BaseADNode(BaseModel, models.Model):
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
 
-    def get_node(self):  # pylint: disable=inconsistent-return-statements
-        """
-        get node network information in either `FQDN` or `IP` address format
-
-        We need this function mostly for retrieving node address information
-        from `Orion` nodes. `Orion` nodes are guaranteed to have an `IP`
-        address but sometimes they don't have a valid `FQDN`.
-        """
-        if hasattr(self, 'node_dns'):
-            return getattr(self, 'node_dns')
-
-        if hasattr(self, 'node'):
-            node = getattr(self, 'node')
-            if node.node_dns:
-                return node.node_dns
-            return node.node_caption
-
-    class Meta:
-        abstract = True
-
-
-class OrionADNode(BaseADNode, models.Model):
-    """
-    :class:`django.db.models.Model` class used for storing DNS information
-    about `Windows` domain controller hosts defined on the `Orion`
-    server
-
-    `Domain Controller from Orion fields
-    <../../../admin/doc/models/ldap_probe.orionnode>`__
-    """
-    node = models.OneToOneField(
-        'orion_integration.OrionDomainControllerNode', db_index=True,
-        blank=False, null=False, on_delete=models.CASCADE,
-        verbose_name=_('Orion Node for Domain Controller'))
-
     sql_case_dns = When(
         node__node_dns__isnull=False, then=F('node__node_dns'))
     """
@@ -235,6 +200,113 @@ class OrionADNode(BaseADNode, models.Model):
     used.
 
     """
+
+    def get_node(self):  # pylint: disable=inconsistent-return-statements
+        """
+        get node network information in either `FQDN` or `IP` address format
+
+        We need this function mostly for retrieving node address information
+        from `Orion` nodes. `Orion` nodes are guaranteed to have an `IP`
+        address but sometimes they don't have a valid `FQDN`.
+        """
+        if hasattr(self, 'node_dns'):
+            return getattr(self, 'node_dns')
+
+        if hasattr(self, 'node'):
+            node = getattr(self, 'node')
+            if node.node_dns:
+                return node.node_dns
+            return node.node_caption
+
+    @classmethod
+    def annotate_orion_url(cls, queryset=None):
+        """
+        annotate
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
+        a :class:`queryset <django.db.models.query.QuerySet>` with the
+        absolute `URL` of the node definition on the `orion` server if
+        possible or with a 'this node is not in orion' message
+
+        The name of this annotation will be 'orion_url'.
+
+        :returns: the :class:`django.db.models.query.QuerySet` with the
+            'orion_url' field included
+
+            Note that the :class:`django.db.models.query.QuerySet`is filtered
+            to return only `enabled` nodes
+        """
+        if queryset is None:
+            queryset = cls.objects.filter(enabled=True)
+
+        if 'node_dns' in [field.name for field in OrionADNode._meta.fields]:
+            queryset = queryset.annotate(
+                orion_url=Concat(
+                    Value('AD node '), F('node_dns'),
+                    Value(' is not defined in Orion'),
+                    output_field=TextField()
+                )
+            )
+        else:
+            queryset = queryset.\
+                annotate(orion_anchor=cls.sql_orion_anchor_field).\
+                annotate(
+                    orion_url=Concat(
+                        Value('<a href="'),
+                        Value(get_preference(
+                            'orionserverconn__orion_server_url')),
+                        F('node__details_url'), Value('">AD node '),
+                        F('orion_anchor'), Value(' on Orion</a>'),
+                        output_field=TextField()
+                    )
+                )
+
+        return queryset.values()
+
+    @classmethod
+    def annotate_probe_details(cls, probes_model_name, queryset=None):
+        """
+        annotate a :class:`queryset <django.db.models.query.QuerySet>`
+        based on classes inheriting from :class:`BaseADNode` model with
+        the absolute `URL` for the details of the `LDAP` probes executed
+        against the AD node
+
+        Note that this method will be very expensive when invoked
+        against a queryset that does nor filter on :class:`LdapProbeLog`.
+        Should look something like
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
+        'ldapprobefullbindlog/?ad_node__isnull=True' + \
+        '&ad_orion_node__id__exact=3388'.
+        """
+        if queryset is None:
+            queryset = cls.annotate_orion_url()
+
+        return queryset.annotate(probes_url=Concat(
+            Value('<a href="'),
+            Value(settings.SERVER_PROTO), Value('://'),
+            Value(socket.getfqdn()), Value(':'),
+            Value(settings.SERVER_PORT),
+            Value('/admin/ldap_probe/'), Value(probes_model_name),
+            Value('/?ad_node__isnull=True&ad_orion_node__id__exact='),
+            F('id'), Value('">LDAP probes for this node</a>'),
+            output_field=TextField())).values()
+
+    class Meta:
+        abstract = True
+
+
+class OrionADNode(BaseADNode, models.Model):
+    """
+    :class:`django.db.models.Model` class used for storing DNS information
+    about `Windows` domain controller hosts defined on the `Orion`
+    server
+
+    `Domain Controller from Orion fields
+    <../../../admin/doc/models/ldap_probe.orionnode>`__
+    """
+    node = models.OneToOneField(
+        'orion_integration.OrionDomainControllerNode', db_index=True,
+        blank=False, null=False, on_delete=models.CASCADE,
+        verbose_name=_('Orion Node for Domain Controller'))
 
     def __str__(self):
         if self.node.node_dns:
@@ -265,7 +337,8 @@ class OrionADNode(BaseADNode, models.Model):
             self.node.details_url, self.get_node())
 
     @classmethod
-    def report_aggregates_bound_probes(cls, queryset=None, **time_delta_args):
+    def report_probe_aggregates(
+            cls, queryset=None, anon=False, **time_delta_args):
         """
         aggregate probe data for each :class:`OrionADNode` instance for the
         period defined by the `time_delta` argument
@@ -295,77 +368,21 @@ class OrionADNode(BaseADNode, models.Model):
 
         since_moment = MomentOfTime.past(time_delta=time_delta)
 
-        queryset = queryset.\
-            filter(ldapprobelog__created_on__gt=since_moment,
-                   ldapprobelog__elapsed_bind__isnull=False).\
-            annotate(number_of_failed_probes=Count(
-                'ldapprobelog__failed',
-                filter=Q(ldapprobelog__failed=True))).\
-            annotate(number_of_successfull_probes=Count(
-                'ldapprobelog__failed',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_initialize_duration=Avg(
-                'ldapprobelog__elapsed_initialize',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).values()
-
-        queryset = OrionADNode.annotate_full_probe_details(
-            OrionADNode.annotate_orion_url(queryset))
-
-        return queryset.order_by('node__node_caption')
-
-    @classmethod
-    def report_aggregates_anon_bound_probes(
-            cls, queryset=None, **time_delta_args):
-        """
-        aggregate probe data for each :class:`OrionADNode` instance for the
-        period defined by the `time_delta` argument
-
-        :returns: a :class:`django.db.models.query.QuerySet` based on the
-            :class:`OrionADNode` model with the following aggregates
-            with regards to LDAP probes that executed an anonymous bind
-
-            * the number of failed probes
-
-            * the number of successful probes
-
-            * average timing for initialize calls of the successful probes
-
-            * min, max, average timing for bind calls of the successful probes
-
-            * min, max, average timing for search calls of the successful
-              probes
-        """
-        if queryset is None:
-            queryset = cls.objects.filter(enabled=True)
-
-        if time_delta_args:
-            time_delta = timezone.timedelta(**time_delta_args)
+        if anon:
+            probes_model_name = 'ldapprobeanonbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': True,
+            }
         else:
-            time_delta = get_preference('ldapprobe__ldap_reports_period')
-
-        since_moment = MomentOfTime.past(time_delta=time_delta)
+            probes_model_name = 'ldapprobefullbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': False,
+            }
 
         queryset = queryset.\
-            filter(ldapprobelog__created_on__gt=since_moment,
-                   ldapprobelog__elapsed_bind__isnull=True).\
+            filter(**ldapprobelog_filter).\
             annotate(number_of_failed_probes=Count(
                 'ldapprobelog__failed',
                 filter=Q(ldapprobelog__failed=True))).\
@@ -376,112 +393,28 @@ class OrionADNode(BaseADNode, models.Model):
                 'ldapprobelog__elapsed_initialize',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_anon_bind',
+                'ldapprobelog__elapsed_bind',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_anon_bind',
+                'ldapprobelog__elapsed_bind',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_anon_bind',
+                'ldapprobelog__elapsed_bind',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_read_root',
+                'ldapprobelog__elapsed_search_ext',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_read_root',
+                'ldapprobelog__elapsed_search_ext',
                 filter=Q(ldapprobelog__failed=False))).\
             annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_read_root',
+                'ldapprobelog__elapsed_search_ext',
                 filter=Q(ldapprobelog__failed=False))).values()
 
-        queryset = OrionADNode.annotate_partial_probe_details(
-            OrionADNode.annotate_orion_url(queryset))
+        queryset = cls.annotate_probe_details(
+            probes_model_name, cls.annotate_orion_url(queryset))
 
         return queryset.order_by('node__node_caption')
-
-    @classmethod
-    def annotate_orion_url(cls, queryset=None):
-        """
-        annotate
-        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
-        a :class:`queryset <django.db.models.query.QuerySet>` based
-        on the :class:`OrionADNode` model with the absolute `URL` of the
-        node definition on the `orion` server
-
-        The name of this annotation will be 'orion_url'.
-
-        :returns: the :class:`django.db.models.query.QuerySet` with the
-            'orion_url' field included
-
-            Note that the :class:`django.db.models.query.QuerySet`is filtered
-            to return only `enabled` nodes
-        """
-        if queryset is None:
-            queryset = cls.objects.filter(enabled=True)
-
-        return queryset.\
-            annotate(orion_anchor=cls.sql_orion_anchor_field).\
-            annotate(orion_url=Concat(
-                Value('<a href="'),
-                Value(get_preference('orionserverconn__orion_server_url')),
-                F('node__details_url'), Value('">AD node '),
-                F('orion_anchor'), Value(' on Orion</a>'),
-                output_field=TextField())).values()
-
-    @classmethod
-    def annotate_full_probe_details(cls, queryset=None):
-        """
-        annotate a :class:`queryset <django.db.models.query.QuerySet>` based
-        on the :class:`OrionADNode` model with the absolute `URL` for the
-        details of the `LDAP` probes executed against each
-        :class:`OrionADNode` instance but only for probes that could execute
-        a full bind
-
-        Should look something like
-        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
-        'ldapprobefullbindlog/?ad_node__isnull=True' + \
-        '&ad_orion_node__id__exact=3388'
-        """
-        if queryset is None:
-            queryset = OrionADNode.annotate_orion_url()
-
-        return queryset.annotate(probes_url=Concat(
-            Value('<a href="'),
-            Value(settings.SERVER_PROTO), Value('://'),
-            Value(socket.getfqdn()), Value(':'),
-            Value(settings.SERVER_PORT),
-            Value(('/admin/ldap_probe/ldapprobefullbindlog/'
-                   '?ad_node__isnull=True&ad_orion_node__id__exact=')),
-            F('id'), Value('">LDAP probes for this node</a>'),
-            output_field=TextField())).values()
-
-    @classmethod
-    def annotate_partial_probe_details(cls, queryset=None):
-        """
-        annotate a :class:`queryset <django.db.models.query.QuerySet>` based
-        on the :class:`OrionADNode` model with the absolute `URL` for the
-        details of the `LDAP` probes executed against each
-        :class:`OrionADNode` instance but only for probes that could not
-        execute a full bind
-
-        Should look something like
-        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
-        'ldapprobeanonbindlog/?ad_node__isnull=True' + \
-        '&ad_orion_node__id__exact=3388'
-        """
-        if queryset is None:
-            queryset = OrionADNode.annotate_orion_url()
-
-        return queryset.annotate(probes_url=Concat(
-            Value('<a href="'),
-            Value(settings.SERVER_PROTO), Value('://'),
-            Value(socket.getfqdn()), Value(':'),
-            Value(settings.SERVER_PORT),
-            Value(('/admin/ldap_probe/ldapprobeanonbindlog/'
-                   '?ad_node__isnull=True&ad_orion_node__id__exact=')),
-            F('id'), Value('">LDAP probes for this node</a>'),
-            output_field=TextField()
-        ))
 
     class Meta:
         app_label = 'ldap_probe'

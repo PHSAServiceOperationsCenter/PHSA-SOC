@@ -94,7 +94,7 @@ def dead_mail_sites(not_seen_after=None):
     """
     :returns:
 
-        :class:`django.db.models.Queryset` objects based on 
+        :class:`django.db.models.Queryset` objects based on
         :class:`mail_collector.models.MailHost` that
         represent sites from where exchange requests have not
         been observed for the duration specified in the argument

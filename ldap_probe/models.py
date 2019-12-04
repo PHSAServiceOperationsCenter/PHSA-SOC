@@ -478,7 +478,7 @@ class OrionADNode(BaseADNode, models.Model):
             Value(socket.getfqdn()), Value(':'),
             Value(settings.SERVER_PORT),
             Value(('/admin/ldap_probe/ldapprobeanonbindlog/'
-                   '?ad_orion_node__isnull=True&ad_node__id__exact=')),
+                   '?ad_node__isnull=True&ad_orion_node__id__exact=')),
             F('id'), Value('">LDAP probes for this node</a>'),
             output_field=TextField()
         ))

@@ -1323,7 +1323,7 @@ class LdapPerfWarnTreshold(DecimalPreference):
     """
     section = ldap_probe
     name = 'ldap_perf_warn'
-    default = decimal.Decimal('0.050')
+    default = decimal.Decimal('0.100')
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('LDAP Performance Warning Threshold (in seconds)').title()

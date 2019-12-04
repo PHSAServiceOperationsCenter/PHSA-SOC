@@ -238,7 +238,7 @@ class BaseADNode(BaseModel, models.Model):
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
 
-        if 'node_dns' in [field.name for field in OrionADNode._meta.fields]:
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
             queryset = queryset.annotate(
                 orion_url=Concat(
                     Value('AD node '), F('node_dns'),
@@ -280,15 +280,131 @@ class BaseADNode(BaseModel, models.Model):
         if queryset is None:
             queryset = cls.annotate_orion_url()
 
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
+            url_filters = '/?ad_orion_node__isnull=True&ad_node__id__exact='
+        else:
+            url_filters = '/?ad_node__isnull=True&ad_orion_node__id__exact='
+
         return queryset.annotate(probes_url=Concat(
             Value('<a href="'),
             Value(settings.SERVER_PROTO), Value('://'),
             Value(socket.getfqdn()), Value(':'),
             Value(settings.SERVER_PORT),
             Value('/admin/ldap_probe/'), Value(probes_model_name),
-            Value('/?ad_node__isnull=True&ad_orion_node__id__exact='),
+            Value(url_filters),
             F('id'), Value('">LDAP probes for this node</a>'),
             output_field=TextField())).values()
+
+    @classmethod
+    def report_probe_aggregates(
+            cls, queryset=None, anon=False, **time_delta_args):
+        """
+        aggregate probe data for each :class:`OrionADNode` instance for the
+        period defined by the `time_delta` argument
+
+        :returns: a :class:`django.db.models.query.QuerySet` based on one
+            of the classes inheriting from  the :class:`BaseADNode` abstract
+            model
+
+            Depending on the calling class the following aggregates
+            with regards to LDAP probes are placed in the queryset
+
+            * the number of failed probes
+
+            * the number of successful probes
+
+            * average timing for initialize calls of the successful probes
+
+            * min, max, average timing for `bind` calls or `anonymous bind`
+              calls of the successful probes
+
+            * min, max, average timing for `extended search` calls or
+              `read root dse` calls of the successful
+              probes
+        """
+        if queryset is None:
+            queryset = cls.objects.filter(enabled=True)
+
+        if time_delta_args:
+            time_delta = timezone.timedelta(**time_delta_args)
+        else:
+            time_delta = get_preference('ldapprobe__ldap_reports_period')
+
+        since_moment = MomentOfTime.past(time_delta=time_delta)
+
+        if anon:
+            probes_model_name = 'ldapprobeanonbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': True,
+            }
+        else:
+            probes_model_name = 'ldapprobefullbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': False,
+            }
+
+        queryset = queryset.\
+            filter(**ldapprobelog_filter).\
+            annotate(number_of_failed_probes=Count(
+                'ldapprobelog__failed',
+                filter=Q(ldapprobelog__failed=True))).\
+            annotate(number_of_successfull_probes=Count(
+                'ldapprobelog__failed',
+                filter=Q(ldapprobelog__failed=False))).\
+            annotate(average_initialize_duration=Avg(
+                'ldapprobelog__elapsed_initialize',
+                filter=Q(ldapprobelog__failed=False)))
+
+        if anon:
+            queryset = queryset.\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).values()
+        else:
+            queryset = queryset.\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).values()
+
+        queryset = cls.annotate_probe_details(
+            probes_model_name, cls.annotate_orion_url(queryset))
+
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
+            return queryset.order_by('node_dns')
+
+        return queryset.order_by('node__node_caption')
 
     class Meta:
         abstract = True
@@ -335,86 +451,6 @@ class OrionADNode(BaseADNode, models.Model):
         return '<a href="%s%s">%s</a>' % (
             get_preference('orionserverconn__orion_server_url'),
             self.node.details_url, self.get_node())
-
-    @classmethod
-    def report_probe_aggregates(
-            cls, queryset=None, anon=False, **time_delta_args):
-        """
-        aggregate probe data for each :class:`OrionADNode` instance for the
-        period defined by the `time_delta` argument
-
-        :returns: a :class:`django.db.models.query.QuerySet` based on the
-            :class:`OrionADNode` model with the following aggregates
-            with regards to LDAP probes that executed a full bind
-
-            * the number of failed probes
-
-            * the number of successful probes
-
-            * average timing for initialize calls of the successful probes
-
-            * min, max, average timing for bind calls of the successful probes
-
-            * min, max, average timing for search calls of the successful
-              probes
-        """
-        if queryset is None:
-            queryset = cls.objects.filter(enabled=True)
-
-        if time_delta_args:
-            time_delta = timezone.timedelta(**time_delta_args)
-        else:
-            time_delta = get_preference('ldapprobe__ldap_reports_period')
-
-        since_moment = MomentOfTime.past(time_delta=time_delta)
-
-        if anon:
-            probes_model_name = 'ldapprobeanonbindlog'
-            ldapprobelog_filter = {
-                'ldapprobelog__created_on__gt': since_moment,
-                'ldapprobelog__elapsed_bind__isnull': True,
-            }
-        else:
-            probes_model_name = 'ldapprobefullbindlog'
-            ldapprobelog_filter = {
-                'ldapprobelog__created_on__gt': since_moment,
-                'ldapprobelog__elapsed_bind__isnull': False,
-            }
-
-        queryset = queryset.\
-            filter(**ldapprobelog_filter).\
-            annotate(number_of_failed_probes=Count(
-                'ldapprobelog__failed',
-                filter=Q(ldapprobelog__failed=True))).\
-            annotate(number_of_successfull_probes=Count(
-                'ldapprobelog__failed',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_initialize_duration=Avg(
-                'ldapprobelog__elapsed_initialize',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_bind',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(minimum_bind_duration=Min(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(average_bind_duration=Avg(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).\
-            annotate(maximum_bind_duration=Max(
-                'ldapprobelog__elapsed_search_ext',
-                filter=Q(ldapprobelog__failed=False))).values()
-
-        queryset = cls.annotate_probe_details(
-            probes_model_name, cls.annotate_orion_url(queryset))
-
-        return queryset.order_by('node__node_caption')
 
     class Meta:
         app_label = 'ldap_probe'

@@ -21,7 +21,7 @@ import socket
 from django.conf import settings
 from django.db import models
 from django.db.models import (
-    Case, When, F, Value, TextField, Count, Avg, Min, Max, Q)
+    Case, When, F, Value, TextField, URLField, Count, Avg, Min, Max, Q)
 from django.db.models.functions import Concat
 from django.core import validators
 from django.urls import reverse
@@ -251,12 +251,10 @@ class BaseADNode(BaseModel, models.Model):
                 annotate(orion_anchor=cls.sql_orion_anchor_field).\
                 annotate(
                     orion_url=Concat(
-                        Value('<a href="'),
                         Value(get_preference(
                             'orionserverconn__orion_server_url')),
-                        F('node__details_url'), Value('">AD node '),
-                        F('orion_anchor'), Value(' on Orion</a>'),
-                        output_field=TextField()
+                        F('node__details_url'),
+                        output_field=URLField()
                     )
                 )
 
@@ -286,14 +284,11 @@ class BaseADNode(BaseModel, models.Model):
             url_filters = '/?ad_node__isnull=True&ad_orion_node__id__exact='
 
         return queryset.annotate(probes_url=Concat(
-            Value('<a href="'),
             Value(settings.SERVER_PROTO), Value('://'),
             Value(socket.getfqdn()), Value(':'),
             Value(settings.SERVER_PORT),
             Value('/admin/ldap_probe/'), Value(probes_model_name),
-            Value(url_filters),
-            F('id'), Value('">LDAP probes for this node</a>'),
-            output_field=TextField())).values()
+            Value(url_filters), F('id'), output_field=TextField())).values()
 
     @classmethod
     def report_probe_aggregates(
@@ -302,26 +297,45 @@ class BaseADNode(BaseModel, models.Model):
         aggregate probe data for each :class:`OrionADNode` instance for the
         period defined by the `time_delta` argument
 
-        :returns: a :class:`django.db.models.query.QuerySet` based on one
-            of the classes inheriting from  the :class:`BaseADNode` abstract
-            model
+        :arg queryset: run thie report against this particular queryset
 
-            Depending on the calling class the following aggregates
-            with regards to LDAP probes are placed in the queryset
+            Normally, the queryset will be created by the method itself
+            based on the class that owns it.
+        :type queryset: :class:`django.db.models.query.QuerySet`
 
-            * the number of failed probes
+        :arg bool anon: flag for deciding which kind of LDAP probes are the
+            subject of the report, LDAP probes that achieved a full bind or
+            LDAP probes that achieved an anonymous bind
 
-            * the number of successful probes
+        :returns:
 
-            * average timing for initialize calls of the successful probes
+            * the moments used to filter the data in the report by time
 
-            * min, max, average timing for `bind` calls or `anonymous bind`
-              calls of the successful probes
+            * the :attr:`subcription
+              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              be used to deliver this report via email
 
-            * min, max, average timing for `extended search` calls or
-              `read root dse` calls of the successful
-              probes
+            * the :class:`django.db.models.query.QuerySet` based on one
+              of the classes inheriting from  the :class:`BaseADNode` abstract
+              model
+
+              Depending on the calling class the following aggregates with
+              regards to LDAP probes are placed in the queryset
+
+                  * the number of failed probes
+
+                  * the number of successful probes
+
+                  * average timing for initialize calls of the successful
+                    probes
+
+                  * min, max, average timing for `bind` calls or `anonymous
+                   bind` calls of the successful probes
+
+                  * min, max, average timing for `extended search` calls or
+                    `read root dse` calls of the successful probes
         """
+        subscription = 'LDAP: summary report'
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
 
@@ -331,6 +345,7 @@ class BaseADNode(BaseModel, models.Model):
             time_delta = get_preference('ldapprobe__ldap_reports_period')
 
         since_moment = MomentOfTime.past(time_delta=time_delta)
+        now = timezone.now()
 
         if anon:
             probes_model_name = 'ldapprobeanonbindlog'
@@ -338,12 +353,14 @@ class BaseADNode(BaseModel, models.Model):
                 'ldapprobelog__created_on__gt': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': True,
             }
+            subscription = f'{subscription}, anonymous bind'
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
                 'ldapprobelog__created_on__gt': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': False,
             }
+            subscription = f'{subscription}, full bind'
 
         queryset = queryset.\
             filter(**ldapprobelog_filter).\
@@ -368,13 +385,13 @@ class BaseADNode(BaseModel, models.Model):
                 annotate(maximum_bind_duration=Max(
                     'ldapprobelog__elapsed_anon_bind',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(minimum_bind_duration=Min(
+                annotate(minimum_read_root_dse_duration=Min(
                     'ldapprobelog__elapsed_read_root',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(average_bind_duration=Avg(
+                annotate(average_read_root_dse_duration=Avg(
                     'ldapprobelog__elapsed_read_root',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(maximum_bind_duration=Max(
+                annotate(maximum_read_root_dse_duration=Max(
                     'ldapprobelog__elapsed_read_root',
                     filter=Q(ldapprobelog__failed=False))).values()
         else:
@@ -388,13 +405,13 @@ class BaseADNode(BaseModel, models.Model):
                 annotate(maximum_bind_duration=Max(
                     'ldapprobelog__elapsed_bind',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(minimum_bind_duration=Min(
+                annotate(minimum_extended_search_duration=Min(
                     'ldapprobelog__elapsed_search_ext',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(average_bind_duration=Avg(
+                annotate(average_extended_search_duration=Avg(
                     'ldapprobelog__elapsed_search_ext',
                     filter=Q(ldapprobelog__failed=False))).\
-                annotate(maximum_bind_duration=Max(
+                annotate(maximum_extended_search_duration=Max(
                     'ldapprobelog__elapsed_search_ext',
                     filter=Q(ldapprobelog__failed=False))).values()
 
@@ -402,9 +419,13 @@ class BaseADNode(BaseModel, models.Model):
             probes_model_name, cls.annotate_orion_url(queryset))
 
         if 'node_dns' in [field.name for field in cls._meta.fields]:
-            return queryset.order_by('node_dns')
+            subscription = f'{subscription}, non orion'
+            return (now, time_delta,
+                    subscription, queryset.order_by('node_dns'))
 
-        return queryset.order_by('node__node_caption')
+        subscription = f'{subscription}, orion'
+        return (now, time_delta,
+                subscription, queryset.order_by('node__node_caption'))
 
     class Meta:
         abstract = True

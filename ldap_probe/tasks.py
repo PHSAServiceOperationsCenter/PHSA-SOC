@@ -335,6 +335,22 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
 @shared_task(queue='email', rate_limit='1/s')
 def dispatch_ldap_report(data_source, anon, **time_delta_args):
     """
+    `Celery task` for generating `AD` services monitoring summary reports
+
+    :arg str data_source: the name of the `Django model` to be used as a
+        data source
+
+        We are passing the model using its name because the default
+        task serializer (`JSON`) is not capable of handling Python classes.
+        If we use the name of the model, we can resolve the class inside
+        the task.
+
+    :arg bool anon: flag used to decide the type of the `AD` probes;
+        probes that executed anonymous bind calls or probes that
+        executed non anonymous bind calls
+
+    :arg time_delta_args: optional named arguments that are used to
+        initialize a :class:`datetime.duration` object
     """
     LOG.debug(
         ('invoking ldap probes report with data_source = %s, anon = %s,'

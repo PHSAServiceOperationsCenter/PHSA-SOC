@@ -18,10 +18,6 @@ used by the :ref:`Domain Controllers Monitoring Application`.
 :updated:    Nov. 19, 2019
 
 """
-import json
-
-from django.utils import timezone
-
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -334,6 +330,45 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
         instance_pk=instance_pk,
         subscription=utils.get_subscription(subscription),
         level=get_preference('commonalertargs__warn_level'))
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def dispatch_ldap_report(data_source, anon, **time_delta_args):
+    """
+    """
+    LOG.debug(
+        ('invoking ldap probes report with data_source = %s, anon = %s,'
+         ' time_delta_args = %s'), data_source, anon, time_delta_args)
+    try:
+        now, time_delta, subscription, data = \
+            utils.get_model(data_source).\
+            report_probe_aggregates(anon=anon, **time_delta_args)
+    except Exception as error:
+        LOG.error(
+            ('invoking ldap probes report with data_source = %s, anon = %s,'
+             ' time_delta_args = %s raises error %s'),
+            data_source, anon, time_delta_args, str(error))
+        raise error
+    subscription = utils.get_subscription(subscription)
+    full = 'full bind' in subscription.subscription.lower()
+    orion = 'non orion' not in subscription.subscription.lower()
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__info_level'), now=now,
+            time_delta=time_delta, full=full, orion=orion)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            f'dispatched LDAP probes report with data_source = {data_source},'
+            f' anon = {anon}, time_delta_args = {time_delta_args}')
+
+    return (
+        f'could not dispatch LDAP probes report with'
+        f' data_source = {data_source},'
+        f' anon = {anon}, time_delta_args = {time_delta_args}')
 
 
 def _raise_ldap_alert(subscription, level, instance_pk=None):

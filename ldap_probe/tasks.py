@@ -350,7 +350,11 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
         executed non anonymous bind calls
 
     :arg time_delta_args: optional named arguments that are used to
-        initialize a :class:`datetime.duration` object
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
     """
     LOG.debug(
         ('invoking ldap probes report with data_source = %s, anon = %s,'
@@ -384,12 +388,14 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     if ret:
         return (
             f'dispatched LDAP probes report with data_source = {data_source},'
-            f' anon = {anon}, time_delta_args = {time_delta_args}')
+            f' anon = {anon}, perf_filter = {perf_filter},'
+            f' time_delta_args = {time_delta_args}')
 
     return (
         f'could not dispatch LDAP probes report with'
         f' data_source = {data_source},'
-        f' anon = {anon}, time_delta_args = {time_delta_args}')
+        f' anon = {anon}, perf_filter = {perf_filter},'
+        f' time_delta_args = {time_delta_args}')
 
 
 def _raise_ldap_alert(subscription, level, instance_pk=None):

@@ -293,7 +293,8 @@ class BaseADNode(BaseModel, models.Model):
 
     @classmethod
     def report_probe_aggregates(
-            cls, queryset=None, anon=False, perf_filter=None, **time_delta_args):
+            cls,
+            queryset=None, anon=False, perf_filter=None, **time_delta_args):
         """
         aggregate probe data for each :class:`OrionADNode` instance for the
         period defined by the `time_delta` argument
@@ -327,7 +328,14 @@ class BaseADNode(BaseModel, models.Model):
 
             * else, try to convert the original value to
               :class:`deciaml.Decimal` and raise a
-              :exc:`exceptions.ValueError` if the convertion fails
+              :exc:`exceptions.ValueError` if the conversion fails
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
 
         :returns:
 
@@ -356,6 +364,25 @@ class BaseADNode(BaseModel, models.Model):
 
                   * min, max, average timing for `extended search` calls or
                     `read root dse` calls of the successful probes
+
+        :raises:
+
+            :exc:`exceptions.ValueError` if the `perf_filter` argument
+            is not `None` and it cannot be used to initialize a
+            :class:`decimal.Decimal` object
+
+        .. todo::
+
+            Add a catch for no nodes available.
+
+            This is a bad thing if there
+            are no orion nodes (treat this case as a fully separate alert).
+
+            However, the normal case is that all `AD` nodes are now
+            defined in Orion and in that case, we can safely abort
+            report call for non Orion nodes.
+
+
         """
         def resolve_perf_filter(perf_filter):
             if perf_filter is None:
@@ -392,7 +419,7 @@ class BaseADNode(BaseModel, models.Model):
         if anon:
             probes_model_name = 'ldapprobeanonbindlog'
             ldapprobelog_filter = {
-                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__created_on__gte': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': True,
             }
 
@@ -406,7 +433,7 @@ class BaseADNode(BaseModel, models.Model):
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
-                'ldapprobelog__created_on__gt': since_moment,
+                'ldapprobelog__created_on__gte': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': False,
             }
 
@@ -643,6 +670,83 @@ class LdapProbeLog(models.Model):
     failed = models.BooleanField(
         _('Probe failed'), db_index=True, blank=False, null=False,
         default=False)
+
+    @classmethod
+    def error_report(cls, **time_delta_args):
+        """
+        generate a :class:`django.db.models.query.QuerySet` object with
+        the LDAP errors generated over the last $x minutes
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+        :returns:
+
+            * the moments used to filter the data in the report by time
+
+            * :class:`django.db.models.query.QuerySet` with the
+              failed LDAP probes over the defined period
+
+        """
+        when_ad_orion_node = When(
+            ad_orion_node__isnull=False,
+            then=Case(When(
+                ad_orion_node__node__node_dns__isnull=False,
+                then=F('ad_orion_node__node__node_dns')),
+                default=F('ad_orion_node__node__ip_address'),
+                output_field=TextField()))
+        """
+        :class:`django.db.models.When` instance that will translate into
+        an `SQL` `WHEN` clause
+        """
+
+        case_ad_node = Case(
+            when_ad_orion_node, default=F('ad_node__node_dns'),
+            output_field=TextField())
+        """
+        :class:`django.db.models.Case` instance that will translate into
+        an `SQL` `WHEN` clause
+
+        Together with the previous attribute, this will result into
+        something like
+        SELECT CASE WHEN `ldap_probe_ldapprobelog`.`ad_orion_node_id`
+        IS NOT NULL THEN CASE WHEN `orion_integration_orionnode`.`node_dns`
+        IS NOT NULL THEN `orion_integration_orionnode`.`node_dns`
+        ELSE `orion_integration_orionnode`.`ip_address`
+        END
+        ELSE `ldap_probe_nonorionadnode`.`node_dns`
+        END
+        AS `domain_controller_fqdn
+
+        We need this structure because this method forces all the
+        calculations to happen in the database engine.
+        """
+
+        if time_delta_args:
+            time_delta = timezone.timedelta(**time_delta_args)
+        else:
+            time_delta = get_preference('ldapprobe__ldap_reports_period')
+
+        since = MomentOfTime.past(time_delta=time_delta)
+        now = timezone.now()
+
+        queryset = cls.objects.filter(failed=True, created_on__gte=since).\
+            annotate(probe_url=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()), Value(':'),
+                Value(settings.SERVER_PORT),
+                Value('/admin/ldap_probe/ldapprobelogfailed/'), F('id'),
+                Value('/change/'), output_field=TextField())).\
+            annotate(domain_controller_fqdn=case_ad_node).\
+            order_by('ad_node', '-created_on')
+
+        print(queryset.query)
+
+        return now, time_delta, queryset
 
     def __str__(self):
         return f'LDAP probe {self.uuid} to {self.node}'

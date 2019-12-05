@@ -15,6 +15,7 @@ This module contains the :class:`django.db.models.Model` models for the
 :updated:    Nov. 27, 2019
 
 """
+import decimal
 import logging
 import socket
 
@@ -292,7 +293,7 @@ class BaseADNode(BaseModel, models.Model):
 
     @classmethod
     def report_probe_aggregates(
-            cls, queryset=None, anon=False, **time_delta_args):
+            cls, queryset=None, anon=False, perf_filter=None, **time_delta_args):
         """
         aggregate probe data for each :class:`OrionADNode` instance for the
         period defined by the `time_delta` argument
@@ -307,11 +308,32 @@ class BaseADNode(BaseModel, models.Model):
             subject of the report, LDAP probes that achieved a full bind or
             LDAP probes that achieved an anonymous bind
 
+        :arg str perf_filter: apply filters for performance degradation if
+            this argument is provided
+
+            If this argument is `None`, this method will not filter for
+            performance degradation results.
+
+            Otherwise, the argument will be updated to a
+            :class:`deciaml.Decimal` value based on the original value:
+
+            * if the value is 'warning', update the argument to the value
+              provided by the user preference defined in
+              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfWarnTreshold`
+
+            * else if the value is 'alert', update the argument to the value
+              provided by the user preference defined in
+              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfAlertTreshold`
+
+            * else, try to convert the original value to
+              :class:`deciaml.Decimal` and raise a
+              :exc:`exceptions.ValueError` if the convertion fails
+
         :returns:
 
             * the moments used to filter the data in the report by time
 
-            * the :attr:`subcription
+            * the :attr:`subscription
               <ssl_cert_tracker.models.Subscription.subscription>` that will
               be used to deliver this report via email
 
@@ -335,6 +357,26 @@ class BaseADNode(BaseModel, models.Model):
                   * min, max, average timing for `extended search` calls or
                     `read root dse` calls of the successful probes
         """
+        def resolve_perf_filter(perf_filter):
+            if perf_filter is None:
+                return None
+
+            if perf_filter.lower() in ['warning']:
+                perf_filter = get_preference('ldapprobe__ldap_perf_warn')
+            elif perf_filter.lower() in ['alert']:
+                perf_filter = get_preference('ldapprobe__ldap_perf_alert')
+            else:
+                try:
+                    perf_filter = decimal.Decimal(perf_filter)
+                except decimal.InvalidOperation:
+                    raise ValueError(
+                        f'{type(perf_filter)} object {perf_filter}'
+                        ' cannot be converted to decimal')
+
+            return perf_filter
+
+        perf_filter = resolve_perf_filter(perf_filter)
+
         subscription = 'LDAP: summary report'
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
@@ -353,14 +395,27 @@ class BaseADNode(BaseModel, models.Model):
                 'ldapprobelog__created_on__gt': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': True,
             }
+
             subscription = f'{subscription}, anonymous bind'
+
+            if perf_filter:
+                ldapprobelog_filter[
+                    'ldapprobelog__elapsed_anon_bind__gte'] = perf_filter
+                subscription = f'{subscription}, perf'
+
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
                 'ldapprobelog__created_on__gt': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': False,
             }
+
             subscription = f'{subscription}, full bind'
+
+            if perf_filter:
+                ldapprobelog_filter[
+                    'ldapprobelog__elapsed_bind__gte'] = perf_filter
+                subscription = f'{subscription}, perf'
 
         queryset = queryset.\
             filter(**ldapprobelog_filter).\
@@ -420,12 +475,12 @@ class BaseADNode(BaseModel, models.Model):
 
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             subscription = f'{subscription}, non orion'
-            return (now, time_delta,
-                    subscription, queryset.order_by('node_dns'))
+            return (now, time_delta, subscription,
+                    queryset.order_by('node_dns'), perf_filter)
 
         subscription = f'{subscription}, orion'
-        return (now, time_delta,
-                subscription, queryset.order_by('node__node_caption'))
+        return (now, time_delta, subscription,
+                queryset.order_by('node__node_caption'), perf_filter)
 
     class Meta:
         abstract = True

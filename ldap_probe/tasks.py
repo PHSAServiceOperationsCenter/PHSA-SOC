@@ -333,7 +333,7 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
 
 
 @shared_task(queue='email', rate_limit='1/s')
-def dispatch_ldap_report(data_source, anon, **time_delta_args):
+def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring summary reports
 
@@ -354,25 +354,30 @@ def dispatch_ldap_report(data_source, anon, **time_delta_args):
     """
     LOG.debug(
         ('invoking ldap probes report with data_source = %s, anon = %s,'
-         ' time_delta_args = %s'), data_source, anon, time_delta_args)
+         ' perf_filter = %s, time_delta_args = %s'),
+        data_source, anon, perf_filter, time_delta_args)
     try:
-        now, time_delta, subscription, data = \
+        now, time_delta, subscription, data, perf_filter = \
             utils.get_model(data_source).\
-            report_probe_aggregates(anon=anon, **time_delta_args)
+            report_probe_aggregates(
+                anon=anon, perf_filter=perf_filter, **time_delta_args)
     except Exception as error:
         LOG.error(
             ('invoking ldap probes report with data_source = %s, anon = %s,'
-             ' time_delta_args = %s raises error %s'),
-            data_source, anon, time_delta_args, str(error))
+             ' perf_filter = %s, time_delta_args = %s raises error %s'),
+            data_source, anon, perf_filter, time_delta_args, str(error))
         raise error
+
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
+
     try:
         ret = utils.borgs_are_hailing(
             data=data, subscription=subscription, logger=LOG,
             level=get_preference('commonalertargs__info_level'), now=now,
-            time_delta=time_delta, full=full, orion=orion)
+            time_delta=time_delta, full=full, orion=orion,
+            perf_filter=perf_filter)
     except Exception as error:
         raise error
 

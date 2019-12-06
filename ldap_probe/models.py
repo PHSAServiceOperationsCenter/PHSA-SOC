@@ -12,7 +12,7 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 27, 2019
+:updated:    Dec. 6, 2019
 
 """
 import decimal
@@ -225,10 +225,15 @@ class BaseADNode(BaseModel, models.Model):
         annotate
         <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
         a :class:`queryset <django.db.models.query.QuerySet>` with the
-        absolute `URL` of the node definition on the `orion` server if
+        absolute `URL` of the node definition on the `Orion` server if
         possible or with a 'this node is not in orion' message
 
         The name of this annotation will be 'orion_url'.
+
+        :arg queryset: a :class:`django.db.models.query.QuerySet` based
+            on one of the models inheriting from :class:`BaseADNode`
+
+            If `None`, one will be created by this method
 
         :returns: the :class:`django.db.models.query.QuerySet` with the
             'orion_url' field included
@@ -270,8 +275,10 @@ class BaseADNode(BaseModel, models.Model):
         against the AD node
 
         Note that this method will be very expensive when invoked
-        against a queryset that does nor filter on :class:`LdapProbeLog`.
-        Should look something like
+        against a queryset that does not restrict the number of
+        :class:`LdapProbeLog` rows.
+
+        The annotation should look something like
         'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
         'ldapprobefullbindlog/?ad_node__isnull=True' + \
         '&ad_orion_node__id__exact=3388'.
@@ -296,10 +303,11 @@ class BaseADNode(BaseModel, models.Model):
             cls,
             queryset=None, anon=False, perf_filter=None, **time_delta_args):
         """
-        aggregate probe data for each :class:`OrionADNode` instance for the
-        period defined by the `time_delta` argument
+        generate report data with aggregate probe values for each instance of
+        a class that inherits from :class:`BaseADNode` over the period defined
+        by the `time_delta` argument
 
-        :arg queryset: run thie report against this particular queryset
+        :arg queryset: run the report against this particular queryset
 
             Normally, the queryset will be created by the method itself
             based on the class that owns it.
@@ -380,11 +388,15 @@ class BaseADNode(BaseModel, models.Model):
 
             However, the normal case is that all `AD` nodes are now
             defined in Orion and in that case, we can safely abort
-            report call for non Orion nodes.
+            report calls for non Orion nodes.
 
 
         """
         def resolve_perf_filter(perf_filter):
+            """
+            embedded function for resolving the value of the `perf_filter`
+            argument
+            """
             if perf_filter is None:
                 return None
 
@@ -724,6 +736,10 @@ class LdapProbeLog(models.Model):
 
         We need this structure because this method forces all the
         calculations to happen in the database engine.
+        
+        The `SQL` fragment above is more or less the equivalent of
+        applying :meth:`BaseADNode.get_node` to each row in
+        :class:`LdapProbeLog`. 
         """
 
         if time_delta_args:
@@ -766,6 +782,12 @@ class LdapProbeLog(models.Model):
         """
         flag for considering if an instance of this class must trigger a
         performance alert
+
+        In plain English, this method translates into::
+
+            Give me all the elapsed_foo fields that are not `None`. Then,
+            out of these not `None` fields, if any of them is greater than
+            a threshold, return `True`. Otherwise, return `False`.
 
         :returns: `True/False`
         :rtype: bool

@@ -122,7 +122,7 @@ def expire_entries(data_source=None, **age):
     specific date and time
 
     The assumption is that the :class:`model <django.db.models.Model>`
-    defined by the data_source argument has a filed named `created_on`
+    defined by the data_source argument has a field named `created_on`
     and a field named `is_expired`.
 
     :arg str data_source: the name of a :class:`model
@@ -197,6 +197,9 @@ def delete_expired_entries(data_source=None):
     defined by the data_source argument has a :class:`bool` attribute named
     `is_expred`.
 
+    The task will actually delete entries only if the
+
+
     :arg str data_source: the name of a :class:`model
         <django.db.models.Model>` in the `app_label.modelname` format
 
@@ -216,6 +219,9 @@ def delete_expired_entries(data_source=None):
             argument doesn't have an `is_expired` attribute
 
     """
+    if not get_preference('ldapprobe__ldap_delete_expired'):
+        return 'the application is not configured to delete expired rows'
+
     if data_source is None:
         data_source = 'ldap_probe.LdapProbeLog'
 

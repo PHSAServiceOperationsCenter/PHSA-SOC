@@ -1277,6 +1277,24 @@ class LdapErrorAlertSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapErrorReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error reports
+
+    :access_key: 'ldapprobe__ldap_error_report_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_report_subscription'
+    default = 'LDAP: Error report'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the

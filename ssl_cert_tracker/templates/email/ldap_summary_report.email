@@ -7,7 +7,7 @@
 {{ tags }}{{ level }}: {{ email_subject }}
 {% endif %}
 {% endblock %}
-{{ email_subject }} {{ perf_filter }} seconds
+
 {% block html %}
 {% if data %}
 <h3>
@@ -38,16 +38,16 @@ The data collection was launched at {{ now }} and covers the last
 </p></div>
 
 <div><p>
-<table style="border: 1px solid black;">
+<table style="border: noborder;border-collapse: collapse">
 <tr align="left" valign="center">
 {% for key, val in headers.items %}
-<th style="border: 0px solid black;"><strong>{{val}}</strong></th>
+<th style="border: 1px solid black;"><strong>{{val}}</strong></th>
 {% endfor %}
 </tr>
 {% for item in data %}
 <tr align="left" valign="center">
 {% for value in item.values %}
-<td style="border: 0px solid black;">{{value}}</td>
+<td style="border: 1px solid black;">{{value}}</td>
 {% endfor %}
 </tr>
 {% endfor %}

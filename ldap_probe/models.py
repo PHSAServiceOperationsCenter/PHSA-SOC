@@ -582,8 +582,9 @@ class OrionADNode(BaseADNode, models.Model):
         prepare data for reports about AD nodes defined in Orion but with
         the FQDN property missing
         """
-        return cls.objects.filter(
-            Q(node__node_dns__isnull=True) | Q(node__node_dns__iexact=''))
+        return cls.annotate_orion_url(
+            cls.objects.filter(Q(node__node_dns__isnull=True) |
+                               Q(node__node_dns__iexact='')).values())
 
     @classmethod
     def report_duplicate_nodes(cls):

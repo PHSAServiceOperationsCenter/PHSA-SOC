@@ -576,6 +576,33 @@ class OrionADNode(BaseADNode, models.Model):
             get_preference('orionserverconn__orion_server_url'),
             self.node.details_url, self.get_node())
 
+    @classmethod
+    def report_bad_fqdn(cls):
+        """
+        prepare data for reports about AD nodes defined in Orion but with
+        the FQDN property missing
+        """
+        return cls.objects.filter(
+            Q(node__node_dns__isnull=True) | Q(node__node_dns__iexact=''))
+
+    @classmethod
+    def report_duplicate_nodes(cls):
+        """
+        prepare data for report about duplicate AD node entries on the Orion
+        server
+
+        In this case duplication is defined as `two or more Orion nodes that
+        resolve to the same IP address`.
+
+        """
+        dupes = cls.objects.values('node__ip_address').\
+            annotate(count_nodes=Count('node')).order_by().\
+            filter(count_nodes__gt=1).\
+            values_list('node__ip_address', flat=True)
+
+        return cls.annotate_orion_url(
+            cls.objects.filter(node__ip_address__in=dupes).values())
+
     class Meta:
         app_label = 'ldap_probe'
         verbose_name = _('Domain Controller from Orion')

@@ -593,6 +593,18 @@ class NonOrionADNode(BaseADNode, models.Model):
             ' section 2.1')
     )
 
+    @classmethod
+    def report_nodes(cls):
+        """
+        prepare report data for `AD` nodes that are not defined on the
+        `Orion` server
+
+        :returns: the :class:`django.db.models.query.QuerySet` based on
+              the :class:`NonOrionADNode` model
+
+        """
+        return cls.objects.filter(enabled=True).order_by('node_dns')
+
     def __str__(self):
         return self.node_dns
 

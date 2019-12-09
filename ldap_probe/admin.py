@@ -97,6 +97,8 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
         """
         return False
 
+    # pylint: disable=no-self-use
+
     def show_node_caption(self, obj):
         """
         show the node caption as known to the `Orion` server
@@ -159,6 +161,8 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
             return obj.node.location
         return None
     location.short_description = _('Location')
+
+    # pylint: enable=no-self-use
 
 
 @admin.register(models.NonOrionADNode)
@@ -251,7 +255,9 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors',
                     'created_on', )
-    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+    list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
+                   ('ad_orion_node',
+                    admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
@@ -267,7 +273,9 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
                     'elapsed_initialize',
                     'elapsed_bind', 'elapsed_search_ext', 'created_on', )
-    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+    list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
+                   ('ad_orion_node',
+                    admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
@@ -283,7 +291,9 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
                     'elapsed_initialize',
                     'elapsed_anon_bind', 'elapsed_read_root', 'created_on', )
-    list_filter = ('ad_node', 'ad_orion_node__node__node_dns',
+    list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
+                   ('ad_orion_node',
+                    admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',

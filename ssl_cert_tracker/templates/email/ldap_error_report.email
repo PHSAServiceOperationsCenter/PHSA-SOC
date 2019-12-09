@@ -1,0 +1,50 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{{ tags }}{{ level }}: {{ email_subject }}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h3>
+{{ email_subject }}
+</h3>
+<div><p>
+The data collection was launched at {{ now }} and covers the last 
+{{ time_delta | timedelta:"{minutes_total} minutes" }}.
+</p></div>
+
+<div><p>
+<table style="border: noborder;border-collapse: collapse">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th style="border: 1px solid red;"><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid red;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><h3 style="color: green;">
+No AD services errors occurred for the last 
+{{ time_delta|timedelta:"{minutes_total} minutes" }}.
+</h3></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

@@ -27,7 +27,7 @@ AD service performance degradation details (all values are measured in seconds):
 {% for item in data %}
 <tr align="left" valign="center">
 {% for value in item.values %}
-<td style="border: 1px solid black;">{{value}}</td>
+<td style="border: 1px solid red;">{{value}}</td>
 {% endfor %}
 </tr>
 {% endfor %}

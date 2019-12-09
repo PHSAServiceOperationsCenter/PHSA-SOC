@@ -12,22 +12,29 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 27, 2019
+:updated:    Dec. 6, 2019
 
 """
+import decimal
 import logging
 import socket
 
-from django.db import models
 from django.conf import settings
+from django.db import models
+from django.db.models import (
+    Case, When, F, Value, TextField, URLField, Count, Avg, Min, Max, Q)
+from django.db.models.functions import Concat
 from django.core import validators
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.models import BaseModel, BaseModelWithDefaultInstance
-from p_soc_auto_base.utils import get_uuid, get_absolute_admin_change_url
+from p_soc_auto_base.utils import (
+    get_uuid, get_absolute_admin_change_url, MomentOfTime,
+)
 
 
 LOGGER = logging.getLogger('ldap_probe_log')
@@ -170,6 +177,31 @@ class BaseADNode(BaseModel, models.Model):
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
 
+    sql_case_dns = When(
+        node__node_dns__isnull=False, then=F('node__node_dns'))
+    """
+    build an `SQL` `WHEN` clause
+
+    See `Conditional Expressions
+    <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#the-conditional-expression-classes>`__.
+
+    """
+
+    sql_orion_anchor_field = Case(
+        sql_case_dns,
+        default=F('node__ip_address'), output_field=TextField())
+    """
+    build an `SQL` `CASE` clause
+
+    When used together with :attr:`sql_case_dns` this attribute allows us
+    to append a meaningfull field to a queryset. If
+    :attr:`orion_integration.models.OrionNode.node_dns` exists, it will
+    be placed in a :class:`django.db.models.query.QuerySet`. Otherwise,
+    the :attr:`orion_integration.models.OrionNode.ip_address` will be
+    used.
+
+    """
+
     def get_node(self):  # pylint: disable=inconsistent-return-statements
         """
         get node network information in either `FQDN` or `IP` address format
@@ -186,6 +218,308 @@ class BaseADNode(BaseModel, models.Model):
             if node.node_dns:
                 return node.node_dns
             return node.node_caption
+
+    @classmethod
+    def annotate_orion_url(cls, queryset=None):
+        """
+        annotate
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
+        a :class:`queryset <django.db.models.query.QuerySet>` with the
+        absolute `URL` of the node definition on the `Orion` server if
+        possible or with a 'this node is not in orion' message
+
+        The name of this annotation will be 'orion_url'.
+
+        :arg queryset: a :class:`django.db.models.query.QuerySet` based
+            on one of the models inheriting from :class:`BaseADNode`
+
+            If `None`, one will be created by this method
+
+        :returns: the :class:`django.db.models.query.QuerySet` with the
+            'orion_url' field included
+
+            Note that the :class:`django.db.models.query.QuerySet`is filtered
+            to return only `enabled` nodes
+        """
+        if queryset is None:
+            queryset = cls.objects.filter(enabled=True)
+
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
+            queryset = queryset.annotate(
+                orion_url=Concat(
+                    Value('AD node '), F('node_dns'),
+                    Value(' is not defined in Orion'),
+                    output_field=TextField()
+                )
+            )
+        else:
+            queryset = queryset.\
+                annotate(orion_anchor=cls.sql_orion_anchor_field).\
+                annotate(
+                    orion_url=Concat(
+                        Value(get_preference(
+                            'orionserverconn__orion_server_url')),
+                        F('node__details_url'),
+                        output_field=URLField()
+                    )
+                )
+
+        return queryset.values()
+
+    @classmethod
+    def annotate_probe_details(cls, probes_model_name, queryset=None):
+        """
+        annotate a :class:`queryset <django.db.models.query.QuerySet>`
+        based on classes inheriting from :class:`BaseADNode` model with
+        the absolute `URL` for the details of the `LDAP` probes executed
+        against the AD node
+
+        Note that this method will be very expensive when invoked
+        against a queryset that does not restrict the number of
+        :class:`LdapProbeLog` rows.
+
+        The annotation should look something like
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
+        'ldapprobefullbindlog/?ad_node__isnull=True' + \
+        '&ad_orion_node__id__exact=3388'.
+        """
+        if queryset is None:
+            queryset = cls.annotate_orion_url()
+
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
+            url_filters = '/?ad_orion_node__isnull=True&ad_node__id__exact='
+        else:
+            url_filters = '/?ad_node__isnull=True&ad_orion_node__id__exact='
+
+        return queryset.annotate(probes_url=Concat(
+            Value(settings.SERVER_PROTO), Value('://'),
+            Value(socket.getfqdn()), Value(':'),
+            Value(settings.SERVER_PORT),
+            Value('/admin/ldap_probe/'), Value(probes_model_name),
+            Value(url_filters), F('id'), output_field=TextField())).values()
+
+    @classmethod
+    def report_probe_aggregates(
+            cls,
+            queryset=None, anon=False, perf_filter=None, **time_delta_args):
+        """
+        generate report data with aggregate probe values for each instance of
+        a class that inherits from :class:`BaseADNode` over the period defined
+        by the `time_delta` argument
+
+        :arg queryset: run the report against this particular queryset
+
+            Normally, the queryset will be created by the method itself
+            based on the class that owns it.
+        :type queryset: :class:`django.db.models.query.QuerySet`
+
+        :arg bool anon: flag for deciding which kind of LDAP probes are the
+            subject of the report, LDAP probes that achieved a full bind or
+            LDAP probes that achieved an anonymous bind
+
+        :arg str perf_filter: apply filters for performance degradation if
+            this argument is provided
+
+            If this argument is `None`, this method will not filter for
+            performance degradation results.
+
+            Otherwise, the argument will be updated to a
+            :class:`deciaml.Decimal` value based on the original value:
+
+            * if the value is 'warning', update the argument to the value
+              provided by the user preference defined in
+              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfWarnTreshold`
+
+            * else if the value is 'alert', update the argument to the value
+              provided by the user preference defined in
+              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfAlertTreshold`
+
+            * else, try to convert the original value to
+              :class:`deciaml.Decimal` and raise a
+              :exc:`exceptions.ValueError` if the conversion fails
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+        :returns:
+
+            * the moments used to filter the data in the report by time
+
+            * the :attr:`subscription
+              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              be used to deliver this report via email
+
+            * the :class:`django.db.models.query.QuerySet` based on one
+              of the classes inheriting from  the :class:`BaseADNode` abstract
+              model
+
+              Depending on the calling class the following aggregates with
+              regards to LDAP probes are placed in the queryset
+
+                  * the number of failed probes
+
+                  * the number of successful probes
+
+                  * average timing for initialize calls of the successful
+                    probes
+
+                  * min, max, average timing for `bind` calls or `anonymous
+                   bind` calls of the successful probes
+
+                  * min, max, average timing for `extended search` calls or
+                    `read root dse` calls of the successful probes
+
+        :raises:
+
+            :exc:`exceptions.ValueError` if the `perf_filter` argument
+            is not `None` and it cannot be used to initialize a
+            :class:`decimal.Decimal` object
+
+        .. todo::
+
+            Add a catch for no nodes available.
+
+            This is a bad thing if there
+            are no orion nodes (treat this case as a fully separate alert).
+
+            However, the normal case is that all `AD` nodes are now
+            defined in Orion and in that case, we can safely abort
+            report calls for non Orion nodes.
+
+
+        """
+        def resolve_perf_filter(perf_filter):
+            """
+            embedded function for resolving the value of the `perf_filter`
+            argument
+            """
+            if perf_filter is None:
+                return None
+
+            if perf_filter.lower() in ['warning']:
+                perf_filter = get_preference('ldapprobe__ldap_perf_warn')
+            elif perf_filter.lower() in ['alert']:
+                perf_filter = get_preference('ldapprobe__ldap_perf_alert')
+            else:
+                try:
+                    perf_filter = decimal.Decimal(perf_filter)
+                except decimal.InvalidOperation:
+                    raise ValueError(
+                        f'{type(perf_filter)} object {perf_filter}'
+                        ' cannot be converted to decimal')
+
+            return perf_filter
+
+        perf_filter = resolve_perf_filter(perf_filter)
+
+        subscription = 'LDAP: summary report'
+        if queryset is None:
+            queryset = cls.objects.filter(enabled=True)
+
+        if time_delta_args:
+            time_delta = timezone.timedelta(**time_delta_args)
+        else:
+            time_delta = get_preference('ldapprobe__ldap_reports_period')
+
+        since_moment = MomentOfTime.past(time_delta=time_delta)
+        now = timezone.now()
+
+        if anon:
+            probes_model_name = 'ldapprobeanonbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gte': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': True,
+            }
+
+            subscription = f'{subscription}, anonymous bind'
+
+            if perf_filter:
+                ldapprobelog_filter[
+                    'ldapprobelog__elapsed_anon_bind__gte'] = perf_filter
+                subscription = f'{subscription}, perf'
+
+        else:
+            probes_model_name = 'ldapprobefullbindlog'
+            ldapprobelog_filter = {
+                'ldapprobelog__created_on__gte': since_moment,
+                'ldapprobelog__elapsed_bind__isnull': False,
+            }
+
+            subscription = f'{subscription}, full bind'
+
+            if perf_filter:
+                ldapprobelog_filter[
+                    'ldapprobelog__elapsed_bind__gte'] = perf_filter
+                subscription = f'{subscription}, perf'
+
+        queryset = queryset.\
+            filter(**ldapprobelog_filter).\
+            annotate(number_of_failed_probes=Count(
+                'ldapprobelog__failed',
+                filter=Q(ldapprobelog__failed=True))).\
+            annotate(number_of_successfull_probes=Count(
+                'ldapprobelog__failed',
+                filter=Q(ldapprobelog__failed=False))).\
+            annotate(average_initialize_duration=Avg(
+                'ldapprobelog__elapsed_initialize',
+                filter=Q(ldapprobelog__failed=False)))
+
+        if anon:
+            queryset = queryset.\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_anon_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(minimum_read_root_dse_duration=Min(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_read_root_dse_duration=Avg(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_read_root_dse_duration=Max(
+                    'ldapprobelog__elapsed_read_root',
+                    filter=Q(ldapprobelog__failed=False))).values()
+        else:
+            queryset = queryset.\
+                annotate(minimum_bind_duration=Min(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_bind_duration=Avg(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_bind_duration=Max(
+                    'ldapprobelog__elapsed_bind',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(minimum_extended_search_duration=Min(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(average_extended_search_duration=Avg(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).\
+                annotate(maximum_extended_search_duration=Max(
+                    'ldapprobelog__elapsed_search_ext',
+                    filter=Q(ldapprobelog__failed=False))).values()
+
+        queryset = cls.annotate_probe_details(
+            probes_model_name, cls.annotate_orion_url(queryset))
+
+        if 'node_dns' in [field.name for field in cls._meta.fields]:
+            subscription = f'{subscription}, non orion'
+            return (now, time_delta, subscription,
+                    queryset.order_by('node_dns'), perf_filter)
+
+        subscription = f'{subscription}, orion'
+        return (now, time_delta, subscription,
+                queryset.order_by('node__node_caption'), perf_filter)
 
     class Meta:
         abstract = True
@@ -349,6 +683,87 @@ class LdapProbeLog(models.Model):
         _('Probe failed'), db_index=True, blank=False, null=False,
         default=False)
 
+    @classmethod
+    def error_report(cls, **time_delta_args):
+        """
+        generate a :class:`django.db.models.query.QuerySet` object with
+        the LDAP errors generated over the last $x minutes
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+        :returns:
+
+            * the moments used to filter the data in the report by time
+
+            * :class:`django.db.models.query.QuerySet` with the
+              failed LDAP probes over the defined period
+
+        """
+        when_ad_orion_node = When(
+            ad_orion_node__isnull=False,
+            then=Case(When(
+                ad_orion_node__node__node_dns__isnull=False,
+                then=F('ad_orion_node__node__node_dns')),
+                default=F('ad_orion_node__node__ip_address'),
+                output_field=TextField()))
+        """
+        :class:`django.db.models.When` instance that will translate into
+        an `SQL` `WHEN` clause
+        """
+
+        case_ad_node = Case(
+            when_ad_orion_node, default=F('ad_node__node_dns'),
+            output_field=TextField())
+        """
+        :class:`django.db.models.Case` instance that will translate into
+        an `SQL` `WHEN` clause
+
+        Together with the previous attribute, this will result into
+        something like
+        SELECT CASE WHEN `ldap_probe_ldapprobelog`.`ad_orion_node_id`
+        IS NOT NULL THEN CASE WHEN `orion_integration_orionnode`.`node_dns`
+        IS NOT NULL THEN `orion_integration_orionnode`.`node_dns`
+        ELSE `orion_integration_orionnode`.`ip_address`
+        END
+        ELSE `ldap_probe_nonorionadnode`.`node_dns`
+        END
+        AS `domain_controller_fqdn
+
+        We need this structure because this method forces all the
+        calculations to happen in the database engine.
+        
+        The `SQL` fragment above is more or less the equivalent of
+        applying :meth:`BaseADNode.get_node` to each row in
+        :class:`LdapProbeLog`. 
+        """
+
+        if time_delta_args:
+            time_delta = timezone.timedelta(**time_delta_args)
+        else:
+            time_delta = get_preference('ldapprobe__ldap_reports_period')
+
+        since = MomentOfTime.past(time_delta=time_delta)
+        now = timezone.now()
+
+        queryset = cls.objects.filter(failed=True, created_on__gte=since).\
+            annotate(probe_url=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()), Value(':'),
+                Value(settings.SERVER_PORT),
+                Value('/admin/ldap_probe/ldapprobelogfailed/'), F('id'),
+                Value('/change/'), output_field=TextField())).\
+            annotate(domain_controller_fqdn=case_ad_node).\
+            order_by('ad_node', '-created_on')
+
+        print(queryset.query)
+
+        return now, time_delta, queryset
+
     def __str__(self):
         return f'LDAP probe {self.uuid} to {self.node}'
 
@@ -367,6 +782,12 @@ class LdapProbeLog(models.Model):
         """
         flag for considering if an instance of this class must trigger a
         performance alert
+
+        In plain English, this method translates into::
+
+            Give me all the elapsed_foo fields that are not `None`. Then,
+            out of these not `None` fields, if any of them is greater than
+            a threshold, return `True`. Otherwise, return `False`.
 
         :returns: `True/False`
         :rtype: bool

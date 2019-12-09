@@ -342,6 +342,44 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
 
 
 @shared_task(queue='email', rate_limit='1/s')
+def dispatch_non_orion_ad_nodes_report():
+    """
+    `Celery task` for generating the report about `AD` network nodes
+    not defined in `Orion`
+
+    :returns: information about the arguments used to call the task and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send'
+    :rtype: str
+
+    :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
+        errors
+
+    """
+    LOG.debug('invoking the non orion ad nodes report')
+
+    try:
+        data = utils.get_model('ldap_probe.nonorionadnode').report_nodes()
+    except Exception as error:
+        LOG.error('invoking the non orion ad nodes report raises error %s',
+                  str(error))
+        raise error
+
+    subscription = utils.get_subscription(
+        'ldapprobe__ldap_non_orion_ad_nodes_subscription')
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'dispatched the non orion ad nodes report'
+
+    return 'could not dispatch the non orion ad nodes report'
+
+
+@shared_task(queue='email', rate_limit='1/s')
 def dispatch_ldap_error_report(**time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring error reports
@@ -352,7 +390,8 @@ def dispatch_ldap_error_report(**time_delta_args):
             If not present, the method will use the period defined by the
             :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
             user preference
-    :returns: information about the arguments used to call the tass and the
+
+    :returns: information about the arguments used to call the task and the
         result of :meth:`ssl_cert_tracker.lib.Email.send'
     :rtype: str
 

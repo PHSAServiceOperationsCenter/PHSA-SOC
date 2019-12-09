@@ -1295,6 +1295,27 @@ class LdapErrorReportSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapNonOrionADNodesReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports abotu `AD` nodes not defined
+    on the `Orion` server
+
+    :access_key: 'ldapprobe__ldap_non_orion_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_non_orion_ad_nodes_subscription'
+    default = 'LDAP: non Orion AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for LDAP Reports about AD nodes not defined'
+        ' in Orion').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the

@@ -15,13 +15,9 @@ used by the :ref:`Domain Controllers Monitoring Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 19, 2019
+:updated:    Dec. 6, 2019
 
 """
-import json
-
-from django.utils import timezone
-
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -88,7 +84,7 @@ def bootstrap_ad_probes(data_sources=None):
     :arg data_sources: the name(s) of the :class:`Django model(s)
         <django.db.models.Model>` that store `AD` controller information
 
-        This item in this argument must be represented using the
+        This item in the argument must be represented using the
         `app_label.model_name` convention. The argument can be a
         :class:`list` or a :class:`tuple`, or a :class:`str` that separates
         each entry using a comma (,) character.
@@ -126,7 +122,7 @@ def expire_entries(data_source=None, **age):
     specific date and time
 
     The assumption is that the :class:`model <django.db.models.Model>`
-    defined by the data_source argument has a filed named `created_on`
+    defined by the data_source argument has a field named `created_on`
     and a field named `is_expired`.
 
     :arg str data_source: the name of a :class:`model
@@ -201,6 +197,12 @@ def delete_expired_entries(data_source=None):
     defined by the data_source argument has a :class:`bool` attribute named
     `is_expred`.
 
+    The task will actually delete entries only if the user preference defined
+    in
+    :class:`citrus_birg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
+    is so configured.
+
+
     :arg str data_source: the name of a :class:`model
         <django.db.models.Model>` in the `app_label.modelname` format
 
@@ -220,6 +222,9 @@ def delete_expired_entries(data_source=None):
             argument doesn't have an `is_expired` attribute
 
     """
+    if not get_preference('ldapprobe__ldap_delete_expired'):
+        return 'the application is not configured to delete expired rows'
+
     if data_source is None:
         data_source = 'ldap_probe.LdapProbeLog'
 
@@ -336,32 +341,152 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
         level=get_preference('commonalertargs__warn_level'))
 
 
+@shared_task(queue='email', rate_limit='1/s')
+def dispatch_ldap_error_report(**time_delta_args):
+    """
+    `Celery task` for generating `AD` services monitoring error reports
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+    :returns: information about the arguments used to call the tass and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
+    :rtype: str
+
+    :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
+        errors
+
+    """
+    LOG.debug(
+        'invoking ldap error report with time_delta_args = %s',
+        time_delta_args)
+
+    try:
+        now, time_delta, data = utils.get_model('ldap_probe.ldapprobelog').\
+            error_report(**time_delta_args)
+    except Exception as error:
+        LOG.error(
+            ('invoking ldap error report with time_delta_args = %s'
+             ' raises error %s'), time_delta_args, error)
+        raise error
+
+    subscription = utils.get_subscription(
+        'ldapprobe__ldap_error_report_subscription')
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG, now=now,
+            time_delta=time_delta)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return ('dispatched LDAP error report with time_delta_args ='
+                f' {time_delta_args}')
+
+    return ('could not dispatch LDAP error report with time_delta_args ='
+            f' {time_delta_args}')
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
+    """
+    `Celery task` for generating `AD` services monitoring summary reports
+
+    :arg str data_source: the name of the `Django model` to be used as a
+        data source
+
+        We are passing the model using its name because the default
+        task serializer (`JSON`) is not capable of handling Python classes.
+        If we use the name of the model, we can resolve the class inside
+        the task.
+
+    :arg bool anon: flag used to decide the type of the `AD` probes;
+        probes that executed anonymous bind calls or probes that
+        executed non anonymous bind calls
+
+    :arg str perf_filter: apply filters for performance degradation if
+            this argument is provided
+
+            See :meth:`ldap_probe.models.BaseADNode.report_probe_aggregates`
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.duration` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+    :returns: information about the arguments used to call the tass and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send'
+    :rtype: str
+
+    """
+    LOG.debug(
+        ('invoking ldap probes report with data_source = %s, anon = %s,'
+         ' perf_filter = %s, time_delta_args = %s'),
+        data_source, anon, perf_filter, time_delta_args)
+    try:
+        now, time_delta, subscription, data, perf_filter = \
+            utils.get_model(data_source).\
+            report_probe_aggregates(
+                anon=anon, perf_filter=perf_filter, **time_delta_args)
+    except Exception as error:
+        LOG.error(
+            ('invoking ldap probes report with data_source = %s, anon = %s,'
+             ' perf_filter = %s, time_delta_args = %s raises error %s'),
+            data_source, anon, perf_filter, time_delta_args, str(error))
+        raise error
+
+    subscription = utils.get_subscription(subscription)
+    full = 'full bind' in subscription.subscription.lower()
+    orion = 'non orion' not in subscription.subscription.lower()
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__info_level'), now=now,
+            time_delta=time_delta, full=full, orion=orion,
+            perf_filter=perf_filter)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            f'dispatched LDAP probes report with data_source = {data_source},'
+            f' anon = {anon}, perf_filter = {perf_filter},'
+            f' time_delta_args = {time_delta_args}')
+
+    return (
+        f'could not dispatch LDAP probes report with'
+        f' data_source = {data_source},'
+        f' anon = {anon}, perf_filter = {perf_filter},'
+        f' time_delta_args = {time_delta_args}')
+
+
 def _raise_ldap_alert(subscription, level, instance_pk=None):
     """
     invoke the email sending mechanism for an `LDAP` alert
 
     This is an unusual usage for :class:`ssl_cert_tracker.lib.Email`.
     The data is not exactly tabular and most of the email data must be
-    provided using :attr:`ssl_cert_tracker.lib.Email.extra_context`
+    provided using :attr:`ssl_cert_tracker.lib.Email.extra_context` entries
     because it is not generated at the database level but at the `Python`
     level.
-
-    :arg data: the data required for populating the email object
-    :type data: :class:`django.db.models.query.QuerySet`
 
     :arg subscription: the subscription required for addressing and
         rendering the email object
     :type subscription: :class:`ssl_cert_tracker.models.Subscription`
 
-    :arg logger: the logger instance
-    :type logger: :class:`logging.Logger`
-
     :arg str level: the level of the alert
 
-    :arg ldap_probe: the :class:`ldap_probe.models.LdapProbeLog` instance
-        that is subject to the alert
+    :arg int instance_pk: the primary key of the
+        :class:`ldap_probe.models.LdapProbeLog` that is subject to the alert
 
-    :returns: an interpretation of the retung of the
+    :returns: an interpretation of the return value of the
         :meth:`ssl_cert_trqcker.lib.Email.send` operation
 
     :raises: generic :exc:`exceptions.Exception` for whatever error is
@@ -389,7 +514,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     if ldap_probe.failed:
         return_specification = 'error alert for'
 
-    elif ldap_probe.is_perf:
+    elif ldap_probe.perf_alert:
         return_specification = 'performance alert for'
 
     else:

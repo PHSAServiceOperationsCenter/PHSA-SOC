@@ -358,7 +358,7 @@ def dispatch_bad_fqdn_reports():
         raise error
 
     subscription = utils.get_subscription(
-        get_preference('ldapprobe__ldap_orion_fqdn__ad_nodes_subscription'))
+        get_preference('ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'))
 
     try:
         ret = utils.borgs_are_hailing(
@@ -391,7 +391,7 @@ def dispatch_dupe_nodes_reports():
         raise error
 
     subscription = utils.get_subscription(
-        get_preference('ldapprobe__ldap_orion_dupes__ad_nodes_subscription'))
+        get_preference('ldapprobe__ldap_orion_dupes_ad_nodes_subscription'))
 
     try:
         ret = utils.borgs_are_hailing(

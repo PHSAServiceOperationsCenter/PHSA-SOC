@@ -342,6 +342,71 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
 
 
 @shared_task(queue='email', rate_limit='1/s')
+def dispatch_bad_fqdn_reports():
+    """
+    `Celery task` for generating a report with `AD` nodes with no `FQDN`
+    properties on the `Orion` server
+    """
+    LOG.debug('invoking the fqdn report for orion ad nodes')
+
+    try:
+        data = utils.get_model('ldap_probe.orionadnode').report_bad_fqdn()
+    except Exception as error:
+        LOG.error(
+            'invoking the fqdn report for orion ad nodes raises error %s',
+            str(error))
+        raise error
+
+    subscription = utils.get_subscription(
+        get_preference('ldapprobe__ldap_orion_fqdn__ad_nodes_subscription'))
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__info_level'),)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'dispatched the fqdn report for orion ad nodes'
+
+    return 'could not dispatch the fqdn report for orion ad nodes'
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def dispatch_dupe_nodes_reports():
+    """
+    `Celery task` for generating a report with duplicate `AD` nodes
+    on the `Orion` server
+    """
+    LOG.debug('invoking the duplicate ad nodes in orion report')
+
+    try:
+        data = utils.get_model('ldap_probe.orionadnode').\
+            report_duplicate_nodes()
+    except Exception as error:
+        LOG.error(
+            'invoking the duplicate ad nodes in orion report raises error %s',
+            str(error))
+        raise error
+
+    subscription = utils.get_subscription(
+        get_preference('ldapprobe__ldap_orion_dupes__ad_nodes_subscription'))
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__info_level'),)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return 'dispatched the duplicate ad nodes in orion report'
+
+    return 'could not dispatch the duplicate ad nodes in orion report'
+
+
+@shared_task(queue='email', rate_limit='1/s')
 def dispatch_non_orion_ad_nodes_report():
     """
     `Celery task` for generating the report about `AD` network nodes

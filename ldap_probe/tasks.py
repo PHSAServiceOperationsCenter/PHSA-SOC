@@ -365,11 +365,12 @@ def dispatch_non_orion_ad_nodes_report():
         raise error
 
     subscription = utils.get_subscription(
-        'ldapprobe__ldap_non_orion_ad_nodes_subscription')
+        get_preference('ldapprobe__ldap_non_orion_ad_nodes_subscription'))
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG)
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__warn_level'),)
     except Exception as error:
         raise error
 
@@ -413,11 +414,12 @@ def dispatch_ldap_error_report(**time_delta_args):
         raise error
 
     subscription = utils.get_subscription(
-        'ldapprobe__ldap_error_report_subscription')
+        get_preference('ldapprobe__ldap_error_report_subscription'))
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG, now=now,
+            data=data, subscription=subscription, logger=LOG,
+            level=get_preference('commonalertargs__error_level'), now=now,
             time_delta=time_delta)
     except Exception as error:
         raise error

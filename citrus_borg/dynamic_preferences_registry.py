@@ -1310,8 +1310,7 @@ class LdapNonOrionADNodesReportSubscription(StringPreference):
     """default value for this dynamic preference"""
     required = True
     verbose_name = _(
-        'Email Subscription for LDAP Reports about AD nodes not defined'
-        ' in Orion').title()
+        'Email Subscription for non Orion AD Nodes Reports').title()
     """verbose name for this dynamic preference"""
 
 

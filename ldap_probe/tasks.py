@@ -353,7 +353,7 @@ def dispatch_ldap_error_report(**time_delta_args):
             :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
             user preference
     :returns: information about the arguments used to call the tass and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
     :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with

@@ -594,7 +594,8 @@ class MomentOfTime():
             with the following keys:
 
             :now: contains the reference moment; if not present, this method
-                  will use the value returned by :meth:`django.utils.timezone.now`.
+                  will use the value returned by
+                  :meth:`django.utils.timezone.now`.
 
             :time_delta: contains the `datetime.timedelta` interval used to
                 calculate the moment in the past.
@@ -734,14 +735,14 @@ def borgs_are_hailing(
     :arg LOGGER: a logging handlle
     :type LOGGER: :class:`logging.Logger`
 
-    :arg dict extra_context: optional arguments with additional data to be rendered
-        in the email
+    :arg dict extra_context: optional arguments with additional data to be
+        rendered in the email
 
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
 
-        We are using generic :class:`exceptions <Exception>` because this function
-        is almost always invoked from a `Celery task
+        We are using the generic :class:`exceptions <Exception>` because this
+        function is almost always invoked from a `Celery task
         <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
         `Celery` will do all the error handling work if needed.
 

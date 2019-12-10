@@ -3,7 +3,7 @@ ldap_probe.models
 -----------------
 
 This module contains the :class:`django.db.models.Model` models for the
-:ref:`Domain Controllers Monitoring Application`.
+:ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 
@@ -184,7 +184,7 @@ class BaseADNode(BaseModel, models.Model):
 
     See `Conditional Expressions
     <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#the-conditional-expression-classes>`__.
-    
+
     Observe the use of the `Q object
     <https://docs.djangoproject.com/en/2.2/topics/db/queries/#complex-lookups-with-q-objects>`__
     in the :class:`django.db.models.When`. We must use this construct because

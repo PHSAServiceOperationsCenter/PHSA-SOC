@@ -4,7 +4,7 @@ ldap_probe.signals
 
 This module contains the `Django signals
 <https://docs.djangoproject.com/en/2.2/topics/signals/#module-django.dispatch>`__
-for the :ref:`Domain Controllers Monitoring Application`.
+for the :ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 

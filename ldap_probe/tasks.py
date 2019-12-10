@@ -4,7 +4,7 @@ ldap_probe.tasks
 
 This module contains the `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
-used by the :ref:`Domain Controllers Monitoring Application`.
+used by the :ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 
@@ -413,7 +413,7 @@ def dispatch_non_orion_ad_nodes_report():
     not defined in `Orion`
 
     :returns: information about the arguments used to call the task and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
     :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
@@ -458,7 +458,7 @@ def dispatch_ldap_error_report(**time_delta_args):
             user preference
 
     :returns: information about the arguments used to call the task and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
     :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
@@ -527,7 +527,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
             user preference
 
     :returns: information about the arguments used to call the tass and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
     """

@@ -4,7 +4,7 @@ ldap_probe.admin
 
 This module contains the `Django admin
 <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`__
-classes for the :ref:`Domain Controllers Monitoring Application`.
+classes for the :ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 

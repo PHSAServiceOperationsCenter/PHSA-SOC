@@ -12,7 +12,7 @@
 
 :updated:    aug. 8, 2019
 
-REST serialzers for the :ref:`Mail Collector Application`
+REST serializers for the :ref:`Mail Collector Application`
 
 """
 from rest_framework import serializers

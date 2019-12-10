@@ -58,15 +58,15 @@ these diagrams, the host needs to have these packages installed:
 
   Is used to translate diagrams described using `UML 
   <https://www.uml.org/index.htm>`_ into images, in this particular case,
-  into PNG imaged.
+  into PNG images.
   
   On ``CentOS 7.5``, `PlantUML <http://plantuml.com/index>`_ is not available
   as a normal (yum or rpm) install. One must download the `plantuml.jar 
   <http://sourceforge.net/projects/plantuml/files/plantuml.jar/download>`_
-  and place it in the :file:/usr/bin directory.
+  and place it in the :file:`/usr/bin directory`.
   
-  See the ``plantuml`` variable in the :file:docs/source/conf.py for
-  configuration details
+  See the ``plantuml`` variable in :file:`docs/source/conf.py` for
+  configuration details.
   
 * `GraphViz <https://www.graphviz.org/>`_:
 
@@ -80,7 +80,7 @@ Serving the documentation
 
 The documentation is being served over `HTML 
 <https://en.wikipedia.org/wiki/HTML>`_ by the SOC Automation web server with
-the ``soc_docs`` alias. See :file:/configs/nginx/nginx.conf for details.
+the ``soc_docs`` alias. See :file:`/configs/nginx/nginx.conf` for details.
 
 :Note:
 

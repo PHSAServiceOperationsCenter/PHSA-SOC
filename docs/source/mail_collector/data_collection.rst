@@ -28,7 +28,7 @@ messages that integrates with
 `Celery <https://docs.celeryproject.org/en/latest/index.html>`_
 `workers <https://docs.celeryproject.org/en/latest/userguide/workers.html>`_.
 This module is implemented using the
-`celery-meesage-consumer package 
+`celery-message-consumer package
 <https://github.com/depop/celery-message-consumer>`_. See the
 :mod:`citrus_borg.consumers` module for detail.
 

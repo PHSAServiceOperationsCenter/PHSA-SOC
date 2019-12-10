@@ -477,7 +477,7 @@ class KnownBrokeringDevice(BaseModel, models.Model):
     This model is maintained by background processes.
 
     `Known Brokering Device fields
-    <../../../admin/doc/models/citrus_borg.known_brokering_device>`__
+    <../../../admin/doc/models/citrus_borg.knownbrokeringdevice>`__
     """
     broker_name = models.CharField(
         _('server name'), max_length=15, unique=True, db_index=True,

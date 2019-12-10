@@ -23,9 +23,8 @@ Memcached scaling
 
 `Memcached <https://memcached.org/>`_ will scale horizontally out of the box.
 In our case, once additional `memcached <https://memcached.org/>`_ instances
-are running, qwe only need to add corresponding ``address, port`` tuples to
-the :class:`LOCATION <list>` of the :attr:`p_soc_auto.settings.CACHES`
-setting.
+are running, we only need to add corresponding ``address, port`` tuples to the
+:class:`LOCATION <list>` of the :attr:`p_soc_auto.settings.CACHES` setting.
 
 Memcached security
 ------------------
@@ -41,4 +40,3 @@ Here is an article about `How To Secure Memcached by Reducing Exposure
 <https://www.digitalocean.com/community/tutorials/how-to-secure-memcached-by-reducing-exposure>`_.
 But this article only talks about reducing the attach surface of a `Memcached
 <https://memcached.org/>`_ cluster.
-to 

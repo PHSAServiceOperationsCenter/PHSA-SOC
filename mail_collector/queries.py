@@ -48,7 +48,7 @@ def dead_bodies(data_source, filter_exp,
 
     :arg not_seen_after:
 
-        the time interval required to buid the filter parameter value
+        the time interval required to build the filter parameter value
 
         It can be a :class:`datetime.timedelta` object or a :class:`dict`
         that can be used to construct a :class:`datetime.timedelta` object.
@@ -104,7 +104,7 @@ def dead_mail_sites(not_seen_after=None):
     considered down if all its bots are down. We must filter against the
     bot most recently seen for each site.
 
-    :param not_seen_after: the time interval required to buid the filter
+    :param not_seen_after: the time interval required to build the filter
         parameter value
 
         It can be a :class:`datetime.timedelta` object or a :class:`dict`

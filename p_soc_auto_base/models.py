@@ -1,7 +1,7 @@
 """
 .. _base_models:
 
-django models for the base app
+Django models for the base app
 
 :copyright:
 
@@ -27,8 +27,8 @@ class BaseModel(models.Model):
     Abstract base model class
 
     All the fields defined in this class will show in :class:`Django models
-    <django.db.models.Model>` models inheriting from this class as if they
-    were defined directly in the child class.
+    <django.db.models.Model>` inheriting from this class as if they were
+    defined directly in the child class.
 
     See `Abstract base classes
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
@@ -75,12 +75,12 @@ class BaseModel(models.Model):
 
     When this field is ``False``, any computation against the
     :class:`Django model <django.db.models.Model>` containing this field will
-    treat the corresponding as if it doesn't exist
+    treat it as if it doesn't exist.
     """
     notes = models.TextField(_('notes'), null=True, blank=True)
     """
-    always have a description or notes or details field in a
-    :class:`Django model <django.db.models.Model>`
+    always have a description/notes/details field in a
+    :class:`Django model <django.db.models.Model>`.
     """
 
     @classmethod
@@ -89,11 +89,11 @@ class BaseModel(models.Model):
         get or create a user
 
         If a user is created, they are not guaranteed to have any kind of
-        privileges and or access permissions on the :ref:`SOC Automation
+        privileges and/or access permissions on the :ref:`SOC Automation
         Server`.
 
         When data is maintained using background processes, it is not
-        almost obvious who the responsible user is.
+        always obvious who the responsible user is.
 
         By convention, the background process must announce the user
         responsible for the data change and this method will make sure
@@ -164,8 +164,8 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
         override :meth:`django.db.models.Model.save` to invoke
-        :meth:`django.db.models.Model.full_clean`. otherwise the
-        :meth:`clean` will not be invoked
+        :meth:`django.db.models.Model.full_clean`, otherwise the
+        :meth:`clean` will not be invoked.
         """
         try:
             self.full_clean()

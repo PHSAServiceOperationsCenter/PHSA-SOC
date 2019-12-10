@@ -27,7 +27,7 @@ from p_soc_auto_base.models import BaseModel as _BaseModel
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
-    django model manager that allows us to reuse
+    Django model manager that allows us to reuse
     :class:`citrus_borg.models.WinlogbeatHost` model for the 
     :class:`MailHost` model
     """
@@ -334,7 +334,7 @@ class MailSite(BorgSite):
     """
     Exchange client sites proxy model
 
-    `Mail Site fields <../../../admin/docs/models/citrus_borg.borgsite>`_
+    `Mail Site fields <../../../admin/doc/models/citrus_borg.borgsite>`_
     """
 
     objects = MailSiteManager()
@@ -371,7 +371,7 @@ class MailBotLogEvent(models.Model):
     configuration events, as well as send and receive events
 
     `Mail Monitoring Event fields
-    <../../../admin/doc/models/mail_collector.mailbotlogevents>`
+    <../../../admin/doc/models/mail_collector.mailbotlogevent>`__
     """
     event_group_id = models.CharField(
         _('Session Id'), max_length=128, db_index=True, blank=False,
@@ -508,7 +508,7 @@ class ExchangeDatabase(models.Model):
     Model for exchange database instances
 
     `Exchange Database fields
-    <../../../admin/doc/mail_collector.exchangedatabase>`_
+    <../../../admin/doc/models/mail_collector.exchangedatabase>`_
     """
     database = models.CharField(
         _('Database'), max_length=16, db_index=True, unique=True, blank=False,

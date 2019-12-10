@@ -1295,6 +1295,66 @@ class LdapErrorReportSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapNonOrionADNodesReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about `AD` nodes not defined
+    on the `Orion` server
+
+    :access_key: 'ldapprobe__ldap_non_orion_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_non_orion_ad_nodes_subscription'
+    default = 'LDAP: non Orion AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for non Orion AD Nodes Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapOrionADNodesFQDNReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about `AD` nodes defined
+    on the `Orion` server with missing FQDN values
+
+    :access_key: 'ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_orion_fqdn_ad_nodes_subscription'
+    default = 'LDAP: Orion FQDN AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for Orion AD Nodes FQDN Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapOrionADNodesDupesReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about duplicate `AD` nodes defined
+    on the `Orion` server
+
+    :access_key: 'ldapprobe__ldap_orion_dupes_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_orion_dupes_ad_nodes_subscription'
+    default = 'LDAP: Duplicate Orion AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for duplicate Orion AD Nodes Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the

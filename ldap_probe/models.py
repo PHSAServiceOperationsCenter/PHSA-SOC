@@ -178,13 +178,22 @@ class BaseADNode(BaseModel, models.Model):
         verbose_name=_('LDAP Bind Credentials'))
 
     sql_case_dns = When(
-        node__node_dns__isnull=False, then=F('node__node_dns'))
+        ~Q(node__node_dns__iexact=''), then=F('node__node_dns'))
     """
     build an `SQL` `WHEN` clause
 
     See `Conditional Expressions
     <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#the-conditional-expression-classes>`__.
-
+    
+    Observe the use of the `Q object
+    <https://docs.djangoproject.com/en/2.2/topics/db/queries/#complex-lookups-with-q-objects>`__
+    in the :class:`django.db.models.When`. We must use this construct because
+    the value of the :attr:`orion_integration.models.OrionNode.node_dns`
+    attribute (which is referenced from this model as `node__node_dns`) is
+    never `null`; if not present, it can only be an empty string. As far
+    as any database is concerned an empty string  is not the same as a
+    `null` string and filtering from `Django` by `__isnull` will not have
+    the desired effect here.
     """
 
     sql_orion_anchor_field = Case(
@@ -217,7 +226,7 @@ class BaseADNode(BaseModel, models.Model):
             node = getattr(self, 'node')
             if node.node_dns:
                 return node.node_dns
-            return node.node_caption
+            return node.ip_address
 
     @classmethod
     def annotate_orion_url(cls, queryset=None):
@@ -567,6 +576,34 @@ class OrionADNode(BaseADNode, models.Model):
             get_preference('orionserverconn__orion_server_url'),
             self.node.details_url, self.get_node())
 
+    @classmethod
+    def report_bad_fqdn(cls):
+        """
+        prepare data for reports about AD nodes defined in Orion but with
+        the FQDN property missing
+        """
+        return cls.annotate_orion_url(
+            cls.objects.filter(Q(node__node_dns__isnull=True) |
+                               Q(node__node_dns__iexact='')).values())
+
+    @classmethod
+    def report_duplicate_nodes(cls):
+        """
+        prepare data for report about duplicate AD node entries on the Orion
+        server
+
+        In this case duplication is defined as `two or more Orion nodes that
+        resolve to the same IP address`.
+
+        """
+        dupes = cls.objects.values('node__ip_address').\
+            annotate(count_nodes=Count('node')).order_by().\
+            filter(count_nodes__gt=1).\
+            values_list('node__ip_address', flat=True)
+
+        return cls.annotate_orion_url(
+            cls.objects.filter(node__ip_address__in=dupes).values())
+
     class Meta:
         app_label = 'ldap_probe'
         verbose_name = _('Domain Controller from Orion')
@@ -592,6 +629,18 @@ class NonOrionADNode(BaseADNode, models.Model):
             ' `RFC1123 <http://www.faqs.org/rfcs/rfc1123.html>`__,'
             ' section 2.1')
     )
+
+    @classmethod
+    def report_nodes(cls):
+        """
+        prepare report data for `AD` nodes that are not defined on the
+        `Orion` server
+
+        :returns: the :class:`django.db.models.query.QuerySet` based on
+              the :class:`NonOrionADNode` model
+
+        """
+        return cls.objects.filter(enabled=True).order_by('node_dns')
 
     def __str__(self):
         return self.node_dns
@@ -707,7 +756,7 @@ class LdapProbeLog(models.Model):
         when_ad_orion_node = When(
             ad_orion_node__isnull=False,
             then=Case(When(
-                ad_orion_node__node__node_dns__isnull=False,
+                ~Q(ad_orion_node__node__node_dns__iexact=''),
                 then=F('ad_orion_node__node__node_dns')),
                 default=F('ad_orion_node__node__ip_address'),
                 output_field=TextField()))
@@ -736,10 +785,10 @@ class LdapProbeLog(models.Model):
 
         We need this structure because this method forces all the
         calculations to happen in the database engine.
-        
+
         The `SQL` fragment above is more or less the equivalent of
         applying :meth:`BaseADNode.get_node` to each row in
-        :class:`LdapProbeLog`. 
+        :class:`LdapProbeLog`.
         """
 
         if time_delta_args:

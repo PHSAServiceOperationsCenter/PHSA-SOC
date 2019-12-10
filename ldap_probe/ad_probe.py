@@ -320,6 +320,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
 
         """
+        self.failed = True
         self._set_abort(error_message=f'Network error: {err}')
 
         if err.args[0].get('errno') == 107:

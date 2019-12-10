@@ -10,7 +10,7 @@ The `MariaDB` root login is password protected (see
 
 The `USER` described under :attr:`p_soc_auto.settings.DATABASES` has full access
 to the `database` used by the :ref:`SOC Automation Server` including `DROP
-DATABASE` and 'CREATE DATABASE` privileges.
+DATABASE` and `CREATE DATABASE` privileges.
 
 If you are setting up a new host for either the whole :ref:`SOC Automation Server`,
 or for a separate database server, see the `GRANT

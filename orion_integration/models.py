@@ -197,7 +197,7 @@ class OrionBaseModel(BaseModel, models.Model):
             :class:`django.contrib.auth.models.User` instance when creating the
             model instance
 
-            .. todO::
+            .. todo::
 
                 We are picking the default value for this argument from the
                 `Djanog` `settings` file. We need to use a dynamic preference

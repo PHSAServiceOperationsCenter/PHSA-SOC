@@ -33,8 +33,7 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.change_view`
+        override :meth:`django.contrib.admin.ModelAdmin.change_view`
 
         pre-populate `updated_by` from the :attr:`user` attribute
         of the `request` object.
@@ -63,7 +62,7 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """
-        overload :meth:`django.contrib.admin.has_add_permission`
+        override :meth:`django.contrib.admin.has_add_permission`
 
         All the data is maintained by background processes from the `Orion`
         server.
@@ -74,8 +73,7 @@ class OrionBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+        override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
         By default, all fields are read only. We make sure of this by
         pulling the fields from the underlying

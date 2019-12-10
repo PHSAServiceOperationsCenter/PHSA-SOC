@@ -2,8 +2,8 @@ Mail Collector Reports
 ======================
 
 Currently all reports are delivered via email. Each email delivering a report
-will also have an attachment in comma separated format with all the data from
-said report in tabular format.
+will also have an attachment in Comma-Separated Values file with all the data
+from said report in tabular format.
 
 All reports are delivered as scheduled individually from specific pages
 available via the `Mail Collector periodic tasks listing page 
@@ -22,14 +22,14 @@ Reports for email services between domains
 * `Report MX domain pairs for which email delivery services are broken 
   <../../../admin/django_celery_beat/periodictask/?q=Exchange+report+failed+email+verification+between+domains>`_
   
-  This report use the email subscription defined at the
+  This report uses the email subscription defined at the
   `Mail Verification Report subscription listed here 
   <../../../admin/ssl_cert_tracker/subscription/>`_
   
 * `Report email delivery services status for all MX domain pairs 
   <../../../admin/django_celery_beat/periodictask/?q=Exchange+report+all+email+verification+between+domains>`_
   
-  This report use the email subscription defined at the
+  This report uses the email subscription defined at the
   `Mail Verification Report subscription listed here 
   <../../../admin/ssl_cert_tracker/subscription/>`_
   
@@ -51,7 +51,7 @@ Reports for Exchange ``send`` and ``receive`` events
 * `Reports for Exchange send and receive events aggregated by bot  
   <../../../admin/django_celery_beat/periodictask/?q=Exchange+send+receive+by+bot>`_
 
-  For each known and enabled Exchange bot, email a list of successfull send and
+  For each known and enabled Exchange bot, email a list of successful send and
   receive events, and a list of failed send and receive events.
 
   
@@ -142,7 +142,7 @@ Reports about Exchange servers
 Reports about Exchange databases
 --------------------------------
 
-* `Dead echange databases report 
+* `Dead exchange databases report
   <../../../admin/django_celery_beat/periodictask/?q=Dead+exchange+databases+report>`_
   
   This report is returning a list of Exchange databases that have not serviced

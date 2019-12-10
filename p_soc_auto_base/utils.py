@@ -83,26 +83,24 @@ def get_absolute_admin_change_url(
 
 def diagnose_network_problem(host_spec, port=0):
     """
-    diagnose problems with noetwork nodes
+    diagnose problems with network nodes.
 
     This function looks for:
 
     * host names that are not in DNS
 
-      if the `host_spec` is not an `IP` address, this function will use
-      :meth:`socket.getaddrinfo` to simualte opening a socket to the
-      host. meth:`socket.getaddrinfo` will fail if the host name is not in
-      DNS
+      If the `host_spec` is not an `IP` address, this function will use
+      :meth:`socket.getaddrinfo` to simulate opening a socket to the host.
+      :meth:`socket.getaddrinfo` will fail if the host name is not in DNS.
 
     * host ip addresses that do not exist on the network
 
       if the `host_spec` is an `IP` address, the function uses
-      :meth:`socket.gethostbyaddr` to verify that the host is on the
-      network
+      :meth:`socket.gethostbyaddr` to verify that the host is on the network
 
     :arg str host_spec: the host name or IP address
 
-    :arg int port: the port argument to use with meth:`socket.getaddrinfo`,
+    :arg int port: the port argument to use with :meth:`socket.getaddrinfo`,
         default is 0
 
     :returns: a tuple with an error code, and an explicit error message or
@@ -148,7 +146,7 @@ class Timer():
         """
         provide a :class:`str` description for the context manager
 
-        Default:'method timing context manager'
+        Default: 'method timing context manager'
         """
 
         self.start = None
@@ -208,8 +206,8 @@ class UnknownDataTargetError(Exception):
 
 class DataTargetFieldsAttributeError(Exception):
     """
-    custom :exc:`Exception class raised when the
-    :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`
+    custom :exc:`Exception` class raised when the
+    :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`.
     """
 
 
@@ -310,7 +308,7 @@ def url_annotate(queryset):
     and the `model_name` property.
     It then uses the `Concat
     <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#concat>`_
-    database function to calculate a field containting the value of the `URL`.
+    database function to calculate a field containing the value of the `URL`.
 
     :arg queryset: the :class:`<django.db.models.query.QuerySet>` object
 
@@ -366,9 +364,9 @@ def details_url_annotate(
 
     :arg str model_path: the `model_name` property of the `Django model` with the
         details. If ``None``, it will be picked from the `queryset` using the
-        `Model _meta API`. This, however, is o very little use, since there are
+        `Model _meta API`. This, however, is of very little use, since there are
         very few realistic data models where the master and the details are in
-        the same `Djanog model`.
+        the same `Django model`.
 
     :arg str param_name: `Django lookup` key_name__field_name used to build the
         `param` part of the `URL`. If one considers the example above, this
@@ -424,7 +422,7 @@ def remove_duplicates(sequence=None):
 
     :arg sequence: the sequence that may be containing duplicates
 
-    :returns: a :class:`lst` with no duplicate items
+    :returns: a :class:`list` with no duplicate items
     """
     class IterableError(Exception):
         """
@@ -456,7 +454,7 @@ def remove_duplicates(sequence=None):
 
 def get_pk_list(queryset, pk_field_name='id'):
     """
-    :returns: a :class:`lst` with the primary key values from a
+    :returns: a :class:`list` with the primary key values from a
         :class:`Django queryset <django.db.models.query.QuerySet>`
 
     needed when invoking `celery tasks` without forcing the use of the `pickle`
@@ -731,17 +729,17 @@ def borgs_are_hailing(
     :arg bool add_csv: attach a csv file with the contents of the `data`
         argument to the email; default is `True`
 
-    :arg LOGGER: a logging handlle
+    :arg LOGGER: a logging handle
     :type LOGGER: :class:`logging.Logger`
 
-    :arg dict extra_context: optional arguments with additional data to be rendered
-        in the email
+    :arg dict extra_context: optional arguments with additional data to be
+        rendered in the email.
 
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
 
-        We are using generic :class:`exceptions <Exception>` because this function
-        is almost always invoked from a `Celery task
+        We are using generic :class:`exceptions <Exception>` because this
+        function is almost always invoked from a `Celery task
         <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
         `Celery` will do all the error handling work if needed.
 

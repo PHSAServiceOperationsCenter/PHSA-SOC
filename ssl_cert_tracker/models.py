@@ -171,8 +171,8 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
             :class:`SslCertificateIssuer` instance
 
             By default, this value is picked from
-            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER` and if that user doesn't
-            exit, it will be created.
+            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER` and if that user
+            doesn't exist, it will be created.
 
         :returns: a :class:`SslCertificateIssuer` instance
         """
@@ -298,8 +298,7 @@ class SslCertificate(SslCertificateBase, models.Model):
         :type ssl_certificate: :class:`ssl_cert_tracker.nmap.SslProbe`
 
         :arg str username: :attr:`django.contrib.auth.models.User.username`
-            of the user (or its
-            `replacement
+            of the user (or its `replacement
             <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__)
             maintaining the :class:`SslCertificate` instance
 
@@ -425,7 +424,7 @@ class SslExpiresIn(SslCertificate):
     """
     `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
-    for :class:`SslCertificate`
+    for :class:`SslCertificate`.
 
     Show valid `SSL` certificates sorted by expiration date.
     """
@@ -532,7 +531,7 @@ class Subscription(BaseModel):
     """
     the strings to be used as the core of the email subject line
 
-    The application will most probably pre-pend and/or append various other
+    The application will most probably prepend and/or append various other
     strings to the subject line.
 
     There is no limit on the length of the subject line but in this application
@@ -582,7 +581,7 @@ class Subscription(BaseModel):
     a string af tags that will be pre-pended to the email subject line
     
     The application will not do any processing on this value. If one expects
-    tags to look like[TAG1][TAG2], this value must be created using this
+    tags to look like [TAG1][TAG2], this value must be created using this
     pattern.
     """
 

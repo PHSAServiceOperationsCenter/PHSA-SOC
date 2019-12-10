@@ -79,7 +79,7 @@ class _Logger():
     :class:`queue.Queue` instance.
 
     The methods in this class that take a ``strings`` argument expect that
-    said argument is can be serialized to ``JSON``.
+    said argument can be serialized to ``JSON``.
     The reason for this requirement is architectural in nature; somewhere down
     the line these messages will put on a wire and the end points expect to
     be receive ``JSON`` objects.

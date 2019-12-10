@@ -200,7 +200,7 @@ class OrionBaseModel(BaseModel, models.Model):
             .. todO::
 
                 We are picking the default value for this argument from the
-                `Djanog` `settings` file. We need to use a dynamic preference
+                `Django` `settings` file. We need to use a dynamic preference
                 instead.
 
         :raises:

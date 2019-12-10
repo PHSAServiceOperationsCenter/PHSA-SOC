@@ -1277,6 +1277,24 @@ class LdapErrorAlertSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapErrorReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error reports
+
+    :access_key: 'ldapprobe__ldap_error_report_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_report_subscription'
+    default = 'LDAP: Error report'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
@@ -1323,10 +1341,28 @@ class LdapPerfWarnTreshold(DecimalPreference):
     """
     section = ldap_probe
     name = 'ldap_perf_warn'
-    default = decimal.Decimal('0.050')
+    default = decimal.Decimal('0.100')
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('LDAP Performance Warning Threshold (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapReportPeriod(DurationPreference):
+    """
+    Dynamic preferences class controlling the period used for generating
+    `LDAP` reports
+
+    :access_key: 'ldapprobe__ldap_reports_period'
+    """
+    section = ldap_probe
+    name = 'ldap_reports_period'
+    default = timezone.timedelta(hours=1)
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Time interval to use when generating LDAP reports').title()
     """verbose name for this dynamic preference"""
 
 # pylint: enable=too-few-public-methods

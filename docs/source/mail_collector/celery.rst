@@ -18,7 +18,7 @@ The `Celery queues and exchanges
 are defined respectively under the :attr:`p_soc_auto.settings.CELERY_QUEUES`
 setting and under the :attr:`p_soc_auto.settings.CELERY_EXCHANGES` setting.
 
-The 'mail_collector` queue is dedicated for all the :ref:`tasks` used by the
+The `mail_collector` queue is dedicated for all the :ref:`tasks` used by the
 :ref:`Mail Collector Application`.
 
 Celery Worker Configuration
@@ -51,7 +51,7 @@ phsa_celery_mail_collector service:
 
 1. make sure there is no listing for this file under :file:`/etc/systemd/system`
 
-2. enable the service by openning a shell on the host and executing:
+2. enable the service by opening a shell on the host and executing:
    
    .. code-block:: bash
 
@@ -124,7 +124,7 @@ The most relevant details in this file:
   an :exc:`celery.exceptions.SoftTimeLimitException` exception. Our code is
   currently not catching this exception
 
-Optimizing task exectuion for the :ref:`Mail Collector Application`
+Optimizing task execution for the :ref:`Mail Collector Application`
 -------------------------------------------------------------------
 
 The heaviest tasks for this application are related to functionality described
@@ -166,7 +166,7 @@ There are 2 solutions to resolve this situation:
   
 * wipe out the message store of the `RabbitMQ server 
   <https://www.rabbitmq.com/>`_. This is a destructive procedure that will
-  result in data loss. Additionally we will have to manually bond the
+  result in data loss. Additionally we will have to manually bind the
   ``logstash`` queue to the ``logstash`` exchange on the `RabbitMQ server 
   <https://www.rabbitmq.com/>`_. this procedure is described under
   :ref:`RabbitMQ Server`

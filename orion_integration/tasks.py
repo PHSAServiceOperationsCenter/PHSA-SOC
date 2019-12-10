@@ -75,7 +75,7 @@ def verify_known_orion_data():
     """
     this task is using the `Celery group primitive
     <https://docs.celeryproject.org/en/latest/userguide/canvas.html#groups>`__
-    in order to launc a :func:`orion_entity_exists` task for each known `Orion`
+    in order to launch a :func:`orion_entity_exists` task for each known `Orion`
     entity
 
     :returns: a list with the orion objects models and the number of objects

@@ -97,13 +97,13 @@ exchange = Section('exchange',
 ldap_probe = Section('ldapprobe',
                      verbose_name=_(
                          'Options for the PHSA Service Operations Center'
-                         ' Domain Controller Monitoring Application'))
+                         ' Active Directory Services Monitoring Application'))
 
 common_alert_args = Section(
     'commonalertargs',
     verbose_name=_(
         'Common Args for Alerts Raised by the PHSA'
-        ' Service Operatoins Center Automation Server'))
+        ' Service Operations Center Automation Server'))
 
 # pylint: enable=C0103
 
@@ -1208,7 +1208,7 @@ class LdapSearchBaseDNDefault(StringPreference):
 class LdapServiceUser(StringPreference):
     """
     Dynamic preferences class controlling the service user to be used by
-    :ref:`Domain Controllers Monitoring Application` background processes
+    :ref:`Active Directory Services Monitoring Application` background processes
 
     :access_key: 'ldapprobe__service_user'
     """

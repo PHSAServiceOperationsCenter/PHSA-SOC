@@ -4,10 +4,10 @@ ldap_probe.ad_probe
 
 This module contains the `Active Directory
 <https://en.wikipedia.org/wiki/Active_Directory>`__ client used by the
-:ref:`Domain Controllers Monitoring Application`.
+:ref:`Active Directory Services Monitoring Application`.
 
-The :mod:`ldap` is configured to use `TLS` by setting the
-:attr:`ldap.OPT_X_TLS_REQUIRE_CERT` attribute but to not verify the `TLS`
+The :mod:`python-ldap <ldap>` module is configured to use `TLS` by setting
+the :attr:`ldap.OPT_X_TLS_REQUIRE_CERT` attribute but to not verify the `TLS`
 certificate by setting the :attr:`ldap.OPT_X_TLS_NEVER` attribute.
 
 As per the `python-ldap FAQ
@@ -22,10 +22,9 @@ to a `Windows` `AD` controller.
 
 :contact:    serban.teodorescu@phsa.ca
 
-:updated:    Nov. 15, 2019
+:updated:    Dec. 10, 2019
 
 """
-import datetime
 import logging
 
 import ldap
@@ -45,12 +44,6 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
     """
     Private class for storing the various values of time elapsed while
     executing :class:`ldap.LDAPObject` methods of interest to us
-
-    .. todo::
-
-        Need to accept string for :attr:`ad_controller`, not just django
-        instances. Maybe sometim3e we want to call this without
-        touching models.
 
     """
 
@@ -79,8 +72,17 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
 
 class ADProbe():  # pylint: disable=too-many-instance-attributes
     """
-    Class that wrap around :class:`ldap.LDAPObject` methods of interest
+    Class that wraps around :class:`ldap.LDAPObject` methods of interest
     to us and adds timing facilities to each of them
+
+    .. todo::
+
+        Need to accept string for :attr:`ad_controller`, not just django
+        instances. Maybe sometime we want to call this without
+        touching models.
+
+        `<https://trello.com/c/UL97AdFj>`__
+
     """
 
     def __init__(self, ad_controller=None, logger=LOGGER):
@@ -193,7 +195,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
         If :meth:`ldap.LDAPObject.bind_s` fails with
         :exc:`ldap.INVALID_CREDENTIALS`, we will fall back and try an
-        anonymous bind with :meth:`bind_anonym`
+        anonymous bind with :meth:`bind_anonym_and_read`
         """
         self.logger.debug(
             'trying bind ad search for %s with creds %s',
@@ -281,7 +283,6 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
             try:
                 self.ldap_object.simple_bind_s()
             except ldap.SERVER_DOWN as err:
-                self.failed = True
                 self._diagnose_network(err)
                 return
 

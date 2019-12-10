@@ -9,5 +9,5 @@
    modules/admin.rst
    modules/apps.rst
    modules/models.rst
-   module/signals.rst
+   modules/signals.rst
    modules/tasks.rst

@@ -98,12 +98,21 @@ ldap_probe = Section('ldapprobe',
                      verbose_name=_(
                          'Options for the PHSA Service Operations Center'
                          ' Active Directory Services Monitoring Application'))
+"""
+dynamic user preferences section for the :ref:`Active Directory Services
+Monitoring Application`
+"""
 
 common_alert_args = Section(
     'commonalertargs',
     verbose_name=_(
         'Common Args for Alerts Raised by the PHSA'
         ' Service Operations Center Automation Server'))
+"""
+dynamic user preferences section for preferences common to all applications
+in the :ref:`SOC Automation Project`
+"""
+
 
 # pylint: enable=C0103
 
@@ -1208,7 +1217,8 @@ class LdapSearchBaseDNDefault(StringPreference):
 class LdapServiceUser(StringPreference):
     """
     Dynamic preferences class controlling the service user to be used by
-    :ref:`Active Directory Services Monitoring Application` background processes
+    :ref:`Active Directory Services Monitoring Application` background
+    processes
 
     :access_key: 'ldapprobe__service_user'
     """

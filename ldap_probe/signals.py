@@ -12,8 +12,9 @@ for the :ref:`Active Directory Services Monitoring Application`.
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 27, 2019
+:updated:    Dec. 11, 2019
 
 """
 from django.db.models.signals import post_save

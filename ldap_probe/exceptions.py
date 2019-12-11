@@ -4,7 +4,8 @@ ldap_probe.exceptions
 
 This module contains `custom exceptions
 <https://docs.python.org/3.6/tutorial/errors.html#user-defined-exceptions>`__
-used by the modules of the :ref:`Domain Controllers Monitoring Application`.
+used by the modules of the :ref:`Active Directory Services Monitoring
+Application`.
 
 :copyright:
 
@@ -12,8 +13,9 @@ used by the modules of the :ref:`Domain Controllers Monitoring Application`.
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 12, 2019
+:updated:    Dec. 11, 2019
 
 """
 

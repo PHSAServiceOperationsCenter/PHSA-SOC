@@ -12,8 +12,9 @@ classes for the :ref:`Active Directory Services Monitoring Application`.
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 22, 2019
+:updated:    Dec. 11, 2019
 
 """
 from django.contrib import admin
@@ -37,8 +38,8 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         override
         :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
 
-        provide specialized drop-down values for `created_by`, `updated_by`,
-        `exchange_client_config`, and `site` `ForeignKey` fields.
+        provide specialized drop-down values for 'ldap_bind_cred`,
+        `ad_orion_node`, and `ad_node` `ForeignKey` fields.
         """
         if db_field.name in ['ldap_bind_cred', ]:
             kwargs['queryset'] = models.LDAPBindCred.objects.filter(
@@ -80,7 +81,7 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
         :class:`ldap_probe.models.OrionADNode` instances are created
         automatically in the background
 
-        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        We override :meth:`django.contrib.admin.ModelAdmin.has_add_permission`
         to prevent anybody from using the admin forms to create such
         instances.
         """
@@ -91,7 +92,7 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
         :class:`ldap_probe.models.OrionADNode` instances are maintained
         automatically in the background
 
-        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        We override :meth:`django.contrib.admin.ModelAdmin.has_add_permission`
         to prevent anybody from using the admin forms to delete such
         instances.
         """
@@ -119,7 +120,7 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
 
     def show_orion_admin_url(self, obj):
         """
-        show the `URL` to the `Django admin cbange form` associated with
+        show the `URL` to the `Django admin change form` associated with
         this `AD` node
         """
         return obj.orion_admin_url
@@ -223,7 +224,7 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         :class:`ldap_probe.models.LdapProbeLog` instances are created
         automatically in the background
 
-        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        We override :meth:`django.contrib.admin.ModelAdmin.has_add_permission`
         to prevent anybody from using the admin forms to create such
         instances.
         """
@@ -234,7 +235,7 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         :class:`ldap_probe.models.LdapProbeLog` instances are maintained
         automatically in the background
 
-        We override :met:`django.contrib.admin.ModelAdmin.has_add_permission`
+        We override :meth:`django.contrib.admin.ModelAdmin.has_add_permission`
         to prevent anybody from using the admin forms to delete such
         instances.
         """

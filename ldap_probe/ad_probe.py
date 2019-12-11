@@ -251,9 +251,10 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
     def _fallback(self, err):
         """
-        try to fall back :meth:`bind_anonym` if :meth:`bind` fails
+        try to fall back :meth:`bind_anonym_and_read` if
+        :meth:`bind_and_search` fails
 
-        When :meth:`ldap.LDAPObject.bind_s` because the credentials are
+        When :meth:`ldap.LDAPObject.bind_s` fails because the credentials are
         not known to the `AD` server, it is still possible to validate
         that said `AD` server is up if it will accept an anonymous bind.
 

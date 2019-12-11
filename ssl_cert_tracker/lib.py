@@ -682,7 +682,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.prepared_data = []
         """
-        :class:`lst of :class:`dictionaries <dict>` where each item represents
+        :class:`list of :class:`dictionaries <dict>` where each item represents
         a row in the :attr:`Email.data`
         :class:`django.db.models.query.QuerySet` with the human readable format
         of the field name (as represented by the values in the

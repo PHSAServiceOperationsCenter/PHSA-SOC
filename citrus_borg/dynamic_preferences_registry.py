@@ -1383,7 +1383,7 @@ class LdapPerfAlertSubscription(StringPreference):
 
 
 @global_preferences_registry.register
-class LdapPerfAlertTreshold(DecimalPreference):
+class LdapPerfAlertThreshold(DecimalPreference):
     """
     Dynamic preferences class controlling the name of the
     :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
@@ -1401,7 +1401,7 @@ class LdapPerfAlertTreshold(DecimalPreference):
 
 
 @global_preferences_registry.register
-class LdapPerfWarnTreshold(DecimalPreference):
+class LdapPerfWarnThreshold(DecimalPreference):
     """
     Dynamic preferences class controlling the name of the
     :class:`Email subscription <ssl_cert_tracker.models.Subscription>`

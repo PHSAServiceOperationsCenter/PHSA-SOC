@@ -1,4 +1,4 @@
-Active Directory Services Monitoring Application modules
+Active Directory Services Monitoring Application Modules
 ========================================================
 
 .. toctree::

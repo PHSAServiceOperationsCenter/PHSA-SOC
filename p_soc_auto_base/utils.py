@@ -32,7 +32,6 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
-from dynamic_preferences.exceptions import DoesNotExist
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
@@ -692,8 +691,9 @@ def get_subscription(subscription):
     """
     try:
         return Subscription.objects.get(subscription__iexact=subscription)
-    except DoesNotExist as error:
-        raise error
+    except Subscription.DoesNotExist as error:
+        raise Subscription.DoesNotExist(
+            f'Subscription "{subscription}" does not exist.')
 
 
 def borgs_are_hailing(

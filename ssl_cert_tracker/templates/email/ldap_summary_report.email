@@ -1,0 +1,81 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{% if perf_filter %}
+{{ tags }}{{ level }}: {{ email_subject }} {{ perf_filter }} seconds
+{% else %}
+{{ tags }}{{ level }}: {{ email_subject }}
+{% endif %}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h3>
+{% if perf_filter %}
+{{ email_subject }} {{ perf_filter }} seconds
+{% else %}
+{{ email_subject }}
+{% endif %}
+</h3>
+<div><p>
+The data presented by this report has been collected from domain controller
+network nodes that accept
+{% if full %}
+non anonymous (full)
+{% else %}
+only anonymous
+{% endif %} 
+bind requests with the default SOC credentials and are
+{% if orion %}
+defined
+{% else %}
+not defined
+{%endif %}
+on the Orion server.</p>
+<p>
+The data collection was launched at {{ now }} and covers the last 
+{{ time_delta | timedelta:"{minutes_total} minutes" }}.
+</p></div>
+
+<div><p>
+<table style="border: noborder;border-collapse: collapse">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th style="border: 1px solid black;"><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+{% if perf_filter %}
+<div><h3 style="color: green;">
+AD services performance for the last 
+{{ time_delta|timedelta:"{minutes_total} minutes" }} is better than
+{{ perf_filter }} seconds for AD bind requests.
+</h3></div>
+{% else %}
+<div><h3 style="color: red;">
+No AD services monitoring information available for the last 
+{{ time_delta|timedelta:"{minutes_total} minutes" }}. Please investigate ASAP.
+</h3></div>
+{% endif %}
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

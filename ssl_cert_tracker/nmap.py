@@ -440,7 +440,7 @@ def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
 
     .. todo::
 
-        This is dupliccate code. Modify this module to use
+        This is duplicate code. Modify this module to use
         :func:`p_soc_auto_base.utils.make_aware`
     """
     if timezone.is_aware(datetime_input):
@@ -457,7 +457,7 @@ def probe_for_state(dns_list=None):
     known to the `DNS` servers that are not connectable, and one file
     with connectable hosts
 
-    :arg lst dns_list: the :class:`lst` of DNS names
+    :arg list dns_list: the :class:`list` of DNS names
     """
     if dns_list is None:
         dns_list = []

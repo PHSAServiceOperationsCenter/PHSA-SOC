@@ -11,6 +11,9 @@
 .. autoclass:: orion_integration.admin.OrionNodeAdmin
    :show-inheritance:
    
+.. autoclass:: orion_integration.admin.OrionDomainControllerNodeAdmin
+   :show-inheritance:
+
 .. autoclass:: orion_integration.admin.OrionNodeCategoryAdmin
    :show-inheritance:
    

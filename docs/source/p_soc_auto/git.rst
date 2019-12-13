@@ -21,9 +21,9 @@ by the feature branch.
 
 All `Hotfix branches
 <https://nvie.com/posts/a-successful-git-branching-model/#hotfix-branches>`__
-must originates off `master` or off a `Release branch
+must originate off `master` or off a `Release branch
 <https://nvie.com/posts/a-successful-git-branching-model/#release-branches>`__.
-A `hotfix` branch must be named using the **hotfix-$HotficName** convention.
+A `hotfix` branch must be named using the **hotfix-$HotfixName** convention.
 It is recommended that the first commit on a `hotfix` branch include the link
 to the `Trello board <https://trello.com/phsasoc>`__ describing the bug that the
 branch is addressing.

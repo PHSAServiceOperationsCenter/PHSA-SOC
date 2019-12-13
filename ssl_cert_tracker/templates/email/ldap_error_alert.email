@@ -1,0 +1,28 @@
+{% block subject %}
+{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }}
+{% endblock %}
+
+{% block html %}
+<h3>AD Service Failure Details</h3>
+<div><p><ul>
+<li>AD service error occurred: {{ created_on }}</li>
+<li>AD service error occurred when probing the controller on {{ node }}</li>
+<li>AD service error details:<p>{{ data.errors }}</p></li>
+<li>AD probe details: {{ probe_url }}</li>
+<li>
+{% if orion_url %}
+Orion node for the AD controller: {{ orion_url }}
+{% else %}
+The AD controller on {{ node }} is not defined in Orion.
+{% endif %}
+</li></ul></p></div>
+
+{% if email_uuid %}
+<div><p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a></p></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

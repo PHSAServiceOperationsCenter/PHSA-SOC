@@ -1,23 +1,21 @@
 /var/log/phsa/celery/*.log {
-	su phsa phsa
+    su phsa phsa
     daily 
     missingok
-    rotate 5
+    rotate 3
     size 10M
     compress
-    delaycompress
     copytruncate
-	create 644 phsa phsa
+    create 0644 phsa phsa
 }
 
 /var/log/phsa/django/*.log {
     su phsa phsa
     daily 
     missingok
-    rotate 5
+    rotate 3
     size 10M
     compress
-    delaycompress
     copytruncate
-    create 644 phsa phsa
+    create 0644 phsa phsa
 }

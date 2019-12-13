@@ -1,7 +1,7 @@
 """
 .. _assimilation:
 
-assimilation module
+Assimilation Module
 -------------------
 
 :module:    citrus_borg.locutus.assimilation
@@ -34,11 +34,12 @@ Here is a sample for a `Windows` event created by `ControlUp` in the format
 that will be consumed by the :func:`citrus_borg.consumers.process_win_event`
 function.
 
-**Note that this message is a string despite the fact that it looks like
-`JSON <https://www.json.org/>`__.** Using the `JSON` encoder provided by the
-:ref:`Logstash server` will lead to :ref:`RabbitMQ Server` failures.
-However, the :func:`json.loads` function is happy to deserialize this string
-to a `Python` `object` without any problems.
+:Note:
+    **This message is a string despite the fact that it looks like**
+    `JSON <https://www.json.org/>`__. Using the `JSON` encoder provided by the
+    :ref:`Logstash server` will lead to :ref:`RabbitMQ Server` failures.
+    However, the :func:`json.loads` function is happy to deserialize this string
+    to a `Python` `object` without any problems.
 
 We are converting the message to a `JSON` structure in the
 :func:`citrus_borg.consumers.process_win_event` function.
@@ -168,10 +169,10 @@ def get_ip_for_host_name(host_name=None, ip_list=None):
         """
         this is the fall-back function for :func:`get_ip_for_host_name`
 
-        Sometimes there are no entries in the :class:`ip-list <list>`. We will try
-        to resolve the `host_name` argument using 
-        and we will return that. Or we will return`None` if
-        :func:`socket.gethostbyname` barfs.
+        Sometimes there are no entries in the :class:`ip-list <list>`. We will
+        try to resolve the `host_name` argument using the
+        :func:`socket.gethostbyname` function. If that is not possible,
+        we will return`None`.
         """
         try:
             return socket.gethostbyname(host_name)

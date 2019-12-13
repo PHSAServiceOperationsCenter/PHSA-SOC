@@ -105,6 +105,7 @@ intersphinx_mapping = {
     'dynamic_preferences':
         ('https://django-dynamic-preferences.readthedocs.io/en/latest/', None),
     'grappelli': ('https://django-grappelli.readthedocs.io/en/latest/', None),
+    'ldap': ('https://www.python-ldap.org/en/latest/', None),
 }
 
 autodoc_default_options = {

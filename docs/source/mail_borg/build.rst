@@ -11,21 +11,21 @@ Compiling
 
 It is possible to package a complete `Python
 <https://www.python.org/about/>`_ application into a single executable file.
-The executabel will contain all the dependencies required by the application,
+The executable will contain all the dependencies required by the application,
 including the `Python <https://www.python.org/about/>`_ interpreter.
 
 We are using the `PyInstaller
-<https://pyinstaller.readthedocs.io/en/stable/index.html>`_ package.
+<https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package.
 
-The `PyInstaller <https://pyinstaller.readthedocs.io/en/stable/index.html>`_
+The `PyInstaller <https://pyinstaller.readthedocs.io/en/stable/index.html>`__
 package must be installed in the `virtual environment
-<https://docs.python.org/3.6/tutorial/venv.html?highlight=virtual%20environments>`_
+<https://docs.python.org/3.6/tutorial/venv.html?highlight=virtual%20environments>`__
 used for developing the :ref:`Mail Borg Client Application`. Currently, there
-is a <pip requirements file
-<https://pip.pypa.io/en/stable/user_guide/?highlight=requirements#requirements-files>`_
+is a `pip requirements file
+<https://pip.pypa.io/en/stable/user_guide/?highlight=requirements#requirements-files>`__
 under source control that is used for Windows specific requirements named
 requirements_win.txt and the `PyInstaller
-<https://pyinstaller.readthedocs.io/en/stable/index.html>`_ package is
+<https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package is
 referenced within said requirements file. To update the ``Python`` packages in
 the environment, execute:
 
@@ -162,8 +162,8 @@ Here is a sequence of commands that will result in compiling the
 
 As show in the ``dir`` listing, there is now a file named
 ``mail_borg_gui.exe`` under the ``dist`` directory.    
-:note:
 
+  :note:
     We assume that the virtual environment is named ``carmina`` and that it
     is installed under ``%HOMEPATH%\Envs\``.
 
@@ -281,7 +281,7 @@ Right-click the ``exe`` file and choose to run it as admin. Tell ``Norton`` to
 sit down and shut up. Click the ``Run mail check`` button or wait for the
 program to execute the mail check automatically as configured.
 
-It is highly recommended to create a start-up taks for this application.
+It is highly recommended to create a start-up task for this application.
 
 The `SOC - Procedural Guide -
 Exchange Monitoring Client Version 2

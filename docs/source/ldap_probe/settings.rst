@@ -1,4 +1,4 @@
-Active Directory Services Monitoring Application settings
+Active Directory Services Monitoring Application Settings
 =========================================================
 
 Static settings

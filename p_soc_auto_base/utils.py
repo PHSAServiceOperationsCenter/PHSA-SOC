@@ -32,6 +32,7 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
+from dynamic_preferences.exceptions import DoesNotExist
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
@@ -685,25 +686,13 @@ def get_subscription(subscription):
     :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
 
     :arg str subscription: the subscription value
-        Note that this value is case-sensitive
 
-    .. todo::
-
-        Use `filter(subscription__iexact=subscription).get()` to avoid the case
-        sensitive requirement
-
-    :raises: :exc:`Exception` if the
-        :class:`ssl_cert_tracker.models.Subscription` instance cannot be found
-
-    .. todo::
-
-        Change the error catching to use a
-        :exc:`djang.db.core.exceptions.ObjectDoesNotExist` exception.
+    :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't
+    exist.
     """
     try:
-        return Subscription.objects.\
-            get(subscription=subscription)
-    except Exception as error:
+        return Subscription.objects.get(subscription__iexact=subscription)
+    except DoesNotExist as error:
         raise error
 
 

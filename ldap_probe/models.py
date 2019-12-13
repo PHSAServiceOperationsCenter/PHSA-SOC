@@ -3,7 +3,7 @@ ldap_probe.models
 -----------------
 
 This module contains the :class:`django.db.models.Model` models for the
-:ref:`Domain Controllers Monitoring Application`.
+:ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 
@@ -53,7 +53,7 @@ def _get_default_ldap_search_base():
 class LdapProbeLogFullBindManager(models.Manager):
     """
     custom :class:`django.db.models.Manager` used by the
-    :class:`LdapProbeLogFullBind` model
+    :class:`LdapProbeFullBindLog` model
 
     We have observed that the default set of `Windows` domain credentials
     will allow full LDAP binds for a limited number of `AD` controllers.
@@ -81,7 +81,7 @@ class LdapProbeLogFullBindManager(models.Manager):
 class LdapProbeLogAnonBindManager(models.Manager):
     """
     custom :class:`django.db.models.Manager` used by the
-    :class:`LdapProbeLogFullBind` model
+    :class:`LdapProbeAnonBindLog` model
 
     We have observed that the default set of `Windows` domain credentials
     will not allow full LDAP binds (see :class:`LdapProbeLogFullBindManager`)
@@ -135,7 +135,7 @@ class LdapProbeLogFailedManager(models.Manager):
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
     """
     :class:`django.db.models.Model` class used for storing credentials used
-    for probing `Windows` domain controllers
+    for probing Windows domain controllers
 
     `LDAP Bind Credentials Set fields
     <../../../admin/doc/models/ldap_probe.ldapbindcred>`__
@@ -184,7 +184,7 @@ class BaseADNode(BaseModel, models.Model):
 
     See `Conditional Expressions
     <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#the-conditional-expression-classes>`__.
-    
+
     Observe the use of the `Q object
     <https://docs.djangoproject.com/en/2.2/topics/db/queries/#complex-lookups-with-q-objects>`__
     in the :class:`django.db.models.When`. We must use this construct because
@@ -203,7 +203,7 @@ class BaseADNode(BaseModel, models.Model):
     build an `SQL` `CASE` clause
 
     When used together with :attr:`sql_case_dns` this attribute allows us
-    to append a meaningfull field to a queryset. If
+    to append a meaningful field to a queryset. If
     :attr:`orion_integration.models.OrionNode.node_dns` exists, it will
     be placed in a :class:`django.db.models.query.QuerySet`. Otherwise,
     the :attr:`orion_integration.models.OrionNode.ip_address` will be
@@ -231,7 +231,7 @@ class BaseADNode(BaseModel, models.Model):
     @classmethod
     def annotate_orion_url(cls, queryset=None):
         """
-        annotate
+        `annotate
         <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/>`__
         a :class:`queryset <django.db.models.query.QuerySet>` with the
         absolute `URL` of the node definition on the `Orion` server if
@@ -247,8 +247,10 @@ class BaseADNode(BaseModel, models.Model):
         :returns: the :class:`django.db.models.query.QuerySet` with the
             'orion_url' field included
 
-            Note that the :class:`django.db.models.query.QuerySet`is filtered
-            to return only `enabled` nodes
+            :Note:
+
+                The :class:`django.db.models.query.QuerySet` is filtered
+                to return only `enabled` nodes
         """
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
@@ -280,17 +282,30 @@ class BaseADNode(BaseModel, models.Model):
         """
         annotate a :class:`queryset <django.db.models.query.QuerySet>`
         based on classes inheriting from :class:`BaseADNode` model with
-        the absolute `URL` for the details of the `LDAP` probes executed
-        against the AD node
+        the absolute `URL` for the `Django admin summary' page with the
+        `LDAP` probes executed against the AD node
 
-        Note that this method will be very expensive when invoked
-        against a queryset that does not restrict the number of
-        :class:`LdapProbeLog` rows.
+        :Note:
+
+            This method will be very expensive when invoked
+            against a queryset that does not restrict the number of
+            :class:`LdapProbeLog` rows.
 
         The annotation should look something like
-        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/' + \
-        'ldapprobefullbindlog/?ad_node__isnull=True' + \
-        '&ad_orion_node__id__exact=3388'.
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/ldapprobefullbindlog/?ad_node__isnull=True&ad_orion_node__id__exact=3388'.
+
+
+        :arg str probes_model_name: determines the model name that will be
+            used for generating the `URL`
+
+            This is necessary because we are showing `LDAP` probes using
+            separate models based on the type of the `AD` network node.
+
+        :returns: a :class:`django.db.models.query.QuerySet` where each
+            row (representing an `AD` node) includes a fields with the
+            absolute `URL` for the results of the `LDAP` probes executed
+            against the node
+
         """
         if queryset is None:
             queryset = cls.annotate_orion_url()
@@ -333,7 +348,7 @@ class BaseADNode(BaseModel, models.Model):
             performance degradation results.
 
             Otherwise, the argument will be updated to a
-            :class:`deciaml.Decimal` value based on the original value:
+            :class:`decimal.Decimal` value based on the original value:
 
             * if the value is 'warning', update the argument to the value
               provided by the user preference defined in
@@ -344,17 +359,17 @@ class BaseADNode(BaseModel, models.Model):
               :class:`citrus_borg.dynamic_preferences_registry.LdapPerfAlertTreshold`
 
             * else, try to convert the original value to
-              :class:`deciaml.Decimal` and raise a
-              :exc:`exceptions.ValueError` if the conversion fails
+              :class:`decimal.Decimal` and raise a
+              :exc:`ValueError` if the conversion fails
 
         :arg time_delta_args: optional named arguments that are used to
-            initialize a :class:`datetime.duration` object
+            initialize a :class:`datetime.timedelta` object
 
             If not present, the method will use the period defined by the
             :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
             user preference
 
-        :returns:
+        :returns: a :class:`tuple` with the following fields:
 
             * the moments used to filter the data in the report by time
 
@@ -369,22 +384,22 @@ class BaseADNode(BaseModel, models.Model):
               Depending on the calling class the following aggregates with
               regards to LDAP probes are placed in the queryset
 
-                  * the number of failed probes
+              * the number of failed probes
 
-                  * the number of successful probes
+              * the number of successful probes
 
-                  * average timing for initialize calls of the successful
-                    probes
+              * average timing for initialize calls of the successful probes
 
-                  * min, max, average timing for `bind` calls or `anonymous
-                   bind` calls of the successful probes
+              * min, max, average timing for `bind` calls or `anonymous
+                bind` calls of the successful probes
 
-                  * min, max, average timing for `extended search` calls or
-                    `read root dse` calls of the successful probes
+              * min, max, average timing for `extended search` calls or
+                `read root dse` calls of the successful probes
+
 
         :raises:
 
-            :exc:`exceptions.ValueError` if the `perf_filter` argument
+            :exc:`ValueError` if the `perf_filter` argument
             is not `None` and it cannot be used to initialize a
             :class:`decimal.Decimal` object
 
@@ -927,7 +942,7 @@ class LdapProbeLog(models.Model):
         :arg probe_data: the data returned by the LDAP probe
         :type probe_data: :class:`ldap_probe.ad_probe.ADProbe`
 
-        :arg logger: :class:`logging.Logger instance
+        :arg logger: :class:`logging.Logger` instance
 
         :returns: the new :class:`LdapProbeLog` instance
         """

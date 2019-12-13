@@ -1,5 +1,5 @@
-`Python` Modules for the `AD` Services Monitoring Application
-=============================================================
+Active Directory Services Monitoring Application Modules
+========================================================
 
 .. toctree::
    :maxdepth: 2
@@ -8,6 +8,7 @@
    modules/ad_probe.rst
    modules/admin.rst
    modules/apps.rst
+   modules/exceptions.rst
    modules/models.rst
-   module/signals.rst
+   modules/signals.rst
    modules/tasks.rst

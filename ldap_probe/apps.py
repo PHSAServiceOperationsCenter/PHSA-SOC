@@ -3,7 +3,7 @@ ldap_probe.apps
 ----------------------
 
 This module contains the `Django` application configuration for the
-:ref:`Domain Controllers Monitoring Application`.
+:ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 
@@ -20,7 +20,7 @@ from django.utils.translation import gettext_lazy as _
 
 class LdapProbeConfig(AppConfig):
     """
-    Configuration class for the :ref:`Domain Controllers Monitoring
+    Configuration class for the :ref:`Active Directory Services Monitoring
     Application`
 
     See `Configuring applications
@@ -40,4 +40,4 @@ class LdapProbeConfig(AppConfig):
         See `AppConfig.ready()
         <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`__.
         """
-        import ldap_probe.signals
+        import ldap_probe.signals  # pylint: disable=import-outside-toplevel

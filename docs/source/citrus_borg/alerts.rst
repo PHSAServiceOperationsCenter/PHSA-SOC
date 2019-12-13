@@ -41,7 +41,7 @@ than a configurable threshold over a configurable interval, an alert will be
 raised. E.G. a bot detects 2 failed logons over 10 minutes.
 
 * `Citrix failed logon alerts
-  <../../../admin/django_celery_beat/periodictask/?q=Citrix+failed+logon+alerts>`-_
+  <../../../admin/django_celery_beat/periodictask/?q=Citrix+failed+logon+alerts>`__
   
 * `Failed Logon Events Count Alert Threshold
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_threshold>`__
@@ -110,8 +110,5 @@ If the `orion_flash` application is
 activated, bot related alerts will also be visible on an `Orion` server if the bot
 that is the subject of the alarm is defined as `Orion` nodes.
 
-.. todo::
-
-    Document the `orion_flash` application.
 
 

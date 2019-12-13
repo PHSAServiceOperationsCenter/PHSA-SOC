@@ -133,7 +133,7 @@ def load_base_configuration(current_base_configuration=None,
     :arg dict current_base_configuration:
 
         If present, it represents the contents of the basic config fields
-        from the mainj window of the :mod:`mail_borg.mail_borg_gui` module.
+        from the main window of the :mod:`mail_borg.mail_borg_gui` module.
         if this argument is present, the function will return it.
 
         This argument is used under scenarios where the user has changed the

@@ -160,7 +160,7 @@ class LogWinEvent():
             the resource identifier for this event
 
             The event_id values must exist in the messages resource DLL.
-            Use this argunment only if you really know what you are doing.
+            Use this argument only if you really know what you are doing.
 
         """
         self.msg(event_id=event_id,
@@ -178,7 +178,7 @@ class LogWinEvent():
             the resource identifier for this event
 
             The event_id values must exist in the messages resource DLL.
-            Use this argunment only if you really know what you are doing.
+            Use this argument only if you really know what you are doing.
 
 
         """

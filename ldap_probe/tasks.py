@@ -470,7 +470,6 @@ def dispatch_ldap_error_report(**time_delta_args):
             If not present, the method will use the period defined by the
             :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
             user preference
-
     :returns: information about the arguments used to call the task and the
         result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str

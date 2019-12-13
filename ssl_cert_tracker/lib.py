@@ -450,9 +450,8 @@ class NoSubscriptionEmailError(Exception):
 
 class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
-    Subclass of
-    :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending alternative
-    content types
+    Subclass of :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending
+    alternative content types
     <https://docs.djangoproject.com/en/2.2/topics/email/#sending-alternative-content-types>`_
     under the `EmailMessage class
     <https://docs.djangoproject.com/en/2.2/topics/email/#the-emailmessage-class>`_
@@ -500,7 +499,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         This method will infer the column names from the field names stored
         under the :attr:`ssl_cert_tracker.models.Subscription.headers` field.
-        The metho assumes that the field names in the :attr:`headers
+        The method assumes that the field names in the :attr:`headers
         <ssl_cert_tracker.models.Subscription.headers>` field will match field
         names in the :attr:`Email.data`
         :class:`queryset <django.db.models.query.QuerySet>`.
@@ -516,7 +515,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         of the "__" substring. In this case, the field represents a
         relationship and the relevant `verbose_name` attribute is present in
         a different model. Under the current implementation, this method will
-        create the column n by replacing "__" with ": ". If there are "_"
+        create the column name by replacing "__" with ": ". If there are "_"
         substrings as well (classic Python convention for attribute names),
         they will be replaced with " ".
 
@@ -561,7 +560,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         The file will be named by linking the value of the :attr:`email subject
         <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
-        :attr:`Email.subscripttion_obj` instance member with a time stamp.
+        :attr:`Email.subscription_obj` instance member with a time stamp.
         The file will be saved under the path described by
         :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
         """
@@ -641,7 +640,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.csv_file = None
         """
-        :class:`str` attribute for the name of the comma-separared file
+        :class:`str` attribute for the name of the comma-separated file
 
         This attribute is set in the :meth:`prepare_csv`.
         """
@@ -682,15 +681,15 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.prepared_data = []
         """
-        :class:`list of :class:`dictionaries <dict>` where each item represents
+        :class:`list` of :class:`dictionaries <dict>` where each item represents
         a row in the :attr:`Email.data`
         :class:`django.db.models.query.QuerySet` with the human readable format
         of the field name (as represented by the values in the
         :attr:`Email.headers` :class:`dictionary <dict>`) as the key and the
         contents of the field as values
 
-        For example, if the `queryset` has one entry with dog_name: `jimmy`,
-        the corresponding entry in :attr:`Email.heasers` is
+        For example, if the `queryset` has one entry with dog_name: 'jimmy',
+        the corresponding entry in :attr:`Email.headers` is
         {'dog_name': 'Dog name'}, and the item in this list will end up as
         {'Dog name': 'jimmy'}.
         """
@@ -748,10 +747,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     def set_tags(self):
         """
         format the contents of the
-        :attr:`ssl_sert_tracker.models.Subscription.tags` of the
-        :attr:`Eamil.subscription_obj` to something like "[TAG`][TAG2]etc"
+        :attr:`ssl_cert_tracker.models.Subscription.tags` of the
+        :attr:`Email.subscription_obj` to something like "[TAG1][TAG2]etc".
 
-        By convention, the :attr:`ssl_sert_tracker.models.Subscription.tags`
+        By convention, the :attr:`ssl_cert_tracker.models.Subscription.tags`
         value is a list of comma separated words or phrases. This method
         converts that value to [TAGS][][], etc.
         A tag containing the hostname of the :ref:`SOC Automation Server` host
@@ -759,7 +758,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         the email message.
 
         In a `DEBUG` environment, this method will prefix all the other tags
-        with a [DEBUG] tag. A `DEBUG` environemnt is characterized by the
+        with a [DEBUG] tag. A `DEBUG` environment is characterized by the
         value of :attr:`p_soc_auto.settings.DEBUG`.
         """
         tags = ''

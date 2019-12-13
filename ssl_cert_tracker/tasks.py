@@ -134,7 +134,7 @@ def email_expired_ssl_report():
     retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_invalid_ssl_report():
     """
-    task to send reports about `SSL` certificates that are b=not yet valid by
+    task to send reports about `SSL` certificates that are not yet valid by
     email
 
     """
@@ -159,10 +159,11 @@ def _email_report(
     :arg data: the data to be placed in the email
     :type data: :class:`django.db.models.query.QuerySet`
 
-    :arg subscription_obj: the subcription data
+    :arg subscription_obj: the subscription data
     :type subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
 
     :arg logger: the :class:`logging.Logger` object used by this function
+    :type logger: :class:`logging.Logger`
 
     :arg dict extra_context: optional arguments that will provide extra context
         for rendering the email

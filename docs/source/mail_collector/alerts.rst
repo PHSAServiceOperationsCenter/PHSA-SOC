@@ -38,7 +38,7 @@ control this functionality.
   The alert condition will be evaluated based on the ``Schedule`` section
   shown on the page linked above.
   
-  The threshold for this alert is cofigured from the dynamic preference at
+  The threshold for this alert is configured from the dynamic preference at
   `Exchange Client Bot Errors After 
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_error>`_.
   
@@ -61,7 +61,7 @@ These alerts are using the email subscription defined at the
 Alerts for remote monitoring sites
 ----------------------------------
 
-These alerts are simmmilar to above but applying to remote monitoring sites.
+These alerts are similar to above but applying to remote monitoring sites.
   
 A remote monitoring site for Exchange services is defined as a remote
 monitoring site with at least one monitoring bot for Exchange services.
@@ -78,14 +78,14 @@ control this functionality.
 * `Critical alert for exchange client sites 
   <../../../admin/django_celery_beat/periodictask/?q=raise+critical+alert+for+exchange+client+sites>`_
   
-  The threshold for this alert is cofigured from the dynamic preference at
+  The threshold for this alert is configured from the dynamic preference at
   `Exchange Client Bot Errors After 
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_error>`_
   
 * `Warning alert for exchange client sites 
   <../../../admin/django_celery_beat/periodictask/?q=raise+warning+alert+for+exchange+client+sites>`_
   
-  The threshold for this alert is cofigured from the dynamic preference at
+  The threshold for this alert is configured from the dynamic preference at
   `Exchange Client Bot Warnings After 
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=bot_warn>`_
 
@@ -149,14 +149,14 @@ via the ``enabled`` field. See :class:`mail_collector.models.ExchangeServer`.
   `Exchange Servers No Connect subscription listed here 
   <../../../admin/ssl_cert_tracker/subscription/>`_
 
-* 'Warning Exchange server not seen alert
+* `Warning Exchange server not seen alert
   <../../../admin/django_celery_beat/periodictask/?q=Raise+warning+alert+for+any+exchange+servers>`_
   
   This alert is using the email subscription defined at the
   `Exchange Servers Not Seen subscription listed here 
   <../../../admin/ssl_cert_tracker/subscription/>`_
   
-* 'Critical Exchange server not seen alert 
+* `Critical Exchange server not seen alert
   <../../../admin/django_celery_beat/periodictask/?q=Raise+critical++alert+for+any+exchange+servers>`_
   
   This alert is using the email subscription defined at the
@@ -207,7 +207,7 @@ and assuming that the application is aware that such functionality is supported
 over a given evaluation period, an alert will be raised.
 
 If an email verifying the services between a pair of MX domains has not been
-detected for a specific interva,, an laert will be raised.
+detected for a specific interval, an alert will be raised.
   
 We track this functionality via the 
 :class:`mail_collector.models.MailBetweenDomains` model by recording
@@ -243,7 +243,7 @@ If an Exchange event of any type with a status of ``FAILED`` is detected,
 an alert will be raised.
   
 This type of alert is not based on periodically re-evaluating the error
-condition. Therefor it cannot be disabled from the 
+condition. Therefore it cannot be disabled from the
 `Mail Collector periodic tasks admin page 
 <../../../admin/django_celery_beat/periodictask>`_.
 
@@ -255,7 +255,7 @@ Alerts for client bot configuration
 -----------------------------------
 
 When a remote bot running an Exchange client instance is sending events
-without site information is detected on the server an laert will be raised for
+without site information is detected on the server an alert will be raised for
 said bot.
 
 This can happen in either of the following cases:
@@ -264,7 +264,7 @@ This can happen in either of the following cases:
  
   Under normal conditions bot information will only be made
   available on the automation server the first time Windows log events
-  originating from said are being detected and saved to the server side
+  originating from said bot are being detected and saved to the server side
   database.
   
   However, even when this is the first time the bot is running, it will still
@@ -272,7 +272,7 @@ This can happen in either of the following cases:
   :ref:`Mail Borg Client Application` instance. The server will return a special
   `Host doesn't exist <../../../admin/mail_collector/mailhost/?q=host.not.exist>`_ 
   configuration. When this configuration is used, the bot information will
-  be created on the server but withour valid ``Site`` information.
+  be created on the server but without valid ``Site`` information.
   
   The server considers this to be an error condition and this type of alert
   is raised to inform the operator that the ``site`` field must be configured

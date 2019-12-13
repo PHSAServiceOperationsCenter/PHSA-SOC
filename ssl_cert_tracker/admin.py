@@ -39,8 +39,8 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+        override
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`.
 
         provide specialized drop-down values for `created_by`, `updated_by`,
         `issuer`, and `port` `ForeignKey` fields.
@@ -62,11 +62,10 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.add_view`
+        override :meth:`django.contrib.admin.ModelAdmin.add_view`.
 
-        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -78,8 +77,7 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.change_view`
+        override :meth:`django.contrib.admin.ModelAdmin.change_view`
 
         pre-populate `updated_by` from the :attr:`user` attribute
         of the `request` object.
@@ -93,19 +91,16 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """
-        overload
-        :meth:`django.contrib.admin.has_add_permission`
+        override :meth:`django.contrib.admin.has_add_permission`.
 
         Nobody is allowed to create any instance using forms that inherit from
-        this class.
-        All the data is maintained by background processes.
+        this class. All the data is maintained by background processes.
         """
         return False
 
     def get_readonly_fields(self, request, obj=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+        override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`.
 
         Make sure that the 'created_by', 'created_on', and 'updated_on' fields
         are always read only.
@@ -255,8 +250,7 @@ class SslProbePortAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """
-        overload
-        :meth:`django.contrib.admin.has_add_permission`
+        override :meth:`django.contrib.admin.has_add_permission`
 
         Let everybody create :class:`ssl_cert_tracker.models.SslProbePort`
         instances.
@@ -273,8 +267,8 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
-        overload
-        meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+        override
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
 
         provide specialized drop-down values for `created_by` and `updated_by`.
         """
@@ -287,11 +281,10 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.add_view`
+        override :meth:`django.contrib.admin.ModelAdmin.add_view`
 
-        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -303,11 +296,10 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.change_view`
+        override :meth:`django.contrib.admin.ModelAdmin.change_view`
 
-        Pre-populate `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        Pre-populate `updated_by` from the :attr:`user` attribute of the
+        `request` object.
         """
         data = request.GET.copy()
         data['updated_by'] = request.user
@@ -318,8 +310,7 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+        override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
         Make sure that the 'created_by', 'created_on', and 'updated_on' fields
         are always read only.
@@ -336,8 +327,7 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """
-        overload
-        :meth:`django.contrib.admin.has_add_permission`
+        override :meth:`django.contrib.admin.has_add_permission`.
 
         Only a `superuser
         <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__
@@ -351,8 +341,7 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         """
-        overload
-        :meth:`django.contrib.admin.has_delete_permission`
+        override :meth:`django.contrib.admin.has_delete_permission`
 
         Only a `superuser
         <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__

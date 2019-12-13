@@ -312,7 +312,7 @@ def mail_check(config, window, update_window_queue):
     executed
 
     This function is called from the OnClickUp event of the
-    ``RUn Mail Check Now`` `PySimpleGUI.Button`.
+    ``Run Mail Check Now`` `PySimpleGUI.Button`.
 
     :arg dict config: the main configuration that is currently active. Note
         that this :ref:`configuration <borg_client_config>` may have been

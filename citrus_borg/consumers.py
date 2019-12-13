@@ -1,7 +1,7 @@
 """
 .. _consumers:
 
-consumers module
+Consumers Module
 ----------------
 
 :module:    citrus_borg.consumers

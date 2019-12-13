@@ -79,10 +79,10 @@ class _Logger():
     :class:`queue.Queue` instance.
 
     The methods in this class that take a ``strings`` argument expect that
-    said argument is can be serialized to ``JSON``.
+    said argument can be serialized to ``JSON``.
     The reason for this requirement is architectural in nature; somewhere down
-    the line these messages will put on a wire and the end points expect to
-    be receive ``JSON`` objects.
+    the line these messages will be put on a wire and the end points expect to
+    receive ``JSON`` objects.
 
     As used in the :ref:`Mail Borg Client Application`, all the messages fed
     into an instance of this class are Python :class:`dictionaries <dict>`
@@ -101,7 +101,7 @@ class _Logger():
     The message group maps to an single Exchange verification operation. All
     the messages that are part of the verification operation include the
     ``wm_id`` attribute. This attribute is essential for various operations
-    executed on the server side/
+    executed on the server side.
 
     All the values in this dictionary must be :class:`strings <str>`.
 
@@ -193,7 +193,7 @@ def _get_account(config):
     :arg config:
 
         a :class:`dictionary <dict>` that matches the structure described in
-        :ref:`borg_client_config` (or the relevantr portions thereof)
+        :ref:`borg_client_config` (or the relevant portions thereof)
 
         As used in the :ref:`Mail Borg Client Application`, the ``config``
         argument is provided via an :attr:`WitnessMessages.config` instance
@@ -262,9 +262,9 @@ def validate_email_to_ascii(email_address, logger=None, **config):
         This function doesn't raise any exceptions because it does its own
         error handling. It is catching and logging:
 
-        :exc:``email_validator.EmailSyntaxError``
+        :exc:`email_validator.EmailSyntaxError`
 
-        :exc:``email_validator.EmailUndeliverableError``
+        :exc:`email_validator.EmailUndeliverableError`
 
     """
     if not config:
@@ -481,7 +481,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     This identifier is appended to both the email message itself and,
     more importantly, to the Windows log events created while said class
     instance is active.
-    This identifier is used to figure out the site and the bot from whence
+    This identifier is used to figure out the site and the bot where
     the log event was collected and the time when when the event was created.
     This identifier is created in the constructor and will become part of
     the :class:`dictionary <dict>` stored in the :attr:`config` instance

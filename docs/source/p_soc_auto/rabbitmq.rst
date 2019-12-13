@@ -50,7 +50,7 @@ use to the SOC operators. If the number of queued messages is very larger, it
 is also possible that the ``celery workers`` will crash again.
 
 The recommended procedure for avoiding such a situation is to purge the
-queued messages store of the `RabbitMQ server`` before restarting the
+queued messages store of the ``RabbitMQ server`` before restarting the
 ``celery workers``.
 
 :Note:
@@ -97,7 +97,7 @@ restart the ``celery workers``.
     [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart uwsgi-phsa-soc-app.service
     [root@lvmsocq01 rabbit@lvmsocq01]# 
     
-* restart tyhe ``SOC Automation celery workers``:
+* restart the ``SOC Automation celery workers``:
 
 .. code-block:: bash
 
@@ -117,7 +117,7 @@ Restoring the RabbitMQ publish/consume manual configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Under typical usage, a ``Celery`` application acts as both a ``publisher`` and
-a ``cosnumer`` of `AMQP <https://www.amqp.org/>`_ messages. See `Celery -
+a ``consumer`` of `AMQP <https://www.amqp.org/>`_ messages. See `Celery -
 AMQP Primer <https://docs.celeryproject.org/en/latest/userguide/routing.html#id13>`_
 for details.
 A ``Celery`` application will also create all the ``queues`` and ``exchanges``
@@ -135,7 +135,7 @@ the ``logstash`` ``exchange`` automatically when starting. See
 :ref:`Logstash Server` for details.
 
 We must add a ``binding`` from the ``logstash`` ``exchange`` to the
-``logstash`` ``queue so that the ``SOC Automation server`` can consume
+``logstash`` ``queue`` so that the ``SOC Automation server`` can consume
 messages from the `Logstash
 <https://www.elastic.co/products/logstash>`_ server.
 

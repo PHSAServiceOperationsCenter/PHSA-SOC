@@ -3,7 +3,7 @@
 Remote Configurations for :ref:`Mail Borg Client Application` instances
 =======================================================================
 
-While the ref:`Mail Borg Client Application` can use fully local configurations,
+While the :ref:`Mail Borg Client Application` can use fully local configurations,
 it is designed to pull its main configuration from the automation server.
 
 Within the :ref:`Mail Collector Application` there are some components that
@@ -85,7 +85,8 @@ main configuration from the server but:
   When the bot sends its first event to the ``SOC Automation server``, a
   record will be made of its name.
   
-  **The ``SOC Automation server`` user must then change the record above by:**
+  **The** ``SOC Automation server`` **user must then change the record above
+  by:**
   
   1. assigning an :class:`mail_collector.models.ExchangeCofiguration`
      instance to said bot

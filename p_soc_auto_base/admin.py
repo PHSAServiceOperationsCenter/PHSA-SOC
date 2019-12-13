@@ -21,6 +21,9 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldDoesNotExist
 
+from citrus_borg.models import BorgSite
+from mail_collector.models import ExchangeConfiguration
+
 
 def enable_selected(modeladmin, request, queryset):
     """

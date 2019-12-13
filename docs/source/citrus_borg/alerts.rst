@@ -110,8 +110,5 @@ If the `orion_flash` application is
 activated, bot related alerts will also be visible on an `Orion` server if the bot
 that is the subject of the alarm is defined as `Orion` nodes.
 
-.. todo::
-
-    Document the `orion_flash` application.
 
 

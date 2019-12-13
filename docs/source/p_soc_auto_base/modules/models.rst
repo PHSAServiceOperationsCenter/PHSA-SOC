@@ -15,4 +15,9 @@ Server` without duplicating these fields all over the place.
    :members:
    :undoc-members:
    :no-show-inheritance:
+
+.. autoclass:: p_soc_auto_base.models.BaseModelWithDefaultInstance
+   :members:
+   :undoc-members:
+   :no-show-inheritance:
    

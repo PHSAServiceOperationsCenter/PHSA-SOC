@@ -4,7 +4,7 @@ ldap_probe.tasks
 
 This module contains the `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
-used by the :ref:`Domain Controllers Monitoring Application`.
+used by the :ref:`Active Directory Services Monitoring Application`.
 
 :copyright:
 
@@ -42,12 +42,12 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
         AD controller  node information
 
     :arg logger: the logger instance
-    :type logger: :class:`loggingLogger`
+    :type logger: :class:`logging.Logger`
 
     :returns: the return of
         :meth:`ldap_probe.models.LdapProbeLog.create_from_probe`
 
-    :raises: :exc:`exceptions.Exception`
+    :raises: :exc:`Exception`
     """
     try:
         ad_model = utils.get_model(ad_model)
@@ -117,7 +117,7 @@ def bootstrap_ad_probes(data_sources=None):
 @shared_task(queue='data_prune')
 def expire_entries(data_source=None, **age):
     """
-    mark row in the :class:`model <django.db.models.Model>` defined by
+    mark rows in the :class:`model <django.db.models.Model>` defined by
     the data_source argument as expired if they were created before a
     specific date and time
 
@@ -142,16 +142,17 @@ def expire_entries(data_source=None, **age):
 
     :raises:
 
-        :exc:`p_soc-auto.base.utils.UnknownDataTargetError` if the
+        :exc:`p_soc_auto.base.utils.UnknownDataTargetError` if the
         `data_source` argument cannot be resolved to a valid
         :class:`django.db.models.Model`
 
-        :exc:`exceptions.AttributeError` if the
+        :exc:`AttributeError` if the
             :class:`django.db.models.Model` resolved from the `data_source`
             argument doesn't have both a `created_on` attribute and an
             `is_expired` attribute
 
     """
+    LOG.info('kicked expire_entries')
     if data_source is None:
         data_source = 'ldap_probe.LdapProbeLog'
 
@@ -179,6 +180,7 @@ def expire_entries(data_source=None, **age):
     count_expired = data_source.objects.filter(created_on__lte=older_than).\
         update(is_expired=True)
 
+    LOG.info('done expire_entries')
     # pylint: disable=protected-access
     return (
         f'Marked {count_expired} {data_source._meta.verbose_name} rows'
@@ -191,7 +193,7 @@ def expire_entries(data_source=None, **age):
 def delete_expired_entries(data_source=None):
     """
     delete rows marked as expired from the :class:`model
-    <django.db.models.Model>` defined by the data_source argument
+    <django.db.models.Model>` defined by the `data_source` argument
 
     This task assumes that the :class:`model <django.db.models.Model>`
     defined by the data_source argument has a :class:`bool` attribute named
@@ -218,10 +220,11 @@ def delete_expired_entries(data_source=None):
         :class:`django.db.models.Model`
 
         :exc:`exceptions.AttributeError` if the
-            :class:`django.db.models.Model` resolved from the `data_source`
-            argument doesn't have an `is_expired` attribute
+        :class:`django.db.models.Model` resolved from the `data_source`
+        argument doesn't have an `is_expired` attribute
 
     """
+    LOG.info('kick delete_expired_entries')
     if not get_preference('ldapprobe__ldap_delete_expired'):
         return 'the application is not configured to delete expired rows'
 
@@ -241,6 +244,7 @@ def delete_expired_entries(data_source=None):
 
     count_deleted = data_source.objects.filter(is_expired=True).all().delete()
 
+    LOG.info('completed delete_expired_entries')
     return (
         f'Deleted {count_deleted} expired rows from'
         f' {data_source._meta.verbose_name}'
@@ -252,12 +256,14 @@ def trim_ad_duplicates():
     """
     this function makes sure that if the definition for an `AD` node is
     present in both :class:`ldap_probe.models.OrionADNode` and
-    :class;`ldap_probe.models.NonOrionADNode`, the later will be deleted
+    :class:`ldap_probe.models.NonOrionADNode`, the later will be deleted
 
     The advantage of considering the `AD` definitions in
     :class:`ldap_probe.models.OrionADNode` to be the `truthy` ones is
     that the data in that particular model is maintained automatically
     as far as our application is concerned
+
+    :raises: :exc:`Exception` so that the exception is passed to `Celery`
     """
     for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
         try:
@@ -346,6 +352,10 @@ def dispatch_bad_fqdn_reports():
     """
     `Celery task` for generating a report with `AD` nodes with no `FQDN`
     properties on the `Orion` server
+
+    :returns: a :class:`str` object interpreting the `return` of
+        :meth:`ssl_cert_tracker.lib.Email.send`
+
     """
     LOG.debug('invoking the fqdn report for orion ad nodes')
 
@@ -378,6 +388,10 @@ def dispatch_dupe_nodes_reports():
     """
     `Celery task` for generating a report with duplicate `AD` nodes
     on the `Orion` server
+
+    :returns: a :class:`str` object interpreting the `return` of
+        :meth:`ssl_cert_tracker.lib.Email.send`
+
     """
     LOG.debug('invoking the duplicate ad nodes in orion report')
 
@@ -413,10 +427,10 @@ def dispatch_non_orion_ad_nodes_report():
     not defined in `Orion`
 
     :returns: information about the arguments used to call the task and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
-    :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
+    :raises: :exc:`Exception` to allow `Celery` to deal with
         errors
 
     """
@@ -460,7 +474,7 @@ def dispatch_ldap_error_report(**time_delta_args):
         result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
-    :raises: :exc:`exceptions.Exception` to allow `Celery` to deal with
+    :raises: :exc:`Exception` to allow `Celery` to deal with
         errors
 
     """
@@ -519,14 +533,14 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
             See :meth:`ldap_probe.models.BaseADNode.report_probe_aggregates`
 
     :arg time_delta_args: optional named arguments that are used to
-            initialize a :class:`datetime.duration` object
+            initialize a :class:`datetime.timedelta` object
 
             If not present, the method will use the period defined by the
             :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
             user preference
 
-    :returns: information about the arguments used to call the tass and the
-        result of :meth:`ssl_cert_tracker.lib.Email.send'
+    :returns: information about the arguments used to call the task and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
     :rtype: str
 
     """
@@ -592,10 +606,10 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
         :class:`ldap_probe.models.LdapProbeLog` that is subject to the alert
 
     :returns: an interpretation of the return value of the
-        :meth:`ssl_cert_trqcker.lib.Email.send` operation
+        :meth:`ssl_cert_tracker.lib.Email.send` operation
 
     :raises: generic :exc:`exceptions.Exception` for whatever error is
-        raised by :meth:`ssl_cert_trqcker.lib.Email.send`
+        raised by :meth:`ssl_cert_tracker.lib.Email.send`
     """
     if instance_pk is None:
         raise exceptions.AlertArgsError(

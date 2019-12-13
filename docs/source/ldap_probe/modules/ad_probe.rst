@@ -1,7 +1,10 @@
 .. automodule:: ldap_probe.ad_probe
-   :show-inheritance:
+   :members: LOGGER
+   
+.. autoclass:: ldap_probe.ad_probe._ADProbeElapsed
+   :members:
+   
+.. autoclass:: ldap_probe.ad_probe.ADProbe
    :members:
    :private-members:
-   :special-members:
-   :undoc-members:
    

@@ -328,7 +328,7 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 @admin.register(MailBotMessage)
 class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     """
-    admin ofrms for exchange monitoring events that include a mail message
+    admin forms for exchange monitoring events that include a mail message
     """
     list_display_links = ('event_uuid',)
     list_display = ('event_uuid', 'event_group_id', 'mail_message_identifier',

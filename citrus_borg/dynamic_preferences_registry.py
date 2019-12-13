@@ -259,7 +259,7 @@ class ExchangeReportErrorLevel(StringPreference):
     verbose_name = _('Error level for all Exchange reports')
     """verbose name of this dynamic preference"""
     help_text = format_html(
-        "{}", _('a report does npt really have an error level but we need'
+        "{}", _('a report does not really have an error level but we need'
                 ' a value here than can be empty, i.e. no level in order'
                 ' to reuse existing mail templates'))
 
@@ -551,7 +551,7 @@ class OrionProbeCSTOnly(BooleanPreference):
 class OrionProbeKnownSslOnly(BooleanPreference):
     """
     Dynamic preferences class controlling whether `NMAP` `SSL` probes are
-    executed against `Orion` nodes tagged as`SSL` on the `Orion` server
+    executed against `Orion` nodes tagged as `SSL` on the `Orion` server.
 
     This preference is used by the :ref:`Orion Integration Application`.
 
@@ -571,8 +571,8 @@ class OrionProbeKnownSslOnly(BooleanPreference):
 class OrionProbeServersOnly(BooleanPreference):
     """
     Dynamic preferences class controlling whether `NMAP` `SSL` probes are
-    executed against `Orion` nodes tagged as`server nodes` on the `Orion`
-    server
+    executed against `Orion` nodes tagged as `server nodes` on the `Orion`
+    server.
 
     This preference is used by the :ref:`Orion Integration Application`.
 

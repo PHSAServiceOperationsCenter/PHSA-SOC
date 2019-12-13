@@ -48,7 +48,7 @@ Enable or disable debugging information
 
 :SECURITY WARNING:
 
-    don't run with debug turned on in production!
+    Don't run with debug turned on in production!
 """
 
 ALLOWED_HOSTS = ['*', ]
@@ -368,7 +368,8 @@ ORION_HOSTNAME = 'orion.vch.ca'
 default network address for the `SolarWinds Orion server
 <https://www.solarwinds.com/solutions/orion>`__
 
-This variable is exposed by the :attr:`citrus_borg.dynamic_preferences_registry.OrionServer.default`
+This variable is exposed by the 
+:attr:`citrus_borg.dynamic_preferences_registry.OrionServer.default`
 attribute of the :class:`citrus_borg.dynamic_preferences_registry.OrionServer`
 dynamic preference.
 
@@ -556,7 +557,7 @@ Serialize `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
 to ``JSON``
 
-This is the preferred settingfor security purposes. See the discussion for
+This is the preferred setting for security purposes. See the discussion for
 :attr:`CELERY_ACCEPT_CONTENT`. Note that we are overriding this setting for
 tasks with arguments that cannot be serialized to ``JSON`` like
 :class:`datetime.datetime` objects or :class:`Django querysets
@@ -578,7 +579,7 @@ CELERY_QUEUES = (
     Queue('data_prune', Exchange('data_prune'), routing_key='data_prune'),
 )
 """
-celery queues
+Celery queues
 """
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -591,7 +592,7 @@ CELERY_EXCHANGES = {
     'default': {'name': 'logstash', 'type': 'topic', },
 }
 """
-celery exchanges
+Celery exchanges
 """
 
 # common email settings
@@ -606,7 +607,7 @@ EMAIL_HOST = 'smtp.healthbc.org'
 SMTP relay address
 
 The :ref:`SOC Automation Server` will use this SMTP server to deliver emails
-via the `PHSA`` ``Exchange`` infrastructure.
+via the `PHSA Exchange` infrastructure.
 
 :Note:
 
@@ -764,7 +765,7 @@ CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 default value for how old a ``Citrix`` event has to be before it is considered
 amd marked as ``expired``
 
-``Expired`` events are ignored bu the :ref:`SOC Automation Server`.
+``Expired`` events are ignored by the :ref:`SOC Automation Server`.
 
 Exposed as a dynamic preference by
 :class:`citrus_borg.dynamic_preferences_registry.ExpireEvents`

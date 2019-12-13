@@ -1,7 +1,7 @@
 """
 .. _assimilation:
 
-assimilation module
+Assimilation Module
 -------------------
 
 :module:    citrus_borg.locutus.assimilation
@@ -34,11 +34,12 @@ Here is a sample for a `Windows` event created by `ControlUp` in the format
 that will be consumed by the :func:`citrus_borg.consumers.process_win_event`
 function.
 
-**Note that this message is a string despite the fact that it looks like
-`JSON <https://www.json.org/>`__.** Using the `JSON` encoder provided by the
-:ref:`Logstash server` will lead to :ref:`RabbitMQ Server` failures.
-However, the :func:`json.loads` function is happy to deserialize this string
-to a `Python` `object` without any problems.
+:Note:
+    **This message is a string despite the fact that it looks like**
+    `JSON <https://www.json.org/>`__. Using the `JSON` encoder provided by the
+    :ref:`Logstash server` will lead to :ref:`RabbitMQ Server` failures.
+    However, the :func:`json.loads` function is happy to deserialize this string
+    to a `Python` `object` without any problems.
 
 We are converting the message to a `JSON` structure in the
 :func:`citrus_borg.consumers.process_win_event` function.

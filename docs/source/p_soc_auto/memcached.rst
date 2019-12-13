@@ -21,11 +21,10 @@ The :ref:`SOC Automation Server` is connecting to the `memcached
 Memcached scaling
 -----------------
 
-`Memcached <https://memcached.org/>`__ will scale horizontally out of the box.
-In our case, once additional `memcached <https://memcached.org/>`__ instances
-are running, qwe only need to add corresponding ``address, port`` tuples to
-the :class:`LOCATION <list>` of the :attr:`p_soc_auto.settings.CACHES`
-setting.
+`Memcached <https://memcached.org/>`_ will scale horizontally out of the box.
+In our case, once additional `memcached <https://memcached.org/>`_ instances
+are running, we only need to add corresponding ``address, port`` tuples to the
+:class:`LOCATION <list>` of the :attr:`p_soc_auto.settings.CACHES` setting.
 
 Memcached security
 ------------------

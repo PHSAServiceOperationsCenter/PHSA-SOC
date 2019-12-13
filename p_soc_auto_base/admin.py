@@ -124,11 +124,10 @@ class BaseAdmin(admin.ModelAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.add_view`
+        override :meth:`django.contrib.admin.ModelAdmin.add_view`
 
-        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -140,11 +139,10 @@ class BaseAdmin(admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.change_view`
+        override :meth:`django.contrib.admin.ModelAdmin.change_view`
 
-        pre-populate `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `updated_by` from the :attr:`user` attribute of the
+        `request` object.
         """
         data = request.GET.copy()
         data['updated_by'] = request.user
@@ -155,8 +153,7 @@ class BaseAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):  # @UnusedVariable
         """
-        overload
-        :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+        override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
         Make sure that the 'created_by', 'created_on', and 'updated_on' fields
         are always read only.

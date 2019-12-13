@@ -18,7 +18,7 @@ the `IP` address of the network node. Such entries will be removed
 automatically.
 The schedule for the task executing this operation is available as
 `AD controller monitoring: remove duplicate AD nodes` from the `periodic tasks
-configuration page </../../../admin/django_celery_beat/periodictask/`__.
+configuration page </../../../admin/django_celery_beat/periodictask/>`__.
 
 Other than that, it is the duty of the `SOC` operators to maintain this
 data source.

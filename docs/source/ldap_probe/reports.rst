@@ -91,7 +91,7 @@ Periodic Summary for Error Events
 These are reports with a listing of all failed `AD` probes. These reports do
 not provide any summarizations.
 
-* :ref:`AD probe errors for :ref:`Orion AD nodes <orionadnodes>` and 
+* :ref:`AD` probe errors for :ref:`Orion AD nodes <orionadnodes>` and 
   :ref:`Non Orion AD nodes <nonorionadnodes>`:
 
   * scheduled from the `AD controller monitoring: error summary report` entry

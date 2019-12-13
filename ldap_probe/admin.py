@@ -64,9 +64,10 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     :class:`ldap_probe.models.OrionADNode`
     """
     list_display_links = ('show_node_caption', )
-    list_display = ('show_node_caption', 'node_dns', 'ip_address',
-                    'show_orion_admin_url', 'show_orion_url', 'site',
-                    'location', )
+    list_display = ('show_node_caption', 'enabled', 'ldap_bind_cred',
+                    'node_dns', 'ip_address', 'show_orion_admin_url',
+                    'show_orion_url', 'site', 'location', )
+    list_editable = ('enabled', 'ldap_bind_cred',)
     readonly_fields = ('show_node_caption', 'node_dns', 'ip_address',
                        'show_orion_admin_url', 'show_orion_url', 'site',
                        'location', )

@@ -680,31 +680,24 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription):
+def get_subscription(subscription, logger=LOGGER):
     """
     :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
 
     :arg str subscription: the subscription value
-        Note that this value is case-sensitive
 
-    .. todo::
+    :arg logger: the logger used to record log messages
+    :type logger: :class:`logging.logger`
 
-        Use `filter(subscription__iexact=subscription).get()` to avoid the case
-        sensitive requirement
-
-    :raises: :exc:`Exception` if the
-        :class:`ssl_cert_tracker.models.Subscription` instance cannot be found
-
-    .. todo::
-
-        Change the error catching to use a
-        :exc:`djang.db.core.exceptions.ObjectDoesNotExist` exception.
+    :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't \
+    exist.
     """
     try:
-        return Subscription.objects.\
-            get(subscription=subscription)
-    except Exception as error:
-        raise error
+        return Subscription.objects.get(subscription__iexact=subscription)
+    except Subscription.DoesNotExist:
+        error_msg = f'Subscription "{subscription}" does not exist.'
+        logger.error(error_msg)
+        raise Subscription.DoesNotExist(error_msg)
 
 
 def borgs_are_hailing(

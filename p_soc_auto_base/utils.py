@@ -478,7 +478,7 @@ def get_pk_list(queryset, pk_field_name='id'):
     return list(queryset.values_list(pk_field_name, flat=True))
 
 
-def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
+def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
     """
     make sure that a :class:`datetime.datetime` object is `timezone aware
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_

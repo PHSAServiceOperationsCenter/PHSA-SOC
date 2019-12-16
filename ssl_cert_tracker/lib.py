@@ -15,8 +15,9 @@ application.
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 30, 2018
+:updated:    Dec 16, 2019
 
 """
 from enum import Enum
@@ -24,7 +25,6 @@ from logging import getLogger
 from smtplib import SMTPConnectError
 import socket
 
-from django.apps import apps
 from django.conf import settings
 from django.db.models import (
     Case, When, CharField, BigIntegerField, Value, F, Func, TextField,
@@ -35,7 +35,7 @@ from djqscsv import write_csv
 from templated_email import get_templated_mail
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-
+from p_soc_auto_base import utils
 
 LOG = getLogger('ssl_cert_tracker')
 """
@@ -162,54 +162,8 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
                                   output_field=TextField()))
 
 
-def get_base_queryset(app_label, model_name, url_annotate=True):
-    """
-    get the initial :class:`django.db.models.query.QuerySet`; also `annotate
-    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__ it
-    with the absolute path of the `URL` for
-    the related :class:`Django admin <django.contrib.admin.ModelAdmin>` instance
-    in a calculated field named `url` if required
-
-
-    See `Reversing admin URLs
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.
-
-    Note that this fail if the `Django Admin Site
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`_
-    is not enabled.
-
-
-    :arg str app_label:
-
-    :arg str model_name:
-
-    :arg bool url_annonate:
-
-    .. todo::
-
-        This is duplicate code. Replace this with
-        :func:`p_soc_auto_base.utils.get_base_queryset` and
-        :func:`p_soc_auto_base.utils.url_annotate`.
-    """
-    queryset = apps.get_model(app_label,
-                              model_name).objects.filter(enabled=True)
-
-    if url_annotate:
-        queryset = queryset.annotate(url_id=Cast('id', TextField())).\
-            annotate(url=Concat(
-                Value(settings.SERVER_PROTO), Value('://'),
-                Value(socket.getfqdn()),
-                Value(':'), Value(settings.SERVER_PORT),
-                Value('/admin/'),
-                Value(app_label), Value('/'), Value(model_name),
-                Value('/'), F('url_id'), Value('/change/'),
-                output_field=TextField()))
-
-    return queryset
-
-
-def get_ssl_base_queryset(
-        app_label, model_name, url_annotate=True, issuer_url_annotate=True):
+def get_ssl_base_queryset(app_label, model_name, url_annotate=True,
+                          issuer_url_annotate=True):
     """
     :returns:
 
@@ -235,7 +189,10 @@ def get_ssl_base_queryset(
     :arg bool issuer_url_annotate:
 
     """
-    queryset = get_base_queryset(app_label, model_name, url_annotate)
+    queryset = utils.get_base_queryset(f'{app_label}.{model_name}',
+                                       enabled=True)
+    if url_annotate:
+        queryset = utils.url_annotate(queryset)
     if issuer_url_annotate \
             and app_label in ['ssl_cert_tracker'] \
             and model_name in ['sslcertificate']:

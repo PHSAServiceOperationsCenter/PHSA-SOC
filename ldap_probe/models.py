@@ -20,11 +20,11 @@ import logging
 import socket
 
 from django.conf import settings
+from django.core import validators
 from django.db import models
 from django.db.models import (
     Case, When, F, Value, TextField, URLField, Count, Avg, Min, Max, Q)
 from django.db.models.functions import Concat
-from django.core import validators
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -166,6 +166,49 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
         verbose_name_plural = _('LDAP Bind Credentials Sets')
 
 
+class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
+    """
+    :class:`django.db.models.Model` class used for storing acceptable
+    performance data for AD monitoring
+
+    `Performance Group for ADS Nodes fields
+    <../../../admin/doc/models/ldap_probe.adnodeperfbucket>`__
+    """
+    location = models.CharField(
+        _('Location Key'), max_length=253, db_index=True, unique=True,
+        blank=False, null=False, help_text=_(
+            'Information pertaining to the geographical area to which'
+            ' a group of performance degradation limits applies'))
+    avg_warn_threshold = models.DecimalField(
+        _('Warning Response Time Threshold'), max_digits=4,
+        decimal_places=3, db_index=True, blank=False, null=False,
+        help_text=_(
+            'If the average AD services response time is worse than this'
+            ' value, include this node in the periodic performance'
+            ' degradation warnings report.'))
+    avg_err_threshold = models.DecimalField(
+        _('Error Response Time Threshold'), max_digits=4,
+        decimal_places=3, db_index=True, blank=False, null=False,
+        help_text=_(
+            'If the average AD services response time is worse than this'
+            ' value, include this node in the periodic performance'
+            ' degradation errors report.'))
+    alert_threshold = models.DecimalField(
+        _('Alert Response Time Threshold'), max_digits=4,
+        decimal_places=3, db_index=True, blank=False, null=False,
+        help_text=_(
+            'If the AD services response time for any probe is worse than'
+            ' this value, raise an immediate alert.'))
+
+    def __str__(self):
+        return self.location
+
+    class Meta:
+        app_label = 'ldap_probe'
+        verbose_name = 'Performance Group for ADS Nodes'
+        verbose_name_plural = 'Performance Groups for ADS Nodes'
+
+
 class BaseADNode(BaseModel, models.Model):
     """
     `Django abastract model
@@ -176,6 +219,11 @@ class BaseADNode(BaseModel, models.Model):
         'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
+    location = models.ForeignKey(
+        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True,
+        null=True, default=ADNodePerfBucket.get_default,
+        on_delete=models.SET_DEFAULT, verbose_name=_(
+            'Acceptable Performance Limits'))
 
     sql_case_dns = When(
         ~Q(node__node_dns__iexact=''), then=F('node__node_dns'))

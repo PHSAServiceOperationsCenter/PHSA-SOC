@@ -21,7 +21,7 @@ from django.contrib import admin
 from django.forms.widgets import PasswordInput
 from django.utils.translation import gettext_lazy as _
 
-from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
+from rangefilter.filter import DateTimeRangeFilter
 
 from ldap_probe import models
 from p_soc_auto_base import admin as base_admin
@@ -55,6 +55,18 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
                 enabled=True)
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+@admin.register(models.ADNodePerfBucket)
+class AdNodePerfBucketAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ldap_probe.models.ADNodePerfBucket`
+    """
+    list_display = ('location', 'enabled', 'is_default', 'avg_warn_threshold',
+                    'avg_err_threshold', 'alert_threshold')
+    list_editable = ('enabled', 'is_default', 'avg_warn_threshold',
+                     'avg_err_threshold', 'alert_threshold')
 
 
 @admin.register(models.OrionADNode)

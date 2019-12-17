@@ -11,8 +11,9 @@ This module contains the :class:`django.db.models.Model` models for the
     of British Columbia
 
 :contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 6, 2019
+:updated:    Dec. 17, 2019
 
 """
 import decimal

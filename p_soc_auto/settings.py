@@ -911,6 +911,11 @@ EVENT_TYPE_SORT = {
 Mapping required to provide a custom sort order for event types
 """
 
+GRAPPELLI_ADMIN_TITLE = 'SOC Automation Server'
+"""
+custom name for the admin site
+"""
+
 GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'
 """
 Custom `Django Admin` dashboard class location

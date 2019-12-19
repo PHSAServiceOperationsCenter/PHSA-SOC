@@ -1383,20 +1383,41 @@ class LdapPerfAlertSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapPerfNeverExceedThreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching red level alerts about `LDAP` performance degradation
+
+    :access_key: 'ldapprobe__ldap_perf_err'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_err'
+    default = decimal.Decimal('1.000')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'LDAP Performance Error Threshold for Immediate Alerts'
+        ' (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfAlertThreshold(DecimalPreference):
     """
     Dynamic preferences class controlling the name of the
     :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
-    used for dispatching `LDAP` performance alerts
+    used for generating error reports for `LDAP` performance degradation
 
     :access_key: 'ldapprobe__ldap_perf_alert'
     """
     section = ldap_probe
     name = 'ldap_perf_alert'
-    default = decimal.Decimal('0.500')
+    default = decimal.Decimal('0.750')
     """default value for this dynamic preference"""
     required = True
-    verbose_name = _('LDAP Performance Alert Threshold (in seconds)').title()
+    verbose_name = _(
+        'LDAP Performance Error Threshold for Reports (in seconds)').title()
     """verbose name for this dynamic preference"""
 
 
@@ -1405,16 +1426,17 @@ class LdapPerfWarnThreshold(DecimalPreference):
     """
     Dynamic preferences class controlling the name of the
     :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
-    used for dispatching `LDAP` performance warnings
+    used for generating warning reports for `LDAP` performance degradation
 
     :access_key: 'ldapprobe__ldap_perf_warn'
     """
     section = ldap_probe
     name = 'ldap_perf_warn'
-    default = decimal.Decimal('0.100')
+    default = decimal.Decimal('0.500')
     """default value for this dynamic preference"""
     required = True
-    verbose_name = _('LDAP Performance Warning Threshold (in seconds)').title()
+    verbose_name = _(
+        'LDAP Performance Warning Threshold for Reports (in seconds)').title()
     """verbose name for this dynamic preference"""
 
 

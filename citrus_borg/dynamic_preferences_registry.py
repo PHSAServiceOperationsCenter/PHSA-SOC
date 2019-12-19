@@ -1383,10 +1383,33 @@ class LdapPerfAlertSubscription(StringPreference):
 
 
 @global_preferences_registry.register
+class LdapPerfRaiseMinorAlerts(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether minor alerts about AD
+    services performance degradations will be raised
+
+    By default, only response times larger than the value specified via
+    :class:`LdapPerfNeverExceedThreshold` will trigger an alert. Response
+    times larger than values defined by :class:`LdapPerfAlertThreshold` and
+    :class:`LdapPerfWarnThreshold` will only be included in periodic
+    reports with regards to performance degradation.
+
+    :access_key: 'ldapprobe__ldap_perf_raise_all'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_raise_all'
+    default = False
+    """default value for this dynamic preference"""
+    required = False
+    verbose_name = _(
+        'Raise alerts for all LDAP performance degradation events.').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfNeverExceedThreshold(DecimalPreference):
     """
-    Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    Dynamic preferences class controlling the threshold
     used for dispatching red level alerts about `LDAP` performance degradation
 
     :access_key: 'ldapprobe__ldap_perf_err'
@@ -1405,11 +1428,16 @@ class LdapPerfNeverExceedThreshold(DecimalPreference):
 @global_preferences_registry.register
 class LdapPerfAlertThreshold(DecimalPreference):
     """
-    Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    Dynamic preferences class controlling the threshold
     used for generating error reports for `LDAP` performance degradation
 
     :access_key: 'ldapprobe__ldap_perf_alert'
+
+    .. note::
+
+        we are aware that the class name and the access keys for this class
+        and :class:`LdapPerfNeverExceedThreshold` are not following the
+        usual practice.
     """
     section = ldap_probe
     name = 'ldap_perf_alert'
@@ -1424,8 +1452,7 @@ class LdapPerfAlertThreshold(DecimalPreference):
 @global_preferences_registry.register
 class LdapPerfWarnThreshold(DecimalPreference):
     """
-    Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    Dynamic preferences class controlling the threshold
     used for generating warning reports for `LDAP` performance degradation
 
     :access_key: 'ldapprobe__ldap_perf_warn'

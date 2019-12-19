@@ -916,6 +916,19 @@ class LdapProbeLog(models.Model):
         return self.ad_node.get_node()
 
     @property
+    def node_perf_bucket(self):
+        """
+        :returns: a dictionary with the node location and acceptable perf
+            numbers
+        """
+        if self.ad_node:
+            node = self.ad_node
+        else:
+            node = self.ad_orion_node
+
+        return node.location
+
+    @property
     def perf_alert(self):
         """
         flag for considering if an instance of this class must trigger a
@@ -923,13 +936,17 @@ class LdapProbeLog(models.Model):
 
         In plain English, this method translates into::
 
-            Give me all the elapsed_foo fields that are not `None`. Then,
-            out of these not `None` fields, if any of them is greater than
-            a threshold, return `True`. Otherwise, return `False`.
+            If so configured, give me all the elapsed_foo fields that are
+            not `None`. Then, out of these not `None` fields, if any of them
+            is greater than a threshold, return `True`. Otherwise, return
+            `False`.
 
         :returns: `True/False`
         :rtype: bool
         """
+        if not get_preference('ldapprobe__ldap_perf_raise_all'):
+            return False
+
         return any(
             [
                 elapsed for elapsed in
@@ -954,6 +971,9 @@ class LdapProbeLog(models.Model):
         :returns: `True/False`
         :rtype: bool
         """
+        if not get_preference('ldapprobe__ldap_perf_raise_all'):
+            return False
+
         return any(
             [
                 elapsed for elapsed in
@@ -966,6 +986,30 @@ class LdapProbeLog(models.Model):
                     if self_elapsed is not None
                 ]
                 if elapsed >= get_preference('ldapprobe__ldap_perf_warn')
+            ]
+        )
+
+    @property
+    def perf_err(self):
+        """
+        flag for considering if an instance of this class must trigger a
+        performance never exceed alert
+
+        :returns: `True/False`
+        :rtype: bool
+        """
+        return any(
+            [
+                elapsed for elapsed in
+                [
+                    self_elapsed for self_elapsed in
+                    [
+                        self.elapsed_bind, self.elapsed_anon_bind,
+                        self.elapsed_search_ext, self.elapsed_read_root
+                    ]
+                    if self_elapsed is not None
+                ]
+                if elapsed >= get_preference('ldapprobe__ldap_perf_err')
             ]
         )
 

@@ -298,6 +298,31 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
 
 
 @shared_task(queue='email', rate_limit='1/s')
+def raise_ldap_probe_perf_err(instance_pk=None, subscription=None):
+    """
+    raise an email alert for an instance of the
+    :class:`ldap_probe.models.LdapProbeLog` model that shows performance
+    'never exceed' problems
+
+    :arg int instance_pk: the primary key of the instance
+
+    :arg str subscription: the value of the :attr:`subscription
+        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        used to retrieve the
+        :class:`ssl_cert_tracker.models.Subscription` instance required
+        for raising this alert via email
+
+    """
+    if subscription is None:
+        subscription = get_preference('ldapprobe__ldap_perf_subscription')
+
+    return _raise_ldap_alert(
+        instance_pk=instance_pk,
+        subscription=utils.get_subscription(subscription),
+        level=get_preference('commonalertargs__error_level'))
+
+
+@shared_task(queue='email', rate_limit='1/s')
 def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
     """
     raise an email alert for an instance of the
@@ -319,7 +344,7 @@ def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
     return _raise_ldap_alert(
         instance_pk=instance_pk,
         subscription=utils.get_subscription(subscription),
-        level=get_preference('commonalertargs__error_level'))
+        level=get_preference('commonalertargs__warn_level'))
 
 
 @shared_task(queue='email', rate_limit='1/s')
@@ -344,7 +369,7 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
     return _raise_ldap_alert(
         instance_pk=instance_pk,
         subscription=utils.get_subscription(subscription),
-        level=get_preference('commonalertargs__warn_level'))
+        level=get_preference('commonalertargs__info_level'))
 
 
 @shared_task(queue='email', rate_limit='1/s')
@@ -626,7 +651,8 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             add_csv=False, level=level, node=ldap_probe.node,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
-            orion_url=ldap_probe.ad_node_orion_url)
+            orion_url=ldap_probe.ad_node_orion_url,
+            location=ldap_probe.node_perf_bucket)
     except Exception as error:
         raise error
 

@@ -7,7 +7,7 @@ shared by all the other applications defined on the server.
 
 .. toctree::
    :maxdepth: 3
-   :caption: SOC Automation Server commonn components:
+   :caption: SOC Automation Server common components:
    
    modules/models.rst
    modules/admin.rst

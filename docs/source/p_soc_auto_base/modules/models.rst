@@ -21,3 +21,7 @@ Server` without duplicating these fields all over the place.
    :undoc-members:
    :no-show-inheritance:
    
+.. autoclass:: p_soc_auto_base.models.MuteableModel
+   :members:
+   :undoc-members:
+   :no-show-inheritance:

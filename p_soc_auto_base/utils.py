@@ -16,12 +16,15 @@ This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
 
 """
+import decimal
 import datetime
 import ipaddress
 import logging
 import socket
 import time
 import uuid
+
+import humanfriendly
 
 from django.apps import apps
 from django.core.exceptions import FieldError
@@ -37,6 +40,32 @@ from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
 LOGGER = logging.getLogger('django')
+
+
+def show_milliseconds(seconds):
+    """
+    formats the input to a string with milliseconds if said input is less
+    than 1 second, otherwise the input is formatted to a string with seconds
+
+    :arg seconds: an input object that represents a duration in a format that
+        can be coerced to :class:`decimal.Decimal`
+
+    :returns: soemthing like '1.200 seconds' or '525 milliseconds'
+
+    :raises: :exc:`TypeError` if the input cannot be coerced to
+        :class:`decimal.Decimal`
+
+    """
+    try:
+        seconds = decimal.Decimal(seconds)
+    except decimal.InvalidOperation:
+        raise TypeError(
+            f'{type(seconds)} cannot be coerced to decimal.Decimal')
+
+    if seconds.compare(decimal.Decimal('1')) is True:
+        return humanfriendly.format_timespan(float(seconds))
+
+    return humanfriendly.format_timespan(float(seconds), detailed=True)
 
 
 def get_absolute_admin_change_url(

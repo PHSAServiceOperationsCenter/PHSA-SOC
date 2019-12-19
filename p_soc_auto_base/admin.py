@@ -24,6 +24,9 @@ from django.core.exceptions import FieldDoesNotExist
 from citrus_borg.models import BorgSite
 from mail_collector.models import ExchangeConfiguration
 
+admin.site.site_header = 'SOC Automation Server'
+admin.site.index_title = 'SOC Automation Server Administration'
+
 
 def enable_selected(modeladmin, request, queryset):
     """

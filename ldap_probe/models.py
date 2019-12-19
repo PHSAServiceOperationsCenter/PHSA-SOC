@@ -48,6 +48,28 @@ def _get_default_ldap_search_base():
     """
     return get_preference('ldapprobe__search_dn_default')
 
+
+def _get_default_warn_threshold():
+    """
+    get default values for foo_warn_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_warn')
+
+
+def _get_default_err_threshold():
+    """
+    get default values for foo_err_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_alert')
+
+
+def _get_default_alert_threshold():
+    """
+    get default values for alert_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_err')
+
+
 # pylint: disable=too-few-public-methods
 
 
@@ -183,6 +205,7 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     avg_warn_threshold = models.DecimalField(
         _('Warning Response Time Threshold'), max_digits=4,
         decimal_places=3, db_index=True, blank=False, null=False,
+        default=_get_default_warn_threshold,
         help_text=_(
             'If the average AD services response time is worse than this'
             ' value, include this node in the periodic performance'
@@ -190,6 +213,7 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     avg_err_threshold = models.DecimalField(
         _('Error Response Time Threshold'), max_digits=4,
         decimal_places=3, db_index=True, blank=False, null=False,
+        default=_get_default_err_threshold,
         help_text=_(
             'If the average AD services response time is worse than this'
             ' value, include this node in the periodic performance'
@@ -197,6 +221,7 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     alert_threshold = models.DecimalField(
         _('Alert Response Time Threshold'), max_digits=4,
         decimal_places=3, db_index=True, blank=False, null=False,
+        default=_get_default_alert_threshold,
         help_text=_(
             'If the AD services response time for any probe is worse than'
             ' this value, raise an immediate alert.'))

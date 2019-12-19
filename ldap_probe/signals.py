@@ -47,6 +47,10 @@ def invoke_raise_ldap_perf_alert(sender, instance, *args, **kwargs):
     for dispatching a performance alert
 
     """
+    if instance.perf_err:
+        tasks.raise_ldap_probe_perf_err.delay(instance.id)
+        return
+
     if instance.perf_alert:
         tasks.raise_ldap_probe_perf_alert.delay(instance.id)
         return

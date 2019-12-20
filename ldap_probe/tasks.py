@@ -652,7 +652,13 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,
-            location=ldap_probe.node_perf_bucket)
+            location=ldap_probe.node_perf_bucket.location,
+            avg_warn_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.avg_warn_threshold),
+            avg_err_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.avg_err_threshold),
+            alert_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.alert_threshold))
     except Exception as error:
         raise error
 

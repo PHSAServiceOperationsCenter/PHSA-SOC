@@ -397,9 +397,70 @@ class BaseADNode(BaseModel, models.Model):
             Value(url_filters), F('id'), output_field=TextField())).values()
 
     @classmethod
+    def report_perf_degradation(
+            cls, location=None, anon=False, level=None, **time_delta_args):
+
+        if location is None:
+            location = ADNodePerfBucket.get_default()
+        else:
+            location = ADNodePerfBucket.objects.get(location__iexact=location)
+
+        (now, time_delta, subscription,
+         queryset, perf_filter) = BaseADNode.report_probe_aggregates(
+            anon=anon, perf_filter=True, **time_delta_args)
+
+        queryset = queryset.filter(location=location)
+
+        if level is None:
+            level = get_preference('commonalertargs__info_level')
+
+        if level is get_preference('commonalertargs__info_level'):
+
+            threshold = location.avg_warn_threshold
+            if anon:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_read_root__dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_extended_search_duration__gte=threshold))
+
+        elif level is get_preference('commonalertargs__warn_level'):
+
+            threshold = location.avg_err_threshold
+            if anon:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_read_root__dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_extended_search_duration__gte=threshold))
+
+        elif level is get_preference('commonalertargs__error_level'):
+
+            threshold = location.alert_threshold
+            if anon:
+                perf_filter = (
+                    Q(maximum_bind_duration__gte=threshold) |
+                    Q(maximum_read_root__dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(maximum_bind_duration__gte=threshold) |
+                    Q(maximum_extended_search_duration__gte=threshold))
+
+        else:
+            raise ValueError(f'unknown perf degradation level {level}')
+
+        queryset = queryset.filter(perf_filter).values()
+
+        return (level, now, time_delta, subscription, queryset, perf_filter)
+
+    @classmethod
     def report_probe_aggregates(
             cls,
-            queryset=None, anon=False, perf_filter=None, **time_delta_args):
+            queryset=None, anon=False, perf_filter=False, **time_delta_args):
         """
         generate report data with aggregate probe values for each instance of
         a class that inherits from :class:`BaseADNode` over the period defined
@@ -415,26 +476,9 @@ class BaseADNode(BaseModel, models.Model):
             subject of the report, LDAP probes that achieved a full bind or
             LDAP probes that achieved an anonymous bind
 
-        :arg str perf_filter: apply filters for performance degradation if
-            this argument is provided
-
-            If this argument is `None`, this method will not filter for
-            performance degradation results.
-
-            Otherwise, the argument will be updated to a
-            :class:`decimal.Decimal` value based on the original value:
-
-            * if the value is 'warning', update the argument to the value
-              provided by the user preference defined in
-              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfWarnTreshold`
-
-            * else if the value is 'alert', update the argument to the value
-              provided by the user preference defined in
-              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfAlertTreshold`
-
-            * else, try to convert the original value to
-              :class:`decimal.Decimal` and raise a
-              :exc:`ValueError` if the conversion fails
+        :arg bool perf_filter: if `True`, the data generated here will be
+            used for a performance degradtion report; this information is
+            required in order to generate the proper subscription info
 
         :arg time_delta_args: optional named arguments that are used to
             initialize a :class:`datetime.timedelta` object
@@ -471,12 +515,6 @@ class BaseADNode(BaseModel, models.Model):
                 `read root dse` calls of the successful probes
 
 
-        :raises:
-
-            :exc:`ValueError` if the `perf_filter` argument
-            is not `None` and it cannot be used to initialize a
-            :class:`decimal.Decimal` object
-
         .. todo::
 
             Add a catch for no nodes available.
@@ -490,30 +528,6 @@ class BaseADNode(BaseModel, models.Model):
 
 
         """
-        def resolve_perf_filter(perf_filter):
-            """
-            embedded function for resolving the value of the `perf_filter`
-            argument
-            """
-            if perf_filter is None:
-                return None
-
-            if perf_filter.lower() in ['warning']:
-                perf_filter = get_preference('ldapprobe__ldap_perf_warn')
-            elif perf_filter.lower() in ['alert']:
-                perf_filter = get_preference('ldapprobe__ldap_perf_alert')
-            else:
-                try:
-                    perf_filter = decimal.Decimal(perf_filter)
-                except decimal.InvalidOperation:
-                    raise ValueError(
-                        f'{type(perf_filter)} object {perf_filter}'
-                        ' cannot be converted to decimal')
-
-            return perf_filter
-
-        perf_filter = resolve_perf_filter(perf_filter)
-
         subscription = 'LDAP: summary report'
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
@@ -535,11 +549,6 @@ class BaseADNode(BaseModel, models.Model):
 
             subscription = f'{subscription}, anonymous bind'
 
-            if perf_filter:
-                ldapprobelog_filter[
-                    'ldapprobelog__elapsed_anon_bind__gte'] = perf_filter
-                subscription = f'{subscription}, perf'
-
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
@@ -549,10 +558,8 @@ class BaseADNode(BaseModel, models.Model):
 
             subscription = f'{subscription}, full bind'
 
-            if perf_filter:
-                ldapprobelog_filter[
-                    'ldapprobelog__elapsed_bind__gte'] = perf_filter
-                subscription = f'{subscription}, perf'
+        if perf_filter:
+            subscription = f'{subscription}, perf'
 
         queryset = queryset.\
             filter(**ldapprobelog_filter).\

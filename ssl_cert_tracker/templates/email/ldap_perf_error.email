@@ -20,11 +20,11 @@ Orion node: {{ orion_url }}
 </li>
 <li>AD service perfomance is worse than
 {% if level == "INFO" %}
-{{ location.info_threshold }}
+{{ location.avg_warn_threshold }}
 {% elif level == "WARNING" %}
-{{ location.warn_threshold }}
+{{ location.avg_err_threshold }}
 {% else %}
-{{ location.err_threshold }}
+{{ location.alert_threshold }}
 {% endif %}
 </li>
 <li>

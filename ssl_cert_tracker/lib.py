@@ -342,7 +342,8 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
         a :class:`django.db.models.query.QuerySet` based on the
         :class:`ssl_cert_tracker.models.SslCertificate`
 
-        The :class:`django.db.models.query.QuerySet` returned by this function is:
+        The :class:`django.db.models.query.QuerySet` returned by this
+        function is:
 
         * `filtered
           <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
@@ -681,17 +682,17 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.prepared_data = []
         """
-        :class:`list` of :class:`dictionaries <dict>` where each item represents
-        a row in the :attr:`Email.data`
-        :class:`django.db.models.query.QuerySet` with the human readable format
-        of the field name (as represented by the values in the
-        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and the
-        contents of the field as values
+        :class:`list` of :class:`dictionaries <dict>` where each item
+        represents a row in the :attr:`Email.data`
+        :class:`django.db.models.query.QuerySet` with the human readable
+        format of the field name (as represented by the values in the
+        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and
+        the contents of the field as values
 
-        For example, if the `queryset` has one entry with dog_name: 'jimmy',
-        the corresponding entry in :attr:`Email.headers` is
-        {'dog_name': 'Dog name'}, and the item in this list will end up as
-        {'Dog name': 'jimmy'}.
+        For example, if the `queryset` has one entry with
+        dog_name: 'jimmy', the corresponding entry in
+        :attr:`Email.headers` is {'dog_name': 'Dog name'}, and the item
+        in this list will end up as {'Dog name': 'jimmy'}.
         """
 
         # pylint: disable=consider-iterating-dictionary

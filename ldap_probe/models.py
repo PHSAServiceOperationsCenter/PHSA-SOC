@@ -958,7 +958,7 @@ class LdapProbeLog(models.Model):
                     ]
                     if self_elapsed is not None
                 ]
-                if elapsed >= get_preference('ldapprobe__ldap_perf_alert')
+                if elapsed >= self.node_perf_bucket.avg_err_threshold
             ]
         )
 
@@ -985,7 +985,7 @@ class LdapProbeLog(models.Model):
                     ]
                     if self_elapsed is not None
                 ]
-                if elapsed >= get_preference('ldapprobe__ldap_perf_warn')
+                if elapsed >= self.node_perf_bucket.avg_warn_threshold
             ]
         )
 
@@ -1009,7 +1009,7 @@ class LdapProbeLog(models.Model):
                     ]
                     if self_elapsed is not None
                 ]
-                if elapsed >= get_preference('ldapprobe__ldap_perf_err')
+                if elapsed >= self.node_perf_bucket.alert_threshold
             ]
         )
 

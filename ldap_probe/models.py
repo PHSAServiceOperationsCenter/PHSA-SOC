@@ -399,52 +399,125 @@ class BaseADNode(BaseModel, models.Model):
     @classmethod
     def report_perf_degradation(
             cls, location=None, anon=False, level=None, **time_delta_args):
+        """
+        generate report data for performance degradation reports
 
+        This method invokes the :meth:`report_probe_aggregates` and then
+        filters the results based on the performance thresholds defined
+        for the :attr:`BaseADNode.location`.
+
+        In general tasks calling this method need to be invoked in a
+        'for each location in locations' fashion.
+
+        :arg location: the :class:`ADNodePerfBucket` instance;
+            if not provided, the :class:`ADNodePerfBucket` default
+            instance will be used
+
+        :arg bool anon: are we looking at results from anonymous probes?
+
+        :arg str level: this argument determines which threshold
+            attribute of the :class:`ADNodePerfBucket` instance is used
+            for comparison
+
+            The decision is similar to log levels: `INFO` is using the
+            smallest threshold, and `ERROR` is looking at the worst
+            degradations. We are using this approach because the levels
+            are defined via user preferences.
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+        :returns: a :class:`tuple` with the following fields:
+
+            * the level used for determining the performace degradation
+              filter
+
+            * the primary key identifying the :class:`ADNodePerfBucket`
+              instance
+
+            * the moments used to filter the data in the report by time
+
+            * the :attr:`subscription
+              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              be used to deliver this report via email
+
+            * the :class:`django.db.models.query.QuerySet` based on one
+              of the classes inheriting from  the :class:`BaseADNode` abstract
+              model
+
+        :raises:
+
+            :exc:`ValueError` if a value is provided for the `location`
+            argument that cannot be used for retrieving a
+            :class:`ADNodePerfBucket` instance
+
+            :exc:`TypError` if the default value of the location argument
+            (`None`) is used and there is no default instance defined
+            in :class:`ADNodePerfBucket`
+
+            :exc:`ValueError` if the value of the `level` argument
+            is not known to the system
+
+        """
         if location is None:
             location = ADNodePerfBucket.get_default()
         else:
-            location = ADNodePerfBucket.objects.get(location__iexact=location)
+            try:
+                location = ADNodePerfBucket.objects.get(
+                    location__iexact=location)
+            except ADNodePerfBucket.DoesNotExist as error:
+                raise ValueError(
+                    f'{location} does not exist: {str(error)}')
+
+        if location is None:
+            raise TypeError(f'{type(location)} is not acceptable')
 
         (now, time_delta, subscription,
-         queryset, perf_filter) = BaseADNode.report_probe_aggregates(
+         queryset, perf_filter) = cls.report_probe_aggregates(
             anon=anon, perf_filter=True, **time_delta_args)
+
+        subscription = f'{subscription}, perf degradation'
 
         queryset = queryset.filter(location=location)
 
         if level is None:
             level = get_preference('commonalertargs__info_level')
 
-        if level is get_preference('commonalertargs__info_level'):
+        if level == get_preference('commonalertargs__info_level'):
 
             threshold = location.avg_warn_threshold
             if anon:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
-                    Q(average_read_root__dse_duration__gte=threshold))
+                    Q(average_read_root_dse_duration__gte=threshold))
             else:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
                     Q(average_extended_search_duration__gte=threshold))
 
-        elif level is get_preference('commonalertargs__warn_level'):
+        elif level == get_preference('commonalertargs__warn_level'):
 
             threshold = location.avg_err_threshold
             if anon:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
-                    Q(average_read_root__dse_duration__gte=threshold))
+                    Q(average_read_root_dse_duration__gte=threshold))
             else:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
                     Q(average_extended_search_duration__gte=threshold))
 
-        elif level is get_preference('commonalertargs__error_level'):
+        elif level == get_preference('commonalertargs__error_level'):
 
             threshold = location.alert_threshold
             if anon:
                 perf_filter = (
                     Q(maximum_bind_duration__gte=threshold) |
-                    Q(maximum_read_root__dse_duration__gte=threshold))
+                    Q(maximum_read_root_dse_duration__gte=threshold))
             else:
                 perf_filter = (
                     Q(maximum_bind_duration__gte=threshold) |
@@ -455,7 +528,7 @@ class BaseADNode(BaseModel, models.Model):
 
         queryset = queryset.filter(perf_filter).values()
 
-        return (level, now, time_delta, subscription, queryset, perf_filter)
+        return (now, time_delta, subscription, queryset)
 
     @classmethod
     def report_probe_aggregates(

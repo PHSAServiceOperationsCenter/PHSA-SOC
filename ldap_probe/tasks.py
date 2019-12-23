@@ -18,6 +18,8 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 :updated:    Dec. 6, 2019
 
 """
+from smtplib import SMTPConnectError
+
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -372,7 +374,8 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
         level=get_preference('commonalertargs__info_level'))
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_bad_fqdn_reports():
     """
     `Celery task` for generating a report with `AD` nodes with no `FQDN`
@@ -408,7 +411,8 @@ def dispatch_bad_fqdn_reports():
     return 'could not dispatch the fqdn report for orion ad nodes'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_dupe_nodes_reports():
     """
     `Celery task` for generating a report with duplicate `AD` nodes
@@ -445,7 +449,8 @@ def dispatch_dupe_nodes_reports():
     return 'could not dispatch the duplicate ad nodes in orion report'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_non_orion_ad_nodes_report():
     """
     `Celery task` for generating the report about `AD` network nodes
@@ -484,7 +489,8 @@ def dispatch_non_orion_ad_nodes_report():
     return 'could not dispatch the non orion ad nodes report'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_error_report(**time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring error reports
@@ -535,7 +541,61 @@ def dispatch_ldap_error_report(**time_delta_args):
             f' {time_delta_args}')
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def dispatch_ldap_perf_report(
+        data_source, location, anon, level, **time_delta_args):
+    LOG.debug(
+        ('invoking ldap probes report with data_source = %s, loation = %s,'
+         ' anon = %s, level = %s, time_delta_args = %s'),
+        data_source, location, anon, level, time_delta_args)
+
+    try:
+        now, time_delta, subscription, data = utils.get_model(
+            data_source).report_perf_degradation(
+                location=location, anon=anon,
+                level=level, **time_delta_args)
+    except Exception as err:
+        LOG.error(
+            ('invoking ldap probes report with data_source = %s,'
+             ' location = %s, anon = %s, level = %s, time_delta_args = %s'
+             ' raises error %s'),
+            data_source, location, anon, level, time_delta_args, str(err))
+        raise err
+
+    subscription = utils.get_subscription(subscription)
+    full = 'full bind' in subscription.subscription.lower()
+    orion = 'non orion' not in subscription.subscription.lower()
+
+    location = utils.get_model('ldap_probe.ADNodePerfBucket').objects.\
+        get(location__iexact=location)
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG, level=level,
+            now=now, time_delta=time_delta, full=full, orion=orion,
+            location=location)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            f'dispatched LDAP probes performance degradation report'
+            f' with data_source = {data_source},'
+            f' anon = {anon}, location - {location.location},'
+            f'level = {level}'
+            f' time_delta_args = {time_delta_args}')
+
+    return (
+        f'could not dispatch LDAP probes performance degradation report'
+        f' with data_source = {data_source},'
+        f' anon = {anon}, location - {location.location},'
+        f'level = {level}'
+        f' time_delta_args = {time_delta_args}')
+
+
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring summary reports

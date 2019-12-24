@@ -81,7 +81,7 @@ class OrionDomainControllerNodeManager(models.Manager):
 
         """
         return OrionNode.objects.\
-            filter(program_application_type=get_preference(
+            filter(program_application_type__icontains=get_preference(
                 'orionfilters__domaincontroller')).\
             exclude(enabled=False)
 

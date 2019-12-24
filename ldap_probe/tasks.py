@@ -18,6 +18,8 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 :updated:    Dec. 6, 2019
 
 """
+import pprint
+
 from smtplib import SMTPConnectError
 
 from celery import shared_task, group
@@ -273,6 +275,44 @@ def trim_ad_duplicates():
         except Exception as error:
             LOG.error(error)
             raise error
+
+
+@shared_task(queue='data_prune')
+def maintain_ad_orion_nodes():
+    """
+    synchronize :class:`ldap_probe.models.OrionADNode` with
+    :class:`orion_integration.models.OrionDomainControllerNode`
+
+    This is needed because `AD` `Orion` nodes may change outside this
+    application
+    """
+    known_nodes_model = utils.get_model('ldap_probe.orionadnode')
+    new_nodes_model = utils.get_model(
+        'orion_integration.oriondomaincontrollernode')
+
+    known_node_ids = known_nodes_model.objects.values_list(
+        'node_id', flat=True)
+
+    new_nodes = new_nodes_model.objects.exclude(id__in=known_node_ids)
+
+    if not new_nodes.exists():
+        return 'did not find any unknown AD nodes in Orion'
+
+    service_user = known_nodes_model.get_or_create_user(
+        username=get_preference('ldapprobe__service_user'))
+    ldap_bind_cred = utils.get_model('ldap_probe.ldapbindcred').get_default()
+
+    for node in new_nodes:
+        new_ad_orion_node = known_nodes_model(
+            node=node, ldap_bind_cred=ldap_bind_cred,
+            created_by=service_user, updated_by=service_user)
+        try:
+            new_ad_orion_node.save()
+        except Exception as error:
+            LOG.error(error)
+            raise error
+
+    return f'created {new_nodes.count()} D nodes from Orion'
 
 
 @shared_task(queue='email', rate_limit='1/s')
@@ -541,6 +581,52 @@ def dispatch_ldap_error_report(**time_delta_args):
             f' {time_delta_args}')
 
 
+@shared_task(queue='email')
+def dispatch_ldap_perf_reports(
+        data_sources=None, levels=None, locations=None, **time_delta_args):
+
+    if data_sources is None:
+        data_sources = 'ldap_probe.OrionADNode,ldap_probe.NonOrionADNode'
+
+    if not isinstance(data_sources, (list, tuple)):
+        data_sources = data_sources.split(',')
+
+    if levels is None:
+        levels = [get_preference('commonalertargs__error_level'),
+                  get_preference('commonalertargs__warn_level'),
+                  get_preference('commonalertargs__info_level'), ]
+
+    if not isinstance(levels, (list, tuple)):
+        levels = levels.split(',')
+
+    if locations is None:
+        locations = list(
+            utils.get_model('ldap_probe.adnodeperfbucket').
+            objects.filter(enabled=True).
+            values_list('location', flat=True)
+        )
+
+    if not isinstance(locations, (list, tuple)):
+        locations = locations.split(',')
+
+    results = (
+        f'bootstrapped performance reports,'
+        f' time_delta_args: {time_delta_args}')
+    for data_source in data_sources:
+        results = f'{results}\ndata_source: {data_source}'
+        for level in levels:
+            results = (f'{results}\nlevel: {level}'
+                       f'\nlocations: {", ".join(locations)}')
+            group(dispatch_ldap_perf_report.s(
+                data_source=data_source, location=location, anon=True,
+                level=level, **time_delta_args) for location in locations)()
+            group(dispatch_ldap_perf_report.s(
+                data_source=data_source, location=location, anon=False,
+                level=level, **time_delta_args) for location in locations)()
+
+    return pprint.pformat(results)
+
+
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_perf_report(
@@ -551,7 +637,7 @@ def dispatch_ldap_perf_report(
         data_source, location, anon, level, time_delta_args)
 
     try:
-        now, time_delta, subscription, data = utils.get_model(
+        now, time_delta, subscription, data, threshold = utils.get_model(
             data_source).report_perf_degradation(
                 location=location, anon=anon,
                 level=level, **time_delta_args)
@@ -566,15 +652,13 @@ def dispatch_ldap_perf_report(
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
-
-    location = utils.get_model('ldap_probe.ADNodePerfBucket').objects.\
-        get(location__iexact=location)
+    threshold = utils.show_milliseconds(threshold)
 
     try:
         ret = utils.borgs_are_hailing(
             data=data, subscription=subscription, logger=LOG, level=level,
             now=now, time_delta=time_delta, full=full, orion=orion,
-            location=location)
+            location=location, threshold=threshold)
     except Exception as error:
         raise error
 
@@ -582,8 +666,8 @@ def dispatch_ldap_perf_report(
         return (
             f'dispatched LDAP probes performance degradation report'
             f' with data_source = {data_source},'
-            f' anon = {anon}, location - {location.location},'
-            f'level = {level}'
+            f' anon = {anon}, location - {location},'
+            f' level = {level}'
             f' time_delta_args = {time_delta_args}')
 
     return (

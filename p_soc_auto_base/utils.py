@@ -182,7 +182,7 @@ class Timer():
         self.start = time.perf_counter()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         """
         stop the timer and update the :attr:`elapsed` instance attribute
 
@@ -345,10 +345,9 @@ def details_url_annotate(
     annotate each row in a `queryset` with an admin link to related records
 
     For example, we have a hosts and host events and host events linked via a
-    :class:`Django Foreign Key
-    <django.db.models.ForeignKey>` field. This function will annotate each row in
-    the hosts `queryset` with the absolute `Django admin URL` to the related
-    host events like below::
+    :class:`Django Foreign Key <django.db.models.ForeignKey>` field.
+    This function will annotate each row in the hosts `queryset` with the
+    absolute `Django admin URL` to the related host events like below::
 
         http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
 
@@ -359,14 +358,14 @@ def details_url_annotate(
         If ``None``, the `app_label` is picked from the `queryset` using the
         `Model _meta API
         <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
-        This is only useful if the master and the details models are defined in the
-        same `Django application`.
+        This is only useful if the master and the details models are defined in
+        the same `Django application`.
 
-    :arg str model_path: the `model_name` property of the `Django model` with the
-        details. If ``None``, it will be picked from the `queryset` using the
-        `Model _meta API`. This, however, is of very little use, since there are
-        very few realistic data models where the master and the details are in
-        the same `Django model`.
+    :arg str model_path: the `model_name` property of the `Django model` with
+        the details. If ``None``, it will be picked from the `queryset` using
+        the `Model _meta API`. This, however, is of very little use, since
+        there are very few realistic data models where the master and the
+        details are in the same `Django model`.
 
     :arg str param_name: `Django lookup` key_name__field_name used to build the
         `param` part of the `URL`. If one considers the example above, this
@@ -418,7 +417,8 @@ def remove_duplicates(sequence=None):
     remove duplicates from a sequence
 
     We are not using the `set(list)` approach because that one only works with
-    :class:`list <list>`. this approach will also work with :class:`strings <str>`.
+    :class:`list <list>`. this approach will also work with
+    :class:`strings <str>`.
 
     :arg sequence: the sequence that may be containing duplicates
 
@@ -471,8 +471,8 @@ def get_pk_list(queryset, pk_field_name='id'):
     :arg queryset: the `queryset`
     :type queryset: :class:`django.db.models.query.QuerySet`
 
-    :arg str pk_field_name: the name of the primary key field; in `Django` primary
-        keys are by default using the name 'id'.
+    :arg str pk_field_name: the name of the primary key field; in `Django`
+        primary keys are by default using the name 'id'.
 
     """
     return list(queryset.values_list(pk_field_name, flat=True))
@@ -550,9 +550,10 @@ class MomentOfTime():
         for verifying or calculating a :class:`django.utils.timezone.timedelta`
         object
 
-        :returns: a proper :class:`datetime.timedelta` object. if the time_delta argument
-            is not provided, use the :class:`kw_time_delta dictionary <dict>` to
-            create a :class:`datetime.timedelta` object
+        :returns: a proper :class:`datetime.timedelta` object. if the
+            time_delta argument is not provided, use the
+            :class:`kw_time_delta dictionary <dict>` to create a
+            :class:`datetime.timedelta` object
 
         :arg `datetime.timedelta` time_delta: if this argument is provided, the
             static method will return it untouched
@@ -708,17 +709,16 @@ def borgs_are_hailing(
 
     :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
 
-    :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance that will be used
-        for rendering and addressing the email
-
+    :arg subscription:
         The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain a descriptor for the `queryset` fields that
-        will be rendered in the email.
+        instance that will be used for rendering and addressing the email
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain the name and location of the template that
-        will be used to render the email.
+        Must contain a descriptor for the `queryset` fields that will be
+        rendered in the email.
+
+        Must contain the name and location of the template that will be used to
+        render the email.
+    :type subscription: :class:`ssl_cert_tracker.models.Subscription`
 
     :arg bool add_csv: attach a csv file with the contents of the `data`
         argument to the email; default is `True`
@@ -728,6 +728,8 @@ def borgs_are_hailing(
 
     :arg dict extra_context: optional arguments with additional data to be
         rendered in the email
+
+    :returns: '1' if the email message was sent, and '0' if not
 
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
@@ -742,6 +744,11 @@ def borgs_are_hailing(
             We need a custom error for rendering the email and an SMTP related
             error for sending the email.
     """
+    if (subscription.mute_until
+            and subscription.mute_until > timezone.now()):
+        # Email is not sent, so it returns 0.
+        return 0
+
     try:
         email_alert = Email(
             data=data, subscription_obj=subscription, logger=logger,

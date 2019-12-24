@@ -25,7 +25,7 @@ from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode
-from p_soc_auto_base.models import BaseModel
+from p_soc_auto_base.models import BaseModel, MuteableModel
 
 from .lib import expires_in, has_expired, is_not_yet_valid
 
@@ -468,7 +468,7 @@ class SslNotYetValid(SslCertificate):
         verbose_name_plural = 'SSL Certificates: not yet valid'
 
 
-class Subscription(BaseModel):
+class Subscription(MuteableModel):
     """
     Data model with all the details required to create and send an email
     message
@@ -579,7 +579,7 @@ class Subscription(BaseModel):
                    ' and in the email body'))
     """
     a string af tags that will be pre-pended to the email subject line
-    
+
     The application will not do any processing on this value. If one expects
     tags to look like [TAG1][TAG2], this value must be created using this
     pattern.

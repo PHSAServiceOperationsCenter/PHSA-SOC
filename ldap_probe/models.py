@@ -480,7 +480,7 @@ class BaseADNode(BaseModel, models.Model):
          queryset, perf_filter) = cls.report_probe_aggregates(
             anon=anon, perf_filter=True, **time_delta_args)
 
-        subscription = f'{subscription}, perf degradation'
+        subscription = f'{subscription},degrade'
 
         queryset = queryset.filter(location=location)
 
@@ -513,6 +513,7 @@ class BaseADNode(BaseModel, models.Model):
 
         elif level == get_preference('commonalertargs__error_level'):
 
+            subscription = f'{subscription},err'
             threshold = location.alert_threshold
             if anon:
                 perf_filter = (
@@ -528,7 +529,7 @@ class BaseADNode(BaseModel, models.Model):
 
         queryset = queryset.filter(perf_filter).values()
 
-        return (now, time_delta, subscription, queryset)
+        return (now, time_delta, subscription, queryset, threshold)
 
     @classmethod
     def report_probe_aggregates(

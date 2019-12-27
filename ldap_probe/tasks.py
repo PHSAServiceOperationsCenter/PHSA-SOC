@@ -584,7 +584,88 @@ def dispatch_ldap_error_report(**time_delta_args):
 @shared_task(queue='email')
 def dispatch_ldap_perf_reports(
         data_sources=None, levels=None, locations=None, **time_delta_args):
+    """
+    launch the tasks responsible for the performance degradation reports
 
+    The number of performance degradation reports is determined by:
+
+    * the locations/performance buckets that we are tracking: these are
+      instances of the :class:`ldap_probe.models.ADNodePerfBucket` model
+
+    * the `AD` nodes that we are tracking: known to Orion or not known to Orion
+
+    * the performance degradation levels that we are tracking: these are
+      defined by the user preference classes belonging to the
+      :attr:`citrus_borg.dynamic_preferences_registry.common_alert_args`
+      :class:`Section <dynamic_preferences.preferences.Section>`,
+      specifically the ones dealing with levels
+
+    By default, this task will use all the possible combinations so that all
+    the possible performance degradation reports will be dispatched but it
+    is possible to specify exactly which report one desires to generate by
+    way of using the arguments used by this task.
+    It is also possible to launch multiple instances of this task, each
+    instance dealing with a specific group of performance degradation reports.
+    In either case, reports for both full bind probes and anonymous bind probes
+    will be generated.
+
+    :arg data_sources: the data sources containing the `AD` nodes
+
+        This argument can be a :class:`list` or a :class:`str` containing
+        the names of the models with `AD` node information using the
+        'app_label.model_name' convention. When using the :class:`str`
+        format, the model names must be separated by the ',' (comma)
+        character.
+
+        When not specified, the task will use nodes from both
+        :class:`ldap_probe.models.OrionADNode` and
+        :class:`ldap_probe.models.NonOrionADNode` models.
+
+    :arg levels: the performance degradation levels
+
+        This argument can be a :class:`list`, or a :class:`str` using
+        commas (',') to separate the levels.
+
+        The level must match the entries under the user preferences level
+        classes that are part of the
+        :attr:`citrus_borg.dynamic_preferences_registry.common_alert_args`
+        :class:`Section <dynamic_preferences.preferences.Section>` as follows:
+
+        * INFO: will measure performance degradation against the threshold
+          defined by the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
+          attribute of the :class:`ldap_probe.models.ADNodePerfBucket` instance
+          to which the `AD` node belongs
+
+        * WARNING: uses the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.avg_err_threshold`
+
+        * ERROR: uses the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.alert_threshold`
+
+        If not specified, performance degradation reports for all 3 levels
+        will be generated.
+
+    :arg locations: the locations
+
+        This argument can be a :class:`list`, or a :class:`str` using
+        commas (',') to separate the levels.
+
+        Each location must match an entry in the
+        :attr:`ldap_probe.models.ADNodePerfBucket.location` column.
+
+        If not specified, performance degradation reports for all `enabled`
+        locations will be generated.
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+    :returns: information about the arguments used to invoke the tasks
+    """
     if data_sources is None:
         data_sources = ['ldap_probe.OrionADNode', 'ldap_probe.NonOrionADNode']
 
@@ -631,8 +712,49 @@ def dispatch_ldap_perf_reports(
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_perf_report(
         data_source, location, anon, level, **time_delta_args):
+    """
+    task that generates a performance degradation report via email for the
+    arguments used to invoke it
+
+    Under normal circumstances, this task will always be invoked via
+    a `Celery group()
+    <https://docs.celeryproject.org/en/latest/userguide/canvas.html#groups>`__
+    call.
+
+    :arg str data_source: the named of the model containing information
+        about `AD` nodes using the 'app_lable.model_name' convention
+
+    :arg str location: the value of the
+        :attr:`ldap_probe.models.ADNodePerfBucket.location` field; this will
+        be used to retrieve the applicable thresholds from the
+        :class:`ldap_probe.models.ADNodePerfBucket` instance
+
+    :arg bool anon: look for full bind or anonymous bind probe data
+
+    :arg str level: the performance degradation level
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+    :returns: information about the arguments used to call the task and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if the data for the report cannot be generated of
+        the email cannot be sent.
+
+        If the send operation raises an :exc:`smtplib.SMTPConnectError`,
+        the task execution will be retried up to 3 times before the
+        exception is allowed to propagate.
+    """
     LOG.debug(
-        ('invoking ldap probes report with data_source = %s, loation = %s,'
+        ('invoking ldap probes report with data_source = %s, location = %s,'
          ' anon = %s, level = %s, time_delta_args = %s'),
         data_source, location, anon, level, time_delta_args)
 

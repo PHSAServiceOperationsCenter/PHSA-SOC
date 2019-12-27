@@ -397,7 +397,7 @@ class BaseADNode(BaseModel, models.Model):
             Value(url_filters), F('id'), output_field=TextField())).values()
 
     @classmethod
-    def report_perf_degradation(
+    def report_perf_degradation(  # pylint: disable=too-many-branches
             cls, location=None, anon=False, level=None, **time_delta_args):
         """
         generate report data for performance degradation reports
@@ -1191,7 +1191,7 @@ class LdapProbeLogFailed(LdapProbeLog):
     that shows only :class:`LdapProbeLog` instances with full `AD` probe
     data
     """
-    obejcts = LdapProbeLogFailedManager()
+    objects = LdapProbeLogFailedManager()
 
     class Meta:
         proxy = True
@@ -1206,7 +1206,7 @@ class LdapProbeFullBindLog(LdapProbeLog):
     that shows only :class:`LdapProbeLog` instances with full `AD` probe
     data
     """
-    obejcts = LdapProbeLogFullBindManager()
+    objects = LdapProbeLogFullBindManager()
 
     class Meta:
         proxy = True

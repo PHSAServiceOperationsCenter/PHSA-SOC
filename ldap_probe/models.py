@@ -997,6 +997,16 @@ class LdapProbeLog(models.Model):
         return self.ad_node.get_node()
 
     @property
+    def node_is_enabled(self):
+        """
+        is the node probed by this instance enabled?
+        """
+        if self.ad_node:
+            return self.ad_node.enabled
+
+        return self.ad_orion_node.enabled
+
+    @property
     def node_perf_bucket(self):
         """
         :returns: a dictionary with the node location and acceptable perf

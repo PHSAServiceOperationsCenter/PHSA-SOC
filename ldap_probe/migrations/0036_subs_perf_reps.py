@@ -17,7 +17,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -32,7 +32,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -47,7 +47,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -62,7 +62,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -79,7 +79,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -94,7 +94,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -109,7 +109,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',
@@ -124,7 +124,7 @@ def add_subscriptions(apps, schema_editor):
             'emails_list': to_emails,
             'from_email': 'TSCST-Support@hssbc.ca',
             'template_dir': 'ssl_cert_tracker/templates',
-            'template_name': 'ldap_summary_report',
+            'template_name': 'ldap_perf_report',
             'template_prefix': 'email/',
             'email_subject':
             'AD Services Monitoring Performance Degradation Report for Nodes Located in',

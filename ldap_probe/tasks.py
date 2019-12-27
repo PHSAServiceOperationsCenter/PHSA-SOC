@@ -586,7 +586,7 @@ def dispatch_ldap_perf_reports(
         data_sources=None, levels=None, locations=None, **time_delta_args):
 
     if data_sources is None:
-        data_sources = 'ldap_probe.OrionADNode,ldap_probe.NonOrionADNode'
+        data_sources = ['ldap_probe.OrionADNode', 'ldap_probe.NonOrionADNode']
 
     if not isinstance(data_sources, (list, tuple)):
         data_sources = data_sources.split(',')

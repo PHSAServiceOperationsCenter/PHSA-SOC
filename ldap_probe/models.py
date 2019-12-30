@@ -463,6 +463,7 @@ class BaseADNode(BaseModel, models.Model):
             is not known to the system
 
         """
+        no_nodes = False
         if location is None:
             location = ADNodePerfBucket.get_default()
         else:
@@ -483,6 +484,8 @@ class BaseADNode(BaseModel, models.Model):
         subscription = f'{subscription},degrade'
 
         queryset = queryset.filter(location=location)
+        if not queryset.exists():
+            no_nodes = True
 
         if level is None:
             level = get_preference('commonalertargs__info_level')
@@ -527,9 +530,13 @@ class BaseADNode(BaseModel, models.Model):
         else:
             raise ValueError(f'unknown perf degradation level {level}')
 
+        if no_nodes:
+            return (
+                now, time_delta, subscription, queryset, threshold, no_nodes)
+
         queryset = queryset.filter(perf_filter).values()
 
-        return (now, time_delta, subscription, queryset, threshold)
+        return (now, time_delta, subscription, queryset, threshold, no_nodes)
 
     @classmethod
     def report_probe_aggregates(
@@ -694,11 +701,13 @@ class BaseADNode(BaseModel, models.Model):
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             subscription = f'{subscription}, non orion'
             return (now, time_delta, subscription,
-                    queryset.order_by('node_dns'), perf_filter)
+                    queryset.order_by('location__location', 'node_dns'),
+                    perf_filter)
 
         subscription = f'{subscription}, orion'
         return (now, time_delta, subscription,
-                queryset.order_by('node__node_caption'), perf_filter)
+                queryset.order_by('location__location', 'node__node_caption'),
+                perf_filter)
 
     class Meta:
         abstract = True

@@ -19,15 +19,15 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 
 """
 import pprint
-
 from smtplib import SMTPConnectError
 
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
-from ldap_probe import ad_probe, models, exceptions
 from citrus_borg.dynamic_preferences_registry import get_preference
+from ldap_probe import ad_probe, models, exceptions
 from p_soc_auto_base import utils
+
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
@@ -710,7 +710,7 @@ def dispatch_ldap_perf_reports(
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def dispatch_ldap_perf_report(
+def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
         data_source, location, anon, level, **time_delta_args):
     """
     task that generates a performance degradation report via email for the
@@ -759,7 +759,8 @@ def dispatch_ldap_perf_report(
         data_source, location, anon, level, time_delta_args)
 
     try:
-        now, time_delta, subscription, data, threshold = utils.get_model(
+        (now, time_delta, subscription, data, threshold,
+         no_nodes) = utils.get_model(
             data_source).report_perf_degradation(
                 location=location, anon=anon,
                 level=level, **time_delta_args)
@@ -770,6 +771,9 @@ def dispatch_ldap_perf_report(
              ' raises error %s'),
             data_source, location, anon, level, time_delta_args, str(err))
         raise err
+
+    if no_nodes:
+        return f'there are no AD network nodes for {location}'
 
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()

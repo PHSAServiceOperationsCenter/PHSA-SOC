@@ -45,4 +45,4 @@ efforts will have to take that into consideration.
 """
 import sys
 
-__version__ = '1.1.0-release_candidate'
+__version__ = '1.1.1-release_candidate'

@@ -306,7 +306,14 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         """
         all the fields on the `Django admin` forms must be read only
         """
-        return [field.name for field in self.model._meta.fields]
+        return [field.name for field in self.model._meta.fields] + ['show_location']
+
+    def show_location(self, obj):
+        if obj.ad_node:
+            return obj.ad_node.location.location
+        else:
+            return obj.ad_orion_node.location.location
+    show_location.short_description = _('Location')
 
 
 @admin.register(models.LdapProbeLogFailed)
@@ -315,12 +322,13 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFailed`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors',
-                    'created_on', )
-    list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
-                   ('ad_orion_node',
-                    admin.RelatedOnlyFieldListFilter),
-                   ('created_on', DateTimeRangeFilter), )
+    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
+                    'errors', 'created_on', )
+    list_filter = (
+        ('ad_node', admin.RelatedOnlyFieldListFilter),
+        ('ad_orion_node', admin.RelatedOnlyFieldListFilter),
+        ('created_on', DateTimeRangeFilter),
+    )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
                      'ad_orion_node__node__ip_address',)
@@ -332,8 +340,8 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFullBindLog`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
-                    'elapsed_initialize',
+    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
+                    'failed', 'elapsed_initialize',
                     'elapsed_bind', 'elapsed_search_ext', 'created_on', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
@@ -341,7 +349,7 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                    ('created_on', DateTimeRangeFilter), )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address',)
+                     'ad_orion_node__node__ip_address', )
 
 
 @admin.register(models.LdapProbeAnonBindLog)
@@ -350,13 +358,14 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeAnonBindLog`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
-                    'elapsed_initialize',
+    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
+                    'failed', 'elapsed_initialize',
                     'elapsed_anon_bind', 'elapsed_read_root', 'created_on', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
-                   ('created_on', DateTimeRangeFilter), )
+                   ('created_on', DateTimeRangeFilter),
+                   'ad_orion_node__location__location', )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
                      'ad_orion_node__node__ip_address',)

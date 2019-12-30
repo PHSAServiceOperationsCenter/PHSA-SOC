@@ -398,9 +398,10 @@ def dump_config_to_file(config, json_file=LOCAL_CONFIG):
 
     :arg dict config: the main configuration
 
-    :arg str json_file: 
+    :arg str json_file:
 
-        the relative path and name  of the `JSON <https://www.json.org/>`_ file
+        the relative path and name  of the `JSON <https://www.json.org/>`__
+        file
 
         The default value is provided via the :attr:`LOCAL_CONFIG` variable
         value

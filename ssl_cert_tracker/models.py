@@ -477,8 +477,8 @@ class Subscription(BaseModel):
     running on the :ref:`SOC Automation Server`.
     """
     subscription = models.CharField(
-        'subscription', max_length=64, unique=True, db_index=True, blank=False,
-        null=False)
+        'subscription', max_length=128, unique=True, db_index=True,
+        blank=False, null=False)
     """
     string uniquely identifying a :class:`Subscription` instance
     """

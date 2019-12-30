@@ -18,6 +18,10 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 :updated:    Dec. 6, 2019
 
 """
+import pprint
+
+from smtplib import SMTPConnectError
+
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
@@ -273,6 +277,44 @@ def trim_ad_duplicates():
             raise error
 
 
+@shared_task(queue='data_prune')
+def maintain_ad_orion_nodes():
+    """
+    synchronize :class:`ldap_probe.models.OrionADNode` with
+    :class:`orion_integration.models.OrionDomainControllerNode`
+
+    This is needed because `AD` `Orion` nodes may change outside this
+    application
+    """
+    known_nodes_model = utils.get_model('ldap_probe.orionadnode')
+    new_nodes_model = utils.get_model(
+        'orion_integration.oriondomaincontrollernode')
+
+    known_node_ids = known_nodes_model.objects.values_list(
+        'node_id', flat=True)
+
+    new_nodes = new_nodes_model.objects.exclude(id__in=known_node_ids)
+
+    if not new_nodes.exists():
+        return 'did not find any unknown AD nodes in Orion'
+
+    service_user = known_nodes_model.get_or_create_user(
+        username=get_preference('ldapprobe__service_user'))
+    ldap_bind_cred = utils.get_model('ldap_probe.ldapbindcred').get_default()
+
+    for node in new_nodes:
+        new_ad_orion_node = known_nodes_model(
+            node=node, ldap_bind_cred=ldap_bind_cred,
+            created_by=service_user, updated_by=service_user)
+        try:
+            new_ad_orion_node.save()
+        except Exception as error:
+            LOG.error(error)
+            raise error
+
+    return f'created {new_nodes.count()} D nodes from Orion'
+
+
 @shared_task(queue='email', rate_limit='1/s')
 def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
     """
@@ -290,6 +332,31 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
     """
     if subscription is None:
         subscription = get_preference('ldapprobe__ldap_error_subscription')
+
+    return _raise_ldap_alert(
+        instance_pk=instance_pk,
+        subscription=utils.get_subscription(subscription),
+        level=get_preference('commonalertargs__error_level'))
+
+
+@shared_task(queue='email', rate_limit='1/s')
+def raise_ldap_probe_perf_err(instance_pk=None, subscription=None):
+    """
+    raise an email alert for an instance of the
+    :class:`ldap_probe.models.LdapProbeLog` model that shows performance
+    'never exceed' problems
+
+    :arg int instance_pk: the primary key of the instance
+
+    :arg str subscription: the value of the :attr:`subscription
+        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        used to retrieve the
+        :class:`ssl_cert_tracker.models.Subscription` instance required
+        for raising this alert via email
+
+    """
+    if subscription is None:
+        subscription = get_preference('ldapprobe__ldap_perf_subscription')
 
     return _raise_ldap_alert(
         instance_pk=instance_pk,
@@ -319,7 +386,7 @@ def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
     return _raise_ldap_alert(
         instance_pk=instance_pk,
         subscription=utils.get_subscription(subscription),
-        level=get_preference('commonalertargs__error_level'))
+        level=get_preference('commonalertargs__warn_level'))
 
 
 @shared_task(queue='email', rate_limit='1/s')
@@ -344,10 +411,11 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
     return _raise_ldap_alert(
         instance_pk=instance_pk,
         subscription=utils.get_subscription(subscription),
-        level=get_preference('commonalertargs__warn_level'))
+        level=get_preference('commonalertargs__info_level'))
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_bad_fqdn_reports():
     """
     `Celery task` for generating a report with `AD` nodes with no `FQDN`
@@ -383,7 +451,8 @@ def dispatch_bad_fqdn_reports():
     return 'could not dispatch the fqdn report for orion ad nodes'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_dupe_nodes_reports():
     """
     `Celery task` for generating a report with duplicate `AD` nodes
@@ -420,7 +489,8 @@ def dispatch_dupe_nodes_reports():
     return 'could not dispatch the duplicate ad nodes in orion report'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_non_orion_ad_nodes_report():
     """
     `Celery task` for generating the report about `AD` network nodes
@@ -459,7 +529,8 @@ def dispatch_non_orion_ad_nodes_report():
     return 'could not dispatch the non orion ad nodes report'
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_error_report(**time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring error reports
@@ -510,7 +581,227 @@ def dispatch_ldap_error_report(**time_delta_args):
             f' {time_delta_args}')
 
 
-@shared_task(queue='email', rate_limit='1/s')
+@shared_task(queue='email')
+def dispatch_ldap_perf_reports(
+        data_sources=None, levels=None, locations=None, **time_delta_args):
+    """
+    launch the tasks responsible for the performance degradation reports
+
+    The number of performance degradation reports is determined by:
+
+    * the locations/performance buckets that we are tracking: these are
+      instances of the :class:`ldap_probe.models.ADNodePerfBucket` model
+
+    * the `AD` nodes that we are tracking: known to Orion or not known to Orion
+
+    * the performance degradation levels that we are tracking: these are
+      defined by the user preference classes belonging to the
+      :attr:`citrus_borg.dynamic_preferences_registry.common_alert_args`
+      :class:`Section <dynamic_preferences.preferences.Section>`,
+      specifically the ones dealing with levels
+
+    By default, this task will use all the possible combinations so that all
+    the possible performance degradation reports will be dispatched but it
+    is possible to specify exactly which report one desires to generate by
+    way of using the arguments used by this task.
+    It is also possible to launch multiple instances of this task, each
+    instance dealing with a specific group of performance degradation reports.
+    In either case, reports for both full bind probes and anonymous bind probes
+    will be generated.
+
+    :arg data_sources: the data sources containing the `AD` nodes
+
+        This argument can be a :class:`list` or a :class:`str` containing
+        the names of the models with `AD` node information using the
+        'app_label.model_name' convention. When using the :class:`str`
+        format, the model names must be separated by the ',' (comma)
+        character.
+
+        When not specified, the task will use nodes from both
+        :class:`ldap_probe.models.OrionADNode` and
+        :class:`ldap_probe.models.NonOrionADNode` models.
+
+    :arg levels: the performance degradation levels
+
+        This argument can be a :class:`list`, or a :class:`str` using
+        commas (',') to separate the levels.
+
+        The level must match the entries under the user preferences level
+        classes that are part of the
+        :attr:`citrus_borg.dynamic_preferences_registry.common_alert_args`
+        :class:`Section <dynamic_preferences.preferences.Section>` as follows:
+
+        * INFO: will measure performance degradation against the threshold
+          defined by the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
+          attribute of the :class:`ldap_probe.models.ADNodePerfBucket` instance
+          to which the `AD` node belongs
+
+        * WARNING: uses the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.avg_err_threshold`
+
+        * ERROR: uses the value of the
+          :attr:`ldap_probe.models.ADNodePerfBucket.alert_threshold`
+
+        If not specified, performance degradation reports for all 3 levels
+        will be generated.
+
+    :arg locations: the locations
+
+        This argument can be a :class:`list`, or a :class:`str` using
+        commas (',') to separate the levels.
+
+        Each location must match an entry in the
+        :attr:`ldap_probe.models.ADNodePerfBucket.location` column.
+
+        If not specified, performance degradation reports for all `enabled`
+        locations will be generated.
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+    :returns: information about the arguments used to invoke the tasks
+    """
+    if data_sources is None:
+        data_sources = ['ldap_probe.OrionADNode', 'ldap_probe.NonOrionADNode']
+
+    if not isinstance(data_sources, (list, tuple)):
+        data_sources = data_sources.split(',')
+
+    if levels is None:
+        levels = [get_preference('commonalertargs__error_level'),
+                  get_preference('commonalertargs__warn_level'),
+                  get_preference('commonalertargs__info_level'), ]
+
+    if not isinstance(levels, (list, tuple)):
+        levels = levels.split(',')
+
+    if locations is None:
+        locations = list(
+            utils.get_model('ldap_probe.adnodeperfbucket').
+            objects.filter(enabled=True).
+            values_list('location', flat=True)
+        )
+
+    if not isinstance(locations, (list, tuple)):
+        locations = locations.split(',')
+
+    results = (
+        f'bootstrapped performance reports,'
+        f' time_delta_args: {time_delta_args}')
+    for data_source in data_sources:
+        results = f'{results}\ndata_source: {data_source}'
+        for level in levels:
+            results = (f'{results}\nlevel: {level}'
+                       f'\nlocations: {", ".join(locations)}')
+            group(dispatch_ldap_perf_report.s(
+                data_source=data_source, location=location, anon=True,
+                level=level, **time_delta_args) for location in locations)()
+            group(dispatch_ldap_perf_report.s(
+                data_source=data_source, location=location, anon=False,
+                level=level, **time_delta_args) for location in locations)()
+
+    return pprint.pformat(results)
+
+
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def dispatch_ldap_perf_report(
+        data_source, location, anon, level, **time_delta_args):
+    """
+    task that generates a performance degradation report via email for the
+    arguments used to invoke it
+
+    Under normal circumstances, this task will always be invoked via
+    a `Celery group()
+    <https://docs.celeryproject.org/en/latest/userguide/canvas.html#groups>`__
+    call.
+
+    :arg str data_source: the named of the model containing information
+        about `AD` nodes using the 'app_lable.model_name' convention
+
+    :arg str location: the value of the
+        :attr:`ldap_probe.models.ADNodePerfBucket.location` field; this will
+        be used to retrieve the applicable thresholds from the
+        :class:`ldap_probe.models.ADNodePerfBucket` instance
+
+    :arg bool anon: look for full bind or anonymous bind probe data
+
+    :arg str level: the performance degradation level
+
+    :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+    :returns: information about the arguments used to call the task and the
+        result of :meth:`ssl_cert_tracker.lib.Email.send`
+    :rtype: str
+
+    :raises:
+
+        :exc:`Exception` if the data for the report cannot be generated of
+        the email cannot be sent.
+
+        If the send operation raises an :exc:`smtplib.SMTPConnectError`,
+        the task execution will be retried up to 3 times before the
+        exception is allowed to propagate.
+    """
+    LOG.debug(
+        ('invoking ldap probes report with data_source = %s, location = %s,'
+         ' anon = %s, level = %s, time_delta_args = %s'),
+        data_source, location, anon, level, time_delta_args)
+
+    try:
+        now, time_delta, subscription, data, threshold = utils.get_model(
+            data_source).report_perf_degradation(
+                location=location, anon=anon,
+                level=level, **time_delta_args)
+    except Exception as err:
+        LOG.error(
+            ('invoking ldap probes report with data_source = %s,'
+             ' location = %s, anon = %s, level = %s, time_delta_args = %s'
+             ' raises error %s'),
+            data_source, location, anon, level, time_delta_args, str(err))
+        raise err
+
+    subscription = utils.get_subscription(subscription)
+    full = 'full bind' in subscription.subscription.lower()
+    orion = 'non orion' not in subscription.subscription.lower()
+    threshold = utils.show_milliseconds(threshold)
+
+    try:
+        ret = utils.borgs_are_hailing(
+            data=data, subscription=subscription, logger=LOG, level=level,
+            now=now, time_delta=time_delta, full=full, orion=orion,
+            location=location, threshold=threshold)
+    except Exception as error:
+        raise error
+
+    if ret:
+        return (
+            f'dispatched LDAP probes performance degradation report'
+            f' with data_source = {data_source},'
+            f' anon = {anon}, location - {location},'
+            f' level = {level}'
+            f' time_delta_args = {time_delta_args}')
+
+    return (
+        f'could not dispatch LDAP probes performance degradation report'
+        f' with data_source = {data_source},'
+        f' anon = {anon}, location - {location.location},'
+        f'level = {level}'
+        f' time_delta_args = {time_delta_args}')
+
+
+@shared_task(queue='email', rate_limit='1/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     """
     `Celery task` for generating `AD` services monitoring summary reports
@@ -626,7 +917,14 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             add_csv=False, level=level, node=ldap_probe.node,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
-            orion_url=ldap_probe.ad_node_orion_url)
+            orion_url=ldap_probe.ad_node_orion_url,
+            location=ldap_probe.node_perf_bucket.location,
+            avg_warn_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.avg_warn_threshold),
+            avg_err_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.avg_err_threshold),
+            alert_threshold=utils.show_milliseconds(
+                ldap_probe.node_perf_bucket.alert_threshold))
     except Exception as error:
         raise error
 

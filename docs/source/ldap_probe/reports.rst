@@ -107,132 +107,81 @@ Periodic Summary for Performance Degradation Events
 ---------------------------------------------------
 
 These reports are based on :ref:`periodic summary reports <Periodic Summary>`
-but filtered for the response times that the probe measured for the `bind`
-operations.
+but filtered on response times measured by the `AD` probe.
 
-Performance degradation summary reports
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Currently all these reports are scheduled to execute from a single periodic
+task configurable from the `AD controller monitoring: performance degradation reports
+</../../../admin/django_celery_beat/periodictask/?q=performance+degradation+reports>`__
+page.
 
-Currently, the application provides pre-canned performance degradation summary
-reports for
+The reports are segregated by location (see :ref:`Acceptable Performance
+Buckets`), by the origin of the definition of the `AD` node (see :ref:`Network
+Nodes Providing AD Services`), by the `bind` case (see :ref:`AD Services
+Monitoring Using LDAP`), and by the performance degradation level (see
+:ref:`Performance Degradation Levels`).
 
-* :ref:`Error level performance degradation <perf_err>`
+Acceptable Performance Buckets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- * :ref:`Full probe data <bind_and_search>` from :ref:`Orion AD nodes
-   <orionadnodes>`:
+The definition of what is considered to be **acceptable performance** is based
+on the location of the `AD` node; what is considered acceptable for a node
+located in the Cerner data center in Ontario will not be acceptable for a
+node located in the Kamloops data center.
+
+The performance buckets (locations) are defined in the
+:class:`ldap_probe.models.ADNodePerfBucket` model and can be maintained from
+the `Performance Groups for ADS Nodes
+</../../../admin/ldap_probe/adnodeperfbucket/>`__ page.
+
+It is the responsibility of the SOC operator to maintain the acceptable
+performance data and to asign the `AD` nodes to their respective performance
+buckets.
+
+Performance Degradation Levels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Currently, the application is generating reports for multiple degradation
+levels. These levels are expressed as typical log levels and the threshold
+for each level is configured on a per location basis in the
+:class:`ldap_probe.models.ADNodePerfBucket` model as follows:
+
+* INFO:
   
-   * scheduled from the `AD controller monitoring: perf alert summary report,
-     full bind, orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, full bind, perf, orion` subscription
-     from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
-
- * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Orion AD nodes
-   <orionadnodes>`:
+  Will measure performance degradation against the threshold
+  defined by the value of the
+  :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
+  attribute of the :class:`ldap_probe.models.ADNodePerfBucket` instance
+  to which the `AD` node belongs.
   
-   * scheduled from the `AD controller monitoring: perf alert summary report,
-     anon bind, orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, anonymous bind, perf, orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
+  This threshold is considered against average reponse times
 
- * :ref:`Full probe data <bind_and_search>` from :ref:`Non Orion AD nodes
-   <nonorionadnodes>`:
+* WARNING:
+
+  Uses the value of the
+  :attr:`ldap_probe.models.ADNodePerfBucket.avg_err_threshold`.
   
-   * scheduled from the `AD controller monitoring: perf alert summary report,
-     full bind, non orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, full bind, perf, non orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
+  This threshold is also considered against average reponse times
 
- * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Non Orion AD
-   nodes <nonorionadnodes>`:
+* ERROR:
   
-   * scheduled from the `AD controller monitoring: perf alert summary report,
-     anon bind, non orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, anonymous bind, perf, non orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
-
-
-* :ref:`Warning level performance degradation <perf_warn>`
-
- * :ref:`Full probe data <bind_and_search>` from :ref:`Orion AD nodes
-   <orionadnodes>`:
+  Uses the value of the
+  :attr:`ldap_probe.models.ADNodePerfBucket.alert_threshold`.
   
-   * scheduled from the `AD controller monitoring: perf warning summary report,
-     full bind, orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, full bind, perf, orion` subscription
-     from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
-
- * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Orion AD nodes
-   <orionadnodes>`:
+  This threshold is considered against maximum reponse times
   
-   * scheduled from the `AD controller monitoring: perf warning summary report,
-     anon bind, orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, anonymous bind, perf, orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
+See the documentation for :meth:`ldap_probe.tasks.dispatch_ldap_perf_reports`
+for details on how to disable performance degradation reports for one or more
+levels.
 
- * :ref:`Full probe data <bind_and_search>` from :ref:`Non Orion AD nodes
-   <nonorionadnodes>`:
-  
-   * scheduled from the `AD controller monitoring: perf warning summary report,
-     full bind, non orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, full bind, perf, non orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
+Email subcriptions for performance degradation reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Non Orion AD
-   nodes <nonorionadnodes>`:
-  
-   * scheduled from the `AD controller monitoring: perf warning summary report,
-     anon bind, non orion` entry on the `periodic tasks configuration page
-     </../../../admin/django_celery_beat/periodictask/>`__
-    
-   * rendered using the `LDAP: summary report, anonymous bind, perf, non orion`
-     subscription from the `LDAP subscriptions summary page
-     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
+All the email subscriptions used for these reports are defined on the
+`LDAP subscriptions performance degradation reports summary page
+</../../../admin/ssl_cert_tracker/subscription/?q=degrade>`__.
 
-
-Defining custom performance degradation reports
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-It is possible to create additional performance degradation summary reports
-using custom response time thresholds.
-
-To create such a report, one must create a new periodic task from the `periodic
-tasks configuration page </../../../admin/django_celery_beat/periodictask/>`__
-that is a copy of one of the periodic tasks in the section above.
-
-Give the periodic task a different name, choose a schedule, and replace the
-last argument in the `Positional arguments` field with the desired performance
-degradation threshold measured in seconds and using the `float` format.
-
-Review and save.
-
-For example, in the image below, replace `warning` with `0.750` if the
-desired performance degradation threshold is 750 miliseconds.
-**Don't forget the quote signs around the float value.** 
-
-.. image:: custom_perf_report.png
- 
-
+The subscriptions for `ERROR` level reports are identifiable by the suffix
+`err`.
 
 `AD` Services Network Nodes Reports
 ===================================

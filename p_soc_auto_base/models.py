@@ -129,8 +129,11 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
     from this class that do not have a default instance.
     """
     is_default = models.BooleanField(
-        _('default windows account'),
-        db_index=True, blank=False, null=False, default=False)
+        _('Default Instance'),
+        db_index=True, blank=False, null=False, default=False,
+        help_text=_(
+            'If set, then this row will be preferred by the application.'
+            ' Note there can only be one default row in the table.'))
     """
     if this field is set to `True` in a :class:`model
     <django.db.models.Model>` inheriting from this class, the instance

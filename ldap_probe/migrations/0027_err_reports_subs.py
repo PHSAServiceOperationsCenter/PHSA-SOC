@@ -21,7 +21,7 @@ def add_subscriptions(apps, schema_editor):
             'email_subject': 'AD Services Monitoring Errors',
             'alternate_email_subject': '',
             'headers': (
-                'uuid,ad_node,created_on,errors,probe_url'),
+                'uuid,domain_controller_fqdn,created_on,errors,probe_url'),
         },
 
     ]

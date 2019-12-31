@@ -133,8 +133,6 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
                      'node__ip_address', 'node__location', 'node__site')
     list_filter = ('node__site', 'node__location', )
 
-    actions = None
-
     def has_add_permission(self, request):
         """
         :class:`ldap_probe.models.OrionADNode` instances are created
@@ -278,7 +276,7 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     that inherit from :class:`ldap_probe.models.LdapProbeLog`
     """
-    actions = None
+    #actions = [base_admin.export_to_csv, ]
 
     def has_add_permission(self, request):
         """

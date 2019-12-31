@@ -363,6 +363,14 @@ be placed under this directory
 pathlib.Path(CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 # note that this will not work in Python <3.5
 
+EXPORT_CSV_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'export_csv/')
+"""
+``export_csv`` files created as exports from various admin pages will
+be placed under this directory
+"""
+pathlib.Path(EXPORT_CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+
+
 ORION_HOSTNAME = 'orion.vch.ca'
 """
 default network address for the `SolarWinds Orion server

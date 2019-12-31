@@ -16,10 +16,16 @@
 Server` apps
 
 """
+import socket
+
+from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldDoesNotExist
+from django.utils import timezone
+
+from djqscsv import write_csv
 
 from citrus_borg.models import BorgSite
 from mail_collector.models import ExchangeConfiguration
@@ -89,6 +95,36 @@ def disable_selected(modeladmin, request, queryset):
 disable_selected.short_description = 'Disable selected'
 
 admin.site.add_action(disable_selected, 'disable_selected')
+
+
+def export_to_csv(modeladmin, request, queryset):
+    """
+    add an action to export the queryset behind an admin summary page to
+    csv
+    """
+    csv_file_name = (f'{settings.EXPORT_CSV_MEDIA_ROOT}'
+                     f'{timezone.localtime():%Y%m%d-%H:%M:%S}-'
+                     f'{queryset.model._meta.verbose_name}.csv')
+
+    with open(csv_file_name, 'wb') as csv_file:
+        try:
+            write_csv(queryset.values(), csv_file)
+        except Exception as error:  # pylint: disable=broad-except
+            modeladmin.message_user(
+                request,
+                f'cannot export the data in the'
+                f' {queryset.model._meta.verbose_name} queryset to csv:'
+                f' {str(error)}', level=messages.ERROR)
+            return
+
+    modeladmin.message_user(
+        request,
+        f'Data exported to {socket.getfqdn()}:/{csv_file_name}',
+        level=messages.INFO)
+
+
+export_to_csv.short_description = 'Export to CSV file'
+admin.site.add_action(export_to_csv, 'export_to_csv')
 
 
 class BaseAdmin(admin.ModelAdmin):

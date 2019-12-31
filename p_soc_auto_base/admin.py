@@ -102,13 +102,17 @@ def export_to_csv(modeladmin, request, queryset):
     add an action to export the queryset behind an admin summary page to
     csv
     """
+    field_names = []
+    if hasattr(queryset.model, 'csv_fields'):
+        field_names = queryset.model.csv_fields
+
     csv_file_name = (f'{settings.EXPORT_CSV_MEDIA_ROOT}'
-                     f'{timezone.localtime():%Y%m%d-%H:%M:%S}-'
+                     f'{timezone.localtime():%Y%m%d-%H_%M_%S}-'
                      f'{queryset.model._meta.verbose_name}.csv')
 
     with open(csv_file_name, 'wb') as csv_file:
         try:
-            write_csv(queryset.values(), csv_file)
+            write_csv(queryset.values(*field_names), csv_file)
         except Exception as error:  # pylint: disable=broad-except
             modeladmin.message_user(
                 request,

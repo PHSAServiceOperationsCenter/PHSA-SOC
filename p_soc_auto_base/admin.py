@@ -107,7 +107,7 @@ def export_to_csv(modeladmin, request, queryset):
         field_names = queryset.model.csv_fields
 
     csv_file_name = (f'{settings.EXPORT_CSV_MEDIA_ROOT}'
-                     f'{timezone.localtime():%Y%m%d-%H_%M_%S}-'
+                     f'{timezone.localtime():%Y_%m_%d-%H_%M_%S}-'
                      f'{queryset.model._meta.verbose_name}.csv')
 
     with open(csv_file_name, 'wb') as csv_file:

@@ -873,6 +873,10 @@ class LdapProbeLog(models.Model):
     `LDAP Probe Log fields
     <../../../admin/doc/models/ldap_probe.ldapprobelog>`__
     """
+    csv_fields = [
+        'uuid', 'ad_orion_node__node__node_caption', 'ad_node__node_dns',
+        'elapsed_bind', 'elapsed_search_ext']
+
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,
         default=get_uuid)

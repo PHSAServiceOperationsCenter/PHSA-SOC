@@ -561,6 +561,15 @@ class WinlogEvent(BaseModel, models.Model):
     `Citrix Bot Windows Log Event fields
     <../../../admin/doc/models/citrus_borg.winlogEvent>`__
     """
+    csv_fields = [
+        'uuid', 'source_host__host_name', 'source_host__site__site',
+        'record_number', 'event_state', 'storefront_connection_duration',
+        'receiver_startup_duration', 'connection_achieved_duration',
+        'logon_achieved_duration', 'logoff_achieved_duration', 'created_on']
+    """
+    use these fields when exporting the data in this model to csv
+    """
+
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,
         default=get_uuid)

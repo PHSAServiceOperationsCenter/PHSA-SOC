@@ -1407,6 +1407,26 @@ class LdapPerfRaiseMinorAlerts(BooleanPreference):
 
 
 @global_preferences_registry.register
+class LdapPerfDegradationReportGoodNews(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether performance degradation
+    reports with 'all is well, there is no performance degradation' will
+    still be sent out via email
+
+    :access_key: 'ldapprobe__ldap_perf_send_good_news'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_send_good_news'
+    default = False
+    """default value for this dynamic preference"""
+    required = False
+    verbose_name = _(
+        'LDAP: Send performance degradation reports even when there is no'
+        ' performance degradation')
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
 class LdapPerfNeverExceedThreshold(DecimalPreference):
     """
     Dynamic preferences class controlling the threshold

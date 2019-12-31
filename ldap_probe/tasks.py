@@ -775,6 +775,9 @@ def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
     if no_nodes:
         return f'there are no AD network nodes for {location}'
 
+    if not get_preference('ldapprobe__ldap_perf_send_good_news') and not data:
+        return f'there is no performance degradation for {location}'
+
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()

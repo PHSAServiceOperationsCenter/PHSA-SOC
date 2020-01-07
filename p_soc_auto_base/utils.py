@@ -36,6 +36,7 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
@@ -69,6 +70,7 @@ def show_milliseconds(seconds):
     return humanfriendly.format_timespan(float(seconds), detailed=True)
 
 
+@mark_safe
 def get_absolute_admin_change_url(
         admin_view, obj_pk, obj_anchor_name=None, root_url=None):
     """

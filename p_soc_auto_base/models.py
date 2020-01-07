@@ -182,13 +182,13 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
         """
         get the default instance for this model
 
-        :returns: the default instance of this model or `None`
+        :returns: the id of the default instance of this model or `None`
         """
         if not hasattr(cls, 'objects'):
             return None
 
         try:
-            return cls.objects.filter(is_default=True).get()
+            return cls.objects.filter(is_default=True).get().id
         except cls.DoesNotExist:
             return None
 

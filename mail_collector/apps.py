@@ -10,7 +10,7 @@ django apps module for the mail_collector app
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    May 31, 2019
 

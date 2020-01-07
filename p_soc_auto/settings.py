@@ -18,7 +18,7 @@ For the full list of settings and their values, see
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 29, 2019
 
@@ -53,7 +53,7 @@ Enable or disable debugging information
 
 ALLOWED_HOSTS = ['*', ]
 
-ADMINS = [('Serban Teodorescu', 'serban.teodorescu@phsa.ca'), ]
+ADMINS = [('Daniel Busto', 'daniel.busto@phsa.ca'), ]
 
 LOG_DIR = '/var/log/phsa/django'
 """

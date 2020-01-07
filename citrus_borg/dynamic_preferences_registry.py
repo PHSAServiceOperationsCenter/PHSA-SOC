@@ -29,7 +29,7 @@ function. For example:
     Copyright 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    jan. 3, 2019
 
@@ -501,7 +501,7 @@ class EmailFromWhenDebug(StringPreference):
     """
     section = email_prefs
     name = 'from_email'
-    default = 'serban.teodorescu@phsa.ca'
+    default = 'daniel.busto@phsa.ca'
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('originating email address when in DEBUG mode').title()
@@ -521,7 +521,7 @@ class EmailToWhenDebug(StringPreference):
     """
     section = email_prefs
     name = 'to_emails'
-    default = 'serban.teodorescu@phsa.ca,james.reilly@phsa.ca'
+    default = 'daniel.busto@phsa.ca,james.reilly@phsa.ca'
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('destination email addresses when in DEBUG mode').title()

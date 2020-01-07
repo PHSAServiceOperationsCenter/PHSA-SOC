@@ -10,7 +10,7 @@ This module contains the :class:`django.db.models.Model` models for the
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Nov. 5, 2019
 

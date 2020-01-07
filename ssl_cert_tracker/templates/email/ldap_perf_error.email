@@ -1,5 +1,5 @@
 {% block subject %}
-{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }}, {{ location }} 
+{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }}
 {% endblock %}
 
 {% block html %}
@@ -8,7 +8,6 @@
 <li>AD service performance degradation occurred: {{ created_on }}</li>
 <li>
 AD service performance degradation observed for the AD controller on {{ node }}
-located in {{ location }}
 </li>
 <li>AD probe details: {{ probe_url }}</li>
 <li>
@@ -18,7 +17,7 @@ Orion node: {{ orion_url }}
 {{ node }} is not defined in Orion.
 {% endif %}
 </li>
-<li>AD service perfomance is worse than
+<li>AD service performance is worse than
 {% if level == "INFO" %}
 {{ avg_warn_threshold }}
 {% elif level == "WARNING" %}

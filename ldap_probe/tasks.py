@@ -28,7 +28,6 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from ldap_probe import ad_probe, models, exceptions
 from p_soc_auto_base import utils
 
-
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
 
@@ -583,14 +582,14 @@ def dispatch_ldap_error_report(**time_delta_args):
 
 @shared_task(queue='email')
 def dispatch_ldap_perf_reports(
-        data_sources=None, levels=None, locations=None, **time_delta_args):
+        data_sources=None, levels=None, buckets=None, **time_delta_args):
     """
     launch the tasks responsible for the performance degradation reports
 
     The number of performance degradation reports is determined by:
 
-    * the locations/performance buckets that we are tracking: these are
-      instances of the :class:`ldap_probe.models.ADNodePerfBucket` model
+    * the performance buckets that we are tracking: these are instances of the
+    :class:`ldap_probe.models.ADNodePerfBucket` model
 
     * the `AD` nodes that we are tracking: known to Orion or not known to Orion
 
@@ -646,16 +645,16 @@ def dispatch_ldap_perf_reports(
         If not specified, performance degradation reports for all 3 levels
         will be generated.
 
-    :arg locations: the locations
+    :arg buckets: the performance buckets
 
         This argument can be a :class:`list`, or a :class:`str` using
         commas (',') to separate the levels.
 
-        Each location must match an entry in the
-        :attr:`ldap_probe.models.ADNodePerfBucket.location` column.
+        Each bucket must match an entry in the
+        :attr:`ldap_probe.models.ADNodePerfBucket.performance_bucket` column.
 
         If not specified, performance degradation reports for all `enabled`
-        locations will be generated.
+        buckets will be generated.
 
     :arg time_delta_args: optional named arguments that are used to
             initialize a :class:`datetime.timedelta` object
@@ -680,15 +679,15 @@ def dispatch_ldap_perf_reports(
     if not isinstance(levels, (list, tuple)):
         levels = levels.split(',')
 
-    if locations is None:
-        locations = list(
+    if buckets is None:
+        buckets = list(
             utils.get_model('ldap_probe.adnodeperfbucket').
             objects.filter(enabled=True).
-            values_list('location', flat=True)
+            values_list('name', flat=True)
         )
 
-    if not isinstance(locations, (list, tuple)):
-        locations = locations.split(',')
+    if not isinstance(buckets, (list, tuple)):
+        buckets = buckets.split(',')
 
     results = (
         f'bootstrapped performance reports,'
@@ -696,22 +695,21 @@ def dispatch_ldap_perf_reports(
     for data_source in data_sources:
         results = f'{results}\ndata_source: {data_source}'
         for level in levels:
-            results = (f'{results}\nlevel: {level}'
-                       f'\nlocations: {", ".join(locations)}')
+            results = f'{results}\nlevel: {level} \nbuckets: {buckets}'
             group(dispatch_ldap_perf_report.s(
-                data_source=data_source, location=location, anon=True,
-                level=level, **time_delta_args) for location in locations)()
+                data_source=data_source, bucket=bucket, anon=True,
+                level=level, **time_delta_args) for bucket in buckets)()
             group(dispatch_ldap_perf_report.s(
-                data_source=data_source, location=location, anon=False,
-                level=level, **time_delta_args) for location in locations)()
+                data_source=data_source, bucket=bucket, anon=False,
+                level=level, **time_delta_args) for bucket in buckets)()
 
     return pprint.pformat(results)
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
-        data_source, location, anon, level, **time_delta_args):
+def dispatch_ldap_perf_report(
+        data_source, bucket, anon, level, **time_delta_args):
     """
     task that generates a performance degradation report via email for the
     arguments used to invoke it
@@ -724,9 +722,9 @@ def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
     :arg str data_source: the named of the model containing information
         about `AD` nodes using the 'app_lable.model_name' convention
 
-    :arg str location: the value of the
-        :attr:`ldap_probe.models.ADNodePerfBucket.location` field; this will
-        be used to retrieve the applicable thresholds from the
+    :arg str bucket: the value of the
+        :attr:`ldap_probe.models.ADNodePerfBucket.performance_bucket` field;
+        this will be used to retrieve the applicable thresholds from the
         :class:`ldap_probe.models.ADNodePerfBucket` instance
 
     :arg bool anon: look for full bind or anonymous bind probe data
@@ -754,29 +752,29 @@ def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
         exception is allowed to propagate.
     """
     LOG.debug(
-        ('invoking ldap probes report with data_source = %s, location = %s,'
+        ('invoking ldap probes report with data_source = %s, bucket = %s,'
          ' anon = %s, level = %s, time_delta_args = %s'),
-        data_source, location, anon, level, time_delta_args)
+        data_source, bucket, anon, level, time_delta_args)
 
     try:
         (now, time_delta, subscription, data, threshold,
          no_nodes) = utils.get_model(
             data_source).report_perf_degradation(
-                location=location, anon=anon,
+                bucket=bucket, anon=anon,
                 level=level, **time_delta_args)
     except Exception as err:
         LOG.error(
             ('invoking ldap probes report with data_source = %s,'
-             ' location = %s, anon = %s, level = %s, time_delta_args = %s'
+             ' bucket = %s, anon = %s, level = %s, time_delta_args = %s'
              ' raises error %s'),
-            data_source, location, anon, level, time_delta_args, str(err))
+            data_source, bucket, anon, level, time_delta_args, str(err))
         raise err
 
     if no_nodes:
-        return f'there are no AD network nodes for {location}'
+        return f'there are no AD network nodes for {bucket}'
 
     if not get_preference('ldapprobe__ldap_perf_send_good_news') and not data:
-        return f'there is no performance degradation for {location}'
+        return f'there is no performance degradation for {bucket}'
 
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
@@ -787,7 +785,7 @@ def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
         ret = utils.borgs_are_hailing(
             data=data, subscription=subscription, logger=LOG, level=level,
             now=now, time_delta=time_delta, full=full, orion=orion,
-            location=location, threshold=threshold)
+            bucket=bucket, threshold=threshold)
     except Exception as error:
         raise error
 
@@ -795,14 +793,14 @@ def dispatch_ldap_perf_report(  # pylint: disable=too-many-locals
         return (
             f'dispatched LDAP probes performance degradation report'
             f' with data_source = {data_source},'
-            f' anon = {anon}, location - {location},'
+            f' anon = {anon}, bucket - {bucket},'
             f' level = {level}'
             f' time_delta_args = {time_delta_args}')
 
     return (
         f'could not dispatch LDAP probes performance degradation report'
         f' with data_source = {data_source},'
-        f' anon = {anon}, location - {location.location},'
+        f' anon = {anon}, bucket - {bucket},'
         f'level = {level}'
         f' time_delta_args = {time_delta_args}')
 
@@ -925,7 +923,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,
-            location=ldap_probe.node_perf_bucket.location,
+            bucket=ldap_probe.node_perf_bucket.name,
             avg_warn_threshold=utils.show_milliseconds(
                 ldap_probe.node_perf_bucket.avg_warn_threshold),
             avg_err_threshold=utils.show_milliseconds(

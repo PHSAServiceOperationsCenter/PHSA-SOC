@@ -60,12 +60,11 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         show :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
         in the `Django admin` interface
         """
-        if hasattr(obj, 'location'):
-            if obj.location:
-                return utils.show_milliseconds(
-                    obj.location.avg_warn_threshold)
-
-        return None
+        try:
+            return utils.show_milliseconds(
+                obj.performance_bucket.avg_warn_threshold)
+        except AttributeError:
+            return None
     show_avg_warn_threshold.short_description = _(
         'Response Time Warning')
 
@@ -74,12 +73,11 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         show :attr:`ldap_probe.models.ADNodePerfBucket.avg_err_threshold`
         in the `Django admin` interface
         """
-        if hasattr(obj, 'location'):
-            if obj.location:
-                return utils.show_milliseconds(
-                    obj.location.avg_err_threshold)
-
-        return None
+        try:
+            return utils.show_milliseconds(
+                obj.performance_bucket.avg_err_threshold)
+        except AttributeError:
+            return None
     show_avg_err_threshold.short_description = _(
         'Response Time Error')
 
@@ -88,12 +86,11 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         show :attr:`ldap_probe.models.ADNodePerfBucket.alert_threshold`
         in the `Django admin` interface
         """
-        if hasattr(obj, 'location'):
-            if obj.location:
-                return utils.show_milliseconds(
-                    obj.location.alert_threshold)
-
-        return None
+        try:
+            return utils.show_milliseconds(
+                obj.performance_bucket.alert_threshold)
+        except AttributeError:
+            return None
     show_alert_threshold.short_description = _(
         'Response Time Alert')
 
@@ -104,13 +101,13 @@ class AdNodePerfBucketAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.ADNodePerfBucket`
     """
-    list_display = ('location', 'enabled', 'is_default', 'avg_warn_threshold',
+    list_display = ('name', 'enabled', 'is_default', 'avg_warn_threshold',
                     'avg_err_threshold', 'alert_threshold', 'updated_on',
                     'updated_by', )
     list_editable = ('enabled', 'is_default', 'avg_warn_threshold',
                      'avg_err_threshold', 'alert_threshold', )
     list_filter = ('enabled', )
-    search_fields = ('location', 'notes', )
+    search_fields = ('name', 'notes', )
 
 
 @admin.register(models.OrionADNode)
@@ -121,14 +118,14 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     """
     list_display_links = ('show_node_caption', )
     list_display = ('show_node_caption', 'enabled', 'ldap_bind_cred',
-                    'node_dns', 'ip_address', 'location',
+                    'node_dns', 'ip_address', 'performance_bucket',
                     'show_avg_warn_threshold', 'show_avg_err_threshold',
                     'show_alert_threshold', 'show_orion_admin_url',
                     'show_orion_url', 'site', )
-    list_editable = ('enabled', 'ldap_bind_cred', 'location')
+    list_editable = ('enabled', 'ldap_bind_cred', 'performance_bucket')
     readonly_fields = ('show_node_caption', 'node_dns', 'ip_address',
                        'show_orion_admin_url', 'show_orion_url', 'site',
-                       'location', 'show_avg_warn_threshold', )
+                       'show_avg_warn_threshold', )
     search_fields = ('node__node_caption', 'node__node_dns',
                      'node__ip_address', 'node__location', 'node__site')
     list_filter = ('node__site', 'node__location', )
@@ -229,11 +226,11 @@ class NonOrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.NonOrionADNode`
     """
-    list_display = ('node_dns', 'enabled', 'ldap_bind_cred', 'location',
-                    'show_avg_warn_threshold', 'show_avg_err_threshold',
-                    'show_alert_threshold',
-                    'updated_on',  'updated_by', )
-    list_editable = ('enabled', 'ldap_bind_cred', 'location', )
+    list_display = ('node_dns', 'enabled', 'ldap_bind_cred',
+                    'performance_bucket', 'show_avg_warn_threshold',
+                    'show_avg_err_threshold', 'show_alert_threshold',
+                    'updated_on', 'updated_by', )
+    list_editable = ('enabled', 'ldap_bind_cred', 'performance_bucket', )
     list_filter = ('enabled', 'ldap_bind_cred__domain',
                    'ldap_bind_cred__username', )
     search_fields = ('node_dns', )
@@ -247,7 +244,7 @@ class LDAPBindCredAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     """
     list_display_links = ('show_account',)
     list_display = ('show_account', 'enabled', 'domain',
-                    'username',  'is_default', 'ldap_search_base',
+                    'username', 'is_default', 'ldap_search_base',
                     'updated_on', 'updated_by')
     list_editable = ('enabled', 'domain', 'username', 'is_default',
                      'ldap_search_base',)
@@ -276,7 +273,6 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     that inherit from :class:`ldap_probe.models.LdapProbeLog`
     """
-    #actions = [base_admin.export_to_csv, ]
 
     def has_add_permission(self, request):
         """
@@ -304,14 +300,7 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         """
         all the fields on the `Django admin` forms must be read only
         """
-        return [field.name for field in self.model._meta.fields] + ['show_location']
-
-    def show_location(self, obj):
-        if obj.ad_node:
-            return obj.ad_node.location.location
-        else:
-            return obj.ad_orion_node.location.location
-    show_location.short_description = _('Location')
+        return [field.name for field in self.model._meta.fields]
 
 
 @admin.register(models.LdapProbeLogFailed)
@@ -320,8 +309,7 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFailed`
     """
-    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
-                    'errors', 'created_on', )
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors', 'created_on')
     list_filter = (
         ('ad_node', admin.RelatedOnlyFieldListFilter),
         ('ad_orion_node', admin.RelatedOnlyFieldListFilter),
@@ -338,9 +326,9 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFullBindLog`
     """
-    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
-                    'failed', 'elapsed_initialize',
-                    'elapsed_bind', 'elapsed_search_ext', 'created_on', )
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
+                    'elapsed_initialize', 'elapsed_bind', 'elapsed_search_ext',
+                    'created_on', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
@@ -356,14 +344,14 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeAnonBindLog`
     """
-    list_display = ('uuid', 'show_location', 'ad_orion_node', 'ad_node',
-                    'failed', 'elapsed_initialize',
-                    'elapsed_anon_bind', 'elapsed_read_root', 'created_on', )
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
+                    'elapsed_initialize', 'elapsed_anon_bind',
+                    'elapsed_read_root', 'created_on', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter),
-                   'ad_orion_node__location__location', )
+                   'ad_orion_node__performance_bucket__name', )
     search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
                      'ad_orion_node__node__node_caption',
                      'ad_orion_node__node__ip_address',)

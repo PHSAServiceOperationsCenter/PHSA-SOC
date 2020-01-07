@@ -27,6 +27,7 @@ import uuid
 import humanfriendly
 
 from django.apps import apps
+from django.contrib.auth.models import User
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -784,3 +785,18 @@ def borgs_are_hailing(
     except Exception as error:
         logger.error(str(error))
         raise error
+
+
+def get_or_create_soc_su():
+    user = User.objects.filter(is_superuser=True)
+    if user.exists():
+        user = user.first()
+    else:
+        user = User.objects.create(
+            username='soc_su', email='soc_su@phsa.ca',
+            password='soc_su_password', is_active=True, is_staff=True,
+            is_superuser=True)
+        user.set_password('soc_su_password')
+        user.save()
+
+    return user

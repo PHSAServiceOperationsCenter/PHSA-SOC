@@ -197,11 +197,10 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     `Performance Group for ADS Nodes fields
     <../../../admin/doc/models/ldap_probe.adnodeperfbucket>`__
     """
-    location = models.CharField(
-        _('Location Key'), max_length=253, db_index=True, unique=True,
-        blank=False, null=False, help_text=_(
-            'Information pertaining to the geographical area to which'
-            ' a group of performance degradation limits applies'))
+    name = models.CharField(
+        _('Bucket name'), max_length=253, db_index=True, unique=True,
+        help_text=_('A descriptive name to help determine which nodes should be'
+                    ' included in the bucket.'))
     avg_warn_threshold = models.DecimalField(
         _('Warning Response Time Threshold'), max_digits=4,
         decimal_places=3, db_index=True, blank=False, null=False,
@@ -227,7 +226,7 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
             ' this value, raise an immediate alert.'))
 
     def __str__(self):
-        return self.location
+        return self.name
 
     class Meta:
         app_label = 'ldap_probe'
@@ -237,7 +236,7 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
 
 class BaseADNode(BaseModel, models.Model):
     """
-    `Django abastract model
+    `Django abstract model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
     for storing information about `Windows` domain controller hosts
     """
@@ -245,9 +244,10 @@ class BaseADNode(BaseModel, models.Model):
         'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
-    location = models.ForeignKey(
-        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True,
-        null=True, default=ADNodePerfBucket.get_default,
+    # TODO should we get rid of blank and null?
+    performance_bucket = models.ForeignKey(
+        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True, null=True,
+        default=ADNodePerfBucket.get_default,
         on_delete=models.SET_DEFAULT, verbose_name=_(
             'Acceptable Performance Limits'))
 
@@ -398,18 +398,18 @@ class BaseADNode(BaseModel, models.Model):
 
     @classmethod
     def report_perf_degradation(  # pylint: disable=too-many-branches
-            cls, location=None, anon=False, level=None, **time_delta_args):
+            cls, bucket=None, anon=False, level=None, **time_delta_args):
         """
         generate report data for performance degradation reports
 
         This method invokes the :meth:`report_probe_aggregates` and then
         filters the results based on the performance thresholds defined
-        for the :attr:`BaseADNode.location`.
+        for the :attr:`BaseADNode.performance_bucket`.
 
-        In general tasks calling this method need to be invoked in a
-        'for each location in locations' fashion.
+        In general tasks calling this method need to be invoked for each
+        bucket.
 
-        :arg location: the :class:`ADNodePerfBucket` instance;
+        :arg bucket: the :class:`ADNodePerfBucket` instance;
             if not provided, the :class:`ADNodePerfBucket` default
             instance will be used
 
@@ -451,11 +451,11 @@ class BaseADNode(BaseModel, models.Model):
 
         :raises:
 
-            :exc:`ValueError` if a value is provided for the `location`
+            :exc:`ValueError` if a value is provided for the `bucket`
             argument that cannot be used for retrieving a
             :class:`ADNodePerfBucket` instance
 
-            :exc:`TypError` if the default value of the location argument
+            :exc:`TypError` if the default value of the bucket argument
             (`None`) is used and there is no default instance defined
             in :class:`ADNodePerfBucket`
 
@@ -464,18 +464,17 @@ class BaseADNode(BaseModel, models.Model):
 
         """
         no_nodes = False
-        if location is None:
-            location = ADNodePerfBucket.get_default()
+        if bucket is None:
+            bucket = ADNodePerfBucket.get_default()
         else:
             try:
-                location = ADNodePerfBucket.objects.get(
-                    location__iexact=location)
+                bucket = ADNodePerfBucket.objects.get(name__iexact=bucket)
             except ADNodePerfBucket.DoesNotExist as error:
                 raise ValueError(
-                    f'{location} does not exist: {str(error)}')
+                    f'{bucket} does not exist: {str(error)}')
 
-        if location is None:
-            raise TypeError(f'{type(location)} is not acceptable')
+        if bucket is None:
+            raise TypeError(f'{type(bucket)} is not acceptable')
 
         (now, time_delta, subscription,
          queryset, perf_filter) = cls.report_probe_aggregates(
@@ -483,7 +482,7 @@ class BaseADNode(BaseModel, models.Model):
 
         subscription = f'{subscription},degrade'
 
-        queryset = queryset.filter(location=location)
+        queryset = queryset.filter(performance_bucket=bucket)
         if not queryset.exists():
             no_nodes = True
 
@@ -492,7 +491,7 @@ class BaseADNode(BaseModel, models.Model):
 
         if level == get_preference('commonalertargs__info_level'):
 
-            threshold = location.avg_warn_threshold
+            threshold = bucket.avg_warn_threshold
             if anon:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
@@ -504,7 +503,7 @@ class BaseADNode(BaseModel, models.Model):
 
         elif level == get_preference('commonalertargs__warn_level'):
 
-            threshold = location.avg_err_threshold
+            threshold = bucket.avg_err_threshold
             if anon:
                 perf_filter = (
                     Q(average_bind_duration__gte=threshold) |
@@ -517,7 +516,7 @@ class BaseADNode(BaseModel, models.Model):
         elif level == get_preference('commonalertargs__error_level'):
 
             subscription = f'{subscription},err'
-            threshold = location.alert_threshold
+            threshold = bucket.alert_threshold
             if anon:
                 perf_filter = (
                     Q(maximum_bind_duration__gte=threshold) |
@@ -531,12 +530,11 @@ class BaseADNode(BaseModel, models.Model):
             raise ValueError(f'unknown perf degradation level {level}')
 
         if no_nodes:
-            return (
-                now, time_delta, subscription, queryset, threshold, no_nodes)
+            return now, time_delta, subscription, queryset, threshold, no_nodes
 
         queryset = queryset.filter(perf_filter).values()
 
-        return (now, time_delta, subscription, queryset, threshold, no_nodes)
+        return now, time_delta, subscription, queryset, threshold, no_nodes
 
     @classmethod
     def report_probe_aggregates(
@@ -701,12 +699,13 @@ class BaseADNode(BaseModel, models.Model):
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             subscription = f'{subscription}, non orion'
             return (now, time_delta, subscription,
-                    queryset.order_by('location__location', 'node_dns'),
+                    queryset.order_by('performance_bucket__name', 'node_dns'),
                     perf_filter)
 
         subscription = f'{subscription}, orion'
         return (now, time_delta, subscription,
-                queryset.order_by('location__location', 'node__node_caption'),
+                queryset.order_by('performance_bucket__name',
+                                  'node__node_caption'),
                 perf_filter)
 
     class Meta:
@@ -809,6 +808,7 @@ class NonOrionADNode(BaseADNode, models.Model):
             ' section 2.1')
     )
 
+
     @classmethod
     def report_nodes(cls):
         """
@@ -827,7 +827,7 @@ class NonOrionADNode(BaseADNode, models.Model):
     def remove_if_in_orion(self, logger=LOGGER):
         """
         if the domain controller host represented by this instance is also
-        present on the `Orion` server, delete this istance
+        present on the `Orion` server, delete this instance
 
         We prefer to extract network node data from `Orion` instead of
         depending on some poor soul maintaining this model manually.
@@ -1022,15 +1022,15 @@ class LdapProbeLog(models.Model):
     @property
     def node_perf_bucket(self):
         """
-        :returns: a dictionary with the node location and acceptable perf
-            numbers
+        :returns: the performance bucket for this node
+        :rtype: :class:`ADNodePerfBucket`
         """
         if self.ad_node:
             node = self.ad_node
         else:
             node = self.ad_orion_node
 
-        return node.location
+        return node.performance_bucket
 
     @property
     def perf_alert(self):

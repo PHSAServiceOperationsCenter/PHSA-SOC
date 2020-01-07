@@ -875,7 +875,7 @@ class LdapProbeLog(models.Model):
     """
     csv_fields = [
         'uuid', 'ad_orion_node__node__node_caption', 'ad_node__node_dns',
-        'elapsed_bind', 'elapsed_search_ext']
+        'elapsed_bind', 'elapsed_search_ext', 'elapsed_anon_bind']
 
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,

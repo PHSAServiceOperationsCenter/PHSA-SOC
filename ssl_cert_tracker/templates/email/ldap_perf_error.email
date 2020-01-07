@@ -7,7 +7,7 @@
 <div><p><ul>
 <li>AD service performance degradation occurred: {{ created_on }}</li>
 <li>
-AD service performance degradation observed for the AD controller on {{ node }}
+AD service performance degradation observed for the AD controller on {{ node_url }}
 </li>
 <li>AD probe details: {{ probe_url }}</li>
 <li>

@@ -27,6 +27,7 @@ from celery.utils.log import get_task_logger
 from citrus_borg.dynamic_preferences_registry import get_preference
 from ldap_probe import ad_probe, models, exceptions
 from p_soc_auto_base import utils
+from p_soc_auto_base.utils import get_absolute_admin_change_url
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
@@ -916,6 +917,19 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
 
     ldap_probe = data.get()
 
+    if ldap_probe.ad_orion_node:
+        change_url_args = {
+            'admin_view': 'admin:ldap_probe_orionadnode_change',
+            'obj_pk': ldap_probe.ad_orion_node.pk,
+            'obj_anchor_name': str(ldap_probe.ad_orion_node)
+        }
+    else:
+        change_url_args = {
+            'admin_view': 'admin:ldap_probe_nonorionadnode_change',
+            'obj_pk': ldap_probe.ad_node.pk,
+            'obj_anchor_name': str(ldap_probe.ad_node)
+        }
+
     try:
         ret = utils.borgs_are_hailing(
             data=data, subscription=subscription, logger=LOG,
@@ -923,6 +937,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,
+            node_url=get_absolute_admin_change_url(**change_url_args),
             bucket=ldap_probe.node_perf_bucket.name,
             avg_warn_threshold=utils.show_milliseconds(
                 ldap_probe.node_perf_bucket.avg_warn_threshold),

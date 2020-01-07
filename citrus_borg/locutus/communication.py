@@ -11,7 +11,7 @@ Communication Module
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Jun. 19, 2019
 

@@ -8,7 +8,7 @@
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    sep. 17, 2018
 
@@ -99,8 +99,7 @@ admin.site.add_action(disable_selected, 'disable_selected')
 
 def export_to_csv(modeladmin, request, queryset):
     """
-    add an action to export the queryset behind an admin summary page to
-    csv
+    add an action to export the queryset behind an admin summary page to csv
     """
     field_names = []
     if hasattr(queryset.model, 'csv_fields'):
@@ -113,7 +112,7 @@ def export_to_csv(modeladmin, request, queryset):
     with open(csv_file_name, 'wb') as csv_file:
         try:
             write_csv(queryset.values(*field_names), csv_file)
-        except Exception as error:  # pylint: disable=broad-except
+        except Exception as error:
             modeladmin.message_user(
                 request,
                 f'cannot export the data in the'

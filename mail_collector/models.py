@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    aug. 7, 2019
 
@@ -28,7 +28,7 @@ from p_soc_auto_base.models import BaseModel as _BaseModel
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     Django model manager that allows us to reuse
-    :class:`citrus_borg.models.WinlogbeatHost` model for the 
+    :class:`citrus_borg.models.WinlogbeatHost` model for the
     :class:`MailHost` model
     """
 

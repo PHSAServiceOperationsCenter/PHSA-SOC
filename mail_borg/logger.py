@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    apr. 12, 2019
 
@@ -20,11 +20,11 @@ This module is providing facilities for creating Windows event log entries
 
     Must rename this module to something that suggests its strict
     dependencies to the Windows platform
-    
+
 .. todo::
 
     Sooner or later we need to make this thing portable
-    
+
 """
 import win32api
 import win32con
@@ -48,7 +48,7 @@ class LogWinEvent():
     location.
 
     For a primer on preparing message resource DLL's, see
-    `EventSourceCreationData.MessageResourceFile Property 
+    `EventSourceCreationData.MessageResourceFile Property
     <https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.eventsourcecreationdata.messageresourcefile?view=netframework-4.8>`_.
     Fortunately, the ``pywin32`` comes with a generic message resources DLL
     that will be installed and registered with Windows if the installation

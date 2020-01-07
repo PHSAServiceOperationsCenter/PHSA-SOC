@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Sep. 20, 2019
 
@@ -643,7 +643,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
             * ``control``: the ``Exchange verification op`` has completed
                successfully. Make ready for the next ``Exchange verification
-               op`` taking into consideration the value of the 
+               op`` taking into consideration the value of the
                :attr:`autorun` state variable
 
     """

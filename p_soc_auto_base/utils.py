@@ -761,6 +761,13 @@ def borgs_are_hailing(
     :arg dict extra_context: optional arguments with additional data to be
         rendered in the email
 
+        .. note::
+
+            Do not use `data`, `subscription`, `logger`, `add_csv`, or
+            `extra_content` as names for email data elements as they will
+            be interpreted as other arguments of this function (causing
+            unexpected behaviour) or cause an exception.
+
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
 

@@ -49,15 +49,16 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
     :returns: the return of
         :meth:`ldap_probe.models.LdapProbeLog.create_from_probe`
 
-    :raises: :exc:`Exception`
+    :raises: :exc:`TypeError` if ad_pk is not an integer.
     """
+    # TODO handle this error more gracefully
     try:
         ad_model = utils.get_model(ad_model)
     except utils.UnknownDataTargetError as error:
         raise error
 
     if not isinstance(ad_pk, int):
-        raise TypeError(f'Bad dog! No {type(ad_pk)} type biscuit for you')
+        raise TypeError(f'ad_pk must be an integer. Got: {type(ad_pk)}.')
 
     try:
         created = models.LdapProbeLog.create_from_probe(
@@ -202,8 +203,8 @@ def delete_expired_entries(data_source=None):
     `is_expred`.
 
     The task will actually delete entries only if the user preference defined
-    in
-    :class:`citrus_birg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
+    in :class:
+    `citrus_birg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
     is so configured.
 
 
@@ -756,11 +757,10 @@ def dispatch_ldap_perf_report(
         data_source, bucket, anon, level, time_delta_args)
 
     try:
-        (now, time_delta, subscription, data, threshold,
-         no_nodes) = utils.get_model(
-            data_source).report_perf_degradation(
-                bucket=bucket, anon=anon,
-                level=level, **time_delta_args)
+        (now, time_delta, subscription, data, threshold, no_nodes) = \
+            utils.get_model(data_source).report_perf_degradation(
+                bucket=bucket, anon=anon, level=level, **time_delta_args
+                )
     except Exception as err:
         LOG.error(
             ('invoking ldap probes report with data_source = %s,'
@@ -930,8 +930,8 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
-            add_csv=False, level=level, node=ldap_probe.node,
+            data=data,  subscription=subscription, logger=LOG, add_csv=False,
+            level=level, node=ldap_probe.node, errors=ldap_probe.errors,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,

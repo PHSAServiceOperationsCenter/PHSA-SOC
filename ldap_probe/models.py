@@ -15,7 +15,6 @@ This module contains the :class:`django.db.models.Model` models for the
 :updated:    Dec. 17, 2019
 
 """
-import decimal
 import logging
 import socket
 
@@ -201,24 +200,24 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
         help_text=_('A descriptive name to help determine which nodes should be'
                     ' included in the bucket.'))
     avg_warn_threshold = models.DecimalField(
-        _('Warning Response Time Threshold'), max_digits=4,
-        decimal_places=3, db_index=True, blank=False, null=False,
+        _('Warning Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
         default=_get_default_warn_threshold,
         help_text=_(
             'If the average AD services response time is worse than this'
             ' value, include this node in the periodic performance'
             ' degradation warnings report.'))
     avg_err_threshold = models.DecimalField(
-        _('Error Response Time Threshold'), max_digits=4,
-        decimal_places=3, db_index=True, blank=False, null=False,
+        _('Error Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
         default=_get_default_err_threshold,
         help_text=_(
             'If the average AD services response time is worse than this'
             ' value, include this node in the periodic performance'
             ' degradation errors report.'))
     alert_threshold = models.DecimalField(
-        _('Alert Response Time Threshold'), max_digits=4,
-        decimal_places=3, db_index=True, blank=False, null=False,
+        _('Alert Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
         default=_get_default_alert_threshold,
         help_text=_(
             'If the AD services response time for any probe is worse than'
@@ -365,7 +364,9 @@ class BaseADNode(BaseModel, models.Model):
             :class:`LdapProbeLog` rows.
 
         The annotation should look something like
-        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/ldapprobefullbindlog/?ad_node__isnull=True&ad_orion_node__id__exact=3388'.
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/"""\
+        """ldapprobefullbindlog/?ad_node__isnull=True&"""\
+        """ad_orion_node__id__exact=3388'.
 
 
         :arg str probes_model_name: determines the model name that will be
@@ -475,9 +476,9 @@ class BaseADNode(BaseModel, models.Model):
         if bucket is None:
             raise TypeError(f'{type(bucket)} is not acceptable')
 
-        (now, time_delta, subscription,
-         queryset, perf_filter) = cls.report_probe_aggregates(
-            anon=anon, perf_filter=True, **time_delta_args)
+        now, time_delta, subscription, queryset, perf_filter \
+            = cls.report_probe_aggregates(
+                anon=anon, perf_filter=True, **time_delta_args)
 
         subscription = f'{subscription},degrade'
 
@@ -937,11 +938,15 @@ class LdapProbeLog(models.Model):
         """
         when_ad_orion_node = When(
             ad_orion_node__isnull=False,
-            then=Case(When(
-                ~Q(ad_orion_node__node__node_dns__iexact=''),
-                then=F('ad_orion_node__node__node_dns')),
+            then=Case(
+                When(
+                    ~Q(ad_orion_node__node__node_dns__iexact=''),
+                    then=F('ad_orion_node__node__node_dns')
+                ),
                 default=F('ad_orion_node__node__ip_address'),
-                output_field=TextField()))
+                output_field=TextField()
+            )
+        )
         """
         :class:`django.db.models.When` instance that will translate into
         an `SQL` `WHEN` clause

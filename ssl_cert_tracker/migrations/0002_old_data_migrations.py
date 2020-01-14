@@ -270,15 +270,34 @@ def add_beats_for_orion_flash(apps, schema_editor):
 def update_subscription(apps, schema_editor):
     Subscription = apps.get_model('ssl_cert_tracker', 'subscription')
 
-    subscription = Subscription.objects.get(
+    subscription = Subscription.objects.filter(
         subscription='Citrix logon event and ux summary')
+    if subscription.exists():
+        subscription = subscription.get()
+        subscription.email_subject = (
+            'Logon Events and Response Time Summary over the Last')
+        subscription.alternate_email_subject = (
+            'Logon Events and Response Time Summary by Hour')
+        subscription.headers = '{},undetermined_events'.format(
+            subscription.headers)
 
-    subscription.email_subject = (
-        'Logon Events and Response Time Summary over the Last')
-    subscription.alternate_email_subject = (
-        'Logon Events and Response Time Summary by Hour')
-    subscription.headers = '{},undetermined_events'.format(
-        subscription.headers)
+    else:
+        subscription = Subscription(
+            subscription='Citrix logon event and ux summary',
+            email_subject=(
+                'Logon Events and Response Time Summary over the Last'),
+            alternate_email_subject=(
+                'Logon Events and Response Time Summary by Hour'),
+            headers=('hour,failed_events,successful_events,'
+                     'avg_storefront_connection_time,avg_receiver_startup_time,'
+                     'avg_connection_achieved_time,avg_logon_time,undetermined_events'),
+            enabled=True,
+            emails_list='TSCST-Support@hssbc.ca,TSCST-Shiftmanager@hssbc.ca',
+            from_email='TSCST-Support@hssbc.ca',
+            template_dir='ssl_cert_tracker/templates',
+            template_name='login_ux_site_borg',
+            template_prefix='email/',
+        )
 
     subscription.save()
 

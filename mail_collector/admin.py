@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    aug. 7, 2019
 
@@ -254,7 +254,10 @@ class MailBetweenDomainsAdmin(MailBotAdmin, admin.ModelAdmin):
     readonly_fields = ('show_link', 'from_domain', 'to_domain',
                        'site', 'last_verified', 'status')
 
-    def show_link(self, obj):
+    def show_link(self, obj):  # pylint: disable=no-self-use
+        """
+        show the domain to domain information
+        """
         return '{}: {} -> {}'.format(obj.site.site, obj.from_domain, obj.to_domain)
     show_link.short_description = 'Verification'
 
@@ -279,7 +282,10 @@ class MailBotLogEventAdmin(MailBotAdmin, admin.ModelAdmin):
         """
         show the site
         """
-        return obj.source_host.site.site
+        if obj.source_host.site:
+            return obj.source_host.site.site
+
+        return 'Pleae assign a site to the bot that sent this event ASAP'
     show_site.short_description = 'site'
 
     def get_actions(self, request):
@@ -301,13 +307,15 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     admin forms for exchange monitoring bots
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
-                    'resolved_fqdn', 'excgh_last_seen', 'created_on',)
-    list_editable = ('site', 'enabled',)
+                    'exchange_client_config', 'resolved_fqdn', 'excgh_last_seen',
+                    'created_on',)
+    list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn',
                        'excgh_last_seen', 'created_on', 'orion_id',)
     list_filter = ('site__site', 'enabled',
                    ('excgh_last_seen', DateTimeRangeFilter),)
-    search_fields = ('site__site', 'host_name', 'ip_address')
+    search_fields = ('site__site', 'host_name', 'ip_address',
+                     'exchange_client_config__config_name',)
 
     def has_add_permission(self, request):  # @UnusedVariable
         """
@@ -320,7 +328,7 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 @admin.register(MailBotMessage)
 class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     """
-    admin ofrms for exchange monitoring events that include a mail message
+    admin forms for exchange monitoring events that include a mail message
     """
     list_display_links = ('event_uuid',)
     list_display = ('event_uuid', 'event_group_id', 'mail_message_identifier',

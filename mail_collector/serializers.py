@@ -8,11 +8,11 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    aug. 8, 2019
 
-REST serialzers for the :ref:`Mail Collector Application`
+REST serializers for the :ref:`Mail Collector Application`
 
 """
 from rest_framework import serializers

@@ -58,8 +58,8 @@ configuring ``Celery Periodic Tasks``. See `Periodic Tasks adminsitration
 We recommend that all ``Celery Periodic Tasks`` used by the :ref:`SOC
 Automation Server` be created by way of `Django Data Migrations
 <https://docs.djangoproject.com/en/2.2/topics/migrations/#data-migrations>`_.
-This will avoid laboriuous data entry operations by (potentially) untrained
-``SOC`` personell, and it will also ensure speedy deployments for new versions
+This will avoid labourious data entry operations by (potentially) untrained
+``SOC`` personnel, and it will also ensure speedy deployments for new versions
 of the :ref:`SOC Automation Server`. Here is a sample of such a migation:
 
 .. code-block:: python
@@ -153,8 +153,8 @@ The ``Celery Beat`` service
 
 We have defined a dedicated ``systemd Linux service`` for running the
 schedulers used by the :ref:`SOC Automation Server` :ref:`Celery Periodic Tasks
-<Celery Details>`. The ``.service`` file for this ``Linux sevice`` is under
-source control at configs/celery/phsa_celery_beat.service``.
+<Celery Details>`. The ``.service`` file for this ``Linux service`` is under
+source control at :file:`configs/celery/phsa_celery_beat.service`.
 
 .. literalinclude:: ../../../configs/celery/phsa_celery_beat.service
    :language: cfg
@@ -163,14 +163,13 @@ source control at configs/celery/phsa_celery_beat.service``.
 Throttling the ``Celery Beat`` service
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We have observerd that sometimes, under production conditions, the
-``Celery Beat`` service will start consumming a vary large amount of host
-resources.
-We are controlling this by using the `Monit <https://mmonit.com/monit/>`_
-utility.
-The file desribing this operation the the `Monit <https://mmonit.com/monit/>`_
-daemon is under source control at configs/monit/celery-beat. This file needs to
-besymlinked or copied to ``/etc/monit.d/``.
+We have observed that sometimes, under production conditions, the
+``Celery Beat`` service will start consuming a vary large amount of host
+resources. We are controlling this by using the
+`Monit <https://mmonit.com/monit/>`_ utility. The file describing this
+operation the the `Monit <https://mmonit.com/monit/>`_ daemon is under source
+control at configs/monit/celery-beat. This file needs to be symlinked or copied
+to ``/etc/monit.d/``.
 
 .. literalinclude:: ../../../configs/monit/celery-beat
    :language: cfg
@@ -201,12 +200,11 @@ To be determined...
 Celery security
 ---------------
 
-At a miminum,we need to use non-default credentials in the
+At a minimum, we need to use non-default credentials in the
 :attr:`p_soc_auto.settings.CELERY_BROKER_URL`.
 
 `Celery` supports `SSL
 <https://docs.celeryproject.org/en/latest/userguide/configuration.html#broker-use-ssl>`_
 with the default transport (`pyamqp`) for the `AMPQ <https://www.amqp.org/>`_
-protocol.
-Sill, enabling `SSL` between the `Celery workers` and the
-:ref:`RabbitMQ Server` must be a separate, dedicated effort. 
+protocol. Sill, enabling `SSL` between the `Celery workers` and the
+:ref:`RabbitMQ Server` must be a separate, dedicated effort.

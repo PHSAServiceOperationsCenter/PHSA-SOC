@@ -1,7 +1,7 @@
 """
 .. _communication:
 
-communication module
+Communication Module
 --------------------
 
 :module:    citrus_borg.locutus.communication
@@ -11,9 +11,9 @@ communication module
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    nov. 128, 2018
+:updated:    Jun. 19, 2019
 
 This module contains database functions for the :ref:`Citrus Borg Application`.
 
@@ -185,8 +185,8 @@ def get_dead_brokers(now=None, time_delta=None):
 
 def get_dead_sites(now=None, time_delta=None):
     """
-    ge the remote sites from where no `ControlUp` events have been delivered
-    during the interval defined by the arguments
+    get the remote sites from where no `ControlUp` events have been delivered
+    during the interval defined by the arguments.
 
     This function is very similar to :func:`get_dead_bots`.
     The only differences are:
@@ -318,7 +318,7 @@ def raise_ux_alarm(
 
     :arg group_by: how do you want to group the data in the
         :class:`django.db.models.query.QuerySet`?
-    :type group_by: :class:`GoupBy`
+    :type group_by: :class:`GroupBy`
 
     :arg datetime.timedelta ux_alert_threshold: the threshold for triggering
         this alert
@@ -446,7 +446,7 @@ def _include_ux_stats(queryset):
     for `Citrix` application response times extracted from the
     :class:`citrus_borg.models.WinlogEvent` model
 
-    The statistical functions used are: :class:`django.db.models.Avg',
+    The statistical functions used are: :class:`django.db.models.Avg`,
     :class:`django.db.models.Min`, :class:`django.db.models.Max` and
     :class:`django.db.models.StdDev`.
 
@@ -557,7 +557,7 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         that was filtered out already). This function considers such a
         combination valid and will happily return an empty
         :class:`django.db.models.query.QuerySet` when invoked with such a
-        cobination
+        combination.
 
     :arg int logon_alert_trehsold: if present, filter the data to be returned
         on the :class:`django.dn.models.Count` aggregation for `failed` events;
@@ -581,8 +581,8 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
         Note this will affect `aggregations
         <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__.
-        Normally, `aggregations` are calculated for the interval dfiend by the
-        `now` and `time_delta` arguments but when this argumen is present,
+        Normally, `aggregations` are calculated for the interval defined by the
+        `now` and `time_delta` arguments but when this argument is present,
         the `aggregations` will be calculated for the time sequence value
         of the argument.
 

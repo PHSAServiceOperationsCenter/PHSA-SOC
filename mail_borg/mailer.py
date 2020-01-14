@@ -1,19 +1,9 @@
 """
-.. _mailer:
-
-:module:    mail_borg.mailer
-
-:copyright:
-
-    Copyright 2018 - 2019 Provincial Health Service Authority
-    of British Columbia
-
-:contact:    serban.teodorescu@phsa.ca
-
-:updated:    may 14, 2019
+mail_borg.mailer
+----------------
 
 This module provides a specialize email only client library for accessing an
-`Exchange Web Services (EWS) 
+`Exchange Web Services (EWS)
 <https://searchwindowsserver.techtarget.com/definition/Exchange-Web-Services-EWS>`_
 end point.
 
@@ -45,6 +35,16 @@ Most members of this module make use of an attribute named
 ``config``. This attribute is the Python representation of the structure
 described in the :ref:`borg_client_config`.
 
+:copyright:
+
+    Copyright 2018 - 2019 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    daniel.busto@phsa.ca
+
+:updated:    may 14, 2019
+
+
 """
 import collections
 import json
@@ -59,7 +59,7 @@ from email_validator import (
     validate_email, EmailSyntaxError, EmailUndeliverableError,
 )
 from exchangelib import (
-    ServiceAccount, Message, Account, Configuration, DELEGATE,
+    Credentials, Message, Account, Configuration, DELEGATE, FaultTolerance,
 )
 from exchangelib.errors import ErrorTooManyObjectsOpened
 from retry import retry
@@ -79,10 +79,10 @@ class _Logger():
     :class:`queue.Queue` instance.
 
     The methods in this class that take a ``strings`` argument expect that
-    said argument is can be serialized to ``JSON``.
+    said argument can be serialized to ``JSON``.
     The reason for this requirement is architectural in nature; somewhere down
-    the line these messages will put on a wire and the end points expect to
-    be receive ``JSON`` objects.
+    the line these messages will be put on a wire and the end points expect to
+    receive ``JSON`` objects.
 
     As used in the :ref:`Mail Borg Client Application`, all the messages fed
     into an instance of this class are Python :class:`dictionaries <dict>`
@@ -101,7 +101,7 @@ class _Logger():
     The message group maps to an single Exchange verification operation. All
     the messages that are part of the verification operation include the
     ``wm_id`` attribute. This attribute is essential for various operations
-    executed on the server side/
+    executed on the server side.
 
     All the values in this dictionary must be :class:`strings <str>`.
 
@@ -193,7 +193,7 @@ def _get_account(config):
     :arg config:
 
         a :class:`dictionary <dict>` that matches the structure described in
-        :ref:`borg_client_config` (or the relevantr portions thereof)
+        :ref:`borg_client_config` (or the relevant portions thereof)
 
         As used in the :ref:`Mail Borg Client Application`, the ``config``
         argument is provided via an :attr:`WitnessMessages.config` instance
@@ -262,9 +262,9 @@ def validate_email_to_ascii(email_address, logger=None, **config):
         This function doesn't raise any exceptions because it does its own
         error handling. It is catching and logging:
 
-        :exc:``email_validator.EmailSyntaxError``
+        :exc:`email_validator.EmailSyntaxError`
 
-        :exc:``email_validator.EmailUndeliverableError``
+        :exc:`email_validator.EmailUndeliverableError`
 
     """
     if not config:
@@ -372,7 +372,7 @@ def get_accounts(logger=None, **config):
                 exchange_account.get('smtp_address'), logger=logger, **config):
             continue
 
-        credentials = ServiceAccount(
+        credentials = Credentials(
             username='{}\\{}'.format(
                 exchange_account.get('domain_account').get('domain'),
                 exchange_account.get('domain_account').get('username')),
@@ -380,24 +380,31 @@ def get_accounts(logger=None, **config):
         )
 
         exc_config = None
-        if not exchange_account.get('exchange_autodiscover', True):
-            exc_config = Configuration(
-                server=exchange_account.get('autodiscover_server'),
-                credentials=credentials)
 
         try:
+
             if exchange_account.get('exchange_autodiscover', True):
+                exc_config = Configuration(
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
                 accounts.append(Account(
                     primary_smtp_address=exchange_account.get('smtp_address'),
-                    credentials=credentials,
-                    autodiscover=True,
-                    access_type=DELEGATE))
+                    config=exc_config, autodiscover=True, access_type=DELEGATE)
+                )
+
             else:
+                exc_config = Configuration(
+                    server=exchange_account.get('autodiscover_server'),
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
                 accounts.append(Account(
                     primary_smtp_address=exchange_account.get('smtp_address'),
-                    config=exc_config,
-                    autodiscover=False,
-                    access_type=DELEGATE))
+                    config=exc_config, autodiscover=False,
+                    access_type=DELEGATE)
+                )
+
             logger.info(
                 dict(type='connection', status='PASS',
                      wm_id=config.get('wm_id'),
@@ -408,6 +415,7 @@ def get_accounts(logger=None, **config):
                              'domain_account').get('username'),
                          exchange_account.get('smtp_address')))
             )
+
         except Exception as err:  # pylint: disable=broad-except
             logger.err(
                 dict(type='connection', status='FAIL',
@@ -473,7 +481,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     This identifier is appended to both the email message itself and,
     more importantly, to the Windows log events created while said class
     instance is active.
-    This identifier is used to figure out the site and the bot from whence
+    This identifier is used to figure out the site and the bot where
     the log event was collected and the time when when the event was created.
     This identifier is created in the constructor and will become part of
     the :class:`dictionary <dict>` stored in the :attr:`config` instance
@@ -490,7 +498,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     The :meth:`send` method will send all the messages so created and the
     :meth:`verify_receive` will look for the sent messages in the receiving
     ``inbox``. The :meth:`verify_receive` will also invoke the
-    :meth:`send` method when the :attr:`_sent` is ``False``. 
+    :meth:`send` method when the :attr:`_sent` is ``False``.
     """
 
     def __init__(
@@ -645,16 +653,73 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
         return tags
 
-    def send(self):
+    def send(self, min_wait_receive=None, step_wait_receive=None,
+             max_wait_receive=None):
         """
-        send out the exchange monitoring messages
+        loop through the Exchange messages in the :attr:`messages` instance
+        attribute and send out each message
 
-        if there are no messages, log an error
+        If there are no messages, log an error.
 
-        if sending a particular message raises an error,
-        log it, drop it from the list of messages in the instance, and keep
-        sending the rest of the messages
+        If sending a particular message raises an error,
+        log it, drop the message from the list of messages under the
+        :attr:`messages` instance attribute, and keep sending the rest of
+        the messages.
+
+        This method uses a pattern known as `retry with exponential back-off
+        and circuit breaker
+        <https://dzone.com/articles/understanding-retry-pattern-with-exponential-back>`__
+        to control connections to the `EWS
+        <https://docs.microsoft.com/en-us/exchange/client-developer/exchange-web-services/start-using-web-services-in-exchange>`__
+        server.
+
+        :arg int wait_receive: minimum wait when retrying an Exchange action;
+            in this case, this is the minimum retry wait for resending the
+            Exchange message measured in seconds
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+        :arg int step_wait_receive: back-off factor for retrying an Exchange
+            action
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+        :arg int max_wait_receive: maximum time to wait before giving up
+            on an Exchange action
+
+            If `None`, pick the value from the :attr:`config` attribute.
+
+
         """
+        if min_wait_receive is None:
+            min_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('min_wait_receive'))
+
+        if step_wait_receive is None:
+            step_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('backoff_factor'))
+
+        if max_wait_receive is None:
+            max_wait_receive = int(
+                self.config.get(
+                    'exchange_client_config').get('max_wait_receive'))
+
+        @retry((ErrorTooManyObjectsOpened,), delay=int(min_wait_receive),
+               max_delay=int(max_wait_receive), backoff=int(step_wait_receive))
+        def send_message(message):
+            """
+            send the Exchange message using the `retry with exponential
+            back-off and circuit breaker` pattern`
+
+            The typical exception that triggers the retry is when the
+            `EWS ResponseMessage
+            <https://docs.microsoft.com/en-us/exchange/client-developer/web-service-reference/responsemessage>`__
+            contains an `ErrorTooManyObjectsOpened` error.
+            """
+            message.message.send()
+
         if self._abort:
             if self.update_window_queue:
                 self.update_window_queue.put_nowait(('abort',))
@@ -676,7 +741,8 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         messages = self.messages
         for message in messages:
             try:
-                message.message.send()
+
+                send_message(message)
 
                 self.logger.info(
                     dict(type='send', status='PASS',
@@ -728,18 +794,28 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
               cannot communicate from ``message.account.smtp_address``
               to ``account.inbox.smtp_adddress``
 
-        :arg int wait_receive: minimum delay for searching the ``inboxx``
-            measured in seconds seconds
+        This method uses a pattern known as `retry with exponential back-off
+        and circuit breaker
+        <https://dzone.com/articles/understanding-retry-pattern-with-exponential-back>`__
+        to control connections to the `EWS
+        <https://docs.microsoft.com/en-us/exchange/client-developer/exchange-web-services/start-using-web-services-in-exchange>`__
+        server.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int wait_receive: minimum wait when retrying an Exchange action;
+            in this case, this is the minimum retry wait for searching the
+            Exchange account `inbox` measured in seconds
 
-        :arg int step_wait_receive: back-off factor
+            If `None`, pick the value from the :attr:`config` attribute.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int step_wait_receive: back-off factor for retrying an Exchange
+            action
 
-        :arg int max_wait_receive: maximum delay for searching the ``inbox``
+            If `None`, pick the value from the :attr:`config` attribute.
 
-            If ``None``, pick the value from the :attr:`config`
+        :arg int max_wait_receive: maximum time to wait before giving up
+            on an Exchange action
+
+            If `None`, pick the value from the :attr:`config` attribute.
 
         """
         if min_wait_receive is None:

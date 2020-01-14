@@ -8,29 +8,225 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:update:    Jul. 15, 2019
+:update:    Nov. 7, 2019
 
 This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
 
 """
+import decimal
+import datetime
+import ipaddress
 import logging
 import socket
+import time
+import uuid
+
+import humanfriendly
 
 from django.apps import apps
+from django.contrib.auth.models import User
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
 from django.db.models.functions import Cast, Concat
 from django.db.models.query import QuerySet
+from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
 LOGGER = logging.getLogger('django')
+
+
+def show_milliseconds(seconds):
+    """
+    formats the input to a string with milliseconds if said input is less
+    than 1 second, otherwise the input is formatted to a string with seconds
+
+    :arg seconds: an input object that represents a duration in a format that
+        can be coerced to :class:`decimal.Decimal`
+
+    :returns: soemthing like '1.200 seconds' or '525 milliseconds'
+
+    :raises: :exc:`TypeError` if the input cannot be coerced to
+        :class:`decimal.Decimal`
+
+    """
+    try:
+        seconds = decimal.Decimal(seconds)
+    except decimal.InvalidOperation:
+        raise TypeError(
+            f'{type(seconds)} cannot be coerced to decimal.Decimal')
+
+    if seconds.compare(decimal.Decimal('1')) is True:
+        return humanfriendly.format_timespan(float(seconds))
+
+    return humanfriendly.format_timespan(float(seconds), detailed=True)
+
+
+@mark_safe
+def get_absolute_admin_change_url(
+        admin_view, obj_pk, obj_anchor_name=None, root_url=None):
+    """
+    build and return an absolute `URL` for a `Django admin change` page
+
+    See `Reversing admin URLs
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`__.
+
+    :arg str admin_view: the name of the admin view
+    :arg int obj_pk: the primary key of the object in the view
+    :arg str obj_anchor_name: the string that should be placed inside
+        an <a>$obj_anchor_name</a> `HTML` tag; default is `None` and
+        in that case the function assumes that the HTML tag will be
+        <a></a>
+
+    :arg str root_url: an `URL` fragment to be placed before the
+        `Django admin` object path
+
+        It is supposed to look something like
+        '<a href="http://server:port/'. If this argument is set to `None`,
+        it will be populated from specific `Django` settings and the
+        value returned by :meth:`socket.getfqdn`
+
+    """
+    if root_url is None:
+        root_url = (
+            f'<a href="{settings.SERVER_PROTO}://{socket.getfqdn()}:'
+            f'{settings.SERVER_PORT}/')
+
+    if obj_anchor_name is None:
+        tail_url = '"></a>'
+    else:
+        tail_url = f'">{obj_anchor_name}</a>'
+
+    try:
+        admin_path = reverse(admin_view, args=(obj_pk,))
+    except NoReverseMatch as err:
+        return f'cannot resolve URL path for view {admin_view}. Error: {err}'
+
+    return f'{root_url}{admin_path}{tail_url}'
+
+
+def diagnose_network_problem(host_spec, port=0):
+    """
+    diagnose problems with network nodes.
+
+    This function looks for:
+
+    * host names that are not in DNS
+
+      If the `host_spec` is not an `IP` address, this function will use
+      :meth:`socket.getaddrinfo` to simulate opening a socket to the host.
+      :meth:`socket.getaddrinfo` will fail if the host name is not in DNS.
+
+    * host ip addresses that do not exist on the network
+
+      if the `host_spec` is an `IP` address, the function uses
+      :meth:`socket.gethostbyaddr` to verify that the host is on the network
+
+    :arg str host_spec: the host name or IP address
+
+    :arg int port: the port argument to use with :meth:`socket.getaddrinfo`,
+        default is 0
+
+    :returns: a tuple with an error code, and an explicit error message or
+        a "can't find anything wrong" message
+    :rtype: :class:`tuple`
+    """
+    try:
+        ipaddress.ip_address(host_spec)
+        try:
+            socket.gethostbyaddr(host_spec)
+        except Exception as err:  # pylint: disable=broad-except
+            return (1, (f'\nhost {host_spec} does not exist,'
+                        f' error {type(err)}: {str(err)}'))
+
+    except ValueError:
+        try:
+            socket.getaddrinfo(host_spec, port)
+        except Exception as err:  # pylint: disable=broad-except
+            return (1, (f'host name {host_spec} not in DNS,'
+                        f' error {type(err)}: {str(err)}'))
+
+    return (0, f'found no network problems with host: {host_spec}')
+
+
+class Timer():
+    """
+    `Context manager
+    <https://docs.python.org/3/library/stdtypes.html#context-manager-types>`__
+    class that provides timing functionality for evaluating the performance
+    and/or response time of a `Python` `function
+    <https://docs.python.org/3/library/stdtypes.html#functions>`__ or
+    `method
+    <https://docs.python.org/3/library/stdtypes.html#methods>`__
+    """
+
+    def __init__(
+            self,
+            description='method timing context manager', use_duration=True):
+        """
+        constructor for the :class:`Timer` class
+        """
+        self.description = description
+        """
+        provide a :class:`str` description for the context manager
+
+        Default: 'method timing context manager'
+        """
+
+        self.start = None
+        """the start time"""
+
+        self.end = None
+        """the end time"""
+
+        self.elapsed = None
+        """
+        the time elapsed while executing the method or function invoked
+        with the :class:`Timer` context manager
+
+        This is a :class:`float` value expressed in seconds
+        """
+
+        self.use_duration = use_duration
+        """
+        use seconds or :class:`datetime.timedelta` objects for the timer
+
+        Default (`True`) is to use :class:`datetime.timedelta` objects
+        """
+
+    def __enter__(self):
+        """
+        start the timer and expose the instance attributes to the outside
+        world
+
+        `return self` ensures that the :attr:`elapsed` instance attribute
+        (as well as all the other instance attributes) will be available
+        once the context manager goes out of scope.
+        """
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """
+        stop the timer and update the :attr:`elapsed` instance attribute
+
+        'return False` ensures that exceptions raised within the context
+        manager scope will propagate to the outside world.
+        """
+        self.end = time.perf_counter()
+        self.elapsed = self.end - self.start
+        if self.use_duration:
+            self.elapsed = datetime.timedelta(seconds=self.elapsed)
+
+        return False
 
 
 class UnknownDataTargetError(Exception):
@@ -42,9 +238,19 @@ class UnknownDataTargetError(Exception):
 
 class DataTargetFieldsAttributeError(Exception):
     """
-    custom :exc:`Exception class raised when the
-    :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`
+    custom :exc:`Exception` class raised when the
+    :func:`get_queryset_values_keys` cannot find attribute :attr:`qs_fields`.
     """
+
+
+def get_uuid():
+    """
+    provide default values for UUID fields
+
+    :returns: an instance of :class:`uuid.UUID` that can  be used as a
+              unique identifier
+    """
+    return uuid.uuid4()
 
 
 def get_model(destination):
@@ -134,7 +340,7 @@ def url_annotate(queryset):
     and the `model_name` property.
     It then uses the `Concat
     <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#concat>`_
-    database function to calculate a field containting the value of the `URL`.
+    database function to calculate a field containing the value of the `URL`.
 
     :arg queryset: the :class:`<django.db.models.query.QuerySet>` object
 
@@ -190,9 +396,9 @@ def details_url_annotate(
 
     :arg str model_path: the `model_name` property of the `Django model` with the
         details. If ``None``, it will be picked from the `queryset` using the
-        `Model _meta API`. This, however, is o very little use, since there are
+        `Model _meta API`. This, however, is of very little use, since there are
         very few realistic data models where the master and the details are in
-        the same `Djanog model`.
+        the same `Django model`.
 
     :arg str param_name: `Django lookup` key_name__field_name used to build the
         `param` part of the `URL`. If one considers the example above, this
@@ -248,7 +454,7 @@ def remove_duplicates(sequence=None):
 
     :arg sequence: the sequence that may be containing duplicates
 
-    :returns: a :class:`lst` with no duplicate items
+    :returns: a :class:`list` with no duplicate items
     """
     class IterableError(Exception):
         """
@@ -280,7 +486,7 @@ def remove_duplicates(sequence=None):
 
 def get_pk_list(queryset, pk_field_name='id'):
     """
-    :returns: a :class:`lst` with the primary key values from a
+    :returns: a :class:`list` with the primary key values from a
         :class:`Django queryset <django.db.models.query.QuerySet>`
 
     needed when invoking `celery tasks` without forcing the use of the `pickle`
@@ -304,12 +510,12 @@ def get_pk_list(queryset, pk_field_name='id'):
     return list(queryset.values_list(pk_field_name, flat=True))
 
 
-def _make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
+def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
     """
     make sure that a :class:`datetime.datetime` object is `timezone aware
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_
 
-    :arg `datetime.datetime datetime_input:
+    :arg `datetime.datetime` datetime_input:
 
     :arg `django.utils.timezone` use_timezone: the timezone to use
 
@@ -334,16 +540,23 @@ class MomentOfTime():
     :meth:`datetime.dateime.now` method but sometimes we need something else.
 
     Note that this class uses the `django.utils.timezone
-    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`_
+    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`__
     module instead of the `Python datetime
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_ module.
     Therefore, it should not be used outside `Django applications`.
+
+    .. todo::
+
+        This class is time zone aware but only operates with UTC. Do we
+        need to make it work with other time zones and, particularly,
+        with the time zone defined in the Dajngo settings?
+
     """
     @staticmethod
     def now(now):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`__
         for calculating the reference moment
 
         :arg `datetime.datetime` now: the reference moment; if ``None``, use the
@@ -378,7 +591,7 @@ class MomentOfTime():
 
         :arg dict kw_time_delta: a :class:`dict` suitable for creating a
             :class:`datetime.timedelta` object. See
-            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_.
+            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__.
 
         :raises:
 
@@ -411,15 +624,16 @@ class MomentOfTime():
             with the following keys:
 
             :now: contains the reference moment; if not present, this method
-                  will use the value returned by :meth:`django.utils.timezone.now`.
+                  will use the value returned by
+                  :meth:`django.utils.timezone.now`.
 
             :time_delta: contains the `datetime.timedelta` interval used to
-                         calculate the moment in the past.
+                calculate the moment in the past.
 
-                         If this key is not present, the method expects other keys
-                         as per
-                         `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`_
-                         so that a `datetime.timedelta` interval can be calculated.
+                If this key is not present, the method expects other keys
+                as per
+                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__
+                so that a `datetime.timedelta` interval can be calculated
 
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \
@@ -498,34 +712,28 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription):
+def get_subscription(subscription, logger=LOGGER):
     """
     :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
 
     :arg str subscription: the subscription value
-        Note that this value is case-sensitive
 
-    .. todo::
+    :arg logger: the logger used to record log messages
+    :type logger: :class:`logging.logger`
 
-        Use `filter(subscription__iexact=subscription).get()` to avoid the case
-        sensitive requirement
-
-    :raises: :exc:`Exception` if the
-        :class:`ssl_cert_tracker.models.Subscription` instance cannot be found
-
-    .. todo::
-
-        Change the error catching to use a
-        :exc:`djang.db.core.exceptions.ObjectDoesNotExist` exception.
+    :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't \
+    exist.
     """
     try:
-        return Subscription.objects.\
-            get(subscription=subscription)
-    except Exception as error:
-        raise error
+        return Subscription.objects.get(subscription__iexact=subscription)
+    except Subscription.DoesNotExist:
+        error_msg = f'Subscription "{subscription}" does not exist.'
+        logger.error(error_msg)
+        raise Subscription.DoesNotExist(error_msg)
 
 
-def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
+def borgs_are_hailing(
+        data, subscription, logger=LOGGER, add_csv=True, **extra_context):
     """
     use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
     email from the :ref:`SOC Automation Server`
@@ -533,28 +741,38 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
 
     :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance used to render and address
-        the email
+        <ssl_cert_tracker.models.Subscription>` instance that will be used
+        for rendering and addressing the email
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain a descriptor for the `queryset` fields that will be
-        rendered in the email.
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain a descriptor for the `queryset` fields that
+        will be rendered in the email.
 
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>` instance
-        must contain the name and location of the template that will be used to
-        render the email. 
+        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
+        instance must contain the name and location of the template that
+        will be used to render the email.
 
-    :arg LOGGER: a logging handlle
+    :arg bool add_csv: attach a csv file with the contents of the `data`
+        argument to the email; default is `True`
+
+    :arg LOGGER: a logging handle
     :type LOGGER: :class:`logging.Logger`
 
-    :arg dict extra_context: optional arguments with additional data to be rendered
-        in the email
+    :arg dict extra_context: optional arguments with additional data to be
+        rendered in the email
+
+        .. note::
+
+            Do not use `data`, `subscription`, `logger`, `add_csv`, or
+            `extra_content` as names for email data elements as they will
+            be interpreted as other arguments of this function (causing
+            unexpected behaviour) or cause an exception.
 
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
 
-        We are using generic :class:`exceptions <Exception>` because this function
-        is almost always invoked from a `Celery task
+        We are using the generic :class:`exceptions <Exception>` because this
+        function is almost always invoked from a `Celery task
         <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
         `Celery` will do all the error handling work if needed.
 
@@ -566,7 +784,7 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     try:
         email_alert = Email(
             data=data, subscription_obj=subscription, logger=logger,
-            **extra_context)
+            add_csv=add_csv, **extra_context)
     except Exception as error:  # pylint: disable=broad-except
         logger.error('cannot initialize email object: %s', str(error))
         raise error
@@ -576,3 +794,18 @@ def borgs_are_hailing(data, subscription, logger=LOGGER, **extra_context):
     except Exception as error:
         logger.error(str(error))
         raise error
+
+
+def get_or_create_soc_su():
+    user = User.objects.filter(is_superuser=True)
+    if user.exists():
+        user = user.first()
+    else:
+        user = User.objects.create(
+            username='soc_su', email='soc_su@phsa.ca',
+            password='soc_su_password', is_active=True, is_staff=True,
+            is_superuser=True)
+        user.set_password('soc_su_password')
+        user.save()
+
+    return user

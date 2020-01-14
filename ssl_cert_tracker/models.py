@@ -11,7 +11,7 @@ Application`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 """
 import socket
@@ -171,8 +171,8 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
             :class:`SslCertificateIssuer` instance
 
             By default, this value is picked from
-            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER` and if that user doesn't
-            exit, it will be created.
+            :attr:`p_soc_auto.settings.NMAP_SERVICE_USER` and if that user
+            doesn't exist, it will be created.
 
         :returns: a :class:`SslCertificateIssuer` instance
         """
@@ -274,17 +274,18 @@ class SslCertificate(SslCertificateBase, models.Model):
           :attr:`pk_md5` with the one present in the :attr:`ssl_md5` attribute
           of the `ssl_certificate` argument
 
-          * if the `MD5` values match, the whole `SSL` certificate matches; the
-            mehtod will only update the :attr:`SslCertificate.last_seen` field
+          * if the `MD5` values match, the whole `SSL` certificate matches;
+            the method will only update the :attr:`SslCertificate.last_seen`
+            field
 
-          * if the `MD5` values don't match, this is a new `SSL` certificate; the
-            method will update all the fields in the :class:`SslCertificate`
-            instance
+          * if the `MD5` values don't match, this is a new `SSL` certificate;
+            the method will update all the fields in the
+            :class:`SslCertificate` instance
 
         :Note:
 
-            In :class:`SslCetificate`, the network address is hiding behind the
-            :attr:`SslCertificate.orion_id` which is a
+            In :class:`SslCetificate`, the network address is hiding behind
+            the :attr:`SslCertificate.orion_id` which is a
             :class:`django.db.models.ForeignKey` to
             :class:`orion_integration.models.OrionNode`.
 
@@ -296,16 +297,15 @@ class SslCertificate(SslCertificateBase, models.Model):
             <https://nmap.org/>`_ scan
         :type ssl_certificate: :class:`ssl_cert_tracker.nmap.SslProbe`
 
-        :arg str username: the :attr:`django.contrib.auth.models.User.username`
-            of the user (or its
-            `replacement
+        :arg str username: :attr:`django.contrib.auth.models.User.username`
+            of the user (or its `replacement
             <https://docs.djangoproject.com/en/2.2/topics/auth/customizing/#substituting-a-custom-user-model>`__)
             maintaining the :class:`SslCertificate` instance
 
             The default value is picked from
             :attr:`p_soc_auto.settings.NMAP_SERVICE_USER`. If a matching
-            :class:`django.contrib.auth.models.User` instance doesn't exist, one
-            will be created.
+            :class:`django.contrib.auth.models.User` instance doesn't exist,
+            one will be created.
         """
         user = cls.get_or_create_user(username)
         issuer = SslCertificateIssuer.get_or_create(
@@ -368,8 +368,8 @@ class SslCertificate(SslCertificateBase, models.Model):
         """
         absolute `URL` for the `Django admin change`
         :class:`django.contrib.admin.ModelAmin` form for the
-        :class:`orion_integration.models.OrionNode` instance of the network node
-        that is serving this `SSL` certificate
+        :class:`orion_integration.models.OrionNode` instance of the network
+        node that is serving this `SSL` certificate
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -399,8 +399,9 @@ class SslCertificate(SslCertificateBase, models.Model):
     @mark_safe
     def orion_node_url(self):
         """
-        absolute `SolarWinds Orion <https://www.solarwinds.com/solutions/orion>`__
-        `URL` for the network node serving this :class:`SslCertificate` instance
+        absolute `SolarWinds Orion
+        <https://www.solarwinds.com/solutions/orion>`__ `URL` for the
+        network node serving this :class:`SslCertificate` instance
         """
         orion_node = OrionNode.objects.filter(orion_id=self.orion_id)
         if orion_node.exists():
@@ -423,7 +424,7 @@ class SslExpiresIn(SslCertificate):
     """
     `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
-    for :class:`SslCertificate`
+    for :class:`SslCertificate`.
 
     Show valid `SSL` certificates sorted by expiration date.
     """
@@ -476,8 +477,8 @@ class Subscription(BaseModel):
     running on the :ref:`SOC Automation Server`.
     """
     subscription = models.CharField(
-        'subscription', max_length=64, unique=True, db_index=True, blank=False,
-        null=False)
+        'subscription', max_length=128, unique=True, db_index=True,
+        blank=False, null=False)
     """
     string uniquely identifying a :class:`Subscription` instance
     """
@@ -530,7 +531,7 @@ class Subscription(BaseModel):
     """
     the strings to be used as the core of the email subject line
 
-    The application will most probably pre-pend and/or append various other
+    The application will most probably prepend and/or append various other
     strings to the subject line.
 
     There is no limit on the length of the subject line but in this application
@@ -580,7 +581,7 @@ class Subscription(BaseModel):
     a string af tags that will be pre-pended to the email subject line
     
     The application will not do any processing on this value. If one expects
-    tags to look like[TAG1][TAG2], this value must be created using this
+    tags to look like [TAG1][TAG2], this value must be created using this
     pattern.
     """
 

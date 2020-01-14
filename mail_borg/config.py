@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    may 14, 2019
 
@@ -133,7 +133,7 @@ def load_base_configuration(current_base_configuration=None,
     :arg dict current_base_configuration:
 
         If present, it represents the contents of the basic config fields
-        from the mainj window of the :mod:`mail_borg.mail_borg_gui` module.
+        from the main window of the :mod:`mail_borg.mail_borg_gui` module.
         if this argument is present, the function will return it.
 
         This argument is used under scenarios where the user has changed the
@@ -398,9 +398,10 @@ def dump_config_to_file(config, json_file=LOCAL_CONFIG):
 
     :arg dict config: the main configuration
 
-    :arg str json_file: 
+    :arg str json_file:
 
-        the relative path and name  of the `JSON <https://www.json.org/>`_ file
+        the relative path and name  of the `JSON <https://www.json.org/>`__
+        file
 
         The default value is provided via the :attr:`LOCAL_CONFIG` variable
         value

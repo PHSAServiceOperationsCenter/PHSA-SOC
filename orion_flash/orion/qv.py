@@ -10,7 +10,7 @@ queries and verbs for Orion SDK
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Feb. 22, 2019
 

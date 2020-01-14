@@ -11,7 +11,7 @@ This module contains the `Celery tasks
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 24, 2019
 
@@ -25,7 +25,7 @@ from orion_integration.models import (
 )
 
 
-@shared_task(queue='orion')
+@shared_task(queue='orion', rate_limit='5/s')
 def populate_from_orion():
     """
     this task will create and/or update the `Orion` data cached by the
@@ -70,12 +70,12 @@ def orion_entity_exists(model_name, primary_key):
         get(pk=primary_key).exists_in_orion()
 
 
-@shared_task(queue='orion')
+@shared_task(queue='orion', rate_limit='5/s')
 def verify_known_orion_data():
     """
     this task is using the `Celery group primitive
     <https://docs.celeryproject.org/en/latest/userguide/canvas.html#groups>`__
-    in order to launc a :func:`orion_entity_exists` task for each known `Orion`
+    in order to launch a :func:`orion_entity_exists` task for each known `Orion`
     entity
 
     :returns: a list with the orion objects models and the number of objects

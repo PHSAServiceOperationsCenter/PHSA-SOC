@@ -7,7 +7,7 @@
 <div><p><ul>
 <li>AD service error occurred: {{ created_on }}</li>
 <li>AD service error occurred when probing the controller on {{ node }}</li>
-<li>AD service error details:<p>{{ data.errors }}</p></li>
+<li>AD service error details:<p>{{ errors }}</p></li>
 <li>AD probe details: {{ probe_url }}</li>
 <li>
 {% if orion_url %}

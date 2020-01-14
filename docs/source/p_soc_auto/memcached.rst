@@ -40,4 +40,3 @@ Here is an article about `How To Secure Memcached by Reducing Exposure
 <https://www.digitalocean.com/community/tutorials/how-to-secure-memcached-by-reducing-exposure>`__.
 But this article only talks about reducing the attack surface of a `Memcached
 <https://memcached.org/>`__ cluster.
-to 

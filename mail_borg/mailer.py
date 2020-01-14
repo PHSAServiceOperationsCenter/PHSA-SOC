@@ -40,7 +40,7 @@ described in the :ref:`borg_client_config`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    may 14, 2019
 
@@ -498,7 +498,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
     The :meth:`send` method will send all the messages so created and the
     :meth:`verify_receive` will look for the sent messages in the receiving
     ``inbox``. The :meth:`verify_receive` will also invoke the
-    :meth:`send` method when the :attr:`_sent` is ``False``. 
+    :meth:`send` method when the :attr:`_sent` is ``False``.
     """
 
     def __init__(

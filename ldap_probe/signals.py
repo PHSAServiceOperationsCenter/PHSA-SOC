@@ -11,7 +11,6 @@ for the :ref:`Active Directory Services Monitoring Application`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
 :contact:    daniel.busto@phsa.ca
 
 :updated:    Dec. 11, 2019
@@ -33,6 +32,9 @@ def invoke_raise_ldap_failed_alert(sender, instance, *args, **kwargs):
     for dispatching the alert
 
     """
+    if not instance.node_is_enabled:
+        return
+
     if not instance.failed:
         return
 
@@ -47,6 +49,13 @@ def invoke_raise_ldap_perf_alert(sender, instance, *args, **kwargs):
     for dispatching a performance alert
 
     """
+    if not instance.node_is_enabled:
+        return
+
+    if instance.perf_err:
+        tasks.raise_ldap_probe_perf_err.delay(instance.id)
+        return
+
     if instance.perf_alert:
         tasks.raise_ldap_probe_perf_alert.delay(instance.id)
         return

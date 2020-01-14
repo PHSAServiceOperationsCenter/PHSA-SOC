@@ -11,7 +11,7 @@ library package for the citrux_borg application
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Nov. 28, 2018
 

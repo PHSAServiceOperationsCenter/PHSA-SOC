@@ -1,12 +1,14 @@
 {% block subject %}
-{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }} 
+{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }}
 {% endblock %}
 
 {% block html %}
 <h3>AD Service Performance Degradation Details</h3>
 <div><p><ul>
 <li>AD service performance degradation occurred: {{ created_on }}</li>
-<li>AD service performance degradation observed for the AD controller on {{ node }}</li>
+<li>
+AD service performance degradation observed for the AD controller on {{ node_url }}
+</li>
 <li>AD probe details: {{ probe_url }}</li>
 <li>
 {% if orion_url %}
@@ -15,19 +17,42 @@ Orion node: {{ orion_url }}
 {{ node }} is not defined in Orion.
 {% endif %}
 </li>
+<li>AD service performance is worse than
+{% if level == "INFO" %}
+{{ avg_warn_threshold }}
+{% elif level == "WARNING" %}
+{{ avg_err_threshold }}
+{% else %}
+{{ alert_threshold }}
+{% endif %}
+</li>
 <li>
 AD service performance degradation details (all values are measured in seconds):
 <p>
-<table style="border: 1px solid red;">
+<table style="border: noborder;border-collapse: collapse">
 <tr align="left" valign="center">
 {% for key, val in headers.items %}
-<th><strong>{{val}}</strong></th>
+{% if level == "INFO" %}
+<th style="border: 1px solid blue;">
+{% elif level == "WARNING" %}
+<th style="border: 1px solid yellow;">
+{% else %}
+<th style="border: 1px solid red;">
+{% endif %}
+<strong>{{val}}</strong></th>
 {% endfor %}
 </tr>
 {% for item in data %}
 <tr align="left" valign="center">
 {% for value in item.values %}
-<td style="border: 1px solid red;">{{value}}</td>
+{% if level == "INFO" %}
+<td style="border: 1px solid blue;">
+{% elif level == "WARNING" %}
+<td style="border: 1px solid yellow;">
+{% else %}
+<td style="border: 1px solid red;">
+{% endif %}
+{{value}}</td>
 {% endfor %}
 </tr>
 {% endfor %}

@@ -33,8 +33,8 @@ from .models import (
 
 class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
     """
-    Base :class:`django.contrib.admin.ModelAdmin` class for all the other classes
-    in this module
+    Base :class:`django.contrib.admin.ModelAdmin` class for all the other
+    classes in this module
     """
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

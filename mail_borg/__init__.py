@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    jul. 26, 2019
 
@@ -45,4 +45,4 @@ efforts will have to take that into consideration.
 """
 import sys
 
-__version__ = '1.1.0-rc'
+__version__ = '1.1.1-release_candidate'

@@ -18,7 +18,7 @@ For the full list of settings and their values, see
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 29, 2019
 
@@ -53,7 +53,7 @@ Enable or disable debugging information
 
 ALLOWED_HOSTS = ['*', ]
 
-ADMINS = [('Serban Teodorescu', 'serban.teodorescu@phsa.ca'), ]
+ADMINS = [('Daniel Busto', 'daniel.busto@phsa.ca'), ]
 
 LOG_DIR = '/var/log/phsa/django'
 """
@@ -362,6 +362,14 @@ be placed under this directory
 """
 pathlib.Path(CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 # note that this will not work in Python <3.5
+
+EXPORT_CSV_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'export_csv/')
+"""
+``export_csv`` files created as exports from various admin pages will
+be placed under this directory
+"""
+pathlib.Path(EXPORT_CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+
 
 ORION_HOSTNAME = 'orion.vch.ca'
 """
@@ -909,6 +917,11 @@ EVENT_TYPE_SORT = {
 }
 """
 Mapping required to provide a custom sort order for event types
+"""
+
+GRAPPELLI_ADMIN_TITLE = 'SOC Automation Server'
+"""
+custom name for the admin site
 """
 
 GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'

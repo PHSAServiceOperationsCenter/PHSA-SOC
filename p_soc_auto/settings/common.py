@@ -1,5 +1,5 @@
 """
-p_soc_auto.settings
+p_soc_auto.settings.common
 -------------------
 
 Django settings for the :ref:`SOC Automation Server`
@@ -15,13 +15,10 @@ For the full list of settings and their values, see
 
 :copyright:
 
-    Copyright 2018 - 2019 Provincial Health Service Authority
+    Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
-
-:updated:    Oct. 29, 2019
-
 """
 
 import os
@@ -41,16 +38,6 @@ this file
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
-
-DEBUG = True
-"""
-Enable or disable debugging information
-
-:SECURITY WARNING:
-
-    Don't run with debug turned on in production!
-"""
-
 ALLOWED_HOSTS = ['*', ]
 
 ADMINS = [('Daniel Busto', 'daniel.busto@phsa.ca'), ]
@@ -64,41 +51,33 @@ pathlib.Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 # note that this will not work in Python <3.5
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format':
-            '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    'version':     1, 'disable_existing_loggers': False, 'formatters': {
+        'verbose':   {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style':  '{',
+        }, 'simple': {
+            'format': '{levelname} {message}', 'style': '{',
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'filters': {
+    }, 'filters':  {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
-    },
-    'handlers': {
-        'django_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'django.log'),
+    }, 'handlers': {
+        'django_log':               {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'django.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'ssl_cert_tracker_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
+            'filters':   ['require_debug_true']
+        }, 'ssl_cert_tracker_log':  {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
+            'filters':   ['require_debug_true']
         },
 
-        #======================================================================
+        # ======================================================================
         # 'orion_flash_log': {
         #     'level': 'DEBUG',
         #     'class': 'logging.FileHandler',
@@ -106,97 +85,82 @@ LOGGING = {
         #     'formatter': 'verbose',
         #     'filters': ['require_debug_true']
         # },
-        #======================================================================
+        # ======================================================================
 
-        'citrus_borg_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'citrus_borg.log'),
+        'citrus_borg_log':          {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'citrus_borg.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'mail_collector_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'mail_collector.log'),
+            'filters':   ['require_debug_true']
+        }, 'mail_collector_log':    {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'mail_collector.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'orion_integration_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'orion_integration.log'),
+            'filters':   ['require_debug_true']
+        }, 'orion_integration_log': {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'orion_integration.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'django_smtp_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'django_smtp.log'),
+            'filters':   ['require_debug_true']
+        }, 'django_smtp_log':       {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'django_smtp.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'ldap_probe_log': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOG_DIR, 'ldap_probe.log'),
+            'filters':   ['require_debug_true']
+        }, 'ldap_probe_log':        {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'ldap_probe.log'),
             'formatter': 'verbose',
-            'filters': ['require_debug_true']
-        },
-        'console': {
-            'level': 'DEBUG',
-            'filters': ['require_debug_true'],
-            'class': 'logging.StreamHandler',
+            'filters':   ['require_debug_true']
+        }, 'console':               {
+            'level':     'DEBUG',
+            'filters':   ['require_debug_true'],
+            'class':     'logging.StreamHandler',
             'formatter': 'simple'
+        }, 'mail_admins':           {
+            'level': 'ERROR', 'class': 'django.utils.log.AdminEmailHandler',
         },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['django_log'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'ssl_cert_tracker': {
-            'handlers': ['ssl_cert_tracker_log', 'console'],
-            'level': 'DEBUG',
+    }, 'loggers':  {
+        'django':               {
+            'handlers': ['django_log'], 'level': 'DEBUG', 'propagate': True,
+        }, 'ssl_cert_tracker':  {
+            'handlers':  ['ssl_cert_tracker_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
         },
 
-        #======================================================================
+        # ======================================================================
         # 'orion_flash': {
         #     'handlers': ['orion_flash_log', 'console'],
         #     'level': 'DEBUG',
         #     'propagate': True,
         # },
-        #======================================================================
+        # ======================================================================
 
-        'citrus_borg': {
-            'handlers': ['citrus_borg_log', 'console'],
-            'level': 'DEBUG',
+        'citrus_borg':          {
+            'handlers':  ['citrus_borg_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
-        },
-        'mail_collector': {
-            'handlers': ['mail_collector_log', 'console'],
-            'level': 'DEBUG',
+        }, 'mail_collector':    {
+            'handlers':  ['mail_collector_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
-        },
-        'orion_integration': {
-            'handlers': ['orion_integration_log', 'console'],
-            'level': 'DEBUG',
+        }, 'orion_integration': {
+            'handlers':  ['orion_integration_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
-        },
-        'django_smtp': {
-            'handlers': ['django_smtp_log', 'console'],
-            'level': 'DEBUG',
+        }, 'django_smtp':       {
+            'handlers':  ['django_smtp_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
-        },
-        'ldap_probe': {
-            'handlers': ['ldap_probe_log', 'console'],
-            'level': 'DEBUG',
+        }, 'ldap_probe':        {
+            'handlers':  ['ldap_probe_log', 'console'],
+            'level':     'DEBUG',
             'propagate': True,
         },
     },
@@ -207,10 +171,8 @@ detailed logging configuration
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-        'LOCATION': [
-            '127.0.0.1:11211',
-        ]
+        'BACKEND':  'django.core.cache.backends.memcached.PyLibMCCache',
+        'LOCATION': ['127.0.0.1:11211', ]
     }
 }
 """
@@ -218,8 +180,7 @@ memcached connection configuration
 """
 
 # Application definition
-INSTALLED_APPS = [
-    'ldap_probe.apps.LdapProbeConfig',
+INSTALLED_APPS = ['ldap_probe.apps.LdapProbeConfig',
     'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
@@ -227,71 +188,54 @@ INSTALLED_APPS = [
     'citrus_borg.apps.CitrusBorgConfig',
     #    'orion_flash.apps.OrionFlashConfig',
     #    'task_journal.apps.TaskJournalConfig',
-    'rest_framework',
-    'django_template_check',
-    'django_mysql',
-    'rangefilter',
-    'templated_email',
-    'timedeltatemplatefilter',
-    'dynamic_preferences',
-    'grappelli.dashboard',
-    'grappelli',
-    'django.contrib.admin',
-    'django.contrib.admindocs',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_celery_beat',
-]
+    'rest_framework', 'django_template_check', 'django_mysql', 'rangefilter',
+    'templated_email', 'timedeltatemplatefilter', 'dynamic_preferences',
+    'grappelli.dashboard', 'grappelli', 'django.contrib.admin',
+    'django.contrib.admindocs', 'django.contrib.auth',
+    'django.contrib.contenttypes', 'django.contrib.sessions',
+    'django.contrib.messages', 'django.contrib.staticfiles',
+    'django_celery_beat', ]
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+MIDDLEWARE = ['django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.admindocs.middleware.XViewMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+    'django.middleware.clickjacking.XFrameOptionsMiddleware', ]
 
 ROOT_URLCONF = 'p_soc_auto.urls'
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'dynamic_preferences.processors.global_preferences',
-            ],
-        },
+TEMPLATES = [{
+    'BACKEND':  'django.template.backends.django.DjangoTemplates',
+    'DIRS':     [],
+    'APP_DIRS': True,
+    'OPTIONS':  {
+        'context_processors': ['django.template.context_processors.debug',
+            'django.template.context_processors.request',
+            'django.contrib.auth.context_processors.auth',
+            'django.contrib.messages.context_processors.messages',
+            'dynamic_preferences.processors.global_preferences', ],
     },
-]
+}, ]
 
 WSGI_APPLICATION = 'p_soc_auto.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'phsa_database',
-        'HOST': '',
+        'ENGINE':   'django.db.backends.mysql',
+        'NAME':     'phsa_database',
+        'HOST':     '',
         'PASSWORD': 'phsa_db_password',
-        'USER': 'phsa_db_user',
-        'OPTIONS': {
+        'USER':     'phsa_db_user',
+        'OPTIONS':  {
             # Tell MySQLdb to connect with 'utf8mb4' character set
             'charset': 'utf8mb4',
         },
     },
 
-    #=========================================================================
+    # =========================================================================
     #     'orion_aux_db': {
     #         'ENGINE': 'sql_server.pyodbc',
     #         'NAME': 'orion_aux_db',
@@ -306,7 +250,7 @@ DATABASES = {
     #             'driver': 'ODBC Driver 17 for SQL Server',
     #         },
     #     },
-    #=========================================================================
+    # =========================================================================
 
 }
 """
@@ -319,20 +263,15 @@ SILENCED_SYSTEM_CHECKS = ['django_mysql.W001', 'django_mysql.W002', ]
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+AUTH_PASSWORD_VALIDATORS = [{
+    'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+}, {
+    'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+}, {
+    'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+}, {
+    'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+}, ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
@@ -572,20 +511,22 @@ tasks with arguments that cannot be serialized to ``JSON`` like
 <django.db.models.QuerySet>`.
 """
 
-CELERY_QUEUES = (
-    Queue('email', Exchange('email'), routing_key='email'),
-    Queue('orion', Exchange('orion'), routing_key='orion'),
-    Queue('nmap', Exchange('nmap'), routing_key='nmap'),
-    Queue('ssl', Exchange('ssl'), routing_key='ssl'),
-    Queue('shared', Exchange('shared'), routing_key='shared'),
-    Queue('citrus_borg', Exchange('the_borg'), routing_key='citrus_borg'),
-    Queue('borg_chat', Exchange('the_borg'), routing_key='borg_chat'),
-    #    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
-    Queue('mail_collector', Exchange('mail_collector'),
-          routing_key='mail_collector'),
-    Queue('ldap_probe', Exchange('ldap_probe'), routing_key='ldap_probe'),
-    Queue('data_prune', Exchange('data_prune'), routing_key='data_prune'),
-)
+CELERY_QUEUES = (Queue('email', Exchange('email'), routing_key='email'),
+                 Queue('orion', Exchange('orion'), routing_key='orion'),
+                 Queue('nmap', Exchange('nmap'), routing_key='nmap'),
+                 Queue('ssl', Exchange('ssl'), routing_key='ssl'),
+                 Queue('shared', Exchange('shared'), routing_key='shared'),
+                 Queue('citrus_borg', Exchange('the_borg'),
+                       routing_key='citrus_borg'),
+                 Queue('borg_chat', Exchange('the_borg'),
+                       routing_key='borg_chat'),
+                 #    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
+                 Queue('mail_collector', Exchange('mail_collector'),
+                       routing_key='mail_collector'),
+                 Queue('ldap_probe', Exchange('ldap_probe'),
+                       routing_key='ldap_probe'),
+                 Queue('data_prune', Exchange('data_prune'),
+                       routing_key='data_prune'),)
 """
 Celery queues
 """
@@ -666,19 +607,6 @@ default address used in the ``FROM:`` field for emails originating on the
 """
 
 DEFAULT_EMAIL_REPLY_TO = DEFAULT_FROM_EMAIL
-
-#=========================================================================
-# # ==========================================================================
-# # email settings for gmail
-# # these will not work from 10.1.80.0
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_USE_TLS = True
-# EMAIL_USE_SSL = False
-# EMAIL_PORT = 587
-# EMAIL_HOST_USER = 'phsadev@gmail.com'
-# EMAIL_HOST_PASSWORD = 'gaukscylgzzlavva'
-# # ===========================================================================
-#=========================================================================
 
 # server settings: use them to build URL's
 SERVER_PORT = '8080'
@@ -862,12 +790,12 @@ exposed by
 """
 
 DYNAMIC_PREFERENCES = {
-    'MANAGER_ATTRIBUTE': 'preferences',
-    'REGISTRY_MODULE': 'dynamic_preferences_registry',
+    'MANAGER_ATTRIBUTE':            'preferences',
+    'REGISTRY_MODULE':              'dynamic_preferences_registry',
     'ADMIN_ENABLE_CHANGELIST_FORM': True,
-    'SECTION_KEY_SEPARATOR': '__',
-    'ENABLE_CACHE': True,
-    'VALIDATE_NAMES': True,
+    'SECTION_KEY_SEPARATOR':        '__',
+    'ENABLE_CACHE':                 True,
+    'VALIDATE_NAMES':               True,
 }
 
 # settings specific to nmap
@@ -890,16 +818,16 @@ following options:
 
   do not `ping
   <https://en.wikipedia.org/wiki/Ping_(networking_utility)>`__ the target
-  
+
 * `-p %`
 
   this is not a wide scan, just probe the specified port
 
 * `--script ssl-cert`
-  
+
   Use the `ssl-cert <https://nmap.org/nsedoc/scripts/ssl-cert.html>`__ `Lua
   <https://www.lua.org/>`__ script for scanning
-  
+
 """
 
 SSL_DEFAULT_PORT = 443
@@ -908,12 +836,12 @@ default network port for ``SSL`` `nmap <https://nmap.org/>`__ probes
 """
 
 EVENT_TYPE_SORT = {
-    'unknown': 0,
+    'unknown':       0,
     'configuration': 1,
-    'connection': 2,
-    'create': 3,
-    'send': 4,
-    'receive': 5,
+    'connection':    2,
+    'create':        3,
+    'send':          4,
+    'receive':       5,
 }
 """
 Mapping required to provide a custom sort order for event types

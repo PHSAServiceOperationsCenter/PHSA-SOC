@@ -29,6 +29,17 @@ def add_dcs_to_buckets(apps, schema_editor):
         for domain_controller_name in bucket_lists[bucket_name]:
             update_dc_with_bucket(apps, domain_controller_name, bucket)
 
+    # Set all domain controllers not listed here to the default
+    default_bucket = perf_bucket_model.objects.get(is_default=True)
+
+    non_orion_node_model = apps.get_model('ldap_probe', 'NonOrionADNode')
+    orion_node_model = apps.get_model('ldap_probe', 'OrionADNode')
+
+    non_orion_node_model.objects.filter(performance_bucket=None)\
+        .update(performance_bucket=default_bucket)
+    orion_node_model.objects.filter(performance_bucket=None)\
+        .update(performance_bucket=default_bucket)
+
 
 class Migration(migrations.Migration):
 

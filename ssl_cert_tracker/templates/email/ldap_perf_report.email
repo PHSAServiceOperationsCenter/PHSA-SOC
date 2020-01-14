@@ -1,0 +1,68 @@
+{% load timedelta_filter %}
+
+{% block subject %}
+{{ tags }}{{ level }}: {{ email_subject }} {{ name }}
+{% endblock %}
+
+{% block html %}
+{% if data %}
+<h3>
+{{ email_subject }} {{ name }}
+</h3>
+<div><p>
+The data presented by this report has been collected from domain controller
+network nodes with response times worse than <strong>{{ threshold }}</strong>
+that accept
+{% if full %}
+non anonymous (full)
+{% else %}
+only anonymous
+{% endif %}
+bind requests with the default SOC credentials and are
+{% if orion %}
+defined
+{% else %}
+not defined
+{%endif %}
+on the Orion server.</p>
+<p>
+The data collection was launched at {{ now }} and covers the last
+{{ time_delta | timedelta:"{minutes_total} minutes" }}.
+</p></div>
+
+<div><p>
+<table style="border: noborder;border-collapse: collapse">
+<tr align="left" valign="center">
+{% for key, val in headers.items %}
+<th style="border: 1px solid black;"><strong>{{val}}</strong></th>
+{% endfor %}
+</tr>
+{% for item in data %}
+<tr align="left" valign="center">
+{% for value in item.values %}
+<td style="border: 1px solid black;">{{value}}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+{% elif not data %}
+<div><h3 style="color: green;">
+AD services response times for all the domain controllers with expected performance: {{ bucket }}
+measured over the last
+{{ time_delta|timedelta:"{minutes_total} minutes" }} are better than
+{{ threshold }}.
+</h3></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

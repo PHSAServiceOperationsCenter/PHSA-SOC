@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :update:    Nov. 7, 2019
 
@@ -16,6 +16,7 @@ This module contains utility `Python` classes and functions used by the
 `Django` applications  of the :ref:`SOC Automation Server`.
 
 """
+import decimal
 import datetime
 import ipaddress
 import logging
@@ -23,7 +24,10 @@ import socket
 import time
 import uuid
 
+import humanfriendly
+
 from django.apps import apps
+from django.contrib.auth.models import User
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -32,6 +36,7 @@ from django.db.models.query import QuerySet
 from django.urls import reverse
 from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
@@ -39,6 +44,33 @@ from ssl_cert_tracker.lib import Email
 LOGGER = logging.getLogger('django')
 
 
+def show_milliseconds(seconds):
+    """
+    formats the input to a string with milliseconds if said input is less
+    than 1 second, otherwise the input is formatted to a string with seconds
+
+    :arg seconds: an input object that represents a duration in a format that
+        can be coerced to :class:`decimal.Decimal`
+
+    :returns: soemthing like '1.200 seconds' or '525 milliseconds'
+
+    :raises: :exc:`TypeError` if the input cannot be coerced to
+        :class:`decimal.Decimal`
+
+    """
+    try:
+        seconds = decimal.Decimal(seconds)
+    except decimal.InvalidOperation:
+        raise TypeError(
+            f'{type(seconds)} cannot be coerced to decimal.Decimal')
+
+    if seconds.compare(decimal.Decimal('1')) is True:
+        return humanfriendly.format_timespan(float(seconds))
+
+    return humanfriendly.format_timespan(float(seconds), detailed=True)
+
+
+@mark_safe
 def get_absolute_admin_change_url(
         admin_view, obj_pk, obj_anchor_name=None, root_url=None):
     """
@@ -729,6 +761,13 @@ def borgs_are_hailing(
     :arg dict extra_context: optional arguments with additional data to be
         rendered in the email
 
+        .. note::
+
+            Do not use `data`, `subscription`, `logger`, `add_csv`, or
+            `extra_content` as names for email data elements as they will
+            be interpreted as other arguments of this function (causing
+            unexpected behaviour) or cause an exception.
+
     :raises: :exc:`Exception` if the email cannot be rendered or if the email
         cannot be sent
 
@@ -755,3 +794,18 @@ def borgs_are_hailing(
     except Exception as error:
         logger.error(str(error))
         raise error
+
+
+def get_or_create_soc_su():
+    user = User.objects.filter(is_superuser=True)
+    if user.exists():
+        user = user.first()
+    else:
+        user = User.objects.create(
+            username='soc_su', email='soc_su@phsa.ca',
+            password='soc_su_password', is_active=True, is_staff=True,
+            is_superuser=True)
+        user.set_password('soc_su_password')
+        user.save()
+
+    return user

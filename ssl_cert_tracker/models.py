@@ -11,7 +11,7 @@ Application`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 """
 import socket
@@ -477,8 +477,8 @@ class Subscription(BaseModel):
     running on the :ref:`SOC Automation Server`.
     """
     subscription = models.CharField(
-        'subscription', max_length=64, unique=True, db_index=True, blank=False,
-        null=False)
+        'subscription', max_length=128, unique=True, db_index=True,
+        blank=False, null=False)
     """
     string uniquely identifying a :class:`Subscription` instance
     """

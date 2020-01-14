@@ -8,7 +8,7 @@
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    sep. 17, 2018
 
@@ -16,13 +16,22 @@
 Server` apps
 
 """
+import socket
+
+from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldDoesNotExist
+from django.utils import timezone
+
+from djqscsv import write_csv
 
 from citrus_borg.models import BorgSite
 from mail_collector.models import ExchangeConfiguration
+
+admin.site.site_header = 'SOC Automation Server'
+admin.site.index_title = 'SOC Automation Server Administration'
 
 
 def enable_selected(modeladmin, request, queryset):
@@ -86,6 +95,39 @@ def disable_selected(modeladmin, request, queryset):
 disable_selected.short_description = 'Disable selected'
 
 admin.site.add_action(disable_selected, 'disable_selected')
+
+
+def export_to_csv(modeladmin, request, queryset):
+    """
+    add an action to export the queryset behind an admin summary page to csv
+    """
+    field_names = []
+    if hasattr(queryset.model, 'csv_fields'):
+        field_names = queryset.model.csv_fields
+
+    csv_file_name = (f'{settings.EXPORT_CSV_MEDIA_ROOT}'
+                     f'{timezone.localtime():%Y_%m_%d-%H_%M_%S}-'
+                     f'{queryset.model._meta.verbose_name}.csv')
+
+    with open(csv_file_name, 'wb') as csv_file:
+        try:
+            write_csv(queryset.values(*field_names), csv_file)
+        except Exception as error:
+            modeladmin.message_user(
+                request,
+                f'cannot export the data in the'
+                f' {queryset.model._meta.verbose_name} queryset to csv:'
+                f' {str(error)}', level=messages.ERROR)
+            return
+
+    modeladmin.message_user(
+        request,
+        f'Data exported to {socket.getfqdn()}:/{csv_file_name}',
+        level=messages.INFO)
+
+
+export_to_csv.short_description = 'Export to CSV file'
+admin.site.add_action(export_to_csv, 'export_to_csv')
 
 
 class BaseAdmin(admin.ModelAdmin):

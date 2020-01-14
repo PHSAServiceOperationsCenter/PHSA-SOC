@@ -8,7 +8,7 @@ Django models for the base app
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 Abstract base model classes
 """
@@ -129,8 +129,11 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
     from this class that do not have a default instance.
     """
     is_default = models.BooleanField(
-        _('default windows account'),
-        db_index=True, blank=False, null=False, default=False)
+        _('Default Instance'),
+        db_index=True, blank=False, null=False, default=False,
+        help_text=_(
+            'If set, then this row will be preferred by the application.'
+            ' Note there can only be one default row in the table.'))
     """
     if this field is set to `True` in a :class:`model
     <django.db.models.Model>` inheriting from this class, the instance
@@ -179,13 +182,13 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
         """
         get the default instance for this model
 
-        :returns: the default instance of this model or `None`
+        :returns: the id of the default instance of this model or `None`
         """
         if not hasattr(cls, 'objects'):
             return None
 
         try:
-            return cls.objects.filter(is_default=True).get()
+            return cls.objects.filter(is_default=True).get().id
         except cls.DoesNotExist:
             return None
 

@@ -10,21 +10,20 @@ This module contains the :class:`django.db.models.Model` models for the
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 6, 2019
+:updated:    Dec. 17, 2019
 
 """
-import decimal
 import logging
 import socket
 
 from django.conf import settings
+from django.core import validators
 from django.db import models
 from django.db.models import (
     Case, When, F, Value, TextField, URLField, Count, Avg, Min, Max, Q)
 from django.db.models.functions import Concat
-from django.core import validators
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -46,6 +45,28 @@ def _get_default_ldap_search_base():
     attribute
     """
     return get_preference('ldapprobe__search_dn_default')
+
+
+def _get_default_warn_threshold():
+    """
+    get default values for foo_warn_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_warn')
+
+
+def _get_default_err_threshold():
+    """
+    get default values for foo_err_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_alert')
+
+
+def _get_default_alert_threshold():
+    """
+    get default values for alert_threshold fields
+    """
+    return get_preference('ldapprobe__ldap_perf_err')
+
 
 # pylint: disable=too-few-public-methods
 
@@ -166,9 +187,54 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
         verbose_name_plural = _('LDAP Bind Credentials Sets')
 
 
+class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
+    """
+    :class:`django.db.models.Model` class used for storing acceptable
+    performance data for AD monitoring
+
+    `Performance Group for ADS Nodes fields
+    <../../../admin/doc/models/ldap_probe.adnodeperfbucket>`__
+    """
+    name = models.CharField(
+        _('Bucket name'), max_length=253, db_index=True, unique=True,
+        help_text=_('A descriptive name to help determine which nodes should be'
+                    ' included in the bucket.'))
+    avg_warn_threshold = models.DecimalField(
+        _('Warning Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
+        default=_get_default_warn_threshold,
+        help_text=_(
+            'If the average AD services response time is worse than this'
+            ' value, include this node in the periodic performance'
+            ' degradation warnings report.'))
+    avg_err_threshold = models.DecimalField(
+        _('Error Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
+        default=_get_default_err_threshold,
+        help_text=_(
+            'If the average AD services response time is worse than this'
+            ' value, include this node in the periodic performance'
+            ' degradation errors report.'))
+    alert_threshold = models.DecimalField(
+        _('Alert Response Time Threshold'), max_digits=6,
+        decimal_places=4, db_index=True, blank=False, null=False,
+        default=_get_default_alert_threshold,
+        help_text=_(
+            'If the AD services response time for any probe is worse than'
+            ' this value, raise an immediate alert.'))
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        app_label = 'ldap_probe'
+        verbose_name = 'Performance Group for ADS Nodes'
+        verbose_name_plural = 'Performance Groups for ADS Nodes'
+
+
 class BaseADNode(BaseModel, models.Model):
     """
-    `Django abastract model
+    `Django abstract model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#abstract-base-classes>`__
     for storing information about `Windows` domain controller hosts
     """
@@ -176,6 +242,12 @@ class BaseADNode(BaseModel, models.Model):
         'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
+    # TODO should we get rid of blank and null?
+    performance_bucket = models.ForeignKey(
+        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True, null=True,
+        default=ADNodePerfBucket.get_default,
+        on_delete=models.SET_DEFAULT, verbose_name=_(
+            'Acceptable Performance Limits'))
 
     sql_case_dns = When(
         ~Q(node__node_dns__iexact=''), then=F('node__node_dns'))
@@ -292,7 +364,9 @@ class BaseADNode(BaseModel, models.Model):
             :class:`LdapProbeLog` rows.
 
         The annotation should look something like
-        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/ldapprobefullbindlog/?ad_node__isnull=True&ad_orion_node__id__exact=3388'.
+        'http://lvmsocq01.healthbc.org:8091/admin/ldap_probe/"""\
+        """ldapprobefullbindlog/?ad_node__isnull=True&"""\
+        """ad_orion_node__id__exact=3388'.
 
 
         :arg str probes_model_name: determines the model name that will be
@@ -323,9 +397,149 @@ class BaseADNode(BaseModel, models.Model):
             Value(url_filters), F('id'), output_field=TextField())).values()
 
     @classmethod
+    def report_perf_degradation(  # pylint: disable=too-many-branches
+            cls, bucket=None, anon=False, level=None, **time_delta_args):
+        """
+        generate report data for performance degradation reports
+
+        This method invokes the :meth:`report_probe_aggregates` and then
+        filters the results based on the performance thresholds defined
+        for the :attr:`BaseADNode.performance_bucket`.
+
+        In general tasks calling this method need to be invoked for each
+        bucket.
+
+        :arg bucket: the :class:`ADNodePerfBucket` instance;
+            if not provided, the :class:`ADNodePerfBucket` default
+            instance will be used
+
+        :arg bool anon: are we looking at results from anonymous probes?
+
+        :arg str level: this argument determines which threshold
+            attribute of the :class:`ADNodePerfBucket` instance is used
+            for comparison
+
+            The decision is similar to log levels: `INFO` is using the
+            smallest threshold, and `ERROR` is looking at the worst
+            degradations. We are using this approach because the levels
+            are defined via user preferences.
+
+        :arg time_delta_args: optional named arguments that are used to
+            initialize a :class:`datetime.timedelta` object
+
+            If not present, the method will use the period defined by the
+            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
+            user preference
+
+        :returns: a :class:`tuple` with the following fields:
+
+            * the level used for determining the performace degradation
+              filter
+
+            * the primary key identifying the :class:`ADNodePerfBucket`
+              instance
+
+            * the moments used to filter the data in the report by time
+
+            * the :attr:`subscription
+              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              be used to deliver this report via email
+
+            * the :class:`django.db.models.query.QuerySet` based on one
+              of the classes inheriting from  the :class:`BaseADNode` abstract
+              model
+
+        :raises:
+
+            :exc:`ValueError` if a value is provided for the `bucket`
+            argument that cannot be used for retrieving a
+            :class:`ADNodePerfBucket` instance
+
+            :exc:`TypError` if the default value of the bucket argument
+            (`None`) is used and there is no default instance defined
+            in :class:`ADNodePerfBucket`
+
+            :exc:`ValueError` if the value of the `level` argument
+            is not known to the system
+
+        """
+        no_nodes = False
+        if bucket is None:
+            bucket = ADNodePerfBucket.get_default()
+        else:
+            try:
+                bucket = ADNodePerfBucket.objects.get(name__iexact=bucket)
+            except ADNodePerfBucket.DoesNotExist as error:
+                raise ValueError(
+                    f'{bucket} does not exist: {str(error)}')
+
+        if bucket is None:
+            raise TypeError(f'{type(bucket)} is not acceptable')
+
+        now, time_delta, subscription, queryset, perf_filter \
+            = cls.report_probe_aggregates(
+                anon=anon, perf_filter=True, **time_delta_args)
+
+        subscription = f'{subscription},degrade'
+
+        queryset = queryset.filter(performance_bucket=bucket)
+        if not queryset.exists():
+            no_nodes = True
+
+        if level is None:
+            level = get_preference('commonalertargs__info_level')
+
+        if level == get_preference('commonalertargs__info_level'):
+
+            threshold = bucket.avg_warn_threshold
+            if anon:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_read_root_dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_extended_search_duration__gte=threshold))
+
+        elif level == get_preference('commonalertargs__warn_level'):
+
+            threshold = bucket.avg_err_threshold
+            if anon:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_read_root_dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(average_bind_duration__gte=threshold) |
+                    Q(average_extended_search_duration__gte=threshold))
+
+        elif level == get_preference('commonalertargs__error_level'):
+
+            subscription = f'{subscription},err'
+            threshold = bucket.alert_threshold
+            if anon:
+                perf_filter = (
+                    Q(maximum_bind_duration__gte=threshold) |
+                    Q(maximum_read_root_dse_duration__gte=threshold))
+            else:
+                perf_filter = (
+                    Q(maximum_bind_duration__gte=threshold) |
+                    Q(maximum_extended_search_duration__gte=threshold))
+
+        else:
+            raise ValueError(f'unknown perf degradation level {level}')
+
+        if no_nodes:
+            return now, time_delta, subscription, queryset, threshold, no_nodes
+
+        queryset = queryset.filter(perf_filter).values()
+
+        return now, time_delta, subscription, queryset, threshold, no_nodes
+
+    @classmethod
     def report_probe_aggregates(
             cls,
-            queryset=None, anon=False, perf_filter=None, **time_delta_args):
+            queryset=None, anon=False, perf_filter=False, **time_delta_args):
         """
         generate report data with aggregate probe values for each instance of
         a class that inherits from :class:`BaseADNode` over the period defined
@@ -341,26 +555,9 @@ class BaseADNode(BaseModel, models.Model):
             subject of the report, LDAP probes that achieved a full bind or
             LDAP probes that achieved an anonymous bind
 
-        :arg str perf_filter: apply filters for performance degradation if
-            this argument is provided
-
-            If this argument is `None`, this method will not filter for
-            performance degradation results.
-
-            Otherwise, the argument will be updated to a
-            :class:`decimal.Decimal` value based on the original value:
-
-            * if the value is 'warning', update the argument to the value
-              provided by the user preference defined in
-              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfWarnTreshold`
-
-            * else if the value is 'alert', update the argument to the value
-              provided by the user preference defined in
-              :class:`citrus_borg.dynamic_preferences_registry.LdapPerfAlertTreshold`
-
-            * else, try to convert the original value to
-              :class:`decimal.Decimal` and raise a
-              :exc:`ValueError` if the conversion fails
+        :arg bool perf_filter: if `True`, the data generated here will be
+            used for a performance degradtion report; this information is
+            required in order to generate the proper subscription info
 
         :arg time_delta_args: optional named arguments that are used to
             initialize a :class:`datetime.timedelta` object
@@ -397,12 +594,6 @@ class BaseADNode(BaseModel, models.Model):
                 `read root dse` calls of the successful probes
 
 
-        :raises:
-
-            :exc:`ValueError` if the `perf_filter` argument
-            is not `None` and it cannot be used to initialize a
-            :class:`decimal.Decimal` object
-
         .. todo::
 
             Add a catch for no nodes available.
@@ -416,30 +607,6 @@ class BaseADNode(BaseModel, models.Model):
 
 
         """
-        def resolve_perf_filter(perf_filter):
-            """
-            embedded function for resolving the value of the `perf_filter`
-            argument
-            """
-            if perf_filter is None:
-                return None
-
-            if perf_filter.lower() in ['warning']:
-                perf_filter = get_preference('ldapprobe__ldap_perf_warn')
-            elif perf_filter.lower() in ['alert']:
-                perf_filter = get_preference('ldapprobe__ldap_perf_alert')
-            else:
-                try:
-                    perf_filter = decimal.Decimal(perf_filter)
-                except decimal.InvalidOperation:
-                    raise ValueError(
-                        f'{type(perf_filter)} object {perf_filter}'
-                        ' cannot be converted to decimal')
-
-            return perf_filter
-
-        perf_filter = resolve_perf_filter(perf_filter)
-
         subscription = 'LDAP: summary report'
         if queryset is None:
             queryset = cls.objects.filter(enabled=True)
@@ -461,11 +628,6 @@ class BaseADNode(BaseModel, models.Model):
 
             subscription = f'{subscription}, anonymous bind'
 
-            if perf_filter:
-                ldapprobelog_filter[
-                    'ldapprobelog__elapsed_anon_bind__gte'] = perf_filter
-                subscription = f'{subscription}, perf'
-
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
@@ -475,10 +637,8 @@ class BaseADNode(BaseModel, models.Model):
 
             subscription = f'{subscription}, full bind'
 
-            if perf_filter:
-                ldapprobelog_filter[
-                    'ldapprobelog__elapsed_bind__gte'] = perf_filter
-                subscription = f'{subscription}, perf'
+        if perf_filter:
+            subscription = f'{subscription}, perf'
 
         queryset = queryset.\
             filter(**ldapprobelog_filter).\
@@ -539,11 +699,14 @@ class BaseADNode(BaseModel, models.Model):
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             subscription = f'{subscription}, non orion'
             return (now, time_delta, subscription,
-                    queryset.order_by('node_dns'), perf_filter)
+                    queryset.order_by('performance_bucket__name', 'node_dns'),
+                    perf_filter)
 
         subscription = f'{subscription}, orion'
         return (now, time_delta, subscription,
-                queryset.order_by('node__node_caption'), perf_filter)
+                queryset.order_by('performance_bucket__name',
+                                  'node__node_caption'),
+                perf_filter)
 
     class Meta:
         abstract = True
@@ -645,6 +808,7 @@ class NonOrionADNode(BaseADNode, models.Model):
             ' section 2.1')
     )
 
+
     @classmethod
     def report_nodes(cls):
         """
@@ -663,7 +827,7 @@ class NonOrionADNode(BaseADNode, models.Model):
     def remove_if_in_orion(self, logger=LOGGER):
         """
         if the domain controller host represented by this instance is also
-        present on the `Orion` server, delete this istance
+        present on the `Orion` server, delete this instance
 
         We prefer to extract network node data from `Orion` instead of
         depending on some poor soul maintaining this model manually.
@@ -709,6 +873,10 @@ class LdapProbeLog(models.Model):
     `LDAP Probe Log fields
     <../../../admin/doc/models/ldap_probe.ldapprobelog>`__
     """
+    csv_fields = [
+        'uuid', 'ad_orion_node__node__node_caption', 'ad_node__node_dns',
+        'elapsed_bind', 'elapsed_search_ext', 'elapsed_anon_bind']
+
     uuid = models.UUIDField(
         _('UUID'), unique=True, db_index=True, blank=False, null=False,
         default=get_uuid)
@@ -770,11 +938,15 @@ class LdapProbeLog(models.Model):
         """
         when_ad_orion_node = When(
             ad_orion_node__isnull=False,
-            then=Case(When(
-                ~Q(ad_orion_node__node__node_dns__iexact=''),
-                then=F('ad_orion_node__node__node_dns')),
+            then=Case(
+                When(
+                    ~Q(ad_orion_node__node__node_dns__iexact=''),
+                    then=F('ad_orion_node__node__node_dns')
+                ),
                 default=F('ad_orion_node__node__ip_address'),
-                output_field=TextField()))
+                output_field=TextField()
+            )
+        )
         """
         :class:`django.db.models.When` instance that will translate into
         an `SQL` `WHEN` clause
@@ -842,6 +1014,29 @@ class LdapProbeLog(models.Model):
         return self.ad_node.get_node()
 
     @property
+    def node_is_enabled(self):
+        """
+        is the node probed by this instance enabled?
+        """
+        if self.ad_node:
+            return self.ad_node.enabled
+
+        return self.ad_orion_node.enabled
+
+    @property
+    def node_perf_bucket(self):
+        """
+        :returns: the performance bucket for this node
+        :rtype: :class:`ADNodePerfBucket`
+        """
+        if self.ad_node:
+            node = self.ad_node
+        else:
+            node = self.ad_orion_node
+
+        return node.performance_bucket
+
+    @property
     def perf_alert(self):
         """
         flag for considering if an instance of this class must trigger a
@@ -849,13 +1044,17 @@ class LdapProbeLog(models.Model):
 
         In plain English, this method translates into::
 
-            Give me all the elapsed_foo fields that are not `None`. Then,
-            out of these not `None` fields, if any of them is greater than
-            a threshold, return `True`. Otherwise, return `False`.
+            If so configured, give me all the elapsed_foo fields that are
+            not `None`. Then, out of these not `None` fields, if any of them
+            is greater than a threshold, return `True`. Otherwise, return
+            `False`.
 
         :returns: `True/False`
         :rtype: bool
         """
+        if not get_preference('ldapprobe__ldap_perf_raise_all'):
+            return False
+
         return any(
             [
                 elapsed for elapsed in
@@ -867,7 +1066,7 @@ class LdapProbeLog(models.Model):
                     ]
                     if self_elapsed is not None
                 ]
-                if elapsed >= get_preference('ldapprobe__ldap_perf_alert')
+                if elapsed >= self.node_perf_bucket.avg_err_threshold
             ]
         )
 
@@ -880,6 +1079,9 @@ class LdapProbeLog(models.Model):
         :returns: `True/False`
         :rtype: bool
         """
+        if not get_preference('ldapprobe__ldap_perf_raise_all'):
+            return False
+
         return any(
             [
                 elapsed for elapsed in
@@ -891,7 +1093,31 @@ class LdapProbeLog(models.Model):
                     ]
                     if self_elapsed is not None
                 ]
-                if elapsed >= get_preference('ldapprobe__ldap_perf_warn')
+                if elapsed >= self.node_perf_bucket.avg_warn_threshold
+            ]
+        )
+
+    @property
+    def perf_err(self):
+        """
+        flag for considering if an instance of this class must trigger a
+        performance never exceed alert
+
+        :returns: `True/False`
+        :rtype: bool
+        """
+        return any(
+            [
+                elapsed for elapsed in
+                [
+                    self_elapsed for self_elapsed in
+                    [
+                        self.elapsed_bind, self.elapsed_anon_bind,
+                        self.elapsed_search_ext, self.elapsed_read_root
+                    ]
+                    if self_elapsed is not None
+                ]
+                if elapsed >= self.node_perf_bucket.alert_threshold
             ]
         )
 
@@ -982,7 +1208,7 @@ class LdapProbeLogFailed(LdapProbeLog):
     that shows only :class:`LdapProbeLog` instances with full `AD` probe
     data
     """
-    obejcts = LdapProbeLogFailedManager()
+    objects = LdapProbeLogFailedManager()
 
     class Meta:
         proxy = True
@@ -997,7 +1223,7 @@ class LdapProbeFullBindLog(LdapProbeLog):
     that shows only :class:`LdapProbeLog` instances with full `AD` probe
     data
     """
-    obejcts = LdapProbeLogFullBindManager()
+    objects = LdapProbeLogFullBindManager()
 
     class Meta:
         proxy = True

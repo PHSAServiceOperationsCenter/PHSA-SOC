@@ -10,7 +10,7 @@ This module contains the `Django admin` classes for the
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 15, 2019
 

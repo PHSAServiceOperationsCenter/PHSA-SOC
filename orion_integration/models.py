@@ -10,7 +10,7 @@ This module contains the :class:`django.db.models.Model` models for the
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Nov. 5, 2019
 
@@ -81,7 +81,7 @@ class OrionDomainControllerNodeManager(models.Manager):
 
         """
         return OrionNode.objects.\
-            filter(program_application_type=get_preference(
+            filter(program_application_type__icontains=get_preference(
                 'orionfilters__domaincontroller')).\
             exclude(enabled=False)
 

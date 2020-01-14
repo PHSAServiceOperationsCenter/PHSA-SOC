@@ -9,7 +9,7 @@ This module provides the `HTTP(S)` client for the `Orion REST API`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 24, 2019
 
@@ -41,7 +41,7 @@ def serialize_custom_json(obj):
     custom `JSON encoder
     <https://docs.python.org/3.6/library/json.html?highlight=json#json.JSONEncoder>`__
     for :class:`datetime.datetime` objects; see `default(o)
-    <https://docs.python.org/3.6/library/json.html?highlight=json#json.JSONEncoder.default>`__ 
+    <https://docs.python.org/3.6/library/json.html?highlight=json#json.JSONEncoder.default>`__
 
     The `json module
     <https://docs.python.org/3.6/library/json.html?highlight=json#module-json>`__

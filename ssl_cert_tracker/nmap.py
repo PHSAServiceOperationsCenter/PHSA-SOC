@@ -19,23 +19,26 @@ the `libnmap` package is available at
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Jan. 18, 2019
+:updated:    Dec 16, 2019
 
 """
 import csv
 import logging
 import socket
 
+from dateutil import parser
+
 from django.conf import settings
-from django.utils.dateparse import parse_datetime
-from django.utils import timezone
 
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser
 
+from p_soc_auto_base import utils
+
 from .models import SslProbePort
+
 
 LOG = logging.getLogger('ssl_cert_tracker_log')
 """
@@ -391,8 +394,8 @@ class SslProbe(NmapProbe):
         :returns: the `Not Before` value of the `SSL` certificate
         :rtype: datetime.datetime
         """
-        return make_aware(
-            parse_datetime(
+        return utils.make_aware(
+            parser.parse(
                 self.ssl_data.get('validity', None).get('notBefore', None)
             ))
 
@@ -402,8 +405,8 @@ class SslProbe(NmapProbe):
         :returns: the `Not After` value of the `SSL` certificate
         :rtype: datetime.datetime
         """
-        return make_aware(
-            parse_datetime(
+        return utils.make_aware(
+            parser.parse(
                 self.ssl_data.get('validity', None).get('notAfter', None)
             ))
 
@@ -433,22 +436,6 @@ def to_hex(input_string=None):
     return bytes(input_string, 'utf8').hex()
 
 
-def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
-    """
-    make datetime objects to timezone aware if needed
-
-    .. todo::
-
-        This is dupliccate code. Modify this module to use
-        :func:`p_soc_auto_base.utils.make_aware`
-    """
-    if timezone.is_aware(datetime_input):
-        return datetime_input
-
-    return timezone.make_aware(
-        datetime_input, timezone=use_timezone, is_dst=is_dst)
-
-
 def probe_for_state(dns_list=None):
     """
     try to connect to each DNS name in a list and save the results in
@@ -456,7 +443,7 @@ def probe_for_state(dns_list=None):
     known to the `DNS` servers that are not connectable, and one file
     with connectable hosts
 
-    :arg lst dns_list: the :class:`lst` of DNS names
+    :arg list dns_list: the :class:`list` of DNS names
     """
     if dns_list is None:
         dns_list = []

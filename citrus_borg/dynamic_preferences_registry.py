@@ -29,29 +29,33 @@ function. For example:
     Copyright 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    jan. 3, 2019
 
 """
+import decimal
+
 from django.conf import settings
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 from dynamic_preferences.preferences import Section
 from dynamic_preferences.registries import global_preferences_registry
 from dynamic_preferences.types import (
     BooleanPreference, StringPreference, DurationPreference, IntPreference,
-    LongStringPreference, FloatPreference,
+    LongStringPreference, FloatPreference, DecimalPreference,
 )
 
 
 # pylint: disable=E1101,C0103
 # =========================================================================
-# E1101: instance of '__proxy__' has no 'title' member caused by using .title()
-# on returns from gettext_lazy()
+# E1101: instance of '__proxy__' has no 'title' member caused by using
+# .title() on returns from gettext_lazy()
 #
-# C0103: asr PEP8 module level variables are constants and should be upper-case
+# C0103: as per PEP8 module level variables are constants and should be
+# upper-case
 # =========================================================================
 citrus_borg_common = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
@@ -90,10 +94,119 @@ exchange = Section('exchange',
                        'Options for the PHSA Service Operations Center'
                        ' Exchange Monitoring Application'))
 
+ldap_probe = Section('ldapprobe',
+                     verbose_name=_(
+                         'Options for the PHSA Service Operations Center'
+                         ' Active Directory Services Monitoring Application'))
+"""
+dynamic user preferences section for the :ref:`Active Directory Services
+Monitoring Application`
+"""
+
+common_alert_args = Section(
+    'commonalertargs',
+    verbose_name=_(
+        'Common Args for Alerts Raised by the PHSA'
+        ' Service Operations Center Automation Server'))
+"""
+dynamic user preferences section for preferences common to all applications
+in the :ref:`SOC Automation Project`
+"""
+
+
 # pylint: enable=C0103
 
 
 # pylint: disable=too-few-public-methods
+
+@global_preferences_registry.register
+class AlertArgsErrorLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `ERROR` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__error_level'
+
+    .. todo::
+
+        Refactor all uses of alert and report levels to use this, and related,
+        dynamic preferences.
+
+    """
+    section = common_alert_args
+    name = 'error_level'
+    default = 'ERROR'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying ERROR alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsWarnLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered a `WARNING` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__warn_level'
+
+    """
+    section = common_alert_args
+    name = 'warn_level'
+    default = 'WARNING'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying WARNING alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsInfoLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `INFO` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__info_level'
+
+    """
+    section = common_alert_args
+    name = 'info_level'
+    default = 'INFO'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying INFO alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
+
+@global_preferences_registry.register
+class AlertArgsCriticalLevel(StringPreference):
+    """
+    Dynamic preferences class controlling the value used for indicating
+    if an alert is considered an `CRITICAL` alert
+
+    This preference should be shared among :ref:`SOC Automation Server`
+    applications.
+
+    :access_key: 'commonalertargs__crit_level'
+
+    """
+    section = common_alert_args
+    name = 'crit_level'
+    default = 'CRITICAL'
+    """default setting value"""
+    required = True
+    verbose_name = _('Tag for identifying CRITICAL alerts and/or reports')
+    """verbose name of this dynamic preference"""
+
 
 @global_preferences_registry.register
 class ExchangeExpireEvents(DurationPreference):
@@ -146,7 +259,7 @@ class ExchangeReportErrorLevel(StringPreference):
     verbose_name = _('Error level for all Exchange reports')
     """verbose name of this dynamic preference"""
     help_text = format_html(
-        "{}", _('a report does npt really have an error level but we need'
+        "{}", _('a report does not really have an error level but we need'
                 ' a value here than can be empty, i.e. no level in order'
                 ' to reuse existing mail templates'))
 
@@ -388,7 +501,7 @@ class EmailFromWhenDebug(StringPreference):
     """
     section = email_prefs
     name = 'from_email'
-    default = 'serban.teodorescu@phsa.ca'
+    default = 'daniel.busto@phsa.ca'
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('originating email address when in DEBUG mode').title()
@@ -408,7 +521,7 @@ class EmailToWhenDebug(StringPreference):
     """
     section = email_prefs
     name = 'to_emails'
-    default = 'serban.teodorescu@phsa.ca,james.reilly@phsa.ca'
+    default = 'daniel.busto@phsa.ca,james.reilly@phsa.ca'
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('destination email addresses when in DEBUG mode').title()
@@ -423,7 +536,7 @@ class OrionProbeCSTOnly(BooleanPreference):
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__cerner_cst'
+    :access_key: 'orionprobe__cerner_cst'
     """
     section = orion_probe_defaults
     name = 'cerner_cst'
@@ -438,11 +551,11 @@ class OrionProbeCSTOnly(BooleanPreference):
 class OrionProbeKnownSslOnly(BooleanPreference):
     """
     Dynamic preferences class controlling whether `NMAP` `SSL` probes are
-    executed against `Orion` nodes tagged as`SSL` on the `Orion` server
+    executed against `Orion` nodes tagged as `SSL` on the `Orion` server.
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__orion_ssl'
+    :access_key: 'orionprobe__orion_ssl'
     """
     section = orion_probe_defaults
     name = 'orion_ssl'
@@ -458,12 +571,12 @@ class OrionProbeKnownSslOnly(BooleanPreference):
 class OrionProbeServersOnly(BooleanPreference):
     """
     Dynamic preferences class controlling whether `NMAP` `SSL` probes are
-    executed against `Orion` nodes tagged as`server nodes` on the `Orion`
-    server
+    executed against `Orion` nodes tagged as `server nodes` on the `Orion`
+    server.
 
     This preference is used by the :ref:`Orion Integration Application`.
 
-    :access_key: 'orionprobedefaults__servers_only'
+    :access_key: 'orionprobe__servers_only'
     """
     section = orion_probe_defaults
     name = 'servers_only'
@@ -490,6 +603,26 @@ class OrionCernerCSTFilter(StringPreference):
     """default value for this dynamic preference"""
     required = True
     verbose_name = _('Query Filter for Cerner CST Orion nodes').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class OrionDomainControllerNodeFilter(StringPreference):
+    """
+    Dynamic preferences class controlling the filter parameters used to extract
+    `Windows domain controller` `Orion` nodes
+
+    This preference is used by the :ref:`Orion Integration Application`.
+
+    :access_key: 'orionfilters__domaincontroller'
+    """
+    section = orion_filters
+    name = 'domaincontroller'
+    default = 'DomainController'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Query Filter for Windows domain controller Orion nodes').title()
     """verbose name for this dynamic preference"""
 
 
@@ -1054,7 +1187,324 @@ class LogonReportsInterval(DurationPreference):
         "{}<br>{}",
         _('logon reports are calculated, created, and sent over this'),
         _('time interval'))
-# pylint: disable=too-few-public-methods
+
+
+@global_preferences_registry.register
+class LdapSearchBaseDNDefault(StringPreference):
+    """
+    Dynamic preferences class controlling the default value for the
+    base DN argument used by LDAP search functions
+
+    For example, an LDAP search for the `LoginPI01` account can  be initiated
+    from `'dc=vch,dc=ca'`.
+
+    :access_key: 'ldapprobe__search_dn_default'
+    """
+    section = ldap_probe
+    name = 'search_dn_default'
+    default = 'dc=vch,dc=ca'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Default search base DN').title()
+    """verbose name for this dynamic preference"""
+    help_text = format_html(
+        "{}<br>{}",
+        _('Default value for the base DN argument used by'),
+        _('LDAP search functions'))
+
+
+@global_preferences_registry.register
+class LdapServiceUser(StringPreference):
+    """
+    Dynamic preferences class controlling the service user to be used by
+    :ref:`Active Directory Services Monitoring Application` background
+    processes
+
+    :access_key: 'ldapprobe__service_user'
+    """
+    section = ldap_probe
+    name = 'service_user'
+    default = 'ldap_probe_service_user'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Service user for Domain Controllers Monitoring Application'
+        ' background processes').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapExpireProbeLogEntries(DurationPreference):
+    """
+    Dynamic preferences class controlling how old `LDAP` probe log entries
+    are before they are marked as `expired`
+
+    :access_key: 'ldapprobe__ldap_expire_after'
+    """
+    section = ldap_probe
+    name = 'ldap_expire_after'
+    default = settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'mark LDAP probe log entries as expired if older than').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether `expired` `LDAP` probe
+    log entries will be deleted
+
+    :access_key: 'ldapprobe__ldap_delete_expired'
+    """
+    section = ldap_probe
+    name = 'ldap_delete_expired'
+    default = settings.CITRUS_BORG_DELETE_EXPIRED
+    """default value for this dynamic preference"""
+    required = False
+    verbose_name = _('delete expired LDAP probe log entries').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapErrorAlertSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error alerts
+
+    :access_key: 'ldapprobe__ldap_error_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_subscription'
+    default = 'LDAP: Error alerts subscription'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Alerts').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapErrorReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` error reports
+
+    :access_key: 'ldapprobe__ldap_error_report_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_error_report_subscription'
+    default = 'LDAP: Error report'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Error Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapNonOrionADNodesReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about `AD` nodes not defined
+    on the `Orion` server
+
+    :access_key: 'ldapprobe__ldap_non_orion_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_non_orion_ad_nodes_subscription'
+    default = 'LDAP: non Orion AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for non Orion AD Nodes Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapOrionADNodesFQDNReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about `AD` nodes defined
+    on the `Orion` server with missing FQDN values
+
+    :access_key: 'ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_orion_fqdn_ad_nodes_subscription'
+    default = 'LDAP: Orion FQDN AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for Orion AD Nodes FQDN Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapOrionADNodesDupesReportSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` reports about duplicate `AD` nodes defined
+    on the `Orion` server
+
+    :access_key: 'ldapprobe__ldap_orion_dupes_ad_nodes_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_orion_dupes_ad_nodes_subscription'
+    default = 'LDAP: Duplicate Orion AD nodes'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Email Subscription for duplicate Orion AD Nodes Reports').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfAlertSubscription(StringPreference):
+    """
+    Dynamic preferences class controlling the name of the
+    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    used for dispatching `LDAP` performance alerts
+
+    :access_key: 'ldapprobe__ldap_perf_subscription'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_subscription'
+    default = 'LDAP: Performance alerts subscription'
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _('Email Subscription for LDAP Performance Alerts').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfRaiseMinorAlerts(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether minor alerts about AD
+    services performance degradations will be raised
+
+    By default, only response times larger than the value specified via
+    :class:`LdapPerfNeverExceedThreshold` will trigger an alert. Response
+    times larger than values defined by :class:`LdapPerfAlertThreshold` and
+    :class:`LdapPerfWarnThreshold` will only be included in periodic
+    reports with regards to performance degradation.
+
+    :access_key: 'ldapprobe__ldap_perf_raise_all'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_raise_all'
+    default = False
+    """default value for this dynamic preference"""
+    required = False
+    verbose_name = _(
+        'Raise alerts for all LDAP performance degradation events.').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfDegradationReportGoodNews(BooleanPreference):
+    """
+    Dynamic preferences class controlling whether performance degradation
+    reports with 'all is well, there is no performance degradation' will
+    still be sent out via email
+
+    :access_key: 'ldapprobe__ldap_perf_send_good_news'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_send_good_news'
+    default = False
+    """default value for this dynamic preference"""
+    required = False
+    verbose_name = _(
+        'LDAP: Send performance degradation reports even when there is no'
+        ' performance degradation')
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfNeverExceedThreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the threshold
+    used for dispatching red level alerts about `LDAP` performance degradation
+
+    :access_key: 'ldapprobe__ldap_perf_err'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_err'
+    default = decimal.Decimal('1.000')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'LDAP Performance Error Threshold for Immediate Alerts'
+        ' (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfAlertThreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the threshold
+    used for generating error reports for `LDAP` performance degradation
+
+    :access_key: 'ldapprobe__ldap_perf_alert'
+
+    .. note::
+
+        we are aware that the class name and the access keys for this class
+        and :class:`LdapPerfNeverExceedThreshold` are not following the
+        usual practice.
+    """
+    section = ldap_probe
+    name = 'ldap_perf_alert'
+    default = decimal.Decimal('0.750')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'LDAP Performance Error Threshold for Reports (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapPerfWarnThreshold(DecimalPreference):
+    """
+    Dynamic preferences class controlling the threshold
+    used for generating warning reports for `LDAP` performance degradation
+
+    :access_key: 'ldapprobe__ldap_perf_warn'
+    """
+    section = ldap_probe
+    name = 'ldap_perf_warn'
+    default = decimal.Decimal('0.500')
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'LDAP Performance Warning Threshold for Reports (in seconds)').title()
+    """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class LdapReportPeriod(DurationPreference):
+    """
+    Dynamic preferences class controlling the period used for generating
+    `LDAP` reports
+
+    :access_key: 'ldapprobe__ldap_reports_period'
+    """
+    section = ldap_probe
+    name = 'ldap_reports_period'
+    default = timezone.timedelta(hours=1)
+    """default value for this dynamic preference"""
+    required = True
+    verbose_name = _(
+        'Time interval to use when generating LDAP reports').title()
+    """verbose name for this dynamic preference"""
+
+# pylint: enable=too-few-public-methods
 # pylint: enable=E1101
 
 

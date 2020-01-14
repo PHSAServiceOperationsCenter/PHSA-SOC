@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    jun. 10, 2019
 
@@ -47,13 +47,13 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
     in the :class:`mail_collector.models.MailBetweenDomains` model
 
     The site entry in the domain to domain verification is extracted from the
-    :attr:`mail_collector.models.MailBotMessage.event_group_id` value.
+    :attr:`mail_collector.models.MailBotMessage.event.event_group_id` value.
     this attribute is in the format $site+$host_name+$timestamp
 
     :Note:
 
         This functionality is absolutely dependent on the convention
-        described above. This convention is under out control since
+        described above. This convention is under our control since
         it is implemented via the :ref:`Mail Borg Client Application`.
         Please do not mess with success.
 

@@ -25,9 +25,9 @@ configurable interval, the bot is considered to be down and an alert will be
 raised.
 
 * `Dead Citrix monitoring bots alert
-  <http://10.2.50.35:8080/admin/django_celery_beat/periodictask/?q=Dead+Citrix+monitoring+bots+alert>`__
+  <../../../admin/django_celery_beat/periodictask/?q=Dead+Citrix+monitoring+bots+alert>`__
 
-* Evalutation interval configured from `Bot Not Seen Alert Threshold
+* Evaluation interval configured from `Bot Not Seen Alert Threshold
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_bot_after>`__
 
 * Subscription: `Dead Citrix monitoring bots
@@ -41,7 +41,7 @@ than a configurable threshold over a configurable interval, an alert will be
 raised. E.G. a bot detects 2 failed logons over 10 minutes.
 
 * `Citrix failed logon alerts
-  <../../../admin/django_celery_beat/periodictask/?q=Citrix+failed+logon+alerts>`-_
+  <../../../admin/django_celery_beat/periodictask/?q=Citrix+failed+logon+alerts>`__
   
 * `Failed Logon Events Count Alert Threshold
   <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_threshold>`__
@@ -56,7 +56,7 @@ Citrix response times are below acceptable levels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If a `ControlUp` instance on a remote bot is reporting `Citrix` response times
-less than the threshold, an alert will be raised. The response times are
+longer than the threshold, an alert will be raised. The response times are
 averaged over a configurable interval.
 
 * `Citrix alert: user response time
@@ -110,8 +110,5 @@ If the `orion_flash` application is
 activated, bot related alerts will also be visible on an `Orion` server if the bot
 that is the subject of the alarm is defined as `Orion` nodes.
 
-.. todo::
-
-    Document the `orion_flash` application.
 
 

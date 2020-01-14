@@ -8,7 +8,7 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    May 27, 2019
 
@@ -186,6 +186,13 @@ def expire_events(moment=None):
         :class:`citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents`
         dynamic setting relative to the moment returned by
         :meth:`datetime.datetime.now`
+
+    .. todo::
+
+        Argument type is not suitable for celery tasks. How does one
+        pass a datetime from a celery beat task? This need to change to
+        something that can be passed in as a string of some sorts (or a
+        dictionary of basic types).
 
     """
     if moment is None:

@@ -22,6 +22,10 @@ pushes them to the ``Celery`` stack described by
 :ref:`Mail Collector Celery Details` via the
 `RabbitMQ <https://www.rabbitmq.com/>`_ server.
 
+.. note::
+    Use of ``Windows event log entries`` requires the application be run with
+    administrator permissions.
+
 .. toctree::
    :maxdepth: 2
    

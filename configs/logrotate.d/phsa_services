@@ -1,0 +1,21 @@
+/var/log/phsa/celery/*.log {
+    su phsa phsa
+    daily 
+    missingok
+    rotate 3
+    size 10M
+    compress
+    copytruncate
+    create 0644 phsa phsa
+}
+
+/var/log/phsa/django/*.log {
+    su phsa phsa
+    daily 
+    missingok
+    rotate 3
+    size 10M
+    compress
+    copytruncate
+    create 0644 phsa phsa
+}

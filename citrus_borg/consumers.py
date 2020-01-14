@@ -1,7 +1,7 @@
 """
 .. _consumers:
 
-consumers module
+Consumers Module
 ----------------
 
 :module:    citrus_borg.consumers
@@ -11,7 +11,7 @@ consumers module
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 9, 2019
 

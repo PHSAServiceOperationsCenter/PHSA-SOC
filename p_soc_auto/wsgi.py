@@ -16,7 +16,7 @@ For more information on this file, see `How to deploy with WSGI
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 29, 2019
 

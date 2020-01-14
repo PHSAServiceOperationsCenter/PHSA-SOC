@@ -14,7 +14,7 @@ documentation for details.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 29, 2019
 
@@ -48,6 +48,10 @@ class CustomIndexDashboard(Dashboard):
                     css_classes=('collapse closed',),
                     models=('mail_collector.models.*',)),
                 modules.ModelList(
+                    _('AD Controllers Monitoring'), collapsible=True,
+                    css_classes=('collapse closed',),
+                    models=('ldap_probe.models.*',)),
+                modules.ModelList(
                     _('SSL Certificates Tracker'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('ssl_cert_tracker.models.*',),
@@ -80,6 +84,9 @@ class CustomIndexDashboard(Dashboard):
             children=[
                 {'title': _('SOC Automation Documentation'),
                  'url': '/soc_docs/',
+                 'external': False, },
+                {'title': _('SOC Automation Source Control Documentation'),
+                 'url': '/soc_docs/p_soc_auto/git.html',
                  'external': False, },
                 {'title': ('Configuring SSL Alerts and SSL Monitoring on the'
                            ' Automation Server'),

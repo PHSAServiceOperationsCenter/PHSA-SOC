@@ -14,9 +14,9 @@ application.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 30, 2018
+:updated:    Dec 16, 2019
 
 """
 from enum import Enum
@@ -24,7 +24,6 @@ from logging import getLogger
 from smtplib import SMTPConnectError
 import socket
 
-from django.apps import apps
 from django.conf import settings
 from django.db.models import (
     Case, When, CharField, BigIntegerField, Value, F, Func, TextField,
@@ -35,7 +34,7 @@ from djqscsv import write_csv
 from templated_email import get_templated_mail
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-
+from p_soc_auto_base import utils
 
 LOG = getLogger('ssl_cert_tracker')
 """
@@ -74,7 +73,8 @@ CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
 """
 a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
-See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+See `Django Conditional Expressions
+<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
 for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
 
 In this particular case, if the value of
@@ -88,7 +88,8 @@ STATE_FIELD = Case(
 """
 a representation of an SQL CASE snippet using the SQL WHEN snippets from above
 
-See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+See `Django Conditional Expressions
+<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
 for detail about :class:`django.db.models.When` and :class:`django.db.models.When`.
 
 In this particular case, we are tracking the `STATE` of the
@@ -160,54 +161,8 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
                                   output_field=TextField()))
 
 
-def get_base_queryset(app_label, model_name, url_annotate=True):
-    """
-    get the initial :class:`django.db.models.query.QuerySet`; also `annotate
-    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__ it
-    with the absolute path of the `URL` for
-    the related :class:`Django admin <django.contrib.admin.ModelAdmin>` instance
-    in a calculated field named `url` if required
-
-
-    See `Reversing admin URLs
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.
-
-    Note that this fail if the `Django Admin Site
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`_
-    is not enabled.
-
-
-    :arg str app_label:
-
-    :arg str model_name:
-
-    :arg bool url_annonate:
-
-    .. todo::
-
-        This is duplicate code. Replace this with
-        :func:`p_soc_auto_base.utils.get_base_queryset` and
-        :func:`p_soc_auto_base.utils.url_annotate`.
-    """
-    queryset = apps.get_model(app_label,
-                              model_name).objects.filter(enabled=True)
-
-    if url_annotate:
-        queryset = queryset.annotate(url_id=Cast('id', TextField())).\
-            annotate(url=Concat(
-                Value(settings.SERVER_PROTO), Value('://'),
-                Value(socket.getfqdn()),
-                Value(':'), Value(settings.SERVER_PORT),
-                Value('/admin/'),
-                Value(app_label), Value('/'), Value(model_name),
-                Value('/'), F('url_id'), Value('/change/'),
-                output_field=TextField()))
-
-    return queryset
-
-
-def get_ssl_base_queryset(
-        app_label, model_name, url_annotate=True, issuer_url_annotate=True):
+def get_ssl_base_queryset(app_label, model_name, url_annotate=True,
+                          issuer_url_annotate=True):
     """
     :returns:
 
@@ -233,7 +188,10 @@ def get_ssl_base_queryset(
     :arg bool issuer_url_annotate:
 
     """
-    queryset = get_base_queryset(app_label, model_name, url_annotate)
+    queryset = utils.get_base_queryset(f'{app_label}.{model_name}',
+                                       enabled=True)
+    if url_annotate:
+        queryset = utils.url_annotate(queryset)
     if issuer_url_annotate \
             and app_label in ['ssl_cert_tracker'] \
             and model_name in ['sslcertificate']:
@@ -340,7 +298,8 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
         a :class:`django.db.models.query.QuerySet` based on the
         :class:`ssl_cert_tracker.models.SslCertificate`
 
-        The :class:`django.db.models.query.QuerySet` returned by this function is:
+        The :class:`django.db.models.query.QuerySet` returned by this
+        function is:
 
         * `filtered
           <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
@@ -448,9 +407,8 @@ class NoSubscriptionEmailError(Exception):
 
 class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
-    Subclass of
-    :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending alternative
-    content types
+    Subclass of :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending
+    alternative content types
     <https://docs.djangoproject.com/en/2.2/topics/email/#sending-alternative-content-types>`_
     under the `EmailMessage class
     <https://docs.djangoproject.com/en/2.2/topics/email/#the-emailmessage-class>`_
@@ -474,6 +432,23 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     to be plugged into an instance of this class
     """
 
+    def _debug_init(self):
+        """
+        dump all the info about the email before actually creating the
+        email object
+        """
+        self._debug_logger.debug('headers: %s', self.headers)
+        if self.prepared_data:
+            self._debug_logger.debug('data sample: %s', self.prepared_data[0])
+        else:
+            self._debug_logger.debug('no data')
+
+        context_for_log = dict(self.context)
+        context_for_log.pop('headers', None)
+        context_for_log.pop('data', None)
+
+        self._debug_logger.debug('context: %s', context_for_log)
+
     def _get_headers_with_titles(self):
         """
         prepares the headers for the columns that will be rendered in the email
@@ -481,7 +456,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         This method will infer the column names from the field names stored
         under the :attr:`ssl_cert_tracker.models.Subscription.headers` field.
-        The metho assumes that the field names in the :attr:`headers
+        The method assumes that the field names in the :attr:`headers
         <ssl_cert_tracker.models.Subscription.headers>` field will match field
         names in the :attr:`Email.data`
         :class:`queryset <django.db.models.query.QuerySet>`.
@@ -497,7 +472,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         of the "__" substring. In this case, the field represents a
         relationship and the relevant `verbose_name` attribute is present in
         a different model. Under the current implementation, this method will
-        create the column n by replacing "__" with ": ". If there are "_"
+        create the column name by replacing "__" with ": ". If there are "_"
         substrings as well (classic Python convention for attribute names),
         they will be replaced with " ".
 
@@ -542,7 +517,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         The file will be named by linking the value of the :attr:`email subject
         <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
-        :attr:`Email.subscripttion_obj` instance member with a time stamp.
+        :attr:`Email.subscription_obj` instance member with a time stamp.
         The file will be saved under the path described by
         :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
         """
@@ -566,6 +541,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         with open(filename, 'wb') as csv_file:
             write_csv(self.data.values(*self.headers.keys()),
                       csv_file, field_header_map=self.headers)
+
+        self._debug_logger.debug('attachment %s ready', filename)
 
         self.csv_file = filename
 
@@ -607,19 +584,28 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         to be created and attached to the email message
         """
 
+        if logger:
+            self.logger = logger
+            """
+            :class:`logging.Logger` instance
+            """
+        else:
+            self.logger = LOG
+            """
+            :class:`logging.Logger` instance
+            """
+
         self.csv_file = None
         """
-        :class:`str` attribute for the name of the comma-separared file
+        :class:`str` attribute for the name of the comma-separated file
 
         This attribute is set in the :meth:`prepare_csv`.
         """
 
-        if logger is None:
-            self.logger = LOG
-            """:class:`logging.Logger` instance"""
-        else:
-            self.logger = logger
-            """:class:`logging.Logger` instance"""
+        self._debug_logger = getLogger('django_smtp')
+        """
+        :class:`logging.Logger` instance for debug purposes
+        """
 
         if data is None:
             self.logger.error('no data was provided for the email')
@@ -652,17 +638,17 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
 
         self.prepared_data = []
         """
-        :class:`lst of :class:`dictionaries <dict>` where each item represents
-        a row in the :attr:`Email.data`
-        :class:`django.db.models.query.QuerySet` with the human readable format
-        of the field name (as represented by the values in the
-        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and the
-        contents of the field as values
+        :class:`list` of :class:`dictionaries <dict>` where each item
+        represents a row in the :attr:`Email.data`
+        :class:`django.db.models.query.QuerySet` with the human readable
+        format of the field name (as represented by the values in the
+        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and
+        the contents of the field as values
 
-        For example, if the `queryset` has one entry with dog_name: `jimmy`,
-        the corresponding entry in :attr:`Email.heasers` is
-        {'dog_name': 'Dog name'}, and the item in this list will end up as
-        {'Dog name': 'jimmy'}.
+        For example, if the `queryset` has one entry with
+        dog_name: 'jimmy', the corresponding entry in
+        :attr:`Email.headers` is {'dog_name': 'Dog name'}, and the item
+        in this list will end up as {'Dog name': 'jimmy'}.
         """
 
         # pylint: disable=consider-iterating-dictionary
@@ -693,6 +679,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         if extra_context:
             self.context.update(**extra_context)
 
+        self._debug_init()
+
         try:
             self.email = get_templated_mail(
                 template_name=subscription_obj.template_name,
@@ -704,8 +692,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
                 if settings.DEBUG
                 else subscription_obj.emails_list.split(','),
                 context=self.context, create_link=True)
+            self._debug_logger.debug('email object is ready')
         except Exception as err:
             self.logger.error(str(err))
+            self._debug_logger.error(str(err))
             raise err
 
         if self.csv_file:
@@ -714,10 +704,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
     def set_tags(self):
         """
         format the contents of the
-        :attr:`ssl_sert_tracker.models.Subscription.tags` of the
-        :attr:`Eamil.subscription_obj` to something like "[TAG`][TAG2]etc"
+        :attr:`ssl_cert_tracker.models.Subscription.tags` of the
+        :attr:`Email.subscription_obj` to something like "[TAG1][TAG2]etc".
 
-        By convention, the :attr:`ssl_sert_tracker.models.Subscription.tags`
+        By convention, the :attr:`ssl_cert_tracker.models.Subscription.tags`
         value is a list of comma separated words or phrases. This method
         converts that value to [TAGS][][], etc.
         A tag containing the hostname of the :ref:`SOC Automation Server` host
@@ -725,7 +715,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         the email message.
 
         In a `DEBUG` environment, this method will prefix all the other tags
-        with a [DEBUG] tag. A `DEBUG` environemnt is characterized by the
+        with a [DEBUG] tag. A `DEBUG` environment is characterized by the
         value of :attr:`p_soc_auto.settings.DEBUG`.
         """
         tags = ''
@@ -765,8 +755,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             self.logger.error(str(err))
             raise err
 
-        self.logger.debug(
-            'sent email with subject %s and body %s',
-            self.email.subject, self.email.body)
+        self._debug_logger.debug(
+            'sent email with subject %s', self.email.subject)
 
         return sent

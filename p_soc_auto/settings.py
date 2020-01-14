@@ -18,7 +18,7 @@ For the full list of settings and their values, see
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    serban.teodorescu@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    Oct. 29, 2019
 
@@ -48,17 +48,21 @@ Enable or disable debugging information
 
 :SECURITY WARNING:
 
-    don't run with debug turned on in production!
+    Don't run with debug turned on in production!
 """
 
 ALLOWED_HOSTS = ['*', ]
 
-ADMINS = [('Serban Teodorescu', 'serban.teodorescu@phsa.ca'), ]
+ADMINS = [('Daniel Busto', 'daniel.busto@phsa.ca'), ]
 
-LOG_DIR = os.path.join(BASE_DIR, 'logs')
+LOG_DIR = '/var/log/phsa/django'
 """
 log file will be placed under this directory
 """
+
+pathlib.Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
+# note that this will not work in Python <3.5
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -125,6 +129,20 @@ LOGGING = {
             'formatter': 'verbose',
             'filters': ['require_debug_true']
         },
+        'django_smtp_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'django_smtp.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
+        'ldap_probe_log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'ldap_probe.log'),
+            'formatter': 'verbose',
+            'filters': ['require_debug_true']
+        },
         'console': {
             'level': 'DEBUG',
             'filters': ['require_debug_true'],
@@ -171,6 +189,16 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
+        'django_smtp': {
+            'handlers': ['django_smtp_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ldap_probe': {
+            'handlers': ['ldap_probe_log', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
 """
@@ -191,6 +219,7 @@ memcached connection configuration
 
 # Application definition
 INSTALLED_APPS = [
+    'ldap_probe.apps.LdapProbeConfig',
     'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
@@ -207,7 +236,6 @@ INSTALLED_APPS = [
     'dynamic_preferences',
     'grappelli.dashboard',
     'grappelli',
-    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'django.contrib.auth',
@@ -335,12 +363,21 @@ be placed under this directory
 pathlib.Path(CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 # note that this will not work in Python <3.5
 
+EXPORT_CSV_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'export_csv/')
+"""
+``export_csv`` files created as exports from various admin pages will
+be placed under this directory
+"""
+pathlib.Path(EXPORT_CSV_MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+
+
 ORION_HOSTNAME = 'orion.vch.ca'
 """
 default network address for the `SolarWinds Orion server
 <https://www.solarwinds.com/solutions/orion>`__
 
-This variable is exposed by the :attr:`citrus_borg.dynamic_preferences_registry.OrionServer.default`
+This variable is exposed by the 
+:attr:`citrus_borg.dynamic_preferences_registry.OrionServer.default`
 attribute of the :class:`citrus_borg.dynamic_preferences_registry.OrionServer`
 dynamic preference.
 
@@ -369,7 +406,8 @@ default URL path for linking Orion nodes as defined in this project to the
 node definitions on the `SolarWinds Orion server
 <https://www.solarwinds.com/solutions/orion>`__
 
-This variable is exposed by the :attr:`citrus_borg.dynamic_preferences_registry.OrionServerUrl.default`
+This variable is exposed by the
+:attr:`citrus_borg.dynamic_preferences_registry.OrionServerUrl.default`
 attribute of the :class:`citrus_borg.dynamic_preferences_registry.OrionServer`
 dynamic preference.
 
@@ -527,7 +565,7 @@ Serialize `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
 to ``JSON``
 
-This is the preferred settingfor security purposes. See the discussion for
+This is the preferred setting for security purposes. See the discussion for
 :attr:`CELERY_ACCEPT_CONTENT`. Note that we are overriding this setting for
 tasks with arguments that cannot be serialized to ``JSON`` like
 :class:`datetime.datetime` objects or :class:`Django querysets
@@ -545,9 +583,11 @@ CELERY_QUEUES = (
     #    Queue('orion_flash', Exchange('orion_flash'), routing_key='orion_flash'),
     Queue('mail_collector', Exchange('mail_collector'),
           routing_key='mail_collector'),
+    Queue('ldap_probe', Exchange('ldap_probe'), routing_key='ldap_probe'),
+    Queue('data_prune', Exchange('data_prune'), routing_key='data_prune'),
 )
 """
-celery queues
+Celery queues
 """
 
 CELERY_DEFAULT_QUEUE = 'shared'
@@ -560,7 +600,7 @@ CELERY_EXCHANGES = {
     'default': {'name': 'logstash', 'type': 'topic', },
 }
 """
-celery exchanges
+Celery exchanges
 """
 
 # common email settings
@@ -575,7 +615,7 @@ EMAIL_HOST = 'smtp.healthbc.org'
 SMTP relay address
 
 The :ref:`SOC Automation Server` will use this SMTP server to deliver emails
-via the `PHSA`` ``Exchange`` infrastructure.
+via the `PHSA Exchange` infrastructure.
 
 :Note:
 
@@ -733,7 +773,7 @@ CITRUS_BORG_EVENTS_EXPIRE_AFTER = timezone.timedelta(hours=72)
 default value for how old a ``Citrix`` event has to be before it is considered
 amd marked as ``expired``
 
-``Expired`` events are ignored bu the :ref:`SOC Automation Server`.
+``Expired`` events are ignored by the :ref:`SOC Automation Server`.
 
 Exposed as a dynamic preference by
 :class:`citrus_borg.dynamic_preferences_registry.ExpireEvents`
@@ -877,6 +917,11 @@ EVENT_TYPE_SORT = {
 }
 """
 Mapping required to provide a custom sort order for event types
+"""
+
+GRAPPELLI_ADMIN_TITLE = 'SOC Automation Server'
+"""
+custom name for the admin site
 """
 
 GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'

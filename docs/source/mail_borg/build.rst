@@ -11,21 +11,21 @@ Compiling
 
 It is possible to package a complete `Python
 <https://www.python.org/about/>`_ application into a single executable file.
-The executabel will contain all the dependencies required by the application,
+The executable will contain all the dependencies required by the application,
 including the `Python <https://www.python.org/about/>`_ interpreter.
 
 We are using the `PyInstaller
-<https://pyinstaller.readthedocs.io/en/stable/index.html>`_ package.
+<https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package.
 
-The `PyInstaller <https://pyinstaller.readthedocs.io/en/stable/index.html>`_
+The `PyInstaller <https://pyinstaller.readthedocs.io/en/stable/index.html>`__
 package must be installed in the `virtual environment
-<https://docs.python.org/3.6/tutorial/venv.html?highlight=virtual%20environments>`_
+<https://docs.python.org/3.6/tutorial/venv.html?highlight=virtual%20environments>`__
 used for developing the :ref:`Mail Borg Client Application`. Currently, there
-is a <pip requirements file
-<https://pip.pypa.io/en/stable/user_guide/?highlight=requirements#requirements-files>`_
+is a `pip requirements file
+<https://pip.pypa.io/en/stable/user_guide/?highlight=requirements#requirements-files>`__
 under source control that is used for Windows specific requirements named
 requirements_win.txt and the `PyInstaller
-<https://pyinstaller.readthedocs.io/en/stable/index.html>`_ package is
+<https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package is
 referenced within said requirements file. To update the ``Python`` packages in
 the environment, execute:
 
@@ -33,9 +33,9 @@ the environment, execute:
 
     Windows PowerShell
     Copyright (C) Microsoft Corporation. All rights reserved.
-    
+
     Try the new cross-platform PowerShell https://aka.ms/pscore6
-    
+
     PS C:\Users\serban> .\Envs\carmina\Scripts\activate.ps1
     (carmina) PS C:\Users\serban> cd .\phsa-work\sbin\p_soc_auto\
     (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto> cd .\mail_borg\
@@ -48,7 +48,7 @@ the environment, execute:
     ...
     WARNING: You are using pip version 19.2.1, however version 19.2.3 is available.
     You should consider upgrading via the 'python -m pip install --upgrade pip' command.
-    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto> 
+    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto>
 
 
 Here is a sequence of commands that will result in compiling the
@@ -58,9 +58,9 @@ Here is a sequence of commands that will result in compiling the
 
     Windows PowerShell
     Copyright (C) Microsoft Corporation. All rights reserved.
-    
+
     Try the new cross-platform PowerShell https://aka.ms/pscore6
-    
+
     PS C:\Users\serban> .\Envs\carmina\Scripts\activate.ps1
     (carmina) PS C:\Users\serban> cd .\phsa-work\sbin\p_soc_auto\mail_borg\
     (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg> python -m PyInstaller --onefile --console --uac-admin --uac-uiaccess .\mail_borg_gui.py --clean
@@ -145,25 +145,25 @@ Here is a sequence of commands that will result in compiling the
     35748 INFO: Building EXE from EXE-00.toc completed successfully.
     (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg> cd dist
     (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist> dir
-    
-    
+
+
         Directory: C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist
-    
-    
+
+
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
     d-----       2019-09-16     11:56                mail_borg_gui
     -a----       2019-08-20     10:53            123 mail_borg.ini
     -a----       2019-09-23     12:13       21124100 mail_borg_gui.exe
     -a----       2019-09-16     11:57       20650575 mail_borg_gui.zip
-    
-    
-    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist> 
+
+
+    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist>
 
 As show in the ``dir`` listing, there is now a file named
-``mail_borg_gui.exe`` under the ``dist`` directory.    
-:note:
+``mail_borg_gui.exe`` under the ``dist`` directory.
 
+  :note:
     We assume that the virtual environment is named ``carmina`` and that it
     is installed under ``%HOMEPATH%\Envs\``.
 
@@ -176,18 +176,18 @@ above:
 .. code-block:: ps1con
 
     (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist> Set-AuthenticodeSignature .\mail_borg_gui.exe -Certificate (Get-ChildItem Cert:\CurrentUser\my -CodeSigningCert)
-    
-    
+
+
         Directory: C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist
-    
-    
+
+
     SignerCertificate                         Status                                 Path
     -----------------                         ------                                 ----
     16B7581F406E8614EFDA8FDA3F68A5E4ABBD7261  Valid                                  mail_borg_gui.exe
-    
-    
-    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist>    
-    
+
+
+    (carmina) PS C:\Users\serban\phsa-work\sbin\p_soc_auto\mail_borg\dist>
+
 The ``mail_borg_gui.exe`` is now signed.
 
 Self-signed certificate
@@ -204,19 +204,19 @@ Create the certificate:
 .. code-block::
 
     PS C:\Users\serban> New-SelfSignedCertificate -DnsName serban.teodorescu@phsa.ca -Type CodeSigning -CertStoreLocation cert:\CurrentUser\My
-    
+
 Export the certificate:
 
 .. code-block::
 
     PS C:\Users\serban> Export-Certificate -Cert (Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert)[0] -FilePath mail_borg_gui_sig.crt
-    
+
 Import the certificate to the TrustedPublisher cert store:
 
 .. code-block::
 
     PS C:\Users\serban> Import-Certificate -FilePath .\mail_borg_gui_sig.crt -Cert Cert:\CurrentUser\TrustedPublisher
-    
+
 Import the certificate to the Root cert store:
 
 .. code-block::
@@ -227,7 +227,7 @@ The file with the signing certificate is now present under
 ``C:\users\serban\mail_borg_gui_sig.crt``.
 
 The detailed documentation for handling self-signed certificates in Windows is
-available from `Microsoft <https://www.microsoft.com/en-ca/>`_ at 
+available from `Microsoft <https://www.microsoft.com/en-ca/>`_ at
 `New-SelfSignedCertificate
 <https://docs.microsoft.com/en-us/powershell/module/pkiclient/new-selfsignedcertificate?view=win10-ps>`_.
 
@@ -264,7 +264,7 @@ archive is available under `Exchange Monitoring Client Version 2
 <http://our.healthbc.org/sites/gateway/team/TSCSTHub/Shared%20Documents/Forms/AllItems.aspx?RootFolder=%2Fsites%2Fgateway%2Fteam%2FTSCSTHub%2FShared%20Documents%2FTools%2FExchangeMonitoring%2Fversion%5F2&FolderCTID=0x01200049BD2FC3E2032F40A74A4A7D97D53F7A&View=%7BC5878F2F%2DACBC%2D450F%2DAF48%2D52726B6E8F63%7D>`_.
 We are not allowed to save certificate files on the Sharepoint server.
 
-Contact `Serban Teodorescu <mailto:serban.teodorescu@phsa.ca>`_ for access to
+Contact `Daniel Busto <mailto:daniel.busto@phsa.ca>`_ for access to
 the ``crt`` file.
 
 Running
@@ -281,7 +281,7 @@ Right-click the ``exe`` file and choose to run it as admin. Tell ``Norton`` to
 sit down and shut up. Click the ``Run mail check`` button or wait for the
 program to execute the mail check automatically as configured.
 
-It is highly recommended to create a start-up taks for this application.
+It is highly recommended to create a start-up task for this application.
 
 The `SOC - Procedural Guide -
 Exchange Monitoring Client Version 2

@@ -3,8 +3,6 @@
 from django.db import migrations
 import re
 
-from citrus_borg.dynamic_preferences_registry import set_preference
-
 
 def replace_serban_with_daniel_in_subscriptions(apps, schema_editor):
     subscription_model = apps.get_model('ssl_cert_tracker', 'Subscription')

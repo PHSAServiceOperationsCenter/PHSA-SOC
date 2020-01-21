@@ -5,12 +5,16 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
-#TODO copy the relevant data migrations into here?
-
-
 class Migration(migrations.Migration):
-
-    replaces = [('ssl_cert_tracker', '0001_initial'), ('ssl_cert_tracker', '0002_old_data_migrations'), ('ssl_cert_tracker', '0003_remove_getnmapdata'), ('ssl_cert_tracker', '0004_subscription_tags'), ('ssl_cert_tracker', '0005_auto_20191031_1010')]
+    replaces = [
+        ('ssl_cert_tracker', '0001_initial'),
+        ('ssl_cert_tracker', '0004_subscription_tags'),
+        ('ssl_cert_tracker', '0005_auto_20191031_0900'),
+        ('ssl_cert_tracker', '0005_auto_20191031_1010'),
+        ('ssl_cert_tracker', '0006_auto_20191227_1045'),
+        ('ssl_cert_tracker', '0006_merge_20191216_1508'),
+        ('ssl_cert_tracker', '0007_merge_20191230_0852'),
+    ]
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

@@ -62,7 +62,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0038_auto_20190820_1023'),
+        ('mail_collector', '0030_subscription_failed_events'),
     ]
 
     operations = [

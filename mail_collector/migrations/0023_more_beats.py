@@ -145,7 +145,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0022_add_subs_bot_site'),
+        ('mail_collector', '0020_more_beats_for_dead_bodies'),
     ]
 
     operations = [

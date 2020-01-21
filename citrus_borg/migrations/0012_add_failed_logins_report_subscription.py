@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, UserManager
 from django.db import migrations
 
 
-def add_subscribtions(apps, schema_editor):
+def add_subscriptions(apps, schema_editor):
     emails = (
         'serban.teodorescu@phsa.ca,james.reilly@phsa.ca'
         ',TSCST-Support@hssbc.ca,TSCST-Shiftmanager@hssbc.ca')
@@ -45,10 +45,10 @@ def add_subscribtions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('citrus_borg', '0011_merge_20181205_1600'),
+        ('citrus_borg', '0008_populate_subscriptions'),
     ]
 
     operations = [
         migrations.RunPython(
-            add_subscribtions, reverse_code=migrations.RunPython.noop)
+            add_subscriptions, reverse_code=migrations.RunPython.noop)
     ]

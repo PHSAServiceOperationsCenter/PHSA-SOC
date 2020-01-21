@@ -59,7 +59,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0018_add_beats_for_dead_bodies'),
+        ('mail_collector', '0017_add_mail_function_subscriptions'),
     ]
 
     operations = [

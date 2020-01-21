@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('citrus_borg', '0004_populate_windows_logs'),
+        ('citrus_borg', '0002_auto_20181122_1502'),
     ]
 
     operations = [

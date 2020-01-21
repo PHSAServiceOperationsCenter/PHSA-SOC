@@ -49,7 +49,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0027_beat_exc_evnts_site'),
+        ('mail_collector', '0026_subscription_exc_evts_bot'),
     ]
 
     operations = [

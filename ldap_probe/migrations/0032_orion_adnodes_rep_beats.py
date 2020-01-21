@@ -58,7 +58,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0031_orion_adnodes_rep_subs'),
+        ('ldap_probe', '0030_nono_adnodes_rep_beats'),
     ]
 
     operations = [

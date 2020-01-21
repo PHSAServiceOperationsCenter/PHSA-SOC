@@ -258,7 +258,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('ldap_probe', '0046_0001_to_0043_model'),
-        ('dynamic_preferences', '0006_auto_20191120_1041'),
+        ('dynamic_preferences', '0004_move_user_model'),
     ]
 
     operations = [

@@ -47,6 +47,10 @@ def prepare_task_schedules(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    replaces = [
+        ('citrus_borg', '0009_prepare_task_scheddules'),
+    ]
+
 
     dependencies = [
         ('citrus_borg', '0007_populate_bots'),

@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0041_add_perf_buckets'),
+        ('ldap_probe', '0035_auto_20191219_1309'),
     ]
 
     operations = [

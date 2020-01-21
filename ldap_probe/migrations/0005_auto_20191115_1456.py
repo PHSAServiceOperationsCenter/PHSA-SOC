@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('ldap_probe', '0004_populate_ac_node'),
+        ('ldap_probe', '0001_initial'),
     ]
 
     operations = [

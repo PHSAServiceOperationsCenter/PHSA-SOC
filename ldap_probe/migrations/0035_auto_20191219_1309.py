@@ -7,7 +7,7 @@ import ldap_probe.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0034_perf_bucket_generic'),
+        ('ldap_probe', '0033_auto_20191217_1435'),
     ]
 
     operations = [

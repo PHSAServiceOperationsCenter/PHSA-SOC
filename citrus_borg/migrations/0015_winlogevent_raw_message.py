@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('citrus_borg', '0014_add_failed_login_tasks'),
+        ('citrus_borg', '0011_merge_20181205_1600'),
     ]
 
     operations = [

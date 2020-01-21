@@ -8,7 +8,7 @@ import re
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0037_merge_20190819_1311'),
+        ('mail_collector', '0034_auto_20190806_1409'),
     ]
 
     operations = [

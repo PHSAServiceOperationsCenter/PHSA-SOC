@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0018_add_beat_for_removing_non_orion_nodes'),
+        ('ldap_probe', '0017_auto_20191126_1425'),
     ]
 
     operations = [

@@ -84,7 +84,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('citrus_borg', '0017_auto_20190308_0908'),
+        ('citrus_borg', '0014_add_failed_login_tasks'),
     ]
 
     operations = [

@@ -7,7 +7,7 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0007_populate_ldap_errors'),
+        ('ldap_probe', '0006_auto_20191118_0900'),
     ]
 
     operations = [

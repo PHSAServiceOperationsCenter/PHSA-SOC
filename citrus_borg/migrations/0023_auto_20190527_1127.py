@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('citrus_borg', '0022_fix_beats_for_reports'),
+        ('citrus_borg', '0017_auto_20190308_0908'),
     ]
 
     operations = [

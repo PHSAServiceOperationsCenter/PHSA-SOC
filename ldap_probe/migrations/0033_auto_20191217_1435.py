@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('ldap_probe', '0032_orion_adnodes_rep_beats'),
+        ('ldap_probe', '0021_ldapprobelogfailed'),
     ]
 
     operations = [

@@ -40,7 +40,7 @@ def add_perf_buckets(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0033_auto_20191217_1435'),
+        ('ldap_probe', '0032_orion_adnodes_rep_beats'),
     ]
 
     operations = [

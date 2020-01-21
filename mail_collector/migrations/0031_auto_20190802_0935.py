@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('mail_collector', '0030_subscription_failed_events'),
+        ('mail_collector', '0021_auto_20190627_1213'),
     ]
 
     operations = [

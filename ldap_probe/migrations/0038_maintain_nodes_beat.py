@@ -50,7 +50,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0037_delete_old_perf_subs'),
+        ('ldap_probe', '0034_perf_bucket_generic'),
     ]
 
     operations = [

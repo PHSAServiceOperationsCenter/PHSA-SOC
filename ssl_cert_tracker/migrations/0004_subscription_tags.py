@@ -5,8 +5,11 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    # This cannot depend on 0003 because that is being replaced by the data
+    # migration. This will cause problems (multiple leaf nodes) for anyone who
+    # has either not already
     dependencies = [
-        ('ssl_cert_tracker', '0003_remove_getnmapdata'),
+        ('ssl_cert_tracker', '0001_initial'),
     ]
 
     operations = [

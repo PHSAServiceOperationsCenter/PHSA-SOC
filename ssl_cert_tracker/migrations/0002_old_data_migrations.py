@@ -11,16 +11,7 @@ def add_default_ssl_port(apps, schema_editor):
 
     model = apps.get_model('ssl_cert_tracker', 'SslProbePort')
 
-    user = User.objects.filter(is_superuser=True)
-    if user.exists():
-        user = user.first()
-    else:
-        user = User.objects.create(
-            username='soc_su', email='soc_su@phsa.ca',
-            password='soc_su_password', is_active=True, is_staff=True,
-            is_superuser=True)
-        user.set_password('soc_su_password')
-        user.save()
+    user = User.objects.filter(is_superuser=True).first()
 
     ssl_port = model(port=port, created_by_id=user.id, updated_by_id=user.id)
     ssl_port.save()
@@ -85,16 +76,7 @@ def add_ssl_ports(apps, schema_editor):
 
     model = apps.get_model('ssl_cert_tracker', 'SslProbePort')
 
-    user = User.objects.filter(is_superuser=True)
-    if user.exists():
-        user = user.first()
-    else:
-        user = User.objects.create(
-            username='soc_su', email='soc_su@phsa.ca',
-            password='soc_su_password', is_active=True, is_staff=True,
-            is_superuser=True)
-        user.set_password('soc_su_password')
-        user.save()
+    user = User.objects.filter(is_superuser=True).first()
 
     for port in ports:
 

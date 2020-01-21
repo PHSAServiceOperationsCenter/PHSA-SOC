@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orion_integration', '0010_remove_heart_beat_task'),
+        ('orion_integration', '0009_auto_20180831_2129'),
     ]
 
     operations = [

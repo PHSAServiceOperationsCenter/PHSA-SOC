@@ -795,17 +795,3 @@ def borgs_are_hailing(
         logger.error(str(error))
         raise error
 
-
-def get_or_create_soc_su():
-    user = User.objects.filter(is_superuser=True)
-    if user.exists():
-        user = user.first()
-    else:
-        user = User.objects.create(
-            username='soc_su', email='soc_su@phsa.ca',
-            password='soc_su_password', is_active=True, is_staff=True,
-            is_superuser=True)
-        user.set_password('soc_su_password')
-        user.save()
-
-    return user

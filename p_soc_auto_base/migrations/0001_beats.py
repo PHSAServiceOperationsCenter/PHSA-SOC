@@ -456,7 +456,7 @@ INTERVAL_TASKS = {
 
 class Migration(migrations.Migration):
     replaces = [
-        ('citrus_borg', '0009_prepare_task_schedules'),
+        ('citrus_borg', '0009_prepare_task_scheddules'),
         ('citrus_borg', '0014_add_failed_login_tasks'),
         ('citrus_borg', '0018_add_periodic_tasks'),
         ('citrus_borg', '0019_disable_beats_for_email_alerts'),
@@ -464,7 +464,7 @@ class Migration(migrations.Migration):
         ('citrus_borg', '0021_update_more_beats_to_07_19'),
         ('citrus_borg', '0022_fix_beats_for_reports'),
         ('ldap_probe', '0010_add_beats_for_ldap_data'),
-        ('ldap_probe', '0015_really_add_beats_for_ldap_data'),
+        ('ldap_probe', '0015_realy_add_beats_for_ldap_data'),
         ('ldap_probe', '0018_add_beat_for_removing_non_orion_nodes'),
         ('ldap_probe', '0024_beats_for_summary_reports'),
         ('ldap_probe', '0026_beats_for_perf_summary_reports'),

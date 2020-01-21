@@ -45,7 +45,7 @@ def prepare_task_schedules(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('citrus_borg', '0009_prepare_task_schedules'),
+        ('citrus_borg', '0009_prepare_task_scheddules'),
     ]
 
     operations = [

@@ -7,7 +7,7 @@ import django.db.models.manager
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0020_add_error_alert_subscription'),
+        ('ldap_probe', '0019_ldapprobelog_failed'),
     ]
 
     operations = [

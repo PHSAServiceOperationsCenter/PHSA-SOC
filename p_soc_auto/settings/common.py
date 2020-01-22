@@ -38,8 +38,6 @@ this file
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6ji'
 
-ALLOWED_HOSTS = ['*', ]
-
 ADMINS = [('Daniel Busto', 'daniel.busto@phsa.ca'), ]
 
 LOG_DIR = '/var/log/phsa/django'

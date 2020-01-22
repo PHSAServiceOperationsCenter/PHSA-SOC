@@ -18,3 +18,5 @@ DEBUG = False
 """
 Enable or disable debugging information
 """
+
+ALLOWED_HOSTS = ['lvmsocq01', ]

@@ -26,6 +26,7 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "p_soc_auto.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE",
+                      "p_soc_auto.settings.development")
 
 application = get_wsgi_application()

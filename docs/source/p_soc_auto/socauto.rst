@@ -41,7 +41,7 @@ By default the application runs with the settings in `p_soc_auto.settings.develo
 To set up a server to run in production one must run `systemctl edit uwsgi-phsa-soc-app` as root.
 In the override configuration file that is generated the following text must be added:
 
-..code-block
+.. code-block::
 
     [Service]
     Environment="DJANGO_SETTINGS_MODULE=p_soc_auto.settings.production"

@@ -242,9 +242,8 @@ class BaseADNode(BaseModel, models.Model):
         'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
-    # TODO should we get rid of blank and null?
     performance_bucket = models.ForeignKey(
-        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True, null=True,
+        'ldap_probe.ADNodePerfBucket', db_index=True,
         default=ADNodePerfBucket.get_default,
         on_delete=models.SET_DEFAULT, verbose_name=_(
             'Acceptable Performance Limits'))

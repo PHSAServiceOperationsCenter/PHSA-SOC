@@ -213,7 +213,7 @@ CRON_TASKS = {
           'kwargs': '{"url_annotate": true,'
                     '"level": null,'
                     '"filter_pref": "exchange__report_interval",'
-                    '"by_mail": true, "to_orion": false, "enabled": true}', },
+                    '"to_orion": false, "enabled": true}', },
          {'minute': '45', 'hour': '07,15,23', }, ),
         ({'name': 'No connect exchange servers report',
           'task': 'mail_collector.tasks.bring_out_your_dead',
@@ -323,7 +323,7 @@ INTERVAL_TASKS = {
       'kwargs': '{"url_annotate": false,'
                 '"level": "WARNING",'
                 '"filter_pref": "exchange__server_warn",'
-                '"by_mail": true, "to_orion": false, "enabled": true}', },
+                '"to_orion": false, "enabled": true}', },
      {'every': 30, 'period': 'minutes', }, ),
     ({'name': 'Raise critical  alert for exchange servers',
       'task': 'mail_collector.tasks.bring_out_your_dead',
@@ -383,7 +383,7 @@ INTERVAL_TASKS = {
      {'every': 30, 'period': 'minutes', }, ),
     ({'name': 'Raise critical  alert for exchange databases',
       'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangedatabases","last_access__lte",'
+      'args': '["mail_collector.exchangedatabase","last_access__lte",'
               '"Exchange Databases Not Seen"]',
       'kwargs': '{"url_annotate": false,'
                 '"level": "CRITICAL",'

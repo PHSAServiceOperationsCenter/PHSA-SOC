@@ -1,5 +1,5 @@
 import pytz
-from django.apps import apps
+from django.apps import apps as django_apps
 from django.db import migrations
 
 
@@ -118,26 +118,26 @@ CRON_TASKS = {
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.untrustedsslalert"]', },
          {'minute': '01', 'hour': '07,15,23', }, ),
-        ({'name': 'Refresh Orion alerts for SSL certificates that will expire in'
-                  ' less than 90 days',
+        ({'name': 'Refresh Orion alerts for SSL certificates that will expire'
+                  ' in less than 90 days',
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.expiressoonsslalert"]',
           'kwargs': '{"lt_days":90}', },
          {'minute': '01', 'hour': '07,15,23', }, ),
-        ({'name': 'Refresh Orion alerts for SSL certificates that will expire in'
-                  ' less than 30 days',
+        ({'name': 'Refresh Orion alerts for SSL certificates that will expire'
+                  ' in less than 30 days',
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.expiressoonsslalert"]',
           'kwargs': '{"lt_days":30}', },
          {'minute': '02', 'hour': '07,15,23', }, ),
-        ({'name': 'Refresh Orion alerts for SSL certificates that will expire in'
-                  ' less than 7 days',
+        ({'name': 'Refresh Orion alerts for SSL certificates that will expire'
+                  ' in less than 7 days',
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.expiressoonsslalert"]',
           'kwargs': '{"lt_days":7}', },
          {'minute': '03', 'hour': '07,15,23', }, ),
-        ({'name': 'Refresh Orion alerts for SSL certificates that will expire in'
-                  ' less than 2 days',
+        ({'name': 'Refresh Orion alerts for SSL certificates that will expire'
+                  ' in less than 2 days',
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.expiressoonsslalert"]',
           'kwargs': '{"lt_days":2}', },
@@ -151,7 +151,7 @@ CRON_TASKS = {
           'task': 'orion_flash.tasks.refresh_ssl_alerts',
           'args': '["orion_flash.invalidsslalert"]',
           'kwargs': '{}', },
-          {'minute': '06', 'hour': '07,15,23', }, ),
+         {'minute': '06', 'hour': '07,15,23', }, ),
         ({'name': 'Purge Orion alerts for SSL certificates',
           'task': 'orion_flash.tasks.purge_ssl_alerts', },
          {'minute': '55', 'hour': '06,14,22', }, ),
@@ -159,7 +159,7 @@ CRON_TASKS = {
 
     'ldap_probe': [
         ({'name': 'AD controller monitoring: expire log entries',
-         'task': 'ldap_probe.tasks.expire_entries', },
+          'task': 'ldap_probe.tasks.expire_entries', },
          {'minute': '11', 'hour': '00', }, ),
         ({'name': 'AD controller monitoring: delete expired log entries',
           'task': 'ldap_probe.tasks.delete_expire_entries', },
@@ -316,137 +316,146 @@ INTERVAL_TASKS = {
     ],
 
     'mail_collector': [
-    ({'name': 'Raise warning alert for exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_updated__lte",'
-              '"Exchange Servers Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "WARNING",'
-                '"filter_pref": "exchange__server_warn",'
-                '"to_orion": false, "enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_updated__lte",'
-              '"Exchange Servers Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__server_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for connections to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_connection__lte",'
-              '"Exchange Servers No Connection"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__server_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for connections to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_connection__lte",'
-              '"Exchange Servers No Connection"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "WARNING",'
-                '"filter_pref": "exchange__server_warn","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for send to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_send__lte",'
-              '"Exchange Servers No Send"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__server_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for send to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_send__lte",'
-              '"Exchange Servers No Send"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "WARNING",'
-                '"filter_pref": "exchange__server_warn","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for receive to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_inbox_access__lte",'
-              '"Exchange Servers No Receive"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__server_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for receive to exchange servers',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangeserver","last_inbox_access__lte",'
-              '"Exchange Servers No Receive"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "WARNING",'
-                '"filter_pref": "exchange__server_warn","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for exchange databases',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangedatabase","last_access__lte",'
-              '"Exchange Databases Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__server_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for exchange databases',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.exchangedatabase","last_access__lte",'
-              '"Exchange Databases Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "WARNING",'
-                '"filter_pref": "exchange__server_warn","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for exchange client bots',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
-              '"Exchange Client Bots Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__bot_error","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for exchange client bots',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
-              '"Exchange Client Bots Not Seen"]',
-      'kwargs': '{"url_annotate": false,'
-            '"level": "WARNING",'
-            '"filter_pref": "exchange__bot_warn","enabled": true}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise warning  alert for exchange client sites',
-      'task': 'mail_collector.tasks.dead_mail_sites',
-      'args': '["Exchange Client Bot Sites Not Seen"]',
-      'kwargs': '{"level": "WARNING",'
-                '"time_delta_pref": "exchange__bot_warn"}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for exchange client sites',
-      'task': 'mail_collector.tasks.dead_mail_sites',
-      'args': '["Exchange Client Bot Sites Not Seen"]',
-      'kwargs': '{"level": "CRITICAL",'
-               '"time_delta_pref": "exchange__bot_error"}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for email not checked',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.mailbetweendomains","last_verified__lte",'
-              '"Mail Unchecked On Site"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__bot_error",'
-                '"enabled": true, '
-                '"is_expired": false}', },
-     {'every': 30, 'period': 'minutes', }, ),
-    ({'name': 'Raise critical  alert for email check failure',
-      'task': 'mail_collector.tasks.bring_out_your_dead',
-      'args': '["mail_collector.mailbetweendomains","last_verified__lte",'
-              '"Mail Verification Failed"]',
-      'kwargs': '{"url_annotate": false,'
-                '"level": "CRITICAL",'
-                '"filter_pref": "exchange__nil_duration",'
-                '"enabled": true,'
-                '"is_expired": false,'
-                '"status": "Failed"}', },
-     {'every': 30, 'period': 'minutes', }, ),
-],
+        ({'name': 'Raise warning alert for exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_updated__lte",'
+                  '"Exchange Servers Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__server_warn",'
+                    '"to_orion": false, "enabled": true}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_updated__lte",'
+                  '"Exchange Servers Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__server_error","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for connections to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_connection__lte",'
+                  '"Exchange Servers No Connection"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__server_error","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for connections to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_connection__lte",'
+                  '"Exchange Servers No Connection"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__server_warn","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for send to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_send__lte",'
+                  '"Exchange Servers No Send"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__server_error","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for send to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_send__lte",'
+                  '"Exchange Servers No Send"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__server_warn","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for receive to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_inbox_access__lte",'
+                  '"Exchange Servers No Receive"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__server_error","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for receive to exchange servers',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangeserver","last_inbox_access__lte",'
+                  '"Exchange Servers No Receive"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__server_warn","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for exchange databases',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangedatabase","last_access__lte",'
+                  '"Exchange Databases Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__server_error","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for exchange databases',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.exchangedatabase","last_access__lte",'
+                  '"Exchange Databases Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__server_warn","enabled": true}',
+          },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for exchange client bots',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
+                  '"Exchange Client Bots Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__bot_error","enabled": true}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for exchange client bots',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
+                  '"Exchange Client Bots Not Seen"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "WARNING",'
+                    '"filter_pref": "exchange__bot_warn","enabled": true}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise warning  alert for exchange client sites',
+          'task': 'mail_collector.tasks.dead_mail_sites',
+          'args': '["Exchange Client Bot Sites Not Seen"]',
+          'kwargs': '{"level": "WARNING",'
+                    '"time_delta_pref": "exchange__bot_warn"}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for exchange client sites',
+          'task': 'mail_collector.tasks.dead_mail_sites',
+          'args': '["Exchange Client Bot Sites Not Seen"]',
+          'kwargs': '{"level": "CRITICAL",'
+                    '"time_delta_pref": "exchange__bot_error"}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for email not checked',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.mailbetweendomains","last_verified__lte",'
+                  '"Mail Unchecked On Site"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__bot_error",'
+                    '"enabled": true, '
+                    '"is_expired": false}', },
+         {'every': 30, 'period': 'minutes', }, ),
+        ({'name': 'Raise critical  alert for email check failure',
+          'task': 'mail_collector.tasks.bring_out_your_dead',
+          'args': '["mail_collector.mailbetweendomains","last_verified__lte",'
+                  '"Mail Verification Failed"]',
+          'kwargs': '{"url_annotate": false,'
+                    '"level": "CRITICAL",'
+                    '"filter_pref": "exchange__nil_duration",'
+                    '"enabled": true,'
+                    '"is_expired": false,'
+                    '"status": "Failed"}', },
+         {'every': 30, 'period': 'minutes', }, ),
+    ],
 
     'ssl_cert': [
 
@@ -492,5 +501,5 @@ class Migration(migrations.Migration):
             CRON_TASKS.get(app_name, []),
             INTERVAL_TASKS.get(app_name, [])
         )
-        for app_name in [app.name for app in apps.get_app_configs()]
+        for app_name in [app.name for app in django_apps.get_app_configs()]
     ]

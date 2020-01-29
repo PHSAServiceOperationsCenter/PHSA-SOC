@@ -266,11 +266,7 @@ def trim_ad_duplicates():
     :raises: :exc:`Exception` so that the exception is passed to `Celery`
     """
     for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
-        try:
-            node.remove_if_in_orion()
-        except Exception as error:
-            LOG.error(error)
-            raise error
+        node.remove_if_in_orion()
 
 
 @shared_task(queue='data_prune')
@@ -305,7 +301,7 @@ def maintain_ad_orion_nodes():
         try:
             new_ad_orion_node.save()
         except Exception as error:
-            LOG.error(error)
+            LOG.exception(error)
             raise error
 
     return f'created {new_nodes.count()} D nodes from Orion'
@@ -464,9 +460,8 @@ def dispatch_dupe_nodes_reports():
         data = utils.get_model('ldap_probe.orionadnode').\
             report_duplicate_nodes()
     except Exception as error:
-        LOG.error(
-            'invoking the duplicate ad nodes in orion report raises error %s',
-            str(error))
+        LOG.exception('invoking the duplicate ad nodes in orion report raises'
+                      ' error %s', str(error))
         raise error
 
     subscription = utils.get_subscription(
@@ -505,8 +500,8 @@ def dispatch_non_orion_ad_nodes_report():
     try:
         data = utils.get_model('ldap_probe.nonorionadnode').report_nodes()
     except Exception as error:
-        LOG.error('invoking the non orion ad nodes report raises error %s',
-                  str(error))
+        LOG.exception('invoking the non orion ad nodes report raises error %s',
+                      str(error))
         raise error
 
     subscription = utils.get_subscription(
@@ -553,7 +548,7 @@ def dispatch_ldap_error_report(**time_delta_args):
         now, time_delta, data = utils.get_model('ldap_probe.ldapprobelog').\
             error_report(**time_delta_args)
     except Exception as error:
-        LOG.error(
+        LOG.exception(
             ('invoking ldap error report with time_delta_args = %s'
              ' raises error %s'), time_delta_args, error)
         raise error
@@ -759,7 +754,7 @@ def dispatch_ldap_perf_report(
                 bucket=bucket, anon=anon, level=level, **time_delta_args
                 )
     except Exception as err:
-        LOG.error(
+        LOG.exception(
             ('invoking ldap probes report with data_source = %s,'
              ' bucket = %s, anon = %s, level = %s, time_delta_args = %s'
              ' raises error %s'),
@@ -846,7 +841,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
             report_probe_aggregates(
                 anon=anon, perf_filter=perf_filter, **time_delta_args)
     except Exception as error:
-        LOG.error(
+        LOG.exception(
             ('invoking ldap probes report with data_source = %s, anon = %s,'
              ' perf_filter = %s, time_delta_args = %s raises error %s'),
             data_source, anon, perf_filter, time_delta_args, str(error))

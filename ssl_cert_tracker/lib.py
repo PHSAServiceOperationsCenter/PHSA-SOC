@@ -33,10 +33,11 @@ from django.utils import timezone
 from djqscsv import write_csv
 from templated_email import get_templated_mail
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.dynamic_preferences_registry import get_preference, \
+    get_list_preference
 from p_soc_auto_base import utils
 
-LOG = getLogger('ssl_cert_tracker')
+LOG = getLogger(__name__)
 """
 fall-back :class:`logging.Logger` object
 
@@ -210,7 +211,7 @@ def get_ssl_base_queryset(app_label, model_name, url_annotate=True,
 
 
 def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
-               lt_days=None, logger=None):
+               lt_days=None):
     """
     :returns:
 
@@ -257,15 +258,10 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
 
         If less than 2, set to 2.
 
-    :arg `logging.Logger` logger: the :class:`logging.Logger` object
-
     """
-    if logger is None:
-        logger = LOG
-
     if lt_days and lt_days < 2:
-        logger.warning('expiring in less than 2 days is not supported.'
-                       ' resetting lt_days=%s to 2', lt_days)
+        LOG.warning('expiring in less than 2 days is not supported.'
+                    ' resetting lt_days=%s to 2', lt_days)
         lt_days = 2
 
     queryset = get_ssl_base_queryset(app_label, model_name).\
@@ -317,8 +313,6 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
 
     :arg str model_name:
 
-    :arg `logging.Logger` logger: the :class:`logging.Logger` object
-
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
@@ -361,8 +355,6 @@ def is_not_yet_valid(
     :arg str app_label:
 
     :arg str model_name:
-
-    :arg `logging.Logger` logger: the :class:`logging.Logger` object
 
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
@@ -437,17 +429,17 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         dump all the info about the email before actually creating the
         email object
         """
-        self._debug_logger.debug('headers: %s', self.headers)
+        LOG.debug('headers: %s', self.headers)
         if self.prepared_data:
-            self._debug_logger.debug('data sample: %s', self.prepared_data[0])
+            LOG.debug('data sample: %s', self.prepared_data[0])
         else:
-            self._debug_logger.debug('no data')
+            LOG.debug('no data')
 
         context_for_log = dict(self.context)
         context_for_log.pop('headers', None)
         context_for_log.pop('data', None)
 
-        self._debug_logger.debug('context: %s', context_for_log)
+        LOG.debug('context: %s', context_for_log)
 
     def _get_headers_with_titles(self):
         """
@@ -542,13 +534,12 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
             write_csv(self.data.values(*self.headers.keys()),
                       csv_file, field_header_map=self.headers)
 
-        self._debug_logger.debug('attachment %s ready', filename)
+        LOG.debug('attachment %s ready', filename)
 
         self.csv_file = filename
 
-    def __init__(
-            self, data=None, subscription_obj=None, logger=None,
-            add_csv=True, **extra_context):
+    def __init__(self, data=None, subscription_obj=None, add_csv=True,
+                 **extra_context):
         """
         :arg data: a :class:`django.db.models.query.QuerySet`
 
@@ -584,17 +575,6 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         to be created and attached to the email message
         """
 
-        if logger:
-            self.logger = logger
-            """
-            :class:`logging.Logger` instance
-            """
-        else:
-            self.logger = LOG
-            """
-            :class:`logging.Logger` instance
-            """
-
         self.csv_file = None
         """
         :class:`str` attribute for the name of the comma-separated file
@@ -602,13 +582,8 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         This attribute is set in the :meth:`prepare_csv`.
         """
 
-        self._debug_logger = getLogger('django_smtp')
-        """
-        :class:`logging.Logger` instance for debug purposes
-        """
-
         if data is None:
-            self.logger.error('no data was provided for the email')
+            LOG.error('no data was provided for the email')
             raise NoDataEmailError('no data was provided for the email')
 
         self.data = data
@@ -617,7 +592,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         in the email message body
         """
         if subscription_obj is None:
-            self.logger.error('no subscription was provided for the email')
+            LOG.error('no subscription was provided for the email')
             raise NoSubscriptionEmailError(
                 'no subscription was provided for the email')
 
@@ -688,14 +663,13 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
                 template_prefix=subscription_obj.template_prefix,
                 from_email=get_preference('emailprefs__from_email')
                 if settings.DEBUG else subscription_obj.from_email,
-                to=get_preference('emailprefs__to_emails').split(',')
+                to=get_list_preference('emailprefs__to_emails')
                 if settings.DEBUG
                 else subscription_obj.emails_list.split(','),
                 context=self.context, create_link=True)
-            self._debug_logger.debug('email object is ready')
+            LOG.debug('email object is ready')
         except Exception as err:
-            self.logger.error(str(err))
-            self._debug_logger.error(str(err))
+            LOG.error(str(err))
             raise err
 
         if self.csv_file:
@@ -749,13 +723,12 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         try:
             sent = self.email.send()
         except SMTPConnectError as err:
-            self.logger.error(str(err))
+            LOG.error(str(err))
             raise err
         except Exception as err:
-            self.logger.error(str(err))
+            LOG.error(str(err))
             raise err
 
-        self._debug_logger.debug(
-            'sent email with subject %s', self.email.subject)
+        LOG.debug('sent email with subject %s', self.email.subject)
 
         return sent

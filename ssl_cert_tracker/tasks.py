@@ -83,7 +83,7 @@ def email_ssl_report():
         return _email_report(
             data=expires_in(),
             subscription_obj=Subscription.objects.get(
-                subscription='SSl Report'), logger=LOG)
+                subscription='SSl Report'))
     except Exception as err:
         raise err
 
@@ -104,8 +104,8 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
     try:
         return _email_report(
             data=expires_in(lt_days=lt_days),
-            subscription_obj=Subscription.objects.get(
-                subscription='SSl Report'), logger=LOG,
+            subscription_obj=
+                Subscription.objects.get(subscription='SSl Report'),
             expires_in_less_than=lt_days)
     except Exception as err:
         raise err
@@ -123,7 +123,7 @@ def email_expired_ssl_report():
         return _email_report(
             data=has_expired(),
             subscription_obj=Subscription.objects.get(
-                subscription='Expired SSl Report'), logger=LOG, expired=True)
+                subscription='Expired SSl Report'), expired=True)
     except Exception as err:
         raise err
 
@@ -141,19 +141,19 @@ def email_invalid_ssl_report():
         return _email_report(
             data=is_not_yet_valid(),
             subscription_obj=Subscription.objects.get(
-                subscription='Invalid SSl Report'), logger=LOG, invalid=True)
+                subscription='Invalid SSl Report'), invalid=True)
     except Exception as err:
         raise err
 
 
 def _email_report(
-        data=None, subscription_obj=None, logger=None, **extra_context):
+        data=None, subscription_obj=None, **extra_context):
     """
     function that wraps around the functionality provided by the :class:`Email
     <ssl_cert_tracker.lib.Email>` class
 
-    This function will create an :class:`ssl_cert_tracker.lib.Email` instance and
-    invoke the :meth:`ssl_cert_tracker.lib.Email.send` on it
+    This function will create an :class:`ssl_cert_tracker.lib.Email` instance
+    and invoke the :meth:`ssl_cert_tracker.lib.Email.send` on it
 
     :arg data: the data to be placed in the email
     :type data: :class:`django.db.models.query.QuerySet`
@@ -170,8 +170,7 @@ def _email_report(
     """
     try:
         email_report = Email(
-            data=data, subscription_obj=subscription_obj, logger=logger,
-            **extra_context)
+            data=data, subscription_obj=subscription_obj, **extra_context)
     except Exception as err:
         raise err
 

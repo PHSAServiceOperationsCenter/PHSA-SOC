@@ -15,8 +15,6 @@ celery tasks for the orion_flash app
 :updated:    Feb. 1, 2019
 
 """
-from django.apps import apps
-
 from celery import shared_task, group  # @UnresolvedImport
 from celery.utils.log import get_task_logger  # @UnresolvedImport
 
@@ -101,7 +99,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
 
 @shared_task(
     task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
-def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
+def refresh_ssl_alerts(destination, **kwargs):
     """
     dispatch alert data to orion auxiliary ssl alert models
     """
@@ -118,9 +116,9 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
     if not data_rows:
         return 'no data'
 
-    logger.debug('retrieved %s new/updated data rows for destination %s.'
-                 ' first row sample: %s',
-                 len(data_rows), destination, data_rows[0])
+    LOG.debug('retrieved %s new/updated data rows for destination %s.'
+              ' first row sample: %s',
+              len(data_rows), destination, data_rows[0])
 
     group(create_or_update_orion_alert.s(destination, data_row).
           set(serializer='pickle')
@@ -133,7 +131,7 @@ def refresh_ssl_alerts(destination, logger=LOG, **kwargs):
 
 @shared_task(
     task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
-def refresh_borg_alerts(destination, logger=LOG, **kwargs):
+def refresh_borg_alerts(destination, **kwargs):
     """
     dispatch alert data to orion auxiliary citrix bot alert models
 
@@ -146,7 +144,7 @@ def refresh_borg_alerts(destination, logger=LOG, **kwargs):
             '%s is not known to this application' % destination)
 
     deleted = base_utils.get_model(destination).objects.all().delete()
-    logger.debug(
+    LOG.debug(
         'purged %s records from %s',
         deleted, base_utils.get_model(destination)._meta.model_name)
 

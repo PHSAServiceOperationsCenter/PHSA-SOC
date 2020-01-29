@@ -32,7 +32,7 @@ LOG = get_task_logger(__name__)
 
 
 @shared_task(queue='ldap_probe', rate_limit='5/s')
-def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
+def probe_ad_controller(ad_model=None, ad_pk=None):
     """
     probe the domain and save the AD monitoring data
 
@@ -42,9 +42,6 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
     :arg int ad_pk: the primary key of the
         :class:`django.db.modles.Model` instance that contains the
         AD controller  node information
-
-    :arg logger: the logger instance
-    :type logger: :class:`logging.Logger`
 
     :returns: the return of
         :meth:`ldap_probe.models.LdapProbeLog.create_from_probe`
@@ -65,10 +62,10 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
             ad_probe.ADProbe.probe(ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
-        logger.error(error)
+        LOG.exception(error)
         raise error
 
-    logger.debug(created)
+    LOG.debug(created)
 
     return created
 
@@ -270,7 +267,7 @@ def trim_ad_duplicates():
     """
     for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
         try:
-            node.remove_if_in_orion(logger=LOG)
+            node.remove_if_in_orion()
         except Exception as error:
             LOG.error(error)
             raise error
@@ -429,7 +426,7 @@ def dispatch_bad_fqdn_reports():
     try:
         data = utils.get_model('ldap_probe.orionadnode').report_bad_fqdn()
     except Exception as error:
-        LOG.error(
+        LOG.exception(
             'invoking the fqdn report for orion ad nodes raises error %s',
             str(error))
         raise error
@@ -439,7 +436,7 @@ def dispatch_bad_fqdn_reports():
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'),)
     except Exception as error:
         raise error
@@ -477,7 +474,7 @@ def dispatch_dupe_nodes_reports():
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'),)
     except Exception as error:
         raise error
@@ -517,7 +514,7 @@ def dispatch_non_orion_ad_nodes_report():
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__warn_level'),)
     except Exception as error:
         raise error
@@ -566,7 +563,7 @@ def dispatch_ldap_error_report(**time_delta_args):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__error_level'), now=now,
             time_delta=time_delta)
     except Exception as error:
@@ -588,8 +585,8 @@ def dispatch_ldap_perf_reports(
 
     The number of performance degradation reports is determined by:
 
-    * the performance buckets that we are tracking: these are instances of the
-    :class:`ldap_probe.models.ADNodePerfBucket` model
+    * the performance buckets that we are tracking: these are instances"""\
+    """of the :class:`ldap_probe.models.ADNodePerfBucket` model
 
     * the `AD` nodes that we are tracking: known to Orion or not known to Orion
 
@@ -782,9 +779,9 @@ def dispatch_ldap_perf_report(
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG, level=level,
-            now=now, time_delta=time_delta, full=full, orion=orion,
-            bucket=bucket, threshold=threshold)
+            data=data, subscription=subscription, level=level, now=now,
+            time_delta=time_delta, full=full, orion=orion, bucket=bucket,
+            threshold=threshold)
     except Exception as error:
         raise error
 
@@ -861,7 +858,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'), now=now,
             time_delta=time_delta, full=full, orion=orion,
             perf_filter=perf_filter)
@@ -930,7 +927,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data,  subscription=subscription, logger=LOG, add_csv=False,
+            data=data,  subscription=subscription, add_csv=False,
             level=level, node=ldap_probe.node, errors=ldap_probe.errors,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
@@ -944,6 +941,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             alert_threshold=utils.show_milliseconds(
                 ldap_probe.node_perf_bucket.alert_threshold))
     except Exception as error:
+        LOG.exception(error)
         raise error
 
     if ldap_probe.failed:
@@ -956,6 +954,6 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
         return_specification = 'performance warning for'
 
     if not ret:
-        return f'could not raise {return_specification} {ldap_probe}'
+        LOG.error('could not raise %s %s', return_specification, ldap_probe)
 
-    return f'raised {return_specification} {ldap_probe}'
+    LOG.debug('raised %s %s', return_specification, ldap_probe)

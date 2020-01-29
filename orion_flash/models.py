@@ -23,7 +23,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
-LOG = logging.getLogger('orion_flash')
+LOG = logging.getLogger(__name__)
 
 
 class SslAlertError(Exception):

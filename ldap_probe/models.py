@@ -36,7 +36,7 @@ from p_soc_auto_base.utils import (
 )
 
 
-LOGGER = logging.getLogger('ldap_probe_log')
+LOG = logging.getLogger(__name__)
 
 
 def _get_default_ldap_search_base():
@@ -823,7 +823,7 @@ class NonOrionADNode(BaseADNode, models.Model):
     def __str__(self):
         return self.node_dns
 
-    def remove_if_in_orion(self, logger=LOGGER):
+    def remove_if_in_orion(self):
         """
         if the domain controller host represented by this instance is also
         present on the `Orion` server, delete this instance
@@ -842,15 +842,15 @@ class NonOrionADNode(BaseADNode, models.Model):
             ip_addresses = [
                 addr[4][0] for addr in socket.getaddrinfo(self.node_dns, 0)
             ]
-        except:  # pylint: disable=bare-except
-            logger.error('Cannot resolve %s, deleting...', self)
+        except socket.gaierror:
+            LOG.error('Cannot resolve %s, deleting...', self)
             self.delete()
             return
 
         if OrionADNode.objects.filter(
                 node__ip_address__in=ip_addresses).exists():
 
-            logger.info(
+            LOG.info(
                 'Found %s within the Orion AD nodes, deleting...', self)
             self.delete()
 
@@ -1105,6 +1105,7 @@ class LdapProbeLog(models.Model):
         :returns: `True/False`
         :rtype: bool
         """
+        # TODO this is terribly written
         return any(
             [
                 elapsed for elapsed in

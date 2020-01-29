@@ -669,7 +669,7 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
                 context=self.context, create_link=True)
             LOG.debug('email object is ready')
         except Exception as err:
-            LOG.error(str(err))
+            LOG.exception(str(err))
             raise err
 
         if self.csv_file:
@@ -723,10 +723,10 @@ class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attr
         try:
             sent = self.email.send()
         except SMTPConnectError as err:
-            LOG.error(str(err))
+            LOG.exception(str(err))
             raise err
         except Exception as err:
-            LOG.error(str(err))
+            LOG.exception(str(err))
             raise err
 
         LOG.debug('sent email with subject %s', self.email.subject)

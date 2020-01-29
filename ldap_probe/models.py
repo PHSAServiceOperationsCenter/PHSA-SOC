@@ -836,14 +836,12 @@ class NonOrionADNode(BaseADNode, models.Model):
         always use fixed IP addresses (they better be), we will use IP
         addresses to eliminate the dupes.
         """
-        ip_addresses = None
-
         try:
             ip_addresses = [
                 addr[4][0] for addr in socket.getaddrinfo(self.node_dns, 0)
             ]
         except socket.gaierror:
-            LOG.error('Cannot resolve %s, deleting...', self)
+            LOG.exception('Cannot resolve %s, deleting...', self)
             self.delete()
             return
 

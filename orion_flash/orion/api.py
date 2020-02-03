@@ -26,6 +26,8 @@ from orionsdk import SwisClient
 
 from django.conf import settings
 
+from citrus_borg.dynamic_preferences_registry import get_preference
+
 from .qv import (
     ALL_CUSTOM_PROPS_QUERY, FILTERED_CUSTOM_PROPS_QUERY,
     CUSTOM_PROPS_VALS_VERB,
@@ -34,10 +36,8 @@ from .qv import (
     NODE_CUSTOM_PROPS_QUERY,
 )
 
-from citrus_borg.dynamic_preferences_registry import get_preference
 
-
-LOG = logging.getLogger('orion_flash')
+LOG = logging.getLogger(__name__)
 
 
 SRC_DEFAULTS = (settings.ORION_HOSTNAME,
@@ -87,8 +87,7 @@ class SourceSwis():  # pylint: disable=too-few-public-methods
     provides only methods for reading data from the server
     """
 
-    def __init__(
-            self, *args, verify=settings.ORION_VERIFY_SSL_CERT, logger=LOG):
+    def __init__(self, *args, verify=settings.ORION_VERIFY_SSL_CERT):
         """
         :arg args: (host, user, password) for the orion server
 
@@ -97,13 +96,10 @@ class SourceSwis():  # pylint: disable=too-few-public-methods
         production quality but for expediency
 
         """
-        self.logger = logger
         if not args:
             args = SRC_DEFAULTS
 
-        # pylint: disable=no-value-for-parameter
         self.orion_connection = SwisClient(*args, verify=verify)
-        # pylint: enable=no-value-for-parameter
 
     def query(self, query, **params):
         """
@@ -122,8 +118,7 @@ class DestSwis(SourceSwis):
 
     def __init__(
             self, *args,
-            verify=get_preference('orionserverconn__orion_verify_ssl_cert'),
-            logger=LOG):
+            verify=get_preference('orionserverconn__orion_verify_ssl_cert')):
         """
         override the parent constructor to prefer defaults specific to the
         target server
@@ -131,7 +126,7 @@ class DestSwis(SourceSwis):
         if not args:
             args = DST_DEFAULTS
 
-        super().__init__(*args, verify=verify, logger=logger)
+        super().__init__(*args, verify=verify)
 
     def copy_custom_props(self, src_props=None):
         """
@@ -145,12 +140,12 @@ class DestSwis(SourceSwis):
             src_props = SourceSwis().query(query=ALL_CUSTOM_PROPS_QUERY)
 
         for prop in src_props:
-            self.logger.info(
+            LOG.info(
                 'copying custom property Table: %s, Field: %s',
                 prop.get('Table'), prop.get('Field'))
             if self.query(query=FILTERED_CUSTOM_PROPS_QUERY,
                           table=prop.get('Table'), field=prop.get('Field')):
-                self.logger.debug(
+                LOG.debug(
                     'custom property Table: %s, Field: %s exists, skipping',
                     prop.get('Table'), prop.get('Field'))
                 continue
@@ -160,7 +155,7 @@ class DestSwis(SourceSwis):
                 table=prop.get('Table'), field=prop.get('Field'))
             if values:
                 values = [value.get('Value') for value in values]
-                self.logger.info('also copying values %s', values)
+                LOG.info('also copying values %s', values)
 
             prop['Values'] = values
 
@@ -189,7 +184,7 @@ class DestSwis(SourceSwis):
             src_props = src.query(
                 query=NODE_PROPS_QUERY, ipaddress=ipaddress)
             if not src_props:
-                self.logger.info('there is no source spoon for %s', ipaddress)
+                LOG.info('there is no source spoon for %s', ipaddress)
                 continue
 
             src_props = src_props[0]
@@ -197,11 +192,11 @@ class DestSwis(SourceSwis):
 
             try:
                 self.orion_connection.update(uri=uri, **src_props)
-            except Exception:  # pylint: disable=broad-except
-                self.logger.exception(
+            except Exception:
+                LOG.exception(
                     'cannot update node at %s with %s', uri, src_props)
 
-            self.logger.info('updated %s with %s', uri, src_props)
+            LOG.info('updated %s with %s', uri, src_props)
 
     def update_nodes_with_custom_props(self, src=None):
         if src is None:
@@ -216,7 +211,7 @@ class DestSwis(SourceSwis):
             src_props = src.query(
                 query=NODE_CUSTOM_PROPS_QUERY, ipaddress=ipaddress)
             if not src_props:
-                self.logger.info('there is no source spoon for %s', ipaddress)
+                LOG.info('there is no source spoon for %s', ipaddress)
                 continue
 
             src_props = src_props[0]
@@ -227,11 +222,11 @@ class DestSwis(SourceSwis):
             try:
                 self.orion_connection.update(
                     uri='{}/CustomProperties'.format(uri), **src_props)
-            except Exception:  # pylint: disable=broad-except
-                self.logger.exception(
+            except Exception:
+                LOG.exception(
                     'cannot update node at %s with %s', uri, src_props)
 
-            self.logger.info('updated %s with %s', uri, src_props)
+            LOG.info('updated %s with %s', uri, src_props)
 
     def _node_uri_by_ip(self, ipaddress):
         return self.query(query=NODE_URI_QUERY,
@@ -249,7 +244,7 @@ class DestSwis(SourceSwis):
         try:
             self.orion_connection.invoke(target, verb, *data)
             return 'executed %s against %s with data %s' % (verb, target, data)
-        except Exception:  # pylint: disable=broad-except
-            self.logger.exception(
+        except Exception:
+            LOG.exception(
                 'cannot create custom property: %s against target entity: %s',
                 data[0], target)

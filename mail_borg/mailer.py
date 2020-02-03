@@ -205,7 +205,7 @@ def _get_account(config):
     return '{}\\{}'.format(config.get('domain'), config.get('username'))
 
 
-def validate_email_to_ascii(email_address, logger=None, **config):
+def validate_email_to_ascii(email_address, **config):
     """
     this function is using the `python-email-validator
     <https://github.com/JoshData/python-email-validator>`_ package to
@@ -270,9 +270,6 @@ def validate_email_to_ascii(email_address, logger=None, **config):
     if not config:
         config = load_config()
 
-    if logger is None:
-        logger = _Logger()
-
     try:
         email_dict = validate_email(
             email_address,
@@ -284,7 +281,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
             check_deliverability=config.get('exchange_client_config').
             get('check_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
-        logger.warn(
+        _Logger().warn(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
                  account=email_address,
@@ -299,7 +296,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
     return email_dict.get('email')
 
 
-def get_accounts(logger=None, **config):
+def get_accounts(**config):
     """
     get a list of working Exchange accounts
 
@@ -360,8 +357,7 @@ def get_accounts(logger=None, **config):
     if not config:
         config = load_config()
 
-    if logger is None:
-        logger = _Logger()
+    logger = _Logger()
 
     accounts = []
 
@@ -369,7 +365,7 @@ def get_accounts(logger=None, **config):
         get('exchange_accounts')
     for exchange_account in exchange_accounts:
         if not validate_email_to_ascii(
-                exchange_account.get('smtp_address'), logger=logger, **config):
+                exchange_account.get('smtp_address'), **config):
             continue
 
         credentials = Credentials(
@@ -378,8 +374,6 @@ def get_accounts(logger=None, **config):
                 exchange_account.get('domain_account').get('username')),
             password=exchange_account.get('domain_account').get('password')
         )
-
-        exc_config = None
 
         try:
 

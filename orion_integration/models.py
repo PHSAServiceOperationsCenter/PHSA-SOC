@@ -28,7 +28,7 @@ from p_soc_auto_base.models import BaseModel
 from .orion import OrionClient
 
 
-LOGGER = logging.getLogger('orion_integration_log')
+LOG = logging.getLogger(__name__)
 
 # pylint:disable=R0903
 
@@ -179,10 +179,10 @@ class OrionBaseModel(BaseModel, models.Model):
         try:
             self.delete()
         except Exception as error:  # pylint: disable=broad-except
-            LOGGER.exception(str(error))
+            LOG.exception(str(error))
 
-        LOGGER.info('removed orion entity %s. not found in Orion',
-                    self.orion_id)
+        LOG.info('removed orion entity %s. not found in Orion',
+                 self.orion_id)
 
         return False
 

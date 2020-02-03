@@ -19,15 +19,14 @@ This module contains utility `Python` classes and functions used by the
 import decimal
 import datetime
 import ipaddress
-import logging
 import socket
 import time
 import uuid
+from logging import getLogger
 
 import humanfriendly
 
 from django.apps import apps
-from django.contrib.auth.models import User
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -41,7 +40,7 @@ from django.utils.safestring import mark_safe
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
-LOGGER = logging.getLogger('django')
+LOG = getLogger(__name__)
 
 
 def show_milliseconds(seconds):
@@ -157,7 +156,7 @@ def diagnose_network_problem(host_spec, port=0):
     return (0, f'found no network problems with host: {host_spec}')
 
 
-class Timer():
+class Timer:
     """
     `Context manager
     <https://docs.python.org/3/library/stdtypes.html#context-manager-types>`__
@@ -214,7 +213,7 @@ class Timer():
         self.start = time.perf_counter()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         """
         stop the timer and update the :attr:`elapsed` instance attribute
 
@@ -712,7 +711,7 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription, logger=LOGGER):
+def get_subscription(subscription):
     """
     :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
 
@@ -728,12 +727,12 @@ def get_subscription(subscription, logger=LOGGER):
         return Subscription.objects.get(subscription__iexact=subscription)
     except Subscription.DoesNotExist:
         error_msg = f'Subscription "{subscription}" does not exist.'
-        logger.error(error_msg)
+        LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
 
 
 def borgs_are_hailing(
-        data, subscription, logger=LOGGER, add_csv=True, **extra_context):
+        data, subscription, add_csv=True, **extra_context):
     """
     use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
     email from the :ref:`SOC Automation Server`
@@ -783,15 +782,14 @@ def borgs_are_hailing(
     """
     try:
         email_alert = Email(
-            data=data, subscription_obj=subscription, logger=logger,
-            add_csv=add_csv, **extra_context)
-    except Exception as error:  # pylint: disable=broad-except
-        logger.error('cannot initialize email object: %s', str(error))
+            data=data, subscription_obj=subscription, add_csv=add_csv,
+            **extra_context)
+    except Exception as error:
+        LOG.exception('cannot initialize email object: %s', str(error))
         raise error
 
     try:
         return email_alert.send()
     except Exception as error:
-        logger.error(str(error))
+        LOG.exception(str(error))
         raise error
-

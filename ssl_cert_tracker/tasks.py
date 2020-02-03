@@ -79,13 +79,10 @@ def email_ssl_report():
     the recommended patterns for basic `Celery` tasks.
 
     """
-    try:
-        return _email_report(
-            data=expires_in(),
-            subscription_obj=Subscription.objects.get(
-                subscription='SSl Report'))
-    except Exception as err:
-        raise err
+    return _email_report(
+        data=expires_in(),
+        subscription_obj=Subscription.objects.get(
+            subscription='SSl Report'))
 
 
 @shared_task(
@@ -101,14 +98,10 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
         days than the number provided by this argument.
 
     """
-    try:
-        return _email_report(
-            data=expires_in(lt_days=lt_days),
-            subscription_obj=
-                Subscription.objects.get(subscription='SSl Report'),
-            expires_in_less_than=lt_days)
-    except Exception as err:
-        raise err
+    return _email_report(
+        data=expires_in(lt_days=lt_days),
+        subscription_obj=Subscription.objects.get(subscription='SSl Report'),
+        expires_in_less_than=lt_days)
 
 
 @shared_task(
@@ -119,13 +112,10 @@ def email_expired_ssl_report():
     task to send reports about expired `SSL` by email
 
     """
-    try:
-        return _email_report(
-            data=has_expired(),
-            subscription_obj=Subscription.objects.get(
-                subscription='Expired SSl Report'), expired=True)
-    except Exception as err:
-        raise err
+    return _email_report(
+        data=has_expired(),
+        subscription_obj=Subscription.objects.get(
+            subscription='Expired SSl Report'), expired=True)
 
 
 @shared_task(
@@ -137,13 +127,10 @@ def email_invalid_ssl_report():
     email
 
     """
-    try:
-        return _email_report(
-            data=is_not_yet_valid(),
-            subscription_obj=Subscription.objects.get(
-                subscription='Invalid SSl Report'), invalid=True)
-    except Exception as err:
-        raise err
+    return _email_report(
+        data=is_not_yet_valid(),
+        subscription_obj=Subscription.objects.get(
+            subscription='Invalid SSl Report'), invalid=True)
 
 
 def _email_report(
@@ -168,16 +155,10 @@ def _email_report(
         for rendering the email
 
     """
-    try:
-        email_report = Email(
-            data=data, subscription_obj=subscription_obj, **extra_context)
-    except Exception as err:
-        raise err
+    email_report = Email(
+        data=data, subscription_obj=subscription_obj, **extra_context)
 
-    try:
-        return email_report.send()
-    except Exception as err:
-        raise err
+    return email_report.send()
 
 
 @shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')
@@ -203,9 +184,9 @@ def get_ssl_for_node(orion_node):
           s(orion_node, ssl_port).
           set(serializer='pickle') for ssl_port in ssl_ports)()
 
-    return 'looking for SSL certificates on Orion node %s (%s), ports %s' % \
-        (orion_node.node_caption, orion_node.ip_address,
-         ', '.join(str(ssl_ports.values_list('port', flat=True))))
+    LOG.info('looking for SSL certificates on Orion node %s (%s), ports %s',
+             orion_node.node_caption, orion_node.ip_address,
+             ', '.join(str(ssl_ports.values_list('port', flat=True))))
 
 
 @shared_task(task_serializer='pickle', rate_limit='2/s', queue='nmap',
@@ -230,27 +211,24 @@ def get_ssl_for_node_port(orion_node, port):
     try:
         ssl_certificate = SslProbe(orion_node.ip_address, port)
     except NmapNotAnSslNodeError:
-        return 'there is no SSL certificate on {}:{}'.format(
-            orion_node.ip_address, port)
-    except Exception as error:
-        raise error
+        LOG.warning('there is no SSL certificate on %s:%s',
+                    orion_node.ip_address, port)
+        return
 
     LOG.debug('nmap returned %s', ssl_certificate.summary)
 
-    try:
-        created, ssl_obj = SslCertificate.create_or_update(
-            orion_node.orion_id, ssl_certificate)
-    except Exception as error:
-        raise error
+    created, ssl_obj = SslCertificate.create_or_update(orion_node.orion_id,
+                                                       ssl_certificate)
 
     if created:
-        return 'SSL certificate {} on {}, port {} has been created at {}'.\
-            format(ssl_certificate.ssl_subject, ssl_certificate.hostnames,
-                   ssl_certificate.port, ssl_obj.created_on)
+        LOG.info('SSL certificate %s on %s, port %s has been created at %s',
+                 ssl_certificate.ssl_subject, ssl_certificate.hostnames,
+                 ssl_certificate.port, ssl_obj.created_on)
+        return
 
-    return 'SSL certificate {} on {}, port {} last seen at {}'.format(
-        ssl_certificate.ssl_subject, ssl_certificate.hostnames,
-        ssl_certificate.port, ssl_obj.last_seen)
+    LOG.info('SSL certificate %s on %s, port %s last seen at %s',
+             ssl_certificate.ssl_subject, ssl_certificate.hostnames,
+             ssl_certificate.port, ssl_obj.last_seen)
 
 
 @shared_task(rate_limit='2/s', queue='nmap',
@@ -284,23 +262,20 @@ def verify_ssl_for_node_port(cert_node_port_tuple):
     except OrionNode.DoesNotExist:
         SslCertificate.objects.filter(
             orion_id=cert_node_port_tuple[1]).all().delete()
-        return ('Deleted orphan SSL certificate on %s:%s.'
-                ' Orion node with id %s does not exist' %
-                (cert_node_port_tuple[1], port, cert_node_port_tuple[1]))
+        LOG.info('Deleted orphan SSL certificate on %s:%s. Orion node with id'
+                 ' %s does not exist', cert_node_port_tuple[1], port,
+                 cert_node_port_tuple[1])
 
     try:
         _ = SslProbe(ip_address, port)
     except NmapNotAnSslNodeError:
         SslCertificate.objects.filter(
             id=cert_node_port_tuple[0]).delete()
-        return ('there is no SSL certificate on %s:%s.'
-                ' removing this certificate from the database' %
-                (ip_address, port))
+        LOG.info('there is no SSL certificate on %s:%s. Removing this'
+                 ' certificate from the database', ip_address, port)
+        return
 
-    except Exception as error:
-        raise error
-
-    return 'found an SSL certificate on %s:%s.' % (ip_address, port)
+    LOG.info('found an SSL certificate on %s:%s.', ip_address, port)
 
 
 @shared_task(queue='shared')
@@ -318,8 +293,8 @@ def verify_ssl_certificates():
     group(verify_ssl_for_node_port.s(cert_node_port_tuple) for
           cert_node_port_tuple in cert_node_port_list)()
 
-    return 'verifying {} known SSL certificates against Orion nodes'.format(
-        len(cert_node_port_list))
+    LOG.info('verifying %s known SSL certificates against Orion nodes',
+             len(cert_node_port_list))
 
 
 @shared_task(queue='shared')
@@ -341,4 +316,4 @@ def get_ssl_nodes():
     group(get_ssl_for_node.s(orion_node).set(serializer='pickle') for
           orion_node in orion_nodes)()
 
-    return 'looking for SSL certificates on %s Orion nodes' % len(orion_nodes)
+    LOG.info('looking for SSL certificates on %s Orion nodes', len(orion_nodes))

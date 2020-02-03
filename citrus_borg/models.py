@@ -16,7 +16,7 @@ managers <django.db.models.Manager>` used by the :ref:`Citrus Borg Application`.
 
 """
 import socket
-import uuid
+from logging import getLogger
 
 from django.conf import settings
 from django.db import models
@@ -30,6 +30,9 @@ from orion_integration.models import OrionNode
 from orion_integration.orion import OrionClient
 from p_soc_auto_base.models import BaseModel
 from p_soc_auto_base.utils import get_uuid
+
+
+LOG = getLogger(__name__)
 
 
 class OrionNodeIDError(ValueError):
@@ -300,12 +303,9 @@ class WinlogbeatHost(BaseModel, models.Model):
         orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
                        'WHERE ToLower(DNS)=@dns')
 
-        if not self.enabled:
-            # it's disabled, we don't care so go away
-            return None
-
-        if self.resolved_fqdn is None and self.ip_address is None:
-            return None
+        if not self.enabled or (self.resolved_fqdn is None
+                                and self.ip_address is None):
+            return
 
         if self.resolved_fqdn:
             # let's use the DNS property, these nodes are mostly DHCP'ed
@@ -316,7 +316,7 @@ class WinlogbeatHost(BaseModel, models.Model):
                 # but can we use the DNS property?
                 self.orion_id = orion_id[0].get('NodeID', None)
                 self.save()
-                return None
+                return
 
         # couldn't use DNS, falling back to IPAddress
         orion_query = ('SELECT NodeID FROM Orion.Nodes(nolock=true) '
@@ -327,9 +327,9 @@ class WinlogbeatHost(BaseModel, models.Model):
         if orion_id:
             self.orion_id = orion_id[0].get('NodeID', None)
             self.save()
-            return 'updated Orion NodeID for %s' % self.host_name
+            LOG.info('updated Orion NodeID for %s', self.host_name)
 
-        return 'cannot find bot %s on the Orion server' % self.host_name
+        LOG.warning('cannot find bot %s on the Orion server', self.host_name)
 
     def __str__(self):
         return '%s (%s)' % (self.host_name, self.ip_address)

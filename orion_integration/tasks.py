@@ -16,6 +16,8 @@ This module contains the `Celery tasks
 :updated:    Oct. 24, 2019
 
 """
+from logging import getLogger
+
 from requests.exceptions import HTTPError
 
 from celery import shared_task, group
@@ -23,6 +25,8 @@ from django.apps import apps
 from orion_integration.models import (
     OrionAPMApplication, OrionNodeCategory, OrionNode,
 )
+
+LOG = getLogger(__name__)
 
 
 @shared_task(queue='orion', rate_limit='5/s')
@@ -60,7 +64,7 @@ def orion_entity_exists(model_name, primary_key):
     :arg str model_name: the name of :class:`django.db.models.Model` model
         where the `Orion` entity is cached
 
-    :arg int pk: the primary key of the `Orion` entity
+    :arg int primary_key: the primary key of the `Orion` entity
 
     :returns: `True` or `False`; see
         :meth:`orion_integration.models.OrionBaseModel.exists_in_orion`
@@ -97,4 +101,4 @@ def verify_known_orion_data():
         ret.append('%s: looking for %s entities' % (model._meta.verbose_name,
                                                     len(ids)))
 
-    return 'bootstrapped orion data vetting for %s:\n' % ';\n'.join(ret)
+    LOG.info('bootstrapped orion data vetting for %s:\n', ';\n'.join(ret))

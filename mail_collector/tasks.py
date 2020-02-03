@@ -119,10 +119,11 @@ def store_mail_data(body):
                 'cannot save event %s, error: %s' % (str(event_data),
                                                      str(error)))
 
-        return ('created exchange monitoring event from email message %s'
-                % event.mail_message_identifier)
+        LOG.info('created exchange monitoring event from email message %s',
+                 event.mail_message_identifier)
+        return
 
-    return 'created exchange monitoring event %s' % event.uuid
+    LOG.warning('created exchange monitoring event %s', event.uuid)
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -150,22 +151,17 @@ def raise_failed_event_by_mail(event_pk):
         'uuid', 'event_type',
         'source_host__site__site', 'source_host__host_name')[0]
 
-    try:
-        ret = base_utils.borgs_are_hailing(
+    if base_utils.borgs_are_hailing(
             data=data, subscription=subscription,
             level=get_preference('exchange__server_error'),
             event_type=data_extract.get('event_type'),
             site=data_extract.get('source_host__site__site'),
-            bot=data_extract.get('source_host__host_name'))
-    except Exception as error:
-        raise error
+            bot=data_extract.get('source_host__host_name')):
+        LOG.info('raised email alert for event %s', data_extract.get('uuid'))
+        return
 
-    if ret:
-        return 'raised email alert for event %s' % str(
-            data_extract.get('uuid'))
-
-    return 'could not raise email alert for event %s' % str(
-        data_extract.get('uuid'))
+    LOG.warning('could not raise email alert for event %s',
+                data_extract.get('uuid'))
 
 
 @shared_task(queue='mail_collector')
@@ -215,15 +211,12 @@ def expire_events(moment=None):
         count_deleted_events = models.MailBotLogEvent.objects.filter(
             is_expired=True).all().delete()
 
-        return (
-            'expired %s exchange events, deleted %s exchange message events'
-            ' and %s other exchange events' % (
-                count_expired,
-                count_deleted_messages,
-                count_deleted_events + count_deleted_messages)
-        )
+        LOG.info('expired %s exchange events, deleted %s exchange message'
+                 ' events and %s other exchange events',
+                 count_expired, count_deleted_messages,
+                 count_deleted_events + count_deleted_messages)
 
-    return 'expired %s exchange log events' % count_expired
+    LOG.info('expired %s exchange log events', count_expired)
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -309,19 +302,17 @@ def bring_out_your_dead(
         url_annotate=url_annotate, **base_filters)
 
     if not data and not get_preference('exchange__empty_alerts'):
-        return 'no %s data found for %s' % (level, subscription.subscription)
+        LOG.info('no %s data found for %s',
+                 level, subscription.subscription)
 
-    try:
-        ret = base_utils.borgs_are_hailing(
+    if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, time_delta=filter_pref,
-            level=level)
-    except Exception as error:
-        raise error
+            level=level):
+        LOG.info('emailed data for %s', data.model._meta.verbose_name_plural)
+        return
 
-    if ret:
-        return 'emailed data for %s' % data.model._meta.verbose_name_plural
-
-    return 'could not email data for %s' % data.model._meta.verbose_name_plural
+    LOG.warning('could not email data for %s',
+                data.model._meta.verbose_name_plural)
 
 
 # TODO unused???
@@ -356,9 +347,10 @@ def report_mail_between_domains(only_fails=False, subscription=None):
         queryset = queryset.filter(status__iexact='FAILED')
 
     if base_utils.borgs_are_hailing(data=queryset, subscription=subscription):
-        return 'emailed report for mail between domains verification'
+        LOG.info('emailed report for mail between domains verification')
+        return
 
-    return 'could not email report for mail between domains verification'
+    LOG.warning('could not email report for mail between domains verification')
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -407,19 +399,16 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
     data = queries.dead_mail_sites(not_seen_after=not_seen_after)
 
     if not data and not get_preference('exchange__empty_alerts'):
-        return 'no %s data found for %s' % (level, subscription.subscription)
+        LOG.info('no %s data found for %s', level, subscription.subscription)
 
-    try:
-        ret = base_utils.borgs_are_hailing(
+    if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, time_delta=time_delta,
-            level=level)
-    except Exception as error:
-        raise error
+            level=level):
+        LOG.info('emailed data for %s', data.model._meta.verbose_name_plural)
+        return
 
-    if ret:
-        return 'emailed data for %s' % data.model._meta.verbose_name_plural
-
-    return 'could not email data for %s' % data.model._meta.verbose_name_plural
+    LOG.warning('could not email data for %s',
+                data.model._meta.verbose_name_plural)
 
 
 @shared_task(queue='mail_collector', serializer='pickle')
@@ -465,8 +454,8 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     group(report_failed_events_by_site.s(site, report_interval)
           for site in sites)()
 
-    return ('launched report tasks for exchange events by site'
-            ' for sites: %s' % ', '.join(sites))
+    LOG.info('launched report tasks for exchange events by site for sites: %s',
+             ', '.join(sites))
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -506,12 +495,12 @@ def report_events_by_site(site, report_interval, report_level):
     if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, logger=LOG,
             time_delta=report_interval, level=report_level, site=site):
-        return (
-            'emailed exchange send receive events report for site %s' % site)
+        LOG.info('emailed exchange send receive events report for site %s',
+                 site)
+        return
 
-    return (
-        'could not email exchange send receive events report for site %s'
-        % site)
+    LOG.warning('could not email exchange send receive events report for site'
+                ' %s', site)
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -549,21 +538,15 @@ def report_failed_events_by_site(site, report_interval):
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    try:
-        ret = base_utils.borgs_are_hailing(
+    if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, time_delta=report_interval,
-            level=get_preference('exchange__server_error'), site=site)
-    except Exception as error:
-        raise error
+            level=get_preference('exchange__server_error'), site=site):
+        LOG.info('emailed exchange failed send receive events report for site'
+                 ' %s', site)
+        return
 
-    if ret:
-        return (
-            'emailed exchange failed send receive events report for site %s'
-            % site)
-
-    return (
-        'could not email exchange failed send receive events report for site %s'
-        % site)
+    LOG.warning('could not email exchange failed send receive events report for'
+                ' site %s', site)
 
 
 @shared_task(queue='mail_collector', serializer='pickle')
@@ -608,8 +591,8 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     group(report_failed_events_by_bot.s(bot, report_interval)
           for bot in bots)()
 
-    return ('launched report tasks for exchange events by bot'
-            ' for bots: %s' % ', '.join(bots))
+    LOG.info('launched report tasks for exchange events by bot for bots: %s',
+             ', '.join(bots))
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -647,20 +630,14 @@ def report_events_by_bot(bot, report_interval, report_level):
         event__source_host__host_name=bot).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    try:
-        ret = base_utils.borgs_are_hailing(
+    if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, time_delta=report_interval,
-            level=report_level, bot=bot)
-    except Exception as error:
-        raise error
+            level=report_level, bot=bot):
+        LOG.info('emailed exchange send receive events report for bot %s', bot)
+        return
 
-    if ret:
-        return (
-            'emailed exchange send receive events report for bot %s' % bot)
-
-    return (
-        'could not email exchange send receive events report for bot %s'
-        % bot)
+    LOG.warning('could not email exchange send receive events report for bot %s'
+                , bot)
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,
@@ -726,9 +703,9 @@ def raise_site_not_configured_for_bot():
         LOG.info('all exchange bots are properly configured')
 
     if base_utils.borgs_are_hailing(
-        data=data,
-        subscription=base_utils.get_subscription('Exchange bot no site'),
-        level=get_preference('exchange__server_error')):
+            data=data,
+            subscription=base_utils.get_subscription('Exchange bot no site'),
+            level=get_preference('exchange__server_error')):
         LOG.info('emailed alert for mis-configured Exchange bots')
 
     LOG.warning('cannot email alert for mis-configured Exchange bots')

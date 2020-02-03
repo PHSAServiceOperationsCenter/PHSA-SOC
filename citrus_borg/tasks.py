@@ -114,11 +114,11 @@ def store_borg_data(body):
     except:
         reraise('cannot save data collected from event')
 
-    return 'saved event: %s' % winlogevent.uuid
+    LOG.info('saved event: %s', winlogevent.uuid)
 
 
 @shared_task(queue='citrus_borg', rate_limit='3/s')
-def get_orion_id(pk):
+def get_orion_id(primary_key):
     """
     task that is responsible for maintaining Orion information in the
     :class:`citrus_borg.models.WinlogbeatHost` model
@@ -126,13 +126,13 @@ def get_orion_id(pk):
     This task is a wrapper for the :meth:`models.WinlogbeatHost.get_orion_id`
     instance method.
 
-    :arg int pk: the values of the primary key attribute of the
+    :arg int primary_key: the values of the primary key attribute of the
         :class:`citrus_borg.models.WinlogbeatHost`
 
     :raises: generic :exc:`Exception`
 
     """
-    instance = WinlogbeatHost.objects.get(pk=pk)
+    instance = WinlogbeatHost.objects.get(pk=primary_key)
 
     try:
         return instance.get_orion_id()
@@ -157,7 +157,7 @@ def get_orion_ids():
 
     group(get_orion_id.s(pk) for pk in citrus_borg_pks)()
 
-    return 'refreshing orion ids for %s citrix bots' % len(citrus_borg_pks)
+    LOG.info('refreshing orion ids for %s citrix bots', len(citrus_borg_pks))
 
 
 @shared_task(queue='citrus_borg')
@@ -187,19 +187,19 @@ def expire_events():
     :rtype: str
 
     """
+    expire_threshold = get_preference('citrusborgevents__expire_events'
+                                      '_older_than')
     expired = WinlogEvent.objects.filter(
-        created_on__lt=timezone.now()
-        - get_preference('citrusborgevents__expire_events_older_than')
+        created_on__lt=timezone.now() - expire_threshold
     ).update(is_expired=True)
 
     if get_preference('citrusborgevents__delete_expired_events'):
         WinlogEvent.objects.filter(is_expired=True).all().delete()
-        return 'deleted %s events accumulated over the last %s' % (
-            expired,
-            get_preference('citrusborgevents__expire_events_older_than'))
-
-    return 'expired %s events accumulated over the last %s' % (
-        expired, get_preference('citrusborgevents__expire_events_older_than'))
+        LOG.info('deleted %s events accumulated over the last %s', expired,
+                 expire_threshold)
+    else:
+        LOG.info('expired %s events accumulated over the last %s', expired,
+                 expire_threshold)
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
@@ -312,21 +312,15 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
 
     data = get_dead_bots(now=now, time_delta=time_delta)
     if not data and send_no_news:
-        return (
-            'all monitoring bots were active between'
-            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
-            format(timezone.localtime(value=now),
-                   timezone.localtime(now - time_delta))
-        )
+        LOG.info('all monitoring bots were active between %s and %s',
+                 timezone.localtime(value=now).isoformat(),
+                 timezone.localtime(now - time_delta).isoformat())
+        return None
 
-    try:
-        return base_utils.borgs_are_hailing(
-            data=data,
-            subscription=base_utils.get_subscription(
-                'Dead Citrix monitoring bots'),
-            time_delta=time_delta)
-    except Exception as error:
-        raise error
+    return base_utils.borgs_are_hailing(
+        data=data,
+        subscription=base_utils.get_subscription('Dead Citrix monitoring bots'),
+        time_delta=time_delta)
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
@@ -644,8 +638,9 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     if site:
         sites = sites.filter(site__iexact=site)
     if not sites.exists():
-        return 'site {} does not exist. there is no report to diseminate.'.\
-            format(site)
+        LOG.warning('site %s does not exist. There is no report to disseminate.'
+                    , format(site))
+        return
     sites = sites.order_by('site').values_list('site', flat=True)
 
     site_host_arg_list = []
@@ -670,8 +665,8 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     group(email_login_ux_summary.s(now, time_delta, site_host_args) for
           site_host_args in site_host_arg_list)()
 
-    return 'bootstrapped logon state counts and ux evaluation for {}'.\
-        format(site_host_arg_list)
+    LOG.info('bootstrapped logon state counts and ux evaluation for %s',
+             site_host_arg_list)
 
 
 @shared_task(
@@ -790,8 +785,9 @@ def email_ux_alarms(now=None, site=None, borg_name=None,  # pylint: disable=too-
     if site:
         sites = sites.filter(site__iexact=site)
     if not sites.exists():
-        return 'site {} does not exist. there is no report to diseminate.'.\
-            format(site)
+        LOG.warning('site %s does not exist. there is no report to disseminate.'
+                    , site)
+        return
     sites = sites.order_by('site').values_list('site', flat=True)
 
     site_host_arg_list = []
@@ -817,8 +813,7 @@ def email_ux_alarms(now=None, site=None, borg_name=None,  # pylint: disable=too-
                            ux_alert_threshold, site_host_args) for
           site_host_args in site_host_arg_list)()
 
-    return 'bootstrapped ux evaluation alarms for {}'.\
-        format(site_host_arg_list)
+    LOG.info('bootstrapped ux evaluation alarms for %s', site_host_arg_list)
 
 
 @shared_task(
@@ -845,28 +840,22 @@ def email_ux_alarm(
         ux_alert_threshold=ux_alert_threshold,
         site=site, host_name=host_name)
     if not data and send_no_news:
-        return (
-            'Citrix response times on {} bot in {} were better than {} between'
-            ' {:%a %b %d, %Y %H:%M %Z} and {:%a %b %d, %Y %H:%M %Z}'.
-            format(host_name, site, ux_alert_threshold,
-                   timezone.localtime(value=now),
-                   timezone.localtime(now - time_delta))
-        )
+        LOG.info('Citrix response times on %s bot in %s were better than %s'
+                 ' between %s and %s', host_name, site, ux_alert_threshold,
+                 timezone.localtime(value=now).isoformat(),
+                 timezone.localtime(now - time_delta).isoformat())
 
-    try:
-        return base_utils.borgs_are_hailing(
-            data=data, subscription=base_utils.get_subscription(
-                'Citrix UX Alert'),
-            time_delta=time_delta,
-            ux_alert_threshold=ux_alert_threshold,
-            site=site_host_args[0], host_name=site_host_args[1])
-    except Exception as error:
-        raise error
+    return base_utils.borgs_are_hailing(
+        data=data,
+        subscription=base_utils.get_subscription('Citrix UX Alert'),
+        time_delta=time_delta,
+        ux_alert_threshold=ux_alert_threshold,
+        site=site_host_args[0], host_name=site_host_args[1])
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
-def email_failed_logins_alarm(now=None, failed_threshold=None, **dead_for):
+def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
     """
     raise alert about failed `Citrix` logon events and send it via email
 
@@ -1067,8 +1056,9 @@ def email_failed_login_sites_report(
     if site:
         sites = sites.filter(site__iexact=site)
     if not sites.exists():
-        return 'site {} does not exist. there is no report to diseminate.'.\
-            format(site)
+        LOG.warning('site %s does not exist. there is no report to disseminate.'
+                    , site)
+        return
     sites = sites.order_by('site').values_list('site', flat=True)
 
     site_host_arg_list = []
@@ -1078,7 +1068,7 @@ def email_failed_login_sites_report(
         if borg_name:
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
-            LOG.info(
+            LOG.warning(
                 'there is no bot named %s on site %s. skipping report...',
                 borg_name, borg_site)
             continue
@@ -1094,8 +1084,7 @@ def email_failed_login_sites_report(
                                            send_no_news, site_host_args) for
           site_host_args in site_host_arg_list)()
 
-    return 'bootstrapped failed login reports for {}'.\
-        format(site_host_arg_list)
+    LOG.info('bootstrapped failed login reports for %s', site_host_arg_list)
 
 
 @shared_task(
@@ -1142,6 +1131,3 @@ def email_failed_login_site_report(
             time_delta=time_delta, site=site, host_name=host_name)
     except Exception as error:
         raise error
-
-
-# pylint: enable=W0703

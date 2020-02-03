@@ -1,6 +1,6 @@
 """
 p_soc_auto.settings.common
--------------------
+--------------------------
 
 Django settings for the :ref:`SOC Automation Server`
 
@@ -49,18 +49,23 @@ pathlib.Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 # note that this will not work in Python <3.5
 
 LOGGING = {
-    'version':     1, 'disable_existing_loggers': False, 'formatters': {
+    'version':     1,
+    'disable_existing_loggers': False,
+    'formatters': {
         'verbose':   {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {name} {process:d} {thread:d} {message}',
             'style':  '{',
         }, 'simple': {
             'format': '{levelname} {message}', 'style': '{',
+
         },
-    }, 'filters':  {
+    },
+    'filters':  {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
         },
-    }, 'handlers': {
+    },
+    'handlers': {
         'django_log':               {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
@@ -71,6 +76,12 @@ LOGGING = {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
+            'formatter': 'verbose',
+            'filters':   ['require_debug_true']
+        }, 'p_soc_auto_log':               {
+            'level':     'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'p_soc_auto.log'),
             'formatter': 'verbose',
             'filters':   ['require_debug_true']
         },
@@ -122,13 +133,25 @@ LOGGING = {
             'formatter': 'simple'
         }, 'mail_admins':           {
             'level': 'ERROR', 'class': 'django.utils.log.AdminEmailHandler',
-        },
+        }, 'warning_log': {
+            'level': 'WARNING',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'warning.log'),
+            'formatter': 'verbose',
+            'filters':   ['require_debug_true']
+        }
     }, 'loggers':  {
-        'django':               {
-            'handlers': ['django_log'], 'level': 'DEBUG', 'propagate': True,
+        'django': {
+            'handlers': ['django_log', 'warning_log'],
+            'level': 'INFO',
+            'propagate': True,
         }, 'ssl_cert_tracker':  {
-            'handlers':  ['ssl_cert_tracker_log', 'console'],
+            'handlers':  ['ssl_cert_tracker_log', 'console', 'warning_log'],
             'level':     'DEBUG',
+            'propagate': True,
+        }, 'p_soc_auto': {
+            'handlers': ['p_soc_auto_log', 'warning_log'],
+            'level': 'INFO',
             'propagate': True,
         },
 
@@ -141,23 +164,23 @@ LOGGING = {
         # ======================================================================
 
         'citrus_borg':          {
-            'handlers':  ['citrus_borg_log', 'console'],
+            'handlers':  ['citrus_borg_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
         }, 'mail_collector':    {
-            'handlers':  ['mail_collector_log', 'console'],
+            'handlers':  ['mail_collector_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
         }, 'orion_integration': {
-            'handlers':  ['orion_integration_log', 'console'],
+            'handlers':  ['orion_integration_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
         }, 'django_smtp':       {
-            'handlers':  ['django_smtp_log', 'console'],
+            'handlers':  ['django_smtp_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
         }, 'ldap_probe':        {
-            'handlers':  ['ldap_probe_log', 'console'],
+            'handlers':  ['ldap_probe_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
         },
@@ -178,7 +201,8 @@ memcached connection configuration
 """
 
 # Application definition
-INSTALLED_APPS = ['ldap_probe.apps.LdapProbeConfig',
+INSTALLED_APPS = [
+    'ldap_probe.apps.LdapProbeConfig',
     'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',
     'p_soc_auto_base.apps.PSocAutoBaseConfig',
@@ -186,13 +210,15 @@ INSTALLED_APPS = ['ldap_probe.apps.LdapProbeConfig',
     'citrus_borg.apps.CitrusBorgConfig',
     #    'orion_flash.apps.OrionFlashConfig',
     #    'task_journal.apps.TaskJournalConfig',
+    #    'task_journal.apps.TaskJournalConfig',
     'rest_framework', 'django_template_check', 'django_mysql', 'rangefilter',
     'templated_email', 'timedeltatemplatefilter', 'dynamic_preferences',
     'grappelli.dashboard', 'grappelli', 'django.contrib.admin',
     'django.contrib.admindocs', 'django.contrib.auth',
     'django.contrib.contenttypes', 'django.contrib.sessions',
     'django.contrib.messages', 'django.contrib.staticfiles',
-    'django_celery_beat', ]
+    'django_celery_beat',
+]
 
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -854,6 +880,7 @@ GRAPPELLI_INDEX_DASHBOARD = 'p_soc_auto.dashboard.CustomIndexDashboard'
 """
 Custom `Django Admin` dashboard class location
 """
+
 
 if __name__ == '__main__':
     pass

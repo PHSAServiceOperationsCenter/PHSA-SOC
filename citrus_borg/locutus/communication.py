@@ -271,7 +271,7 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
             successful_events=Count(
                 'winlogevent__event_state',
                 filter=Q(winlogevent__event_state__iexact='successful'))).\
-        order_by('-hour', 'site__site')
+        order_by('-failed_events', '-hour', 'site__site')
 
 # pylint: disable=too-many-arguments
 

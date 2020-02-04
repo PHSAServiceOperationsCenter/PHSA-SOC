@@ -20,7 +20,6 @@ from django.conf import settings
 sys.path.insert(0, os.path.abspath('../../mail_borg'))
 sys.path.insert(0, os.path.abspath('../../'))
 import p_soc_auto
-#sys.path.insert(0, os.path.abspath('../../p_soc_auto'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings.common'
 django.setup()
 
@@ -35,7 +34,7 @@ os.environ['GRAPHVIZ_DOT'] = '/bin/dot'
 project = 'SOC Automation and Orchestration'
 copyright = (
     '2018 - 2019 Provincial Health Services Authority of British Columbia')
-author = 'serban teodorescu, serban.teodoresch@phsa.ca'
+author = 'daniel busto, daniel.busto@phsa.ca'
 
 # The full version, including alpha/beta/rc tags
 release = p_soc_auto.__version__
@@ -92,7 +91,7 @@ html_theme = 'sphinxdoc'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),

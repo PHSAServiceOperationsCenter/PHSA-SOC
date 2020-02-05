@@ -269,19 +269,18 @@ def _accounts_to_table(accounts, window):
         }
 
     """
-    listed_accounts = []
-
-    for account in accounts:
-
-        _account = []
-        _account.append(account.get('domain_account').get('domain'))
-        _account.append(account.get('domain_account').get('username'))
-        _account.append(account.get('domain_account').get('password'))
-        _account.append(account.get('smtp_address'))
-        _account.append(account.get('exchange_autodiscover'))
-        _account.append(account.get('autodiscover_server'))
-
-        listed_accounts.append(_account)
+    account_pairs = [(account, account.get('domain_account'))
+                     for account in accounts]
+    listed_accounts = \
+        [
+            [domain_account.get('domain'),
+             domain_account.get('username'),
+             domain_account.get('password'),
+             account.get('smtp_address'),
+             account.get('exchange_autodiscover'),
+             account.get('autodiscover_server')]
+            for account, domain_account in account_pairs
+        ]
 
     window.FindElement('exc_accs').Update(listed_accounts)
 

@@ -1498,12 +1498,9 @@ def get_preference(key):
     (also known as a dynamic setting)
 
     :arg str key: the accessor key for the preference
-        it follows this format 'section__preference_name`; default is ``None``
-
-    :raises: :exc:`Exception` if the key argument cannot be found
+        it follows this format 'section__preference_name`
     """
-    preferences = global_preferences_registry.manager().load_from_db()
-    return preferences.get(key)
+    return global_preferences_registry.manager().get(key)
 
 
 def get_list_preference(key):

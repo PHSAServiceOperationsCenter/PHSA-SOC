@@ -198,7 +198,7 @@ CRON_TASKS = {
           'task': 'ldap_probe.tasks.dispatch_dupe_nodes_reports', },
          {'minute': '57', 'hour': '06', }, ),
         ({'name': 'AD controller monitoring: maintain Orion AD nodes',
-          'task': 'ldap_probe.tasks.dispatch_non_orion_ad_nodes_report', },
+          'task': 'ldap_probe.tasks.maintain_ad_orion_nodes', },
          {'minute': '23', 'hour': '08', }, ),
         ({'name': 'AD controller monitoring: performance degradation reports',
           'task': 'ldap_probe.tasks.dispatch_ldap_perf_reports', },

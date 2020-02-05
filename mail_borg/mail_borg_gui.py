@@ -43,10 +43,6 @@ from mailer import WitnessMessages
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
 
-# pylint: disable=unnecessary-comprehension
-# PySimpleGUI.Spin() likes comprehensions for populating the spinner even if
-# pylint disapproves
-
 
 def get_window():
     """
@@ -122,8 +118,9 @@ def get_window():
 
     conf_values_col = [
         [gui.Text('Check Email Every', justification='left'),
+         # TODO do spinners actually require lists? (probably yes...)
          gui.Spin(
-            [i for i in range(1, 60)], key='mail_check_period',
+            list(range(1, 60)), key='mail_check_period',
             initial_value=config.get(
                 'exchange_client_config').get('mail_check_period'),
             size=(3, 1), enable_events=True),
@@ -137,25 +134,25 @@ def get_window():
             default=config.get('exchange_client_config').get('utf8_email'),
             key='utf8_email', enable_events=True), ],
         [gui.Spin(
-            [i for i in range(1, 20)],
+            list(range(1, 20)),
             key='check_mx_timeout',
             initial_value=config.get(
                 'exchange_client_config').get('check_mx_timeout'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
-            [i for i in range(1, 120)], key='min_wait_receive',
+            list(range(1, 120)), key='min_wait_receive',
             initial_value=config.get(
                 'exchange_client_config').get('min_wait_receive'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
-            [i for i in range(1, 10)], key='backoff_factor',
+            list(range(1, 10)), key='backoff_factor',
             initial_value=config.get(
                 'exchange_client_config').get('backoff_factor'),
             size=(3, 1), enable_events=True), ],
         [gui.Spin(
-            [i for i in range(1, 600)], key='max_wait_receive',
+            list(range(1, 600)), key='max_wait_receive',
             initial_value=config.get(
                 'exchange_client_config').get('max_wait_receive'),
             size=(3, 1),  enable_events=True),

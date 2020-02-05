@@ -730,13 +730,13 @@ def dispatch_ldap_perf_report(
             utils.get_model(data_source).report_perf_degradation(
                 bucket=bucket, anon=anon, level=level, **time_delta_args
                 )
-    except Exception as err:
+    except Exception as error:
         LOG.exception(
             ('invoking ldap probes report with data_source: %s,'
              ' bucket: %s, anon: %s, level: %s, time_delta_args: %s'
              ' raises error %s'),
-            data_source, bucket, anon, level, time_delta_args, str(err))
-        raise err
+            data_source, bucket, anon, level, time_delta_args, error)
+        raise error
 
     if no_nodes:
         LOG.warning('there are no AD network nodes for %s', bucket)

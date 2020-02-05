@@ -142,18 +142,18 @@ def diagnose_network_problem(host_spec, port=0):
         ipaddress.ip_address(host_spec)
         try:
             socket.gethostbyaddr(host_spec)
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as error:
             return (1, (f'\nhost {host_spec} does not exist,'
-                        f' error {type(err)}: {str(err)}'))
+                        f' error {type(error)}: {str(error)}'))
 
     except ValueError:
         try:
             socket.getaddrinfo(host_spec, port)
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as error:
             return (1, (f'host name {host_spec} not in DNS,'
-                        f' error {type(err)}: {str(err)}'))
+                        f' error {type(error)}: {str(error)}'))
 
-    return (0, f'found no network problems with host: {host_spec}')
+    return 0, f'found no network problems with host: {host_spec}'
 
 
 class Timer:
@@ -283,10 +283,7 @@ def get_model(destination):
         registered on the server
 
     """
-    try:
-        return apps.get_model(*destination.split('.'))
-    except Exception as err:
-        raise UnknownDataTargetError from err
+    return apps.get_model(*destination.split('.'))
 
 
 def get_queryset_values_keys(model):

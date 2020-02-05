@@ -422,11 +422,7 @@ def to_hex(input_string=None):
     if input_string is None:
         return None
 
-    try:
-        input_string = str(input_string)
-    except Exception as error:
-        raise TypeError(
-            'cannot cast %s to string: %s' % (input_string, error))
+    input_string = str(input_string)
 
     return bytes(input_string, 'utf8').hex()
 
@@ -532,9 +528,9 @@ def probe_for_certs(dns_list=None, port_list=None):
                     expires_on=cert.ssl_not_after))
                 print('found', cert.ssl_subject.get(
                     'commonName'), ': ', str(port), ', ', cert.ssl_not_after)
-            except Exception as err:
-                print(dns, ', ', port, ', ', err)
-                dns_errors.append(dict(dns=dns, port=str(port), err=str(err)))
+            except Exception as error:
+                print(f'{dns}, {port}, {error}')
+                dns_errors.append(dict(dns=dns, port=str(port), err=str(error)))
 
     with open('certs_found.csv', 'w', newline='') as csv_file:
         csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)

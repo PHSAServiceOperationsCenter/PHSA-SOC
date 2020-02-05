@@ -1185,10 +1185,7 @@ class LdapProbeLog(models.Model):
         else:
             ldap_probe_log_entry.ad_node = probe_data.ad_controller
 
-        try:
-            ldap_probe_log_entry.save()
-        except Exception as err:
-            raise err
+        ldap_probe_log_entry.save()
 
         return f'created {ldap_probe_log_entry}'
 

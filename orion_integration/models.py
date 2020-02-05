@@ -178,7 +178,7 @@ class OrionBaseModel(BaseModel, models.Model):
 
         try:
             self.delete()
-        except Exception as error:  # pylint: disable=broad-except
+        except Exception as error:
             LOG.exception(str(error))
 
         LOG.info('removed orion entity %s. not found in Orion',
@@ -281,10 +281,10 @@ class OrionBaseModel(BaseModel, models.Model):
 
                 instance.save()
 
-            except Exception as err:    # pylint:disable=W0703
+            except Exception as error:
                 return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %
-                      (str(err), orion_mapping))
+                      (str(error), orion_mapping))
 
         return_dict['status'] = 'done'
 

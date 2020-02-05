@@ -552,7 +552,7 @@ class MomentOfTime():
     def now(now):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`__
+        <https://docs.python.org/3/library/functions.html#staticmethod>`__
         for calculating the reference moment
 
         :arg `datetime.datetime` now: the reference moment; if ``None``, use the
@@ -574,7 +574,7 @@ class MomentOfTime():
     def time_delta(time_delta, **kw_time_delta):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        <https://docs.python.org/3/library/functions.html#staticmethod>`_
         for verifying or calculating a :class:`django.utils.timezone.timedelta`
         object
 
@@ -587,7 +587,8 @@ class MomentOfTime():
 
         :arg dict kw_time_delta: a :class:`dict` suitable for creating a
             :class:`datetime.timedelta` object. See
-            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__.
+            `<https://docs.python.org/3/library/datetime.html"""\
+            """#datetime.timedelta>`__.
 
         :raises:
 
@@ -612,12 +613,12 @@ class MomentOfTime():
     def past(cls, **moment):
         """
         `class method
-        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        <https://docs.python.org/3/library/functions.html#classmethod>`_
         that returns a moment in the past relative to the reference moment
 
-        :arg dict moment: `keyword arguments
-            <https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments>`_
-            with the following keys:
+        :arg dict moment: `keyword arguments <https://docs.python.org/3/"""\
+            """tutorial/controlflow.html#keyword-arguments>`_ with the
+            following keys:
 
             :now: contains the reference moment; if not present, this method
                   will use the value returned by
@@ -628,8 +629,9 @@ class MomentOfTime():
 
                 If this key is not present, the method expects other keys
                 as per
-                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__
-                so that a `datetime.timedelta` interval can be calculated
+                `<https://docs.python.org/3/library/datetime.html"""\
+                """#datetime.timedelta>`__ so that a `datetime.timedelta` 
+                interval can be calculated
 
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \
@@ -640,7 +642,7 @@ class MomentOfTime():
     def future(cls, **moment):
         """
         `class method
-        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        <https://docs.python.org/3/library/functions.html#classmethod>`_
         that returns a moment in the future relative to the reference moment
 
         See :meth:`past` for details.
@@ -672,7 +674,21 @@ def get_base_queryset(data_source, **base_filters):
             In [2]: qs = get_base_queryset('citrus_borg.borgsite')
 
             In [3]: qs.values('site', 'enabled')
-            Out[3]: <QuerySet [{'site': 'Squamish', 'enabled': False}, {'site': 'LGH', 'enabled': False}, {'site': 'Whistler', 'enabled': False}, {'site': 'Pemberton', 'enabled': False}, {'site': 'Bella Bella', 'enabled': False}, {'site': 'Bella Coola', 'enabled': False}, {'site': 'Sechelt', 'enabled': False}, {'site': 'Powell River', 'enabled': False}, {'site': 'over the rainbow', 'enabled': True}, {'site': 'Bella Bella-wifi', 'enabled': False}, {'site': 'Bella Coola-wifi', 'enabled': False}, {'site': 'Whistler-wifi', 'enabled': False}, {'site': 'Pemberton-wifi', 'enabled': False}, {'site': 'LGH-wifi', 'enabled': False}, {'site': 'Squamish-wifi', 'enabled': False}]>
+            Out[3]: <QuerySet [{'site': 'Squamish', 'enabled': False}, """\
+            """{'site': 'LGH', 'enabled': False}, """\
+            """{'site': 'Whistler', 'enabled': False}, """\
+            """{'site': 'Pemberton', 'enabled': False}, """\
+            """{'site': 'Bella Bella', 'enabled': False}, """\
+            """{'site': 'Bella Coola', 'enabled': False}, """\
+            """{'site': 'Sechelt', 'enabled': False}, """\
+            """{'site': 'Powell River', 'enabled': False}, """\
+            """{'site': 'over the rainbow', 'enabled': True}, """\
+            """{'site': 'Bella Bella-wifi', 'enabled': False}, """\
+            """{'site': 'Bella Coola-wifi', 'enabled': False}, """\
+            """{'site': 'Whistler-wifi', 'enabled': False}, """\
+            """{'site': 'Pemberton-wifi', 'enabled': False}, """\
+            """{'site': 'LGH-wifi', 'enabled': False}, """\
+            """{'site': 'Squamish-wifi', 'enabled': False}]>
 
             In [4]: qs = get_base_queryset('citrus_borg.borgsite', enabled=True)
 

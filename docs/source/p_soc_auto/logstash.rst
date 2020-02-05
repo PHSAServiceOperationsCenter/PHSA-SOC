@@ -15,7 +15,7 @@ At the other end, `Logstash <https://www.elastic.co/products/beats/winlogbeat>`_
 collects and concentrates data from various system sources.
 
 In our case, `Logstash <https://www.elastic.co/products/beats/winlogbeat>`_
-collects Windows lo events data from remote monitoring bots, and delivers
+collects Windows log events data from remote monitoring bots, and delivers
 said data to the :ref:`RabbitMQ Server` over the `AMPQ
 <https://www.amqp.org/>`_ protocol.
 
@@ -32,7 +32,7 @@ The data collection is executed using another product owned and developed by
 
     Upgrade both the remote bots and the :ref:`SOC Automation Server` with
     the latest versions of these products.
-    
+
 `Logstash <https://www.elastic.co/products/beats/winlogbeat>`_ server is using
 the `Rabbitmq output plugin
 <https://www.elastic.co/guide/en/logstash-versioned-plugins/current/v5.1.1-plugins-outputs-rabbitmq.html>`_
@@ -50,7 +50,7 @@ The `Rabbitmq output plugin
 is configured via the source controlled file ``configs/logstash/rabbitmq.conf``.
 
 .. literalinclude:: ../../../configs/logstash/rabbitmq.conf
-   
+
 
 Symlink or copy this file to ``/etc/logstash/conf.d/``.
 

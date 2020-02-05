@@ -350,15 +350,10 @@ def raise_ux_alarm(
         impossible to determine the underlying `Django` `model` by looking
         at the source code of the function.
     """
-    try:
-        queryset = _by_site_host_hour(
-            now=now, time_delta=time_delta, site=site, host_name=host_name,
-            group_by=group_by, ux_alert_threshold=ux_alert_threshold,
-            include_event_counts=include_event_counts)
-    except Exception as error:
-        raise error
-
-    queryset = queryset.\
+    queryset = _by_site_host_hour(
+        now=now, time_delta=time_delta, site=site, host_name=host_name,
+        group_by=group_by, ux_alert_threshold=ux_alert_threshold,
+        include_event_counts=include_event_counts).\
         annotate(
             ux_threshold=Value(ux_alert_threshold,
                                output_field=DurationField())).\

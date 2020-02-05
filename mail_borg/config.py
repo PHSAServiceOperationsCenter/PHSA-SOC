@@ -284,7 +284,7 @@ def load_config(current_base_config=None):
 
     try:
         config = get_config_from_server(base_config)
-    except Exception as err:  # pylint: disable=broad-except
+    except Exception as err:
         config = None
 
     if config:
@@ -380,13 +380,8 @@ def get_config_from_file(json_file=LOCAL_CONFIG):
 
     :returns: a JSON encoded :class:`str`
     """
-    try:
-        with open(json_file, 'r') as local_config:
-            config = json.load(local_config)
-
-        local_config.close()
-    except Exception as err:
-        raise err
+    with open(json_file, 'r') as local_config:
+        config = json.load(local_config)
 
     return config
 
@@ -405,16 +400,6 @@ def dump_config_to_file(config, json_file=LOCAL_CONFIG):
 
         The default value is provided via the :attr:`LOCAL_CONFIG` variable
         value
-
-    :raises:
-
-        :exc:`Exception` if the `JSON <https://www.json.org/>`_ file cannot
-        be saved
     """
-    try:
-        with open(json_file, 'w') as local_config:
-            json.dump(config, local_config, indent=4)
-
-        local_config.close()
-    except Exception as err:
-        raise err
+    with open(json_file, 'w') as local_config:
+        json.dump(config, local_config, indent=4)

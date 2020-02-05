@@ -44,8 +44,6 @@ def populate_from_orion():
             _ret = model.update_or_create_from_orion()
         except HTTPError as error:
             _ret = str(error)
-        except Exception as error:
-            raise error
 
         ret.append(_ret)
 

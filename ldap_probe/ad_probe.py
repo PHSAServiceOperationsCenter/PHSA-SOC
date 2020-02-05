@@ -161,7 +161,7 @@ class ADProbe:
             try:
                 self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'LDAP Initialization error: {err}')
@@ -174,7 +174,7 @@ class ADProbe:
         """
         set the abort flag and update the :attr:`errors` value
         """
-        LOG.debug('aborting LDAP op for %s', self.ad_controller.get_node())
+        LOG.warning('aborting LDAP op for %s', self.ad_controller.get_node())
         self.abort = True
         self.errors += f'\nAD probe aborted. {error_message}'
 
@@ -207,7 +207,7 @@ class ADProbe:
                 self._fallback(err)
                 return
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}.')
                 return
@@ -231,7 +231,7 @@ class ADProbe:
                     f' not available on the AD controller at'
                     f' {self.ad_controller.get_node()}')
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
@@ -277,7 +277,7 @@ class ADProbe:
                 self._diagnose_network(err)
                 return
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return
@@ -287,7 +287,7 @@ class ADProbe:
         with Timer(use_duration=False) as timing:
             try:
                 self.ad_response = self.ldap_object.read_rootdse_s()
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return

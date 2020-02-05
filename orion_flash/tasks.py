@@ -91,10 +91,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
     create orion alert instances
 
     """
-    try:
-        return base_utils.get_model(destination).create_or_update(qs_rows_as_dict)
-    except Exception as err:
-        raise err
+    return base_utils.get_model(destination).create_or_update(qs_rows_as_dict)
 
 
 @shared_task(

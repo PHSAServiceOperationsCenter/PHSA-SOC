@@ -86,11 +86,7 @@ def store_mail_data(body):
         event_message=event_data.event_message,
         event_body=event_data.event_body,
         event_exception=event_data.event_exception)
-    try:
-        event.save()
-    except Exception as error:
-        raise exceptions.SaveExchangeEventError(
-            'cannot save event %s, error: %s' % (str(event_data), str(error)))
+    event.save()
 
     if event.event_status == 'FAIL':
         try:
@@ -103,21 +99,16 @@ def store_mail_data(body):
 
     if exchange_borg.mail_borg_message[1]:
         mail_data = exchange_borg.mail_borg_message[1]
-        try:
-            event = models.MailBotMessage(
-                event=event,
-                mail_message_identifier=mail_data.mail_message_identifier,
-                sent_from=mail_data.sent_from, sent_to=mail_data.sent_to,
-                received_from=mail_data.received_from,
-                received_by=mail_data.received_by,
-                mail_message_created=mail_data.mail_message_created,
-                mail_message_sent=mail_data.mail_message_sent,
-                mail_message_received=mail_data.mail_message_received)
-            event.save()
-        except Exception as error:
-            raise exceptions.SaveExchangeMailEventError(
-                'cannot save event %s, error: %s' % (str(event_data),
-                                                     str(error)))
+        event = models.MailBotMessage(
+            event=event,
+            mail_message_identifier=mail_data.mail_message_identifier,
+            sent_from=mail_data.sent_from, sent_to=mail_data.sent_to,
+            received_from=mail_data.received_from,
+            received_by=mail_data.received_by,
+            mail_message_created=mail_data.mail_message_created,
+            mail_message_sent=mail_data.mail_message_sent,
+            mail_message_received=mail_data.mail_message_received)
+        event.save()
 
         LOG.info('created exchange monitoring event from email message %s',
                  event.mail_message_identifier)

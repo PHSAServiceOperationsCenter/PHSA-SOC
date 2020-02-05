@@ -1503,10 +1503,7 @@ def get_preference(key):
     :raises: :exc:`Exception` if the key argument cannot be found
     """
     preferences = global_preferences_registry.manager().load_from_db()
-    try:
-        return preferences.get(key)
-    except Exception as error:
-        raise error
+    return preferences.get(key)
 
 
 def get_list_preference(key):

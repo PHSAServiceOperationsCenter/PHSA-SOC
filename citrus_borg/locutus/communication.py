@@ -28,6 +28,7 @@ from django.db.models import (
 )
 from django.db.models.functions import TruncHour, TruncMinute
 from django.utils import timezone
+from dynamic_preferences.exceptions import NotFoundInRegistry
 
 from citrus_borg.models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
@@ -44,50 +45,56 @@ class GroupBy(Enum):
     MINUTE = 'minute'
 
 
+# TODO make all the name columns 'name' so we don't need obj_name
+# TODO add "active" manager to use instead of filtering by enabled (to allow
+#      customization per class as to what is "active"
+# TODO stop the interval and `now` rather than the present time (filter lt now)
+def _get_dead_objects(now, obj_class, obj_name, key_for_event, time_pref=None,
+                      time_delta=None):
+    if not time_delta:
+        try:
+            time_delta = get_preference(time_pref)
+        except (NotFoundInRegistry, AttributeError):
+            raise ValueError(f'_get_dead_objects requires a time_delta'
+                             f' or valid time_pref. Check preference'
+                             f' "{time_pref}" to ensure it is correctly'
+                             f' configured.')
+
+    if not isinstance(time_delta, datetime.timedelta):
+        raise TypeError(f'{type(time_delta)} is an invalid type for time_delta')
+
+    if not now:
+        now = timezone.now()
+
+    if not isinstance(now, datetime.datetime):
+        raise TypeError('%s type invalid for %s' % (type(now), now))
+
+    live = set(WinlogEvent.objects.filter(created_on__gt=now - time_delta)
+               .values_list(f'{key_for_event}__{obj_name}', flat=True))
+    all_objs = set(obj_class.objects.filter(enabled=True)
+                   .values_list(obj_name, flat=True))
+
+    dead = all_objs - live
+
+    return obj_class.objects.filter(**{f'{obj_name}__in': list(dead)})
+
+
+# TODO this is the only one to annotate with the interval, why?
 def get_dead_bots(now=None, time_delta=None):
     """
     get the bot hosts that have not sent any `ControlUp` events during
-    the interval defined by the arguments
-
-    "Interval defined by the arguments" is a hoity toity way of saying
-    "over the last $x seconds/minutes/hours (etc)".
-
-    The idea behind this function is to return the difference between a
-    list of all the bot hosts and a list of the bot hosts that have been heard
-    from during the defined interval.
-    The result will be the list of bots that have **not** been heard from
-    during the defined interval.
-
-    This function is an excellent candidate for using the `difference()
-    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#difference>`__
-    method of the :class:`django.db.models.query.QuerySet` but, unfortunately,
-    that method doesn't work with `MariaDB` databases.
-
-    The workaround is to cast the diffing :class:`QuerySets
-    <django.db.models.query.QuerySet>` to :class:`lists <list>` using the
-    `values_list()
-    <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#values-list>`__
-    method.
-    Diff the :class:`lists <list>` using the `symmetric_difference()
-    <https://docs.python.org/3.6/library/stdtypes.html#frozenset.symmetric_difference>`__
-    method of the `Python set class
-    <https://docs.python.org/3.6/library/stdtypes.html#set-types-set-frozenset>`__,
-    and then cast the result to a :class:`django.db.models.query.QuerySet`.
+    the interval [now-time_delta,)
 
     The list of live bots is extracted from the
     :class:`citrus_borg.models.WinlogEvent`
 
     :arg datetime.datetime now: the initial moment
 
-        By default (and in most useful cases for functions that return
-        historical data), the initial moment should be the value of
-        :meth:`datetime.datetime.now`. In `Django` applications, it is
-        recommended to use :meth:`django.utils.timezone.now` which is
-        what all the functions in this module do
+        By default the current time.
 
     :arg datetime.timedelta time_delta: the time interval to consider
 
-        By default, this will be retrieved from the dynamic preference
+        By default, this is the dynamic preference
         `Bot not seen alert threshold
         <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_bot_after>`__
 
@@ -102,37 +109,20 @@ def get_dead_bots(now=None, time_delta=None):
         types
 
     """
-    if now is None:
-        now = timezone.now()
+    key_for_event = 'source_host'
+    obj_class = WinlogbeatHost
+    obj_name = 'host_name'
+    time_pref = 'citrusborgnode__dead_bot_after'
 
-    if time_delta is None:
-        time_delta = get_preference('citrusborgnode__dead_bot_after')
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
-
-    live_bots = list(WinlogEvent.objects.
-                     filter(created_on__gt=now - time_delta).distinct().
-                     values_list('source_host__host_name', flat=True))
-
-    all_bots = list(WinlogbeatHost.objects.filter(enabled=True).
-                    values_list('host_name', flat=True))
-
-    dead_bots = set(all_bots).symmetric_difference(set(live_bots))
-
-    dead_bots = WinlogbeatHost.objects.filter(host_name__in=list(dead_bots),
-                                              last_seen__isnull=False)
-
-    dead_bots = dead_bots.\
-        annotate(measured_now=Value(now, output_field=CharField())).\
-        annotate(measured_over=Value(time_delta, output_field=DurationField()))
+    dead_bots = _get_dead_objects(
+        now, obj_class, obj_name, key_for_event, time_pref, time_delta)
 
     if dead_bots.exists():
-        dead_bots = dead_bots.order_by('last_seen')
+        dead_bots = dead_bots.\
+            annotate(measured_now=Value(now, output_field=CharField())).\
+            annotate(measured_over
+                     =Value(time_delta, output_field=DurationField())).\
+            order_by('last_seen')
 
     return dead_bots
 
@@ -146,37 +136,20 @@ def get_dead_brokers(now=None, time_delta=None):
     The only differences are:
 
     * The data is pulled from the
-      :class:`citrus_borg.models.KnownnBrokeringDevice`
+      :class:`citrus_borg.models.KnownBrokeringDevice`
 
-    * The default value for the `time_delta` argument is picked from the
-      dynamic preference `Session host not seen alert threshold
+    * The default value for `time_delta` is the dynamic preference
+      `Session host not seen alert threshold
       <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_session_host_after>`__
     """
-    if now is None:
-        now = timezone.now()
+    key_for_event = 'xml_broker'
+    obj_class = KnownBrokeringDevice
+    obj_name = 'broker_name'
+    time_pref = 'citrusborgnode__dead_session_host_after'
 
-    if time_delta is None:
-        time_delta = get_preference('citrusborgnode__dead_session_host_after')
+    dead_brokers = _get_dead_objects(
+        now, obj_class, obj_name, key_for_event, time_pref, time_delta)
 
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
-
-    live_brokers = list(WinlogEvent.objects.
-                        filter(created_on__gt=now - time_delta,
-                               event_state__iexact='successful').distinct().
-                        values_list('xml_broker__broker_name', flat=True))
-
-    all_brokers = list(KnownBrokeringDevice.objects.filter(enabled=True).
-                       values_list('broker_name', flat=True))
-
-    dead_brokers = set(all_brokers).symmetric_difference(set(live_brokers))
-
-    dead_brokers = KnownBrokeringDevice.objects.\
-        filter(broker_name__in=list(dead_brokers))
     if dead_brokers.exists():
         dead_brokers = dead_brokers.order_by('last_seen')
 
@@ -191,37 +164,21 @@ def get_dead_sites(now=None, time_delta=None):
     This function is very similar to :func:`get_dead_bots`.
     The only differences are:
 
-    * The data is pulled from the
-      :class:`citrus_borg.models.BorgSite`
+    * The data is pulled from the :class:`citrus_borg.models.BorgSite`
 
-    * The default value for the `time_delta` argument is picked from the
-      dynamic preference `Site not seen alert threshold
+    * The default value for `time_delta` argument is the dynamic preference
+      `Site not seen alert threshold
       <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_site_after>`__
 
     """
-    if now is None:
-        now = timezone.now()
+    key_for_event = 'source_host__site'
+    obj_class = BorgSite
+    obj_name = 'site'
+    time_pref = 'citrusborgnode__dead_site_after'
 
-    if time_delta is None:
-        time_delta = get_preference('citrusborgnode__dead_site_after')
+    dead_sites = _get_dead_objects(
+        now, obj_class, obj_name, key_for_event, time_pref, time_delta)
 
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
-
-    live_sites = list(WinlogEvent.objects.
-                      filter(created_on__gt=now - time_delta).distinct().
-                      values_list('source_host__site__site', flat=True))
-
-    all_sites = list(BorgSite.objects.filter(enabled=True).
-                     values_list('site', flat=True))
-
-    dead_sites = set(all_sites).symmetric_difference(set(live_sites))
-
-    dead_sites = BorgSite.objects.filter(site__in=list(dead_sites)).distinct()
     if dead_sites.exists():
         dead_sites = dead_sites.order_by('winlogbeathost__last_seen')
 
@@ -244,8 +201,6 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
 
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model
-
-
     """
     if now is None:
         now = timezone.now()
@@ -272,8 +227,6 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
                 'winlogevent__event_state',
                 filter=Q(winlogevent__event_state__iexact='successful'))).\
         order_by('-failed_events', '-hour', 'site__site')
-
-# pylint: disable=too-many-arguments
 
 
 def raise_ux_alarm(
@@ -371,7 +324,6 @@ def raise_ux_alarm(
     return queryset.order_by(
         'site__site', 'host_name', '-avg_logon_time',
         '-avg_storefront_connection_time')
-# pylint: enable=too-many-arguments
 
 
 def _include_event_counts(queryset):

@@ -280,7 +280,6 @@ def raise_ux_alarm(
         `Maximum acceptable response time for citrix events
         <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
 
-
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model
 
@@ -306,20 +305,13 @@ def raise_ux_alarm(
     queryset = _by_site_host_hour(
         now=now, time_delta=time_delta, site=site, host_name=host_name,
         group_by=group_by, ux_alert_threshold=ux_alert_threshold,
-        include_event_counts=include_event_counts).\
-        annotate(
-            ux_threshold=Value(ux_alert_threshold,
-                               output_field=DurationField())).\
-        order_by('site__site', 'host_name')
+        include_event_counts=include_event_counts)
 
     if group_by == GroupBy.MINUTE:
         queryset = queryset.order_by('-minute')
 
     if group_by == GroupBy.HOUR:
         queryset = queryset.order_by('-hour')
-
-    queryset = queryset.order_by(
-        '-avg_logon_time', '-avg_storefront_connection_time')
 
     return queryset.order_by(
         'site__site', 'host_name', '-avg_logon_time',
@@ -462,10 +454,8 @@ def _include_ux_stats(queryset):
         annotate(
             stddev_logon_time=StdDev('winlogevent__logon_achieved_duration'))
 
-# pylint: disable=too-many-arguments,too-many-branches
 
-
-def _by_site_host_hour(now, time_delta, site=None, host_name=None,
+def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
                        logon_alert_threshold=None, ux_alert_threshold=None,
                        include_event_counts=True, include_ux_stats=True,
                        group_by=GroupBy.HOUR):
@@ -492,8 +482,6 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
 
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
-
-
 
     :arg str host_name: if present, filter the data that will be returned by
         'host_name`, otherwise return data for all known hosts
@@ -561,23 +549,18 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
             'citrusborgevents__ignore_events_older_than')
 
     if logon_alert_threshold is not None:
-        try:
-            logon_alert_threshold = int(logon_alert_threshold)
-        except ValueError as error:
-            raise error
+        logon_alert_threshold = int(logon_alert_threshold)
 
-    if ux_alert_threshold is not None:
-        if not isinstance(ux_alert_threshold, datetime.timedelta):
-            raise TypeError(
-                '%s type invalid for %s' % (type(ux_alert_threshold),
-                                            ux_alert_threshold))
+    if (ux_alert_threshold is not None
+            and not isinstance(ux_alert_threshold, datetime.timedelta)):
+        raise TypeError(f'{type(ux_alert_threshold)} invalid type for'
+                        ' ux_alert_threshold')
 
     if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
+        raise TypeError(f'{type(now)} type invalid for now')
 
     if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
+        raise TypeError(f'{type(time_delta)} type invalid for time_delta')
 
     queryset = WinlogbeatHost.objects.\
         filter(winlogevent__created_on__gt=now - time_delta)
@@ -616,11 +599,10 @@ def _by_site_host_hour(now, time_delta, site=None, host_name=None,
         annotate(measured_over=Value(time_delta, output_field=DurationField()))
 
     return queryset
-# pylint: enable=too-many-arguments,too-many-branches
 
 
-def _group_by(queryset,
-              group_field='winlogevent__created_on', group_by=GroupBy.NONE):
+def _group_by(queryset, group_field='winlogevent__created_on',
+              group_by=GroupBy.HOUR):
     """
     group the rows in a :class:`django.db.models.query.QuerySet` by a time
     sequence and `annotate` it with the time value
@@ -657,15 +639,24 @@ def _group_by(queryset,
     :returns: a :class:`django.db.models.query.QuerySet`
 
     """
-    if group_by == GroupBy.HOUR:
-        return queryset.\
-            annotate(hour=TruncHour(group_field)).values('hour')
+    if group_by == GroupBy.NONE:
+        return queryset
 
+    # NOTE: This could be handled with a dictionary mapping from GroupBy values
+    #       to Trunc* classes. That was not pursued since there are only two
+    #       cases
     if group_by == GroupBy.MINUTE:
-        return queryset.\
-            annotate(minute=TruncMinute(group_field)).values('minute')
+        trunc_obj = TruncMinute(group_field)
+    elif group_by == GroupBy.HOUR:
+        trunc_obj = TruncHour(group_field)
+    else:
+        raise ValueError(f'_group_by argument group_by must be one of '
+                         f'{[gb.value for gb in GroupBy]}. '
+                         f'Received {group_by}.')
 
-    return queryset
+    annotate_settings = {group_by.value: trunc_obj}
+
+    return queryset.annotate(**annotate_settings).values(group_by.value)
 
 
 def login_states_by_site_host_hour(
@@ -674,7 +665,7 @@ def login_states_by_site_host_hour(
         host_name=None):
     """
     :returns: a :class:`django.db.models.query.QuerySet` based on the
-        :class:`citru_borg.models.WinlogbeatHost` `annotated
+        :class:`citrus_borg.models.WinlogbeatHost` `annotated
         <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
         with all the `aggregations
         <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__
@@ -696,8 +687,6 @@ def login_states_by_site_host_hour(
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
 
-
-
     :arg str host_name: if present, filter the data that will be returned by
         'host_name`, otherwise return data for all known hosts
 
@@ -709,13 +698,8 @@ def login_states_by_site_host_hour(
         :class:`django.db.models.query.QuerySet` when invoked with such a
         combination
 
-    :raises: :exc:`Exception` when failing
-
     """
-    try:
-        queryset = _by_site_host_hour(now, time_delta, site, host_name)
-    except Exception as error:
-        raise error
+    queryset = _by_site_host_hour(now, time_delta, site, host_name)
 
     return queryset.order_by('site__site', 'host_name', '-hour')
 
@@ -802,8 +786,8 @@ def raise_failed_logins_alarm(
 
 def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
     """
-    :returns: a :class:`django.db.models.query.QuerySet` containing detailed data
-        about failed `ControlUp` logon events
+    :returns: a :class:`django.db.models.query.QuerySet` containing detailed
+              data about failed `ControlUp` logon events
 
         The :class:`django.db.models.query.QuerySet` is based on the
         :class:`citrus_borg.models.WinlogbeatHost` model and on the
@@ -842,19 +826,6 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         satisfy type requirements
 
     """
-    if now is None:
-        now = timezone.now()
-
-    if time_delta is None:
-        time_delta = get_preference('citrusborglogon__logon_report_period')
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
-
     queryset = _by_site_host_hour(
         now=now, time_delta=time_delta, site=site, host_name=host_name,
         logon_alert_threshold=1, ux_alert_threshold=None,
@@ -918,22 +889,9 @@ def get_failed_ux_events(
         `ux_alert_threshold` arguments do not satisfy type requirements
 
     """
-    if now is None:
-        now = timezone.now()
-
-    if time_delta is None:
-        time_delta = get_preference('citrusborgux__ux_reporting_period')
-
     if ux_alert_threshold is None:
         ux_alert_threshold = get_preference(
             'citrusborgux__ux_alert_threshold')
-
-    if not isinstance(now, datetime.datetime):
-        raise TypeError('%s type invalid for %s' % (type(now), now))
-
-    if not isinstance(time_delta, datetime.timedelta):
-        raise TypeError(
-            '%s type invalid for %s' % (type(time_delta), time_delta))
 
     if not isinstance(ux_alert_threshold, datetime.timedelta):
         raise TypeError(

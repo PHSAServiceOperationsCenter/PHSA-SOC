@@ -19,7 +19,9 @@ DEBUG = True
 Enable or disable debugging information
 """
 
-ALLOWED_HOSTS = ['lvmsocdev01', 'lvmsocdev03', 'lvmsocq02', ]
+ALLOWED_HOSTS = ['lvmsocdev01', 'lvmsocdev03', 'lvmsocq02',
+                 'lvmsocdev01.healthbc.org', 'lvmsocdev03.healthbc.org',
+                 'lvmsocq02.healthbc.org', ]
 """
 hosts that can be used to run development servers
 """

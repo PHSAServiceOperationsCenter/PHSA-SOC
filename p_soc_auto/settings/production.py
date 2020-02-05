@@ -19,4 +19,7 @@ DEBUG = False
 Enable or disable debugging information
 """
 
-ALLOWED_HOSTS = ['lvmsocq01', ]
+ALLOWED_HOSTS = ['lvmsocq01', 'lvmsocq01.healthbc.org', ]
+"""
+hosts that can be used to run production servers
+"""

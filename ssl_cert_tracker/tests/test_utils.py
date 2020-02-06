@@ -10,12 +10,12 @@ django models for the ssl_certificates app
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    ali.rahmat@phsa.ca
-
+:contact:    daniel.busto@phsa.ca
 """
 import os
 import re
 import logging
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -25,6 +25,7 @@ import xml.dom.minidom
 from lxml import etree
 from ssl_cert_tracker.utils import validate, init_record, \
      process_xml_cert, check_tag
+
 
 class TestSslCertTrackerTestUtils(object):
     """TestSslCertTrackerTestUtils injects different sets of values
@@ -41,16 +42,16 @@ class TestSslCertTrackerTestUtils(object):
         """test_check_tag_valid reads a valid xml file
         from data folder and checks the tags"""
 
-        db_cols = ["organization_name", \
-                   "country_name", \
-                   "sig_algo", \
-                   "bits", \
-                   "not_before", \
-                   "not_after", \
-                   "md5", \
-                   "xml_data", \
-                   "addresses", \
-                   "orion_id", \
+        db_cols = ["organization_name",
+                   "country_name",
+                   "sig_algo",
+                   "bits",
+                   "not_before",
+                   "not_after",
+                   "md5",
+                   "xml_data",
+                   "addresses",
+                   "orion_id",
                    "sha1"]
         doc = xml.dom.minidom.parse(os.getcwd() + "/ssl_cert_tracker/tests/data/good.xml")
         for host in doc.getElementsByTagName("host"):
@@ -86,8 +87,8 @@ class TestSslCertTrackerTestUtils(object):
         for host in doc.getElementsByTagName("host"):
             scripts = host.getElementsByTagName("script")
             record = init_record()
-            record["xml_data"] = xml.dom.minidom.parse(os.getcwd() + \
-            "/ssl_cert_tracker/tests/data/no_md5_tag.xml")
+            record["xml_data"] = xml.dom.minidom.parse(
+                    os.getcwd() + "/ssl_cert_tracker/tests/data/no_md5_tag.xml")
             record["addresses"] = "1.210.310.410"
             record["orion_id"] = "43578"
             for script in scripts:
@@ -126,23 +127,25 @@ class TestSslCertTrackerTestUtils(object):
             except Exception as ex:
                 logging.error("Error proceesing xml_file:%s", ex)
                 return 'Is INVALID'
+
     @staticmethod
     def test_validate_true():
         """test_validate_true validates all valid dates"""
-        valid_date_items = ["2000-01-15", \
-                            "2020-08-10T12:00:00+00:00", \
+        valid_date_items = ["2000-01-15",
+                            "2020-08-10T12:00:00+00:00",
                             "2019-05-11T21:08:07+00:00"]
 
         for item in valid_date_items:
             assert validate(item) is True
+
     @staticmethod
     def test_validate_false():
         """test_validate_false validates all invalid dates"""
-        invalid_date_items = ["011-15-2000", \
-                              "ABC-01-2000", \
-                              "1234567-01-15", \
-                              "2018-02-29T21:08:07+00:00", \
-                              "", \
+        invalid_date_items = ["011-15-2000",
+                              "ABC-01-2000",
+                              "1234567-01-15",
+                              "2018-02-29T21:08:07+00:00",
+                              "",
                               "2019-15-15T21:08:07+00:00"]
         for item in invalid_date_items:
             assert validate(item) is False
@@ -152,16 +155,11 @@ class TestSslCertTrackerTestUtils(object):
         """test_init_record checks if instance is a dict"""
         assert isinstance(init_record(), dict)
 
-        
     @staticmethod
     def test_process_xml_cert():
         """test_process_xml_cert reads a valid xml file
         from data folder and checks the tags"""
-
-
         doc = xml.dom.minidom.parse(os.getcwd() + "/ssl_cert_tracker/tests/data/good.xml")
         record = process_xml_cert(12345, doc)
         for key in record:
             assert record[key] is not None
-
-

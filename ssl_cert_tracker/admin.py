@@ -14,7 +14,7 @@ See `The Django admin site
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    ali.rahmat@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 :updated:    sep. 21, 2018
 """

@@ -1498,8 +1498,20 @@ def get_preference(key):
     :arg str key: the accessor key for the preference
         it follows this format 'section__preference_name`
     """
-    return global_preferences_registry.manager().get(key)
+    section, name = key.split('__')
+    # TODO figure out how to get the cache working properly, instead of doing
+    #      this weird workaround
+    db_pref = global_preferences_registry.manager().get_db_pref(section, name)
+
+    return db_pref.value
 
 
 def get_list_preference(key):
+    """
+    get the a list from a dynamic preference
+    (also known as a dynamic setting)
+
+    :arg str key: the accessor key for the preference
+        it follows this format 'section__preference_name`
+    """
     return get_preference(key).split(',')

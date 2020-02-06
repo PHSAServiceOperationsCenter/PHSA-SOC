@@ -284,7 +284,8 @@ def load_config(current_base_config=None):
 
     try:
         config = get_config_from_server(base_config)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
+        config_err = err
         config = None
 
     if config:
@@ -321,7 +322,8 @@ def load_config(current_base_config=None):
         try:
             config = get_config_from_file()
             config['load_status'] = (
-                'Loaded cached configuration. Server error: %s' % str(err))
+                'Loaded cached configuration. Server error: %s'
+                % str(config_err))
         except Exception as file_err:
             config['load_status'] = (
                 'Cannot load a configuration.'

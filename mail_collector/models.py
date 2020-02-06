@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    aug. 7, 2019
-
 :ref:`Mail Collector Application` models and model managers
 
 """

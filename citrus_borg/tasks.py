@@ -13,8 +13,6 @@ used by the :ref:`Citrus Borg Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated: Nov. 22, 2018
-
 """
 from smtplib import SMTPConnectError
 

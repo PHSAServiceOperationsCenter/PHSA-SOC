@@ -12,8 +12,6 @@ celery tasks for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 1, 2019
-
 """
 from celery import shared_task, group  # @UnresolvedImport
 from celery.utils.log import get_task_logger  # @UnresolvedImport

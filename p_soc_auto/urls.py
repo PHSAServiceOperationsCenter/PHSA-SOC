@@ -29,8 +29,6 @@ Examples:
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 from django.conf.urls import url, include
 from django.contrib import admin

@@ -11,8 +11,6 @@ Application`.
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
-
-:updated:    Oct. 24, 2019
 """
 from citrus_borg.dynamic_preferences_registry import get_preference
 

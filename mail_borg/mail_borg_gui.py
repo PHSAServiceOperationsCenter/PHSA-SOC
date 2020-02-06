@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Sep. 20, 2019
-
 GUI module for the :ref:`Mail Borg Client Application`
 
 This module is built using the `PySimpleGUI

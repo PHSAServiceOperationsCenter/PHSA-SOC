@@ -22,8 +22,6 @@ to a `Windows` `AD` controller.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 10, 2019
-
 """
 import logging
 

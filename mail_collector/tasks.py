@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    May 27, 2019
-
 Celery Tasks for the :ref:`Mail Collector Application`
 
 """

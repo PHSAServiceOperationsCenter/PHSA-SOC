@@ -42,8 +42,6 @@ described in the :ref:`borg_client_config`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    may 14, 2019
-
 
 """
 import collections

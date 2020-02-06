@@ -16,8 +16,6 @@ application.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec 16, 2019
-
 """
 from enum import Enum
 from logging import getLogger

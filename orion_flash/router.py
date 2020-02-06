@@ -15,8 +15,6 @@ the Orion server will pick up our alerts
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jan. 15, 2019
-
 """
 
 

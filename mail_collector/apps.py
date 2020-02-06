@@ -12,8 +12,6 @@ django apps module for the mail_collector app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    May 31, 2019
-
 Module used to register the :ref:`Mail Collector Application` with the
 :ref:`SOC Automation Project`
 

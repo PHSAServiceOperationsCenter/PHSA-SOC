@@ -13,8 +13,6 @@ for the :ref:`SOC Automation Project`
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 from .celery import app as celery_app
 

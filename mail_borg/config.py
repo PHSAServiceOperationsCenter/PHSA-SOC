@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    may 14, 2019
-
 Configuration module for the :ref:`Mail Borg Client Application`
 
 .. todo::

@@ -13,8 +13,6 @@ for the :ref:`Active Directory Services Monitoring Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 11, 2019
-
 """
 from django.db.models.signals import post_save
 from django.dispatch import receiver

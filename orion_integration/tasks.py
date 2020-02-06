@@ -13,8 +13,6 @@ This module contains the `Celery tasks
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 24, 2019
-
 """
 from logging import getLogger
 

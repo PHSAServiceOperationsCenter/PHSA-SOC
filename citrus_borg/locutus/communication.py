@@ -13,8 +13,6 @@ Communication Module
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jun. 19, 2019
-
 This module contains database functions for the :ref:`Citrus Borg Application`.
 
 """

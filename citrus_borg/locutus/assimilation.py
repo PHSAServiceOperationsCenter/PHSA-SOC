@@ -13,8 +13,6 @@ Assimilation Module
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 9, 2019
-
 This module contains Functions for parsing `Windows` log events delivered via
 `AMQP <https://www.amqp.org/>`__ messages to `Python
 <https://docs.python.org/3.6/index.html>`__ data structures.

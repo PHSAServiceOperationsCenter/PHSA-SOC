@@ -12,8 +12,6 @@ django models module for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jan. 15, 2019
-
 """
 import logging
 import pendulum

@@ -12,8 +12,6 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 17, 2019
-
 """
 import logging
 import socket

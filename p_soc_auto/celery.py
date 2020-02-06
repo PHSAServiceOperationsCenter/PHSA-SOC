@@ -13,8 +13,6 @@ configuration.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 import os
 

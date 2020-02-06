@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    apr. 12, 2019
-
 Logging module for the :ref:`Mail Borg Client Application`
 
 This module is providing facilities for creating Windows event log entries

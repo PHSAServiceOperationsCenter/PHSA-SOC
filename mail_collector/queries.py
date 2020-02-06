@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jun. 11, 2019
-
 Query functions for the :ref:`Mail Collector Application`
 """
 import datetime

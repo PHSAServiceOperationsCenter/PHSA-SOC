@@ -17,8 +17,6 @@ This module contains the `Django` application configuration for the
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jan. 15, 2019
-
 """
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _

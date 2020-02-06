@@ -1,7 +1,7 @@
-`AD` Services Alerts
+AD Services Alerts
 ====================
 
-`AD` Services Error Alert
+AD Services Error Alert
 -------------------------
 
 These alerts are raised if an `LDAP` probe cannot connect to an `AD` services
@@ -18,7 +18,7 @@ These alerts are dispatched via email using the `LDAP: error alerts
 subscription
 </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A+error+alerts+subscription>`__.
 
-`AD` Services Performance Alerts
+AD Services Performance Alerts
 --------------------------------
 
 These alerts are raised if the response time of a request made against an
@@ -40,7 +40,7 @@ threshold` is configurable for both levels.
   </../../../admin/dynamic_preferences/globalpreferencemodel/?q=ldap_perf_alert>`__
   global preference. Currently this threshold is set to its default value of
   0.500 seconds
-  
+
 .. _perf_warn:
 
 * `WARNING` performance alerts with the threshold configurable via the `Ldap
@@ -48,13 +48,13 @@ threshold` is configurable for both levels.
   </../../../admin/dynamic_preferences/globalpreferencemodel/?q=ldap_perf_warn>`__
   global preference. Currently this threshold is set to 0.200 seconds. Its
   default value is 0.100 seconds
-  
+
 .. note::
 
     The name of the email subscription for performance alerts is also
     configurable as a global preference from `Email Subscription For Ldap
     Performance Alerts
     </../../../admin/dynamic_preferences/globalpreferencemodel/?q=ldap_perf_subscription>`__.
-    
+
     The :ref:`LDAP: Performance alerts subscription <perf_subs>` will have to
-    be changed accordingly. 
+    be changed accordingly.

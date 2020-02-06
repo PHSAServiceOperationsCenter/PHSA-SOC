@@ -26,60 +26,60 @@ configured interval summarized as follows:
 
   This is not a very significant number because this operation does not
   require any network traffic
-  
-* Minimum, average, and maximum response for the 
-  :ref:`bind and search <bind_and_search>` or for the 
+
+* Minimum, average, and maximum response for the
+  :ref:`bind and search <bind_and_search>` or for the
   :ref:`anonymous bind and read root DSE <anon_bind_and_search>` operations
   for successful probes
-  
+
   .. note::
-  
+
     There are separate reports for :ref:`bind and search
     <bind_and_search>` and :ref:`anonymous bind and read root DSE
     <anon_bind_and_search>` probes.
-    
+
 These are periodic summary reports:
 
 * :ref:`Full probe data <bind_and_search>` from :ref:`Orion AD nodes
   <orionadnodes>`:
-  
+
   * scheduled from the `AD controller monitoring: summary report, full bind,
     orion` entry on the `periodic tasks configuration page
     </../../../admin/django_celery_beat/periodictask/>`__
-    
+
   * rendered using the `LDAP: summary report, full bind, orion` subscription
     from the `LDAP subscriptions summary page
     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
 
 * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Orion AD nodes
   <orionadnodes>`:
-  
+
   * scheduled from the `AD controller monitoring: summary report, anon bind,
     orion` entry on the `periodic tasks configuration page
     </../../../admin/django_celery_beat/periodictask/>`__
-    
+
   * rendered using the `LDAP: summary report, anonymous bind, orion`
     subscription from the `LDAP subscriptions summary page
     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
 
 * :ref:`Full probe data <bind_and_search>` from :ref:`Non Orion AD nodes
   <nonorionadnodes>`:
-  
+
   * scheduled from the `AD controller monitoring: summary report, full bind,
     non orion` entry on the `periodic tasks configuration page
     </../../../admin/django_celery_beat/periodictask/>`__
-    
+
   * rendered using the `LDAP: summary report, full bind, non orion`
     subscription from the `LDAP subscriptions summary page
     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
 
 * :ref:`Anonymous probe data <anon_bind_and_search>` from :ref:`Non Orion AD
   nodes <nonorionadnodes>`:
-  
+
   * scheduled from the `AD controller monitoring: summary report, anon bind,
     non orion` entry on the `periodic tasks configuration page
     </../../../admin/django_celery_beat/periodictask/>`__
-    
+
   * rendered using the `LDAP: summary report, anonymous bind, non orion`
     subscription from the `LDAP subscriptions summary page
     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
@@ -91,13 +91,13 @@ Periodic Summary for Error Events
 These are reports with a listing of all failed `AD` probes. These reports do
 not provide any summarizations.
 
-* :ref:`AD` probe errors for :ref:`Orion AD nodes <orionadnodes>` and 
+* `AD` probe errors for :ref:`Orion AD nodes <orionadnodes>` and
   :ref:`Non Orion AD nodes <nonorionadnodes>`:
 
   * scheduled from the `AD controller monitoring: error summary report` entry
     on the `periodic tasks configuration page
     </../../../admin/django_celery_beat/periodictask/>`__
-    
+
   * rendered using the `LDAP: error report` subscription
     from the `LDAP subscriptions summary page
     </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A>`__
@@ -146,29 +146,29 @@ for each level is configured on a per location basis in the
 :class:`ldap_probe.models.ADNodePerfBucket` model as follows:
 
 * INFO:
-  
+
   Will measure performance degradation against the threshold
   defined by the value of the
   :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
   attribute of the :class:`ldap_probe.models.ADNodePerfBucket` instance
   to which the `AD` node belongs.
-  
+
   This threshold is considered against average reponse times
 
 * WARNING:
 
   Uses the value of the
   :attr:`ldap_probe.models.ADNodePerfBucket.avg_err_threshold`.
-  
+
   This threshold is also considered against average reponse times
 
 * ERROR:
-  
+
   Uses the value of the
   :attr:`ldap_probe.models.ADNodePerfBucket.alert_threshold`.
-  
+
   This threshold is considered against maximum reponse times
-  
+
 See the documentation for :meth:`ldap_probe.tasks.dispatch_ldap_perf_reports`
 for details on how to disable performance degradation reports for one or more
 levels.
@@ -230,7 +230,7 @@ Nodes with no DNS name information
 These are `AD` nodes defined on the `Orion` server for which the `DNS` `Orion`
 property is not set.
 
-The report tracking such nodes is executed automatically using the 
+The report tracking such nodes is executed automatically using the
 `AD controller monitoring: FQDN Orion AD nodes report` periodic task
 scheduled from the `periodic tasks configuration page
 </../../../admin/django_celery_beat/periodictask/>`__.
@@ -238,7 +238,7 @@ scheduled from the `periodic tasks configuration page
 The report is dispatched via email using the `LDAP: Orion FQDN AD nodes
 </../../../admin/ssl_cert_tracker/subscription/?q=LDAP%3A+Orion+FQDN+AD+nodes>`__
 email subscription.
- 
+
 
 Duplicate nodes
 ^^^^^^^^^^^^^^^
@@ -247,7 +247,7 @@ A subset of the `AD` nodes from above can be (and at least one **is**)
 duplicates from an `IP address` perspective. That is absolutely not a correct
 `Orion` node definition.
 
-The report tracking such nodes is executed automatically using the 
+The report tracking such nodes is executed automatically using the
 `AD controller monitoring: Duplicate Orion AD nodes report` periodic task
 scheduled from the `periodic tasks configuration page
 </../../../admin/django_celery_beat/periodictask/>`__.

@@ -216,7 +216,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
         Valid keys for the values passed into `dead_for` are those accepted by
         the :class:`datetime.timedelta` constructor, that is `days`, `hours`,
         `minutes`, and `seconds`. All the values passed into `dead_for` must be
-         castable to :class:`float`s (e.g. :class:`int`).
+        castable to :class:`float`s (e.g. :class:`int`).
 
         The reason for this approach is the same as above, that is
         :class:`datetime.timedelta` objects are not `JSON` serializable.

@@ -156,10 +156,6 @@ def get_ip_for_host_name(host_name, ip_list=None):
 
     :arg list ip_list: a list of ip addresses for the host
 
-    :raises:
-
-        :exc:`ValueError` if the `host_name` is missing
-
     This function loops through the items in the `ip_list` :class:`list`
     argument and returns the one that will resolve to the value of the
     `host_name` argument. The function uses :func:`socket.gethostbyaddr` to
@@ -181,11 +177,6 @@ def get_ip_for_host_name(host_name, ip_list=None):
         except:
             return None
 
-    if host_name is None:
-        raise ValueError('host_name argument is mandatory')
-
-    host_name = str(host_name)
-
     if ip_list is None or not isinstance(ip_list, (list, tuple)):
         return _get_host_by_name()
 
@@ -206,7 +197,7 @@ def get_ip_for_host_name(host_name, ip_list=None):
     return _get_host_by_name()
 
 
-def process_borg(body=None):
+def process_borg(body):
     """
     :returns: a :func:`collections.namedtuple` object
 
@@ -223,9 +214,6 @@ def process_borg(body=None):
     The `event_source` property will determine which application is the
     destination of the `Windows` `event`.
     """
-    if body is None:
-        raise ValueError('body argument is mandatory')
-
     borg = collections.namedtuple(
         'Borg', [
             'source_host', 'record_number', 'opcode', 'level',
@@ -252,7 +240,7 @@ def process_borg(body=None):
     return borg
 
 
-def process_borg_host(host=None):
+def process_borg_host(host):
     """
     prepare a `Python` object representing the bot host
 
@@ -291,14 +279,11 @@ def process_borg_host(host=None):
 
 
     """
-    if host is None:
-        raise ValueError('host argument is mandatory')
-
     borg_host = collections.namedtuple(
         'BorgHost', ['host_name', 'ip_address', ])
 
-    borg_host.host_name = host.get('name', None)
-    borg_host.ip_address = get_ip_for_host_name(host.get('name', None),
+    borg_host.host_name = host['name']
+    borg_host.ip_address = get_ip_for_host_name(host['name'],
                                                 host.get('ip', None))
 
     return borg_host

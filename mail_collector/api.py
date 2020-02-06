@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    aug. 9, 2019
-
 REST end-points for the :ref:`Mail Collector Application`
 
 """

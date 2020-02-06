@@ -15,8 +15,6 @@ See `The Django admin site
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
-
-:updated:    sep. 21, 2018
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model

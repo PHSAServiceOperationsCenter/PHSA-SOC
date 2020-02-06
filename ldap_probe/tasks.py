@@ -13,8 +13,6 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 6, 2019
-
 """
 from smtplib import SMTPConnectError
 

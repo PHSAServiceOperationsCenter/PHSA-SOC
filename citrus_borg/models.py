@@ -12,8 +12,6 @@ managers <django.db.models.Manager>` used by the :ref:`Citrus Borg Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    nov. 19, 2018
-
 """
 import socket
 from logging import getLogger
@@ -355,10 +353,16 @@ class WinlogbeatHost(BaseModel, models.Model):
 
         :returns: the :class:`WinlogbeatHost` instance
         """
-        last_seen = now() \
-            if borg.event_source in ['ControlUp Logon Monitor'] else None
-        exch_last_seen = now() \
-            if borg.event_source in ['BorgExchangeMonitor'] else None
+
+        if borg.event_source == 'ControlUp Logon Monitor':
+            last_seen = now()
+        else:
+            last_seen = None
+
+        if borg.event_source == 'BorgExchangeMonitor':
+            exch_last_seen = now()
+        else:
+            exch_last_seen = None
 
         winloghost = cls.objects.filter(
             host_name__iexact=borg.source_host.host_name)

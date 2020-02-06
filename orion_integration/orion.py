@@ -11,8 +11,6 @@ This module provides the `HTTP(S)` client for the `Orion REST API`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 24, 2019
-
 """
 import json
 import decimal

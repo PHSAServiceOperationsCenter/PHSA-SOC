@@ -12,8 +12,6 @@ api module for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jul. 15, 2019
-
 """
 from citrus_borg.locutus.communication import (
     get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,

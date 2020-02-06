@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    jun. 10, 2019
-
 Django Signals Module for the :ref:`Mail Collector Application`
 
 """

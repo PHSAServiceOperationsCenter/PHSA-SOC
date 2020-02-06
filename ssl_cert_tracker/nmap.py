@@ -21,8 +21,6 @@ the `libnmap` package is available at
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec 16, 2019
-
 """
 import csv
 import logging

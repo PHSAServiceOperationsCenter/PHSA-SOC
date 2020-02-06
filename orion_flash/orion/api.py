@@ -12,8 +12,6 @@ functions and methods for the orion package
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 21, 2019
-
 """
 import logging
 import requests

@@ -13,8 +13,6 @@ classes for the :ref:`Active Directory Services Monitoring Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 19, 2019
-
 """
 from django.contrib import admin
 from django.forms.widgets import PasswordInput

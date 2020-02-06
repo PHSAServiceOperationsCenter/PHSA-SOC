@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    aug. 8, 2019
-
 REST serializers for the :ref:`Mail Collector Application`
 
 """

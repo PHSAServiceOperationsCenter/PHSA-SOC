@@ -13,8 +13,6 @@ Consumers Module
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 9, 2019
-
 This module contains functions and classes that allow a `Django Celery
 <https://docs.celeryproject.org/en/latest/django/first-steps-with-django"""\
 """.html#using-celery-with-django>`__

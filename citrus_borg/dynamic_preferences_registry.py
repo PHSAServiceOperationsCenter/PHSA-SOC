@@ -31,8 +31,6 @@ function. For example:
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    jan. 3, 2019
-
 """
 import decimal
 

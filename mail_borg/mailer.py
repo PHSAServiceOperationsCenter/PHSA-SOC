@@ -66,7 +66,7 @@ from config import load_config
 from logger import LogWinEvent
 
 
-class _Logger():
+class _Logger:
     """
     Custom logging class that will write to the windows event log, and to
     a GUI window text control if access to one such destination is provided
@@ -443,7 +443,7 @@ class describing an exchange message created using the
 """
 
 
-class WitnessMessages():  # pylint: disable=too-many-instance-attributes
+class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     """
     Class that encapsulates all the functionality required to execute
     an Exchange verification operation once

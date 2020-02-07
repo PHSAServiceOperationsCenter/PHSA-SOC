@@ -17,7 +17,7 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from .models import OrionNode, OrionCernerCSTNode
 
 
-class OrionSslNode():
+class OrionSslNode:
     '''
     Class with methods for retrieving `Orion` data cached by the :ref:`Orion
     Integration Application`

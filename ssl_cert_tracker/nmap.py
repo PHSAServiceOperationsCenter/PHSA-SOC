@@ -89,7 +89,7 @@ class NmapNotAnSslNodeError(Exception):
     """
 
 
-class NmapProbe():
+class NmapProbe:
     """
     Base class for `NMAP <https://nmap.org/>`__ scans
 

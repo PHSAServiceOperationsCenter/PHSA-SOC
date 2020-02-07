@@ -33,7 +33,7 @@ import win32security
 from config import WIN_EVT_CFG
 
 
-class LogWinEvent():
+class LogWinEvent:
     '''
     Class wrapper for win32 calls related to writing events to
     the windows logs

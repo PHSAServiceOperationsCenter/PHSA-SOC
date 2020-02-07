@@ -67,7 +67,7 @@ def serialize_custom_json(obj):
 # pylint:disable=R0903
 
 
-class OrionClient():
+class OrionClient:
     """
     `REST <https://en.wikipedia.org/wiki/Representational_state_transfer>`__
     client class for the `Orion SDK

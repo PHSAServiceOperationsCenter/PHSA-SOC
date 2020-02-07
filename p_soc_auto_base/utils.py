@@ -526,7 +526,7 @@ def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
         datetime_input, timezone=use_timezone, is_dst=is_dst)
 
 
-class MomentOfTime():
+class MomentOfTime:
     """
     Utility class for calculating a `datetime.datetime` moment
     relative to another `datetime.datetime` moment (the reference

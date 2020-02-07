@@ -52,10 +52,9 @@ class OrionCernerCSTNodeManager(models.Manager):
 
 
         """
-        return super().\
-            get_queryset().filter(
-                program_application__exact=get_preference(
-                    'orionfilters__cerner_cst'))
+        return super().get_queryset().filter(
+            program_application__exact=
+            get_preference('orionfilters__cerner_cst'))
 
 
 class OrionDomainControllerNodeManager(models.Manager):
@@ -78,7 +77,7 @@ class OrionDomainControllerNodeManager(models.Manager):
             controllers`
 
         """
-        return OrionNode.objects.\
+        return super().get_queryset().\
             filter(program_application_type__icontains=get_preference(
                 'orionfilters__domaincontroller')).\
             exclude(enabled=False)

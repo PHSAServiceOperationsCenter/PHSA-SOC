@@ -30,7 +30,7 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
     :class:`MailHost` model
     """
 
-    def get_queryset(self):  # pylint: disable=no-self-use
+    def get_queryset(self):
         """
         override :meth:`django.db.models.Manager.get_queryset`
         to filter only the hosts that have
@@ -39,7 +39,7 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
         the filter is using an is not null lookup against the
         :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
         """
-        return WinlogbeatHost.objects.exclude(excgh_last_seen__isnull=True)
+        return super().get_queryset().exclude(excgh_last_seen__isnull=True)
 
 
 class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -49,7 +49,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
     :class:`MailSite` model
     """
 
-    def get_queryset(self):  # pylint: disable=no-self-use
+    def get_queryset(self):
         """
         override :meth:`django.db.models.Manager.get_queryset`
         to retrieve only those sites that have at least one remote bot
@@ -59,7 +59,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
 
         """
-        return BorgSite.objects.filter(
+        return super().get_queryset().filter(
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 

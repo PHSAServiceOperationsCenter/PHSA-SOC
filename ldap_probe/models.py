@@ -91,7 +91,7 @@ class LdapProbeLogFullBindManager(models.Manager):
             `LDAP` full bind operations
 
         """
-        return LdapProbeLog.objects.filter(elapsed_bind__isnull=False)
+        return super().get_queryset().filter(elapsed_bind__isnull=False)
 
 
 class LdapProbeLogAnonBindManager(models.Manager):
@@ -121,7 +121,7 @@ class LdapProbeLogAnonBindManager(models.Manager):
             `LDAP` anonymous bind operations
 
         """
-        return LdapProbeLog.objects.filter(elapsed_anon_bind__isnull=False)
+        return super().get_queryset().filter(elapsed_anon_bind__isnull=False)
 
 
 class LdapProbeLogFailedManager(models.Manager):
@@ -143,7 +143,7 @@ class LdapProbeLogFailedManager(models.Manager):
             :class:`LdapProbeLog` failed instances
 
         """
-        return LdapProbeLog.objects.filter(failed=True)
+        return super().get_queryset().filter(failed=True)
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):

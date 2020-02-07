@@ -395,7 +395,7 @@ class NoSubscriptionEmailError(Exception):
     """
 
 
-class Email():  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """
     Subclass of :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending
     alternative content types

@@ -18,7 +18,7 @@ the Orion server will pick up our alerts
 """
 
 
-class OrionAuxRouter():
+class OrionAuxRouter:
     """
     database router class for the orion auxiliary database
     """

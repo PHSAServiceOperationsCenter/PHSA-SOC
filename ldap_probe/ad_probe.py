@@ -38,7 +38,7 @@ LOG = logging.getLogger(__name__)
 ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
 
-class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
+class _ADProbeElapsed:  # pylint: disable=too-few-public-methods
     """
     Private class for storing the various values of time elapsed while
     executing :class:`ldap.LDAPObject` methods of interest to us

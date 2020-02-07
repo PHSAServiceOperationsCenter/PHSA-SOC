@@ -126,6 +126,7 @@ class OrionADNodeAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     search_fields = ('node__node_caption', 'node__node_dns',
                      'node__ip_address', 'node__location', 'node__site')
     list_filter = ('node__site', 'node__location', )
+    exclude = ('node', )
 
     def has_add_permission(self, request):
         """

@@ -38,36 +38,6 @@ LOG = logging.getLogger(__name__)
 ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
 
 
-class _ADProbeElapsed:  # pylint: disable=too-few-public-methods
-    """
-    Private class for storing the various values of time elapsed while
-    executing :class:`ldap.LDAPObject` methods of interest to us
-
-    """
-
-    def __init__(self):
-        """
-        :class:`_ADProbeElapsed` constructor
-        """
-        self.elapsed_initialize = None
-        """elapsed time for :meth:`ldap.initialize`"""
-
-        self.elapsed_bind = None
-        """elapsed time for :meth:`ldap.LDAPObject.bind_s`"""
-
-        self.elapsed_anon_bind = None
-        """
-        elapsed time for :meth:`ldap.LDAPObject.bind_s` when called
-        anonymously
-        """
-
-        self.elapsed_read_root = None
-        """elapsed time for :meth:`ldap.LDAPObject.read_rootdse_s`"""
-
-        self.elapsed_search_ext = None
-        """elapsed time for :meth:`ldap.LDAPObject.search_ext_s`"""
-
-
 class ADProbe:
     """
     Class that wraps around :class:`ldap.LDAPObject` methods of interest
@@ -83,7 +53,7 @@ class ADProbe:
 
     """
 
-    def __init__(self, ad_controller=None):
+    def __init__(self, ad_controller):
         """
         :class:`ADProbe` constructor
         """
@@ -108,7 +78,7 @@ class ADProbe:
         self.ad_controller = ad_controller
         """the AD controller object"""
 
-        self.elapsed = _ADProbeElapsed()
+        self.elapsed = {}
         """keep track of all elapsed times for LDAP ops"""
 
         self.ldap_object = None
@@ -123,20 +93,14 @@ class ADProbe:
         self.get_ldap_object()
 
     @staticmethod
-    def _raise_ad_controller(ad_controller=None):
-        if ad_controller is None:
-            raise exceptions.ADProbeControllerError(
-                'One must provide a domain controller if one wants to'
-                ' probe a domain controller. Abandoning the AD probe...'
-            )
-
+    def _raise_ad_controller(ad_controller):
         if not isinstance(ad_controller, models.BaseADNode):
             raise TypeError(
                 f'Invalid object type {type(ad_controller)!r}!'
                 f' Abandoning the AD probe...')
 
     @classmethod
-    def probe(cls, ad_controller=None):
+    def probe(cls, ad_controller):
         """
         `class method
         <https://docs.python.org/3.6/library/functions.html#classmethod>`__
@@ -147,7 +111,13 @@ class ADProbe:
 
         probe.bind_and_search()
 
-        return probe
+        data = dict(probe.elapsed)
+
+        data['ad_response'] = probe.ad_response
+        data['errors'] = probe.errors
+        data['failed'] = probe.failed
+
+        return data
 
     def get_ldap_object(self):
         """
@@ -165,7 +135,7 @@ class ADProbe:
                     error_message=f'LDAP Initialization error: {err}')
                 return
 
-        self.elapsed.elapsed_initialize = timing.elapsed
+        self.elapsed['elapsed_initialize'] = timing.elapsed
         self.ldap_object.set_option(ldap.OPT_REFERRALS, ldap.OPT_OFF)
 
     def _set_abort(self, error_message=None):
@@ -210,7 +180,7 @@ class ADProbe:
                 self._set_abort(error_message=f'Error: {err}.')
                 return
 
-        self.elapsed.elapsed_bind = timing.elapsed
+        self.elapsed['elapsed_bind'] = timing.elapsed
 
         with Timer(use_duration=False) as timing:
             try:
@@ -235,7 +205,7 @@ class ADProbe:
                     error_message=f'Extended search error: {err}')
                 return
 
-        self.elapsed.elapsed_search_ext = timing.elapsed
+        self.elapsed['elapsed_search_ext'] = timing.elapsed
 
     def _fallback(self, err):
         """
@@ -280,7 +250,7 @@ class ADProbe:
                 self._set_abort(error_message=f'Error: {err}')
                 return
 
-        self.elapsed.elapsed_anon_bind = timing.elapsed
+        self.elapsed['elapsed_anon_bind'] = timing.elapsed
 
         with Timer(use_duration=False) as timing:
             try:
@@ -290,7 +260,7 @@ class ADProbe:
                 self._set_abort(error_message=f'Error: {err}')
                 return
 
-        self.elapsed.elapsed_read_root = timing.elapsed
+        self.elapsed['elapsed_read_root'] = timing.elapsed
 
     def _diagnose_network(self, err):
         """

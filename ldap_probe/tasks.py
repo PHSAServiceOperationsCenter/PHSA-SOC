@@ -20,7 +20,8 @@ from celery import shared_task, group
 from celery.utils.log import get_task_logger
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-from ldap_probe import ad_probe, models, exceptions
+from ldap_probe.ad_probe import ADProbe
+from ldap_probe.models import LdapProbeLog
 from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url
 
@@ -29,7 +30,7 @@ LOG = get_task_logger(__name__)
 
 
 @shared_task(queue='ldap_probe', rate_limit='5/s')
-def probe_ad_controller(ad_model=None, ad_pk=None):
+def probe_ad_controller(ad_model, ad_pk):
     """
     probe the domain and save the AD monitoring data
 
@@ -55,14 +56,12 @@ def probe_ad_controller(ad_model=None, ad_pk=None):
         raise TypeError(f'ad_pk must be an integer. Got: {type(ad_pk)}.')
 
     try:
-        created = models.LdapProbeLog.create_from_probe(
-            ad_probe.ADProbe.probe(ad_model.objects.get(pk=ad_pk))
+        created = LdapProbeLog.create_from_probe(
+            ADProbe.probe(ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
         LOG.exception(error)
         raise error
-
-    LOG.debug(created)
 
     return created
 
@@ -834,7 +833,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
                 data_source, anon, perf_filter, time_delta_args)
 
 
-def _raise_ldap_alert(subscription, level, instance_pk=None):
+def _raise_ldap_alert(subscription, level, instance_pk):
     """
     invoke the email sending mechanism for an `LDAP` alert
 
@@ -859,10 +858,6 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     :raises: generic :exc:`exceptions.Exception` for whatever error is
         raised by :meth:`ssl_cert_tracker.lib.Email.send`
     """
-    if instance_pk is None:
-        raise exceptions.AlertArgsError(
-            'Must provide LDAP probe identifier when raising this alert')
-
     data = utils.get_model('ldap_probe.ldapprobelog').objects.filter(
         id=instance_pk)
 

@@ -66,9 +66,6 @@ def _get_default_alert_threshold():
     return get_preference('ldapprobe__ldap_perf_err')
 
 
-# pylint: disable=too-few-public-methods
-
-
 class LdapProbeLogFullBindManager(models.Manager):
     """
     custom :class:`django.db.models.Manager` used by the
@@ -81,7 +78,7 @@ class LdapProbeLogFullBindManager(models.Manager):
     null (`None` in `Python` speak).
     """
 
-    def get_queryset(self):  # pylint: disable=no-self-use
+    def get_queryset(self):
         """
         override :meth:`django.db.models.Manager.get_queryset`
 
@@ -111,7 +108,7 @@ class LdapProbeLogAnonBindManager(models.Manager):
 
     """
 
-    def get_queryset(self):  # pylint: disable=no-self-use
+    def get_queryset(self):
         """
         override :meth:`django.db.models.Manager.get_queryset`
 
@@ -134,7 +131,7 @@ class LdapProbeLogFailedManager(models.Manager):
 
     """
 
-    def get_queryset(self):  # pylint: disable=no-self-use
+    def get_queryset(self):
         """
         override :meth:`django.db.models.Manager.get_queryset`
 
@@ -147,8 +144,6 @@ class LdapProbeLogFailedManager(models.Manager):
 
         """
         return LdapProbeLog.objects.filter(failed=True)
-
-# pylint: enable=too-few-public-methods
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
@@ -280,7 +275,7 @@ class BaseADNode(BaseModel, models.Model):
 
     """
 
-    def get_node(self):  # pylint: disable=inconsistent-return-statements
+    def get_node(self):
         """
         get node network information in either `FQDN` or `IP` address format
 
@@ -394,7 +389,7 @@ class BaseADNode(BaseModel, models.Model):
             Value(url_filters), F('id'), output_field=TextField())).values()
 
     @classmethod
-    def report_perf_degradation(  # pylint: disable=too-many-branches
+    def report_perf_degradation(
             cls, bucket=None, anon=False, level=None, **time_delta_args):
         """
         generate report data for performance degradation reports
@@ -929,49 +924,37 @@ class LdapProbeLog(models.Model):
 
             * :class:`django.db.models.query.QuerySet` with the
               failed LDAP probes over the defined period
-
         """
         when_ad_orion_node = When(
             ad_orion_node__isnull=False,
             then=Case(
-                When(
-                    ~Q(ad_orion_node__node__node_dns__iexact=''),
-                    then=F('ad_orion_node__node__node_dns')
-                ),
+                When(~Q(ad_orion_node__node__node_dns__iexact=''),
+                     then=F('ad_orion_node__node__node_dns')),
                 default=F('ad_orion_node__node__ip_address'),
                 output_field=TextField()
             )
         )
-        """
-        :class:`django.db.models.When` instance that will translate into
-        an `SQL` `WHEN` clause
-        """
 
         case_ad_node = Case(
             when_ad_orion_node, default=F('ad_node__node_dns'),
             output_field=TextField())
-        """
-        :class:`django.db.models.Case` instance that will translate into
-        an `SQL` `WHEN` clause
 
-        Together with the previous attribute, this will result into
-        something like
-        SELECT CASE WHEN `ldap_probe_ldapprobelog`.`ad_orion_node_id`
-        IS NOT NULL THEN CASE WHEN `orion_integration_orionnode`.`node_dns`
-        IS NOT NULL THEN `orion_integration_orionnode`.`node_dns`
-        ELSE `orion_integration_orionnode`.`ip_address`
-        END
-        ELSE `ldap_probe_nonorionadnode`.`node_dns`
-        END
-        AS `domain_controller_fqdn
+        # this will result in a query like
+        # SELECT CASE WHEN `ldap_probe_ldapprobelog`.`ad_orion_node_id`
+        # IS NOT NULL THEN CASE WHEN `orion_integration_orionnode`.`node_dns`
+        # IS NOT NULL THEN `orion_integration_orionnode`.`node_dns`
+        # ELSE `orion_integration_orionnode`.`ip_address`
+        # END
+        # ELSE `ldap_probe_nonorionadnode`.`node_dns`
+        # END
+        # AS `domain_controller_fqdn
 
-        We need this structure because this method forces all the
-        calculations to happen in the database engine.
+        # We need this structure because this method forces all the
+        # calculations to happen in the database engine.
 
-        The `SQL` fragment above is more or less the equivalent of
-        applying :meth:`BaseADNode.get_node` to each row in
-        :class:`LdapProbeLog`.
-        """
+        # The `SQL` fragment above is more or less the equivalent of
+        # applying :meth:`BaseADNode.get_node` to each row in
+        # :class:`LdapProbeLog`.
 
         if time_delta_args:
             time_delta = timezone.timedelta(**time_delta_args)
@@ -991,32 +974,28 @@ class LdapProbeLog(models.Model):
             annotate(domain_controller_fqdn=case_ad_node).\
             order_by('ad_node', '-created_on')
 
-        print(queryset.query)
-
         return now, time_delta, queryset
 
     def __str__(self):
         return f'LDAP probe {self.uuid} to {self.node}'
 
     @property
+    def _node(self):
+        return self.ad_orion_node or self.ad_node
+
+    @property
     def node(self):
         """
         return the node that was the target of this `LDAP` probe
         """
-        if self.ad_orion_node:
-            return self.ad_orion_node.get_node()
-
-        return self.ad_node.get_node()
+        return self._node.get_node()
 
     @property
     def node_is_enabled(self):
         """
         is the node probed by this instance enabled?
         """
-        if self.ad_node:
-            return self.ad_node.enabled
-
-        return self.ad_orion_node.enabled
+        return self._node.enabled
 
     @property
     def node_perf_bucket(self):
@@ -1024,12 +1003,7 @@ class LdapProbeLog(models.Model):
         :returns: the performance bucket for this node
         :rtype: :class:`ADNodePerfBucket`
         """
-        if self.ad_node:
-            node = self.ad_node
-        else:
-            node = self.ad_orion_node
-
-        return node.performance_bucket
+        return self._node.performance_bucket
 
     @property
     def perf_alert(self):
@@ -1037,33 +1011,12 @@ class LdapProbeLog(models.Model):
         flag for considering if an instance of this class must trigger a
         performance alert
 
-        In plain English, this method translates into::
-
-            If so configured, give me all the elapsed_foo fields that are
-            not `None`. Then, out of these not `None` fields, if any of them
-            is greater than a threshold, return `True`. Otherwise, return
-            `False`.
-
-        :returns: `True/False`
+        :returns: `True` if there is a timing from the probe above the err
+                  threshold, and ldap_perf_raise_all is `True`.
         :rtype: bool
         """
-        if not get_preference('ldapprobe__ldap_perf_raise_all'):
-            return False
-
-        return any(
-            [
-                elapsed for elapsed in
-                [
-                    self_elapsed for self_elapsed in
-                    [
-                        self.elapsed_bind, self.elapsed_anon_bind,
-                        self.elapsed_search_ext, self.elapsed_read_root
-                    ]
-                    if self_elapsed is not None
-                ]
-                if elapsed >= self.node_perf_bucket.avg_err_threshold
-            ]
-        )
+        return get_preference('ldapprobe__ldap_perf_raise_all')\
+            and self._perf_level(self.node_perf_bucket.avg_err_threshold)
 
     @property
     def perf_warn(self):
@@ -1071,26 +1024,12 @@ class LdapProbeLog(models.Model):
         flag for considering if an instance of this class must trigger a
         performance warning
 
-        :returns: `True/False`
+        :returns: `True` if there is a timing from the probe above the warn
+                  threshold, and ldap_perf_raise_all is `True`.
         :rtype: bool
         """
-        if not get_preference('ldapprobe__ldap_perf_raise_all'):
-            return False
-
-        return any(
-            [
-                elapsed for elapsed in
-                [
-                    self_elapsed for self_elapsed in
-                    [
-                        self.elapsed_bind, self.elapsed_anon_bind,
-                        self.elapsed_search_ext, self.elapsed_read_root
-                    ]
-                    if self_elapsed is not None
-                ]
-                if elapsed >= self.node_perf_bucket.avg_warn_threshold
-            ]
-        )
+        return get_preference('ldapprobe__ldap_perf_raise_all')\
+            and self._perf_level(self.node_perf_bucket.avg_warn_threshold)
 
     @property
     def perf_err(self):
@@ -1098,23 +1037,18 @@ class LdapProbeLog(models.Model):
         flag for considering if an instance of this class must trigger a
         performance never exceed alert
 
-        :returns: `True/False`
+        :returns: `True` if there is a timing from the probe above the alert
+                  threshold.
         :rtype: bool
         """
-        # TODO this is terribly written
+        return self._perf_level(self.node_perf_bucket.alert_threshold)
+
+    def _perf_level(self, level):
         return any(
-            [
-                elapsed for elapsed in
-                [
-                    self_elapsed for self_elapsed in
-                    [
-                        self.elapsed_bind, self.elapsed_anon_bind,
-                        self.elapsed_search_ext, self.elapsed_read_root
-                    ]
-                    if self_elapsed is not None
-                ]
-                if elapsed >= self.node_perf_bucket.alert_threshold
-            ]
+            elapsed is not None and elapsed >= level
+            for elapsed in
+            [self.elapsed_bind, self.elapsed_anon_bind, self.elapsed_search_ext,
+             self.elapsed_read_root]
         )
 
     @property
@@ -1164,19 +1098,9 @@ class LdapProbeLog(models.Model):
         :arg probe_data: the data returned by the LDAP probe
         :type probe_data: :class:`ldap_probe.ad_probe.ADProbe`
 
-        :arg logger: :class:`logging.Logger` instance
-
         :returns: the new :class:`LdapProbeLog` instance
         """
-        ldap_probe_log_entry = cls(
-            elapsed_initialize=probe_data.elapsed.elapsed_initialize,
-            elapsed_bind=probe_data.elapsed.elapsed_bind,
-            elapsed_anon_bind=probe_data.elapsed.elapsed_anon_bind,
-            elapsed_read_root=probe_data.elapsed.elapsed_read_root,
-            elapsed_search_ext=probe_data.elapsed.elapsed_search_ext,
-            ad_response=probe_data.ad_response, errors=probe_data.errors,
-            failed=probe_data.failed
-        )
+        ldap_probe_log_entry = cls(**probe_data)
 
         if isinstance(probe_data.ad_controller, OrionADNode):
             ldap_probe_log_entry.ad_orion_node = probe_data.ad_controller
@@ -1185,7 +1109,9 @@ class LdapProbeLog(models.Model):
 
         ldap_probe_log_entry.save()
 
-        return f'created {ldap_probe_log_entry}'
+        LOG.debug(f'created {ldap_probe_log_entry}')
+
+        return ldap_probe_log_entry
 
     class Meta:
         app_label = 'ldap_probe'

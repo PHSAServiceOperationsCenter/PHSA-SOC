@@ -27,7 +27,7 @@ import logging
 
 import ldap
 
-from ldap_probe import exceptions, models
+from ldap_probe import models
 from p_soc_auto_base.utils import Timer, diagnose_network_problem
 
 
@@ -42,15 +42,6 @@ class ADProbe:
     """
     Class that wraps around :class:`ldap.LDAPObject` methods of interest
     to us and adds timing facilities to each of them
-
-    .. todo::
-
-        Need to accept string for :attr:`ad_controller`, not just django
-        instances. Maybe sometime we want to call this without
-        touching models.
-
-        `<https://trello.com/c/UL97AdFj>`__
-
     """
 
     def __init__(self, ad_controller):
@@ -74,7 +65,9 @@ class ADProbe:
         operations will be executed.
         """
 
-        self._raise_ad_controller(ad_controller)
+        if not isinstance(ad_controller, models.BaseADNode):
+            raise TypeError(f'Invalid object type {type(ad_controller)!r}!'
+                            f' Abandoning the AD probe...')
         self.ad_controller = ad_controller
         """the AD controller object"""
 
@@ -92,12 +85,6 @@ class ADProbe:
 
         self.get_ldap_object()
 
-    @staticmethod
-    def _raise_ad_controller(ad_controller):
-        if not isinstance(ad_controller, models.BaseADNode):
-            raise TypeError(
-                f'Invalid object type {type(ad_controller)!r}!'
-                f' Abandoning the AD probe...')
 
     @classmethod
     def probe(cls, ad_controller):
@@ -129,7 +116,7 @@ class ADProbe:
             try:
                 self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
-            except Exception as err:
+            except ldap.LDAPError as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'LDAP Initialization error: {err}')
@@ -142,7 +129,8 @@ class ADProbe:
         """
         set the abort flag and update the :attr:`errors` value
         """
-        LOG.warning('aborting LDAP op for %s', self.ad_controller.get_node())
+        LOG.warning('aborting LDAP op for %s: %s',
+                    self.ad_controller.get_node(), error_message)
         self.abort = True
         self.errors += f'\nAD probe aborted. {error_message}'
 
@@ -170,12 +158,10 @@ class ADProbe:
             except ldap.SERVER_DOWN as err:
                 self._diagnose_network(err)
                 return
-
             except ldap.INVALID_CREDENTIALS as err:
                 self._fallback(err)
                 return
-
-            except Exception as err:
+            except ldap.LDAPError as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}.')
                 return
@@ -193,13 +179,11 @@ class ADProbe:
                 self.ad_response = (
                     'REFERRAL: %s'
                     % err.args[0].get("info")[len("Referral:\n"):])
-
                 self.errors += (
                     f'Extended search error: {err}. The information is'
                     f' not available on the AD controller at'
                     f' {self.ad_controller.get_node()}')
-
-            except Exception as err:
+            except ldap.LDAPError as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
@@ -222,11 +206,7 @@ class ADProbe:
         """
         self.errors += (f'\nTrying fall back from LDAP error'
                         f' {err.__class__.__name__}: {str(err)}.')
-
-        try:
-            self.bind_anon_and_read()
-        except:
-            self.failed = True
+        self.bind_anon_and_read()
 
     def bind_anon_and_read(self):
         """
@@ -244,8 +224,7 @@ class ADProbe:
             except ldap.SERVER_DOWN as err:
                 self._diagnose_network(err)
                 return
-
-            except Exception as err:
+            except ldap.LDAPError as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return
@@ -255,7 +234,7 @@ class ADProbe:
         with Timer(use_duration=False) as timing:
             try:
                 self.ad_response = self.ldap_object.read_rootdse_s()
-            except Exception as err:
+            except ldap.LDAPError as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return

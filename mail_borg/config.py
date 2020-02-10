@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    may 14, 2019
-
 Configuration module for the :ref:`Mail Borg Client Application`
 
 .. todo::
@@ -285,6 +283,7 @@ def load_config(current_base_config=None):
     try:
         config = get_config_from_server(base_config)
     except Exception as err:  # pylint: disable=broad-except
+        config_err = err
         config = None
 
     if config:
@@ -321,7 +320,8 @@ def load_config(current_base_config=None):
         try:
             config = get_config_from_file()
             config['load_status'] = (
-                'Loaded cached configuration. Server error: %s' % str(err))
+                'Loaded cached configuration. Server error: %s'
+                % str(config_err))
         except Exception as file_err:
             config['load_status'] = (
                 'Cannot load a configuration.'
@@ -380,13 +380,8 @@ def get_config_from_file(json_file=LOCAL_CONFIG):
 
     :returns: a JSON encoded :class:`str`
     """
-    try:
-        with open(json_file, 'r') as local_config:
-            config = json.load(local_config)
-
-        local_config.close()
-    except Exception as err:
-        raise err
+    with open(json_file, 'r') as local_config:
+        config = json.load(local_config)
 
     return config
 
@@ -405,16 +400,6 @@ def dump_config_to_file(config, json_file=LOCAL_CONFIG):
 
         The default value is provided via the :attr:`LOCAL_CONFIG` variable
         value
-
-    :raises:
-
-        :exc:`Exception` if the `JSON <https://www.json.org/>`_ file cannot
-        be saved
     """
-    try:
-        with open(json_file, 'w') as local_config:
-            json.dump(config, local_config, indent=4)
-
-        local_config.close()
-    except Exception as err:
-        raise err
+    with open(json_file, 'w') as local_config:
+        json.dump(config, local_config, indent=4)

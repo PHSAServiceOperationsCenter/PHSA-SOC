@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    jul. 26, 2019
-
 Exchange Monitoring Client Package
 ==================================
 

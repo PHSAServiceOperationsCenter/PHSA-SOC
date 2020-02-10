@@ -3,11 +3,6 @@
 {% block subject %}
 {{ tags }} {{ level }}: {{ site }}, {{ bot }} {{ event_type }} failure
 {% endblock %}
-{% comment %}
-[TAGS] {{ INFO }} {{ Exchange Send Receive Events for site }} {{ site }}
-over the last {{ time_delta }} 
-{% endcomment %}
-
 
 {% block html %}
 <h3>

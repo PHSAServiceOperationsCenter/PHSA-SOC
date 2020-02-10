@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0040_add_subscription_unconfig_bots'),
+        ('mail_collector', '0038_auto_20190820_1023'),
     ]
 
     operations = [

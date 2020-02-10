@@ -12,8 +12,6 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 5, 2019
-
 """
 import logging
 
@@ -28,7 +26,7 @@ from p_soc_auto_base.models import BaseModel
 from .orion import OrionClient
 
 
-LOGGER = logging.getLogger('orion_integration_log')
+LOG = logging.getLogger(__name__)
 
 # pylint:disable=R0903
 
@@ -178,11 +176,11 @@ class OrionBaseModel(BaseModel, models.Model):
 
         try:
             self.delete()
-        except Exception as error:  # pylint: disable=broad-except
-            LOGGER.exception(str(error))
+        except Exception as error:
+            LOG.exception(str(error))
 
-        LOGGER.info('removed orion entity %s. not found in Orion',
-                    self.orion_id)
+        LOG.info('removed orion entity %s. not found in Orion',
+                 self.orion_id)
 
         return False
 
@@ -281,10 +279,10 @@ class OrionBaseModel(BaseModel, models.Model):
 
                 instance.save()
 
-            except Exception as err:    # pylint:disable=W0703
+            except Exception as error:
                 return_dict['errored_records'] += 1
                 print('%s when acquiring Orion object %s' %
-                      (str(err), orion_mapping))
+                      (str(error), orion_mapping))
 
         return_dict['status'] = 'done'
 

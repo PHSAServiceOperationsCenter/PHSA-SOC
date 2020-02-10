@@ -12,8 +12,6 @@ various utility functions for the mail_collector app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jun. 11, 2019
-
 """
 from django.conf import settings
 

@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    May 29, 2019
-
 Custom :exc:`Exception` classes for the :ref:`Mail Collector Application`
 
 """

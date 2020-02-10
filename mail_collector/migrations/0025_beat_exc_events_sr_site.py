@@ -68,7 +68,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0024_subscription_exc_events_sr_site'),
+        ('mail_collector', '0023_more_beats'),
     ]
 
     operations = [

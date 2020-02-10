@@ -14,9 +14,7 @@ See `The Django admin site
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    ali.rahmat@phsa.ca
-
-:updated:    sep. 21, 2018
+:contact:    daniel.busto@phsa.ca
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model

@@ -12,8 +12,6 @@ django apps module for the task_journal app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Apr. 4, 2019
-
 """
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _

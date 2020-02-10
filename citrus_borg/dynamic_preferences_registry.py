@@ -17,12 +17,12 @@ function. For example:
 
 .. ipython::
 
-        In [1]: from citrus_borg.dynamic_preferences_registry import get_preference
+    In [1]: from citrus_borg.dynamic_preferences_registry import get_preference
 
-        In [2]: get_preference('exchange__report_interval')
-        Out[2]: datetime.timedelta(1, 43200)
+    In [2]: get_preference('exchange__report_interval')
+    Out[2]: datetime.timedelta(1, 43200)
 
-        In [3]:
+    In [3]:
 
 :copyright:
 
@@ -30,8 +30,6 @@ function. For example:
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
-
-:updated:    jan. 3, 2019
 
 """
 import decimal
@@ -49,14 +47,6 @@ from dynamic_preferences.types import (
 )
 
 
-# pylint: disable=E1101,C0103
-# =========================================================================
-# E1101: instance of '__proxy__' has no 'title' member caused by using
-# .title() on returns from gettext_lazy()
-#
-# C0103: as per PEP8 module level variables are constants and should be
-# upper-case
-# =========================================================================
 citrus_borg_common = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
 
@@ -113,11 +103,6 @@ dynamic user preferences section for preferences common to all applications
 in the :ref:`SOC Automation Project`
 """
 
-
-# pylint: enable=C0103
-
-
-# pylint: disable=too-few-public-methods
 
 @global_preferences_registry.register
 class AlertArgsErrorLevel(StringPreference):
@@ -368,7 +353,7 @@ class ExchangeServerError(DurationPreference):
     :ref:`Mail Collector Application` will wait before raising an error
     about an Exchange entity not providing Exchange services
 
-    :access_key: 'exchange__server_warn'
+    :access_key: 'exchange__server_error'
     """
     section = exchange
     name = 'server_error'
@@ -1504,22 +1489,29 @@ class LdapReportPeriod(DurationPreference):
         'Time interval to use when generating LDAP reports').title()
     """verbose name for this dynamic preference"""
 
-# pylint: enable=too-few-public-methods
-# pylint: enable=E1101
 
-
-def get_preference(key=None):
+def get_preference(key):
     """
     get the current value of a dynamic preference
     (also known as a dynamic setting)
 
     :arg str key: the accessor key for the preference
-        it follows this format 'section__preference_name`; default is ``None``
-
-    :raises: :exc:`Exception` if the key argument cannot be found
+        it follows this format 'section__preference_name`
     """
-    preferences = global_preferences_registry.manager().load_from_db()
-    try:
-        return preferences.get(key)
-    except Exception as error:
-        raise error
+    section, name = key.split('__')
+    # TODO figure out how to get the cache working properly, instead of doing
+    #      this weird workaround
+    db_pref = global_preferences_registry.manager().get_db_pref(section, name)
+
+    return db_pref.value
+
+
+def get_list_preference(key):
+    """
+    get the a list from a dynamic preference
+    (also known as a dynamic setting)
+
+    :arg str key: the accessor key for the preference
+        it follows this format 'section__preference_name`
+    """
+    return get_preference(key).split(',')

@@ -50,7 +50,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0028_err_reports_beats'),
+        ('ldap_probe', '0027_err_reports_subs'),
     ]
 
     operations = [

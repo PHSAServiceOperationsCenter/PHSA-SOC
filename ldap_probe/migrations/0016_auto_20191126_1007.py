@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0015_realy_add_beats_for_ldap_data'),
+        ('ldap_probe', '0014_auto_20191125_1455'),
     ]
 
     operations = [

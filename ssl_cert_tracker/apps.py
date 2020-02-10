@@ -13,8 +13,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jul. 24, 2018
-
 """
 
 from django.apps import AppConfig

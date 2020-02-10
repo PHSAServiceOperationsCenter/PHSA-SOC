@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Sep. 20, 2019
-
 GUI module for the :ref:`Mail Borg Client Application`
 
 This module is built using the `PySimpleGUI
@@ -42,10 +40,6 @@ from mailer import WitnessMessages
 
 
 gui.SetOptions(font='Any 10', button_color=('black', 'lightgrey'))
-
-# pylint: disable=unnecessary-comprehension
-# PySimpleGUI.Spin() likes comprehensions for populating the spinner even if
-# pylint disapproves
 
 
 def get_window():
@@ -122,8 +116,9 @@ def get_window():
 
     conf_values_col = [
         [gui.Text('Check Email Every', justification='left'),
+         # TODO do spinners actually require lists? (probably yes...)
          gui.Spin(
-            [i for i in range(1, 60)], key='mail_check_period',
+            list(range(1, 60)), key='mail_check_period',
             initial_value=config.get(
                 'exchange_client_config').get('mail_check_period'),
             size=(3, 1), enable_events=True),
@@ -137,25 +132,25 @@ def get_window():
             default=config.get('exchange_client_config').get('utf8_email'),
             key='utf8_email', enable_events=True), ],
         [gui.Spin(
-            [i for i in range(1, 20)],
+            list(range(1, 20)),
             key='check_mx_timeout',
             initial_value=config.get(
                 'exchange_client_config').get('check_mx_timeout'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
-            [i for i in range(1, 120)], key='min_wait_receive',
+            list(range(1, 120)), key='min_wait_receive',
             initial_value=config.get(
                 'exchange_client_config').get('min_wait_receive'),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
-            [i for i in range(1, 10)], key='backoff_factor',
+            list(range(1, 10)), key='backoff_factor',
             initial_value=config.get(
                 'exchange_client_config').get('backoff_factor'),
             size=(3, 1), enable_events=True), ],
         [gui.Spin(
-            [i for i in range(1, 600)], key='max_wait_receive',
+            list(range(1, 600)), key='max_wait_receive',
             initial_value=config.get(
                 'exchange_client_config').get('max_wait_receive'),
             size=(3, 1),  enable_events=True),
@@ -272,19 +267,18 @@ def _accounts_to_table(accounts, window):
         }
 
     """
-    listed_accounts = []
-
-    for account in accounts:
-
-        _account = []
-        _account.append(account.get('domain_account').get('domain'))
-        _account.append(account.get('domain_account').get('username'))
-        _account.append(account.get('domain_account').get('password'))
-        _account.append(account.get('smtp_address'))
-        _account.append(account.get('exchange_autodiscover'))
-        _account.append(account.get('autodiscover_server'))
-
-        listed_accounts.append(_account)
+    account_pairs = [(account, account.get('domain_account'))
+                     for account in accounts]
+    listed_accounts = \
+        [
+            [domain_account.get('domain'),
+             domain_account.get('username'),
+             domain_account.get('password'),
+             account.get('smtp_address'),
+             account.get('exchange_autodiscover'),
+             account.get('autodiscover_server')]
+            for account, domain_account in account_pairs
+        ]
 
     window.FindElement('exc_accs').Update(listed_accounts)
 

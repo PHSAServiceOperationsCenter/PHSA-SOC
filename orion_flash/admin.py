@@ -12,8 +12,6 @@ django admin module for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 20, 2019
-
 """
 import pendulum
 

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0020_more_beats_for_dead_bodies'),
+        ('mail_collector', '0015_auto_20190617_1023'),
     ]
 
     operations = [

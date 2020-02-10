@@ -13,8 +13,6 @@ configuration.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 import os
 
@@ -23,8 +21,8 @@ from django.apps import apps
 from django.conf import settings
 from event_consumer.handlers import AMQPRetryConsumerStep
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'p_soc_auto.settings')
-os.environ.setdefault('EVENT_CONSUMER_APP_CONFIG', 'p_soc_auto.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'p_soc_auto.settings.development')
+os.environ.setdefault('EVENT_CONSUMER_APP_CONFIG', 'p_soc_auto.settings.development')
 os.getenv('EVENT_CONSUMER_CONFIG_NAMESPACE', 'CELERY')
 
 # the primary celery app

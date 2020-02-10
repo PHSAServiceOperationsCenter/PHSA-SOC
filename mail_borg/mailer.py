@@ -42,8 +42,6 @@ described in the :ref:`borg_client_config`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    may 14, 2019
-
 
 """
 import collections
@@ -189,7 +187,6 @@ class _Logger():
 
 def _get_account(config):
     """
-
     :arg config:
 
         a :class:`dictionary <dict>` that matches the structure described in
@@ -205,7 +202,7 @@ def _get_account(config):
     return '{}\\{}'.format(config.get('domain'), config.get('username'))
 
 
-def validate_email_to_ascii(email_address, logger=None, **config):
+def validate_email_to_ascii(email_address, **config):
     """
     this function is using the `python-email-validator
     <https://github.com/JoshData/python-email-validator>`_ package to
@@ -270,9 +267,6 @@ def validate_email_to_ascii(email_address, logger=None, **config):
     if not config:
         config = load_config()
 
-    if logger is None:
-        logger = _Logger()
-
     try:
         email_dict = validate_email(
             email_address,
@@ -284,7 +278,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
             check_deliverability=config.get('exchange_client_config').
             get('check_mx'))
     except (EmailSyntaxError, EmailUndeliverableError) as error:
-        logger.warn(
+        _Logger().warn(
             dict(type='configuration', status='FAIL',
                  wm_id=config.get('wm_id'),
                  account=email_address,
@@ -299,7 +293,7 @@ def validate_email_to_ascii(email_address, logger=None, **config):
     return email_dict.get('email')
 
 
-def get_accounts(logger=None, **config):
+def get_accounts(**config):
     """
     get a list of working Exchange accounts
 
@@ -360,8 +354,7 @@ def get_accounts(logger=None, **config):
     if not config:
         config = load_config()
 
-    if logger is None:
-        logger = _Logger()
+    logger = _Logger()
 
     accounts = []
 
@@ -369,7 +362,7 @@ def get_accounts(logger=None, **config):
         get('exchange_accounts')
     for exchange_account in exchange_accounts:
         if not validate_email_to_ascii(
-                exchange_account.get('smtp_address'), logger=logger, **config):
+                exchange_account.get('smtp_address'), **config):
             continue
 
         credentials = Credentials(
@@ -378,8 +371,6 @@ def get_accounts(logger=None, **config):
                 exchange_account.get('domain_account').get('username')),
             password=exchange_account.get('domain_account').get('password')
         )
-
-        exc_config = None
 
         try:
 
@@ -416,7 +407,7 @@ def get_accounts(logger=None, **config):
                          exchange_account.get('smtp_address')))
             )
 
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as error:
             logger.err(
                 dict(type='connection', status='FAIL',
                      wm_id=config.get('wm_id'),
@@ -426,7 +417,7 @@ def get_accounts(logger=None, **config):
                          exchange_account.get(
                              'domain_account').get('username'),
                          exchange_account.get('smtp_address')),
-                     exeption=str(err))
+                     exeption=str(error))
             )
 
     if not accounts:
@@ -741,7 +732,6 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
         messages = self.messages
         for message in messages:
             try:
-
                 send_message(message)
 
                 self.logger.info(
@@ -757,7 +747,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                                               message.message.to_recipients]))
                 )
 
-            except Exception as error:  # pylint: disable=broad-except
+            except Exception as error:
                 self.logger.err(
                     dict(type='send', status='FAIL',
                          wm_id=self.config.get('wm_id'),
@@ -906,7 +896,7 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
                 continue
             except ErrorMessageNotFound:
                 found_message = None
-            except Exception as error:  # pylint: disable=broad-except
+            except Exception as error:
                 self.logger.err(dict(type='receive', status='FAIL',
                                      wm_id=self.config.get('wm_id'),
                                      account=message.

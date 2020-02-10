@@ -12,8 +12,6 @@ signals module for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 6, 2019
-
 """
 import socket
 

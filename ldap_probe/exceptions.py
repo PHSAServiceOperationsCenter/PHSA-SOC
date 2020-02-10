@@ -14,8 +14,6 @@ Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 11, 2019
-
 """
 
 

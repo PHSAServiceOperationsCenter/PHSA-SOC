@@ -108,7 +108,7 @@ def add_exchange_config(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0034_auto_20190806_1409'),
+        ('mail_collector', '0001_initial'),
     ]
 
     operations = [

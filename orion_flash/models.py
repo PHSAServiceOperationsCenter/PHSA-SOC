@@ -12,8 +12,6 @@ django models module for the orion_flash app
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Jan. 15, 2019
-
 """
 import logging
 import pendulum
@@ -23,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
-LOG = logging.getLogger('orion_flash')
+LOG = logging.getLogger(__name__)
 
 
 class SslAlertError(Exception):

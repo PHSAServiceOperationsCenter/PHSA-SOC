@@ -8,7 +8,7 @@ django models for the ssl_certificates app
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    ali.rahmat@phsa.ca
+:contact:    daniel.busto@phsa.ca
 
 """
 

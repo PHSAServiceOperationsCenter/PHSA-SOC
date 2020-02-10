@@ -16,8 +16,6 @@ documentation for details.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 
 from django.utils.translation import ugettext_lazy as _

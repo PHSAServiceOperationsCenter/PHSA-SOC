@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    sep. 17, 2018
-
 `django.contrib.admin` objects to be reused across the :ref:`SOC Automation
 Server` apps
 

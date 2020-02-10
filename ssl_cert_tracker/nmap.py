@@ -21,8 +21,6 @@ the `libnmap` package is available at
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec 16, 2019
-
 """
 import csv
 import logging
@@ -40,7 +38,7 @@ from p_soc_auto_base import utils
 from .models import SslProbePort
 
 
-LOG = logging.getLogger('ssl_cert_tracker_log')
+LOG = logging.getLogger(__name__)
 """
 fall-back logging object for this module
 
@@ -98,7 +96,7 @@ class NmapProbe():
     Note that, unlike other base classes, this class can be used on its own.
     """
 
-    def __init__(self, address=None, opts=None, logger=LOG):
+    def __init__(self, address=None, opts=None):
         """
         :class:`NmapProbe` constructor
 
@@ -130,9 +128,6 @@ class NmapProbe():
         self._opts = opts
         """the options for the `NMAP` scan"""
 
-        self._logger = logger
-        """the instance logging object"""
-
         self.nmap_data = self.probe_node()
         """
         :class:`libnmap.objects.report.NmapReport` instance with the data
@@ -153,7 +148,7 @@ class NmapProbe():
             returns anything on `stderr`
 
         """
-        self._logger.debug(
+        LOG.debug(
             'nmap probe with target %s and options %s',
             self._address, self._opts)
 
@@ -298,7 +293,7 @@ class SslProbe(NmapProbe):
     """
 
     def __init__(
-            self, address=None, port=settings.SSL_DEFAULT_PORT, logger=LOG):
+            self, address=None, port=settings.SSL_DEFAULT_PORT):
         """
         :arg str address: the DNS name or the IP address of the host that
             will be probed for an `SSL server certificate
@@ -307,12 +302,10 @@ class SslProbe(NmapProbe):
         :arg int port: the network port that will be probed for an `SSL
             server certificate
             <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`__
-
-        :arg `logging.Logger` logger: the logging object
         """
         opts = r'{}'.format(settings.SSL_PROBE_OPTIONS % port)
 
-        super().__init__(address, opts, logger)
+        super().__init__(address, opts)
 
         self.ssl_data = self.get_ssl_data()
 
@@ -427,11 +420,7 @@ def to_hex(input_string=None):
     if input_string is None:
         return None
 
-    try:
-        input_string = str(input_string)
-    except Exception as error:
-        raise TypeError(
-            'cannot cast %s to string: %s' % (input_string, error))
+    input_string = str(input_string)
 
     return bytes(input_string, 'utf8').hex()
 
@@ -537,9 +526,9 @@ def probe_for_certs(dns_list=None, port_list=None):
                     expires_on=cert.ssl_not_after))
                 print('found', cert.ssl_subject.get(
                     'commonName'), ': ', str(port), ', ', cert.ssl_not_after)
-            except Exception as err:
-                print(dns, ', ', port, ', ', err)
-                dns_errors.append(dict(dns=dns, port=str(port), err=str(err)))
+            except Exception as error:
+                print(f'{dns}, {port}, {error}')
+                dns_errors.append(dict(dns=dns, port=str(port), err=str(error)))
 
     with open('certs_found.csv', 'w', newline='') as csv_file:
         csv_writer = csv.DictWriter(csv_file, fieldnames=field_names)

@@ -12,8 +12,6 @@ orion commands
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 20, 2019
-
 orion script library
 ====================
 

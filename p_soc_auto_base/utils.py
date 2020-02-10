@@ -19,15 +19,14 @@ This module contains utility `Python` classes and functions used by the
 import decimal
 import datetime
 import ipaddress
-import logging
 import socket
 import time
 import uuid
+from logging import getLogger
 
 import humanfriendly
 
 from django.apps import apps
-from django.contrib.auth.models import User
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -41,7 +40,7 @@ from django.utils.safestring import mark_safe
 from ssl_cert_tracker.models import Subscription
 from ssl_cert_tracker.lib import Email
 
-LOGGER = logging.getLogger('django')
+LOG = getLogger(__name__)
 
 
 def show_milliseconds(seconds):
@@ -143,21 +142,21 @@ def diagnose_network_problem(host_spec, port=0):
         ipaddress.ip_address(host_spec)
         try:
             socket.gethostbyaddr(host_spec)
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as error:
             return (1, (f'\nhost {host_spec} does not exist,'
-                        f' error {type(err)}: {str(err)}'))
+                        f' error {type(error)}: {str(error)}'))
 
     except ValueError:
         try:
             socket.getaddrinfo(host_spec, port)
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as error:
             return (1, (f'host name {host_spec} not in DNS,'
-                        f' error {type(err)}: {str(err)}'))
+                        f' error {type(error)}: {str(error)}'))
 
-    return (0, f'found no network problems with host: {host_spec}')
+    return 0, f'found no network problems with host: {host_spec}'
 
 
-class Timer():
+class Timer:
     """
     `Context manager
     <https://docs.python.org/3/library/stdtypes.html#context-manager-types>`__
@@ -214,7 +213,7 @@ class Timer():
         self.start = time.perf_counter()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         """
         stop the timer and update the :attr:`elapsed` instance attribute
 
@@ -284,10 +283,7 @@ def get_model(destination):
         registered on the server
 
     """
-    try:
-        return apps.get_model(*destination.split('.'))
-    except Exception as err:
-        raise UnknownDataTargetError from err
+    return apps.get_model(*destination.split('.'))
 
 
 def get_queryset_values_keys(model):
@@ -556,7 +552,7 @@ class MomentOfTime():
     def now(now):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`__
+        <https://docs.python.org/3/library/functions.html#staticmethod>`__
         for calculating the reference moment
 
         :arg `datetime.datetime` now: the reference moment; if ``None``, use the
@@ -578,7 +574,7 @@ class MomentOfTime():
     def time_delta(time_delta, **kw_time_delta):
         """
         `static method
-        <https://docs.python.org/3/library/functions.html?highlight=staticmethod#staticmethod>`_
+        <https://docs.python.org/3/library/functions.html#staticmethod>`_
         for verifying or calculating a :class:`django.utils.timezone.timedelta`
         object
 
@@ -591,7 +587,8 @@ class MomentOfTime():
 
         :arg dict kw_time_delta: a :class:`dict` suitable for creating a
             :class:`datetime.timedelta` object. See
-            `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__.
+            `<https://docs.python.org/3/library/datetime.html"""\
+            """#datetime.timedelta>`__.
 
         :raises:
 
@@ -616,12 +613,12 @@ class MomentOfTime():
     def past(cls, **moment):
         """
         `class method
-        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        <https://docs.python.org/3/library/functions.html#classmethod>`_
         that returns a moment in the past relative to the reference moment
 
-        :arg dict moment: `keyword arguments
-            <https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments>`_
-            with the following keys:
+        :arg dict moment: `keyword arguments <https://docs.python.org/3/"""\
+            """tutorial/controlflow.html#keyword-arguments>`_ with the
+            following keys:
 
             :now: contains the reference moment; if not present, this method
                   will use the value returned by
@@ -632,8 +629,9 @@ class MomentOfTime():
 
                 If this key is not present, the method expects other keys
                 as per
-                `<https://docs.python.org/3/library/datetime.html?highlight=timedelta#datetime.timedelta>`__
-                so that a `datetime.timedelta` interval can be calculated
+                `<https://docs.python.org/3/library/datetime.html"""\
+                """#datetime.timedelta>`__ so that a `datetime.timedelta` 
+                interval can be calculated
 
         """
         return MomentOfTime.now(now=moment.pop('now', None)) \
@@ -644,7 +642,7 @@ class MomentOfTime():
     def future(cls, **moment):
         """
         `class method
-        <https://docs.python.org/3/library/functions.html?highlight=classmethod#classmethod>`_
+        <https://docs.python.org/3/library/functions.html#classmethod>`_
         that returns a moment in the future relative to the reference moment
 
         See :meth:`past` for details.
@@ -676,7 +674,21 @@ def get_base_queryset(data_source, **base_filters):
             In [2]: qs = get_base_queryset('citrus_borg.borgsite')
 
             In [3]: qs.values('site', 'enabled')
-            Out[3]: <QuerySet [{'site': 'Squamish', 'enabled': False}, {'site': 'LGH', 'enabled': False}, {'site': 'Whistler', 'enabled': False}, {'site': 'Pemberton', 'enabled': False}, {'site': 'Bella Bella', 'enabled': False}, {'site': 'Bella Coola', 'enabled': False}, {'site': 'Sechelt', 'enabled': False}, {'site': 'Powell River', 'enabled': False}, {'site': 'over the rainbow', 'enabled': True}, {'site': 'Bella Bella-wifi', 'enabled': False}, {'site': 'Bella Coola-wifi', 'enabled': False}, {'site': 'Whistler-wifi', 'enabled': False}, {'site': 'Pemberton-wifi', 'enabled': False}, {'site': 'LGH-wifi', 'enabled': False}, {'site': 'Squamish-wifi', 'enabled': False}]>
+            Out[3]: <QuerySet [{'site': 'Squamish', 'enabled': False}, """\
+            """{'site': 'LGH', 'enabled': False}, """\
+            """{'site': 'Whistler', 'enabled': False}, """\
+            """{'site': 'Pemberton', 'enabled': False}, """\
+            """{'site': 'Bella Bella', 'enabled': False}, """\
+            """{'site': 'Bella Coola', 'enabled': False}, """\
+            """{'site': 'Sechelt', 'enabled': False}, """\
+            """{'site': 'Powell River', 'enabled': False}, """\
+            """{'site': 'over the rainbow', 'enabled': True}, """\
+            """{'site': 'Bella Bella-wifi', 'enabled': False}, """\
+            """{'site': 'Bella Coola-wifi', 'enabled': False}, """\
+            """{'site': 'Whistler-wifi', 'enabled': False}, """\
+            """{'site': 'Pemberton-wifi', 'enabled': False}, """\
+            """{'site': 'LGH-wifi', 'enabled': False}, """\
+            """{'site': 'Squamish-wifi', 'enabled': False}]>
 
             In [4]: qs = get_base_queryset('citrus_borg.borgsite', enabled=True)
 
@@ -712,7 +724,7 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription, logger=LOGGER):
+def get_subscription(subscription):
     """
     :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
 
@@ -728,12 +740,12 @@ def get_subscription(subscription, logger=LOGGER):
         return Subscription.objects.get(subscription__iexact=subscription)
     except Subscription.DoesNotExist:
         error_msg = f'Subscription "{subscription}" does not exist.'
-        logger.error(error_msg)
+        LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
 
 
 def borgs_are_hailing(
-        data, subscription, logger=LOGGER, add_csv=True, **extra_context):
+        data, subscription, add_csv=True, **extra_context):
     """
     use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
     email from the :ref:`SOC Automation Server`
@@ -783,29 +795,14 @@ def borgs_are_hailing(
     """
     try:
         email_alert = Email(
-            data=data, subscription_obj=subscription, logger=logger,
-            add_csv=add_csv, **extra_context)
-    except Exception as error:  # pylint: disable=broad-except
-        logger.error('cannot initialize email object: %s', str(error))
+            data=data, subscription_obj=subscription, add_csv=add_csv,
+            **extra_context)
+    except Exception as error:
+        LOG.exception('cannot initialize email object: %s', str(error))
         raise error
 
     try:
         return email_alert.send()
     except Exception as error:
-        logger.error(str(error))
+        LOG.exception(str(error))
         raise error
-
-
-def get_or_create_soc_su():
-    user = User.objects.filter(is_superuser=True)
-    if user.exists():
-        user = user.first()
-    else:
-        user = User.objects.create(
-            username='soc_su', email='soc_su@phsa.ca',
-            password='soc_su_password', is_active=True, is_staff=True,
-            is_superuser=True)
-        user.set_password('soc_su_password')
-        user.save()
-
-    return user

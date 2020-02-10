@@ -12,8 +12,6 @@ This module contains the `Django admin` classes for the
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 15, 2019
-
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model

@@ -73,7 +73,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail_collector', '0017_add_mail_function_subscriptions'),
+        ('mail_collector', '0015_auto_20190617_1023'),
     ]
 
     operations = [

@@ -12,8 +12,6 @@ This module contains the :class:`django.db.models.Model` models for the
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 17, 2019
-
 """
 import logging
 import socket
@@ -36,7 +34,7 @@ from p_soc_auto_base.utils import (
 )
 
 
-LOGGER = logging.getLogger('ldap_probe_log')
+LOG = logging.getLogger(__name__)
 
 
 def _get_default_ldap_search_base():
@@ -242,9 +240,8 @@ class BaseADNode(BaseModel, models.Model):
         'ldap_probe.LDAPBindCred', db_index=True, blank=False, null=False,
         default=LDAPBindCred.get_default, on_delete=models.PROTECT,
         verbose_name=_('LDAP Bind Credentials'))
-    # TODO should we get rid of blank and null?
     performance_bucket = models.ForeignKey(
-        'ldap_probe.ADNodePerfBucket', db_index=True, blank=True, null=True,
+        'ldap_probe.ADNodePerfBucket', db_index=True,
         default=ADNodePerfBucket.get_default,
         on_delete=models.SET_DEFAULT, verbose_name=_(
             'Acceptable Performance Limits'))
@@ -824,7 +821,7 @@ class NonOrionADNode(BaseADNode, models.Model):
     def __str__(self):
         return self.node_dns
 
-    def remove_if_in_orion(self, logger=LOGGER):
+    def remove_if_in_orion(self):
         """
         if the domain controller host represented by this instance is also
         present on the `Orion` server, delete this instance
@@ -837,21 +834,19 @@ class NonOrionADNode(BaseADNode, models.Model):
         always use fixed IP addresses (they better be), we will use IP
         addresses to eliminate the dupes.
         """
-        ip_addresses = None
-
         try:
             ip_addresses = [
                 addr[4][0] for addr in socket.getaddrinfo(self.node_dns, 0)
             ]
-        except:  # pylint: disable=bare-except
-            logger.error('Cannot resolve %s, deleting...', self)
+        except socket.gaierror:
+            LOG.exception('Cannot resolve %s, deleting...', self)
             self.delete()
             return
 
         if OrionADNode.objects.filter(
                 node__ip_address__in=ip_addresses).exists():
 
-            logger.info(
+            LOG.info(
                 'Found %s within the Orion AD nodes, deleting...', self)
             self.delete()
 
@@ -1106,6 +1101,7 @@ class LdapProbeLog(models.Model):
         :returns: `True/False`
         :rtype: bool
         """
+        # TODO this is terribly written
         return any(
             [
                 elapsed for elapsed in
@@ -1187,10 +1183,7 @@ class LdapProbeLog(models.Model):
         else:
             ldap_probe_log_entry.ad_node = probe_data.ad_controller
 
-        try:
-            ldap_probe_log_entry.save()
-        except Exception as err:
-            raise err
+        ldap_probe_log_entry.save()
 
         return f'created {ldap_probe_log_entry}'
 

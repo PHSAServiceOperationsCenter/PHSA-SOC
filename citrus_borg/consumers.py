@@ -13,10 +13,9 @@ Consumers Module
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 9, 2019
-
 This module contains functions and classes that allow a `Django Celery
-<https://docs.celeryproject.org/en/latest/django/first-steps-with-django.html#using-celery-with-django>`__
+<https://docs.celeryproject.org/en/latest/django/first-steps-with-django"""\
+""".html#using-celery-with-django>`__
 to consume `AMQP  <https://www.amqp.org/>`__ messages emanating from arbitrary
 sources.
 
@@ -36,9 +35,14 @@ import json
 from celery.utils.log import get_task_logger
 from event_consumer import message_handler
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.dynamic_preferences_registry import get_list_preference
+from mail_collector.tasks import store_mail_data
 
-_logger = get_task_logger(__name__)  # pylint: disable=invalid-name
+from .models import AllowedEventSource
+from .tasks import store_borg_data
+
+
+LOG = get_task_logger(__name__)
 """
 :class:`logging.Logger` instance used in this module
 
@@ -73,23 +77,16 @@ def process_win_event(body):
         events as plain text
 
     """
-    from .models import AllowedEventSource
-    from .tasks import store_borg_data
-    from mail_collector.tasks import store_mail_data
-
-    _logger.debug('resistance is futile... now processing %s' % body)
+    LOG.debug('Processing %s', body)
 
     borg = json.loads(body)
-    if borg.get('source_name', None) not in list(
+    source_name = borg.get('source_name', None)
+    if source_name not in list(
             AllowedEventSource.objects.values_list('source_name', flat=True)):
-        _logger.info('%s is not a monitored event source' %
-                     borg.get('source_name', None))
+        LOG.info('%s is not a monitored event source', source_name)
         return
 
-    if borg.get('source_name', None) in \
-            get_preference('citrusborgevents__source').split(','):
+    if source_name in get_list_preference('citrusborgevents__source'):
         store_borg_data.delay(borg)
-
-    elif borg.get('source_name', None) in \
-            get_preference('exchange__source').split(','):
+    elif source_name in get_list_preference('exchange__source'):
         store_mail_data.delay(borg)

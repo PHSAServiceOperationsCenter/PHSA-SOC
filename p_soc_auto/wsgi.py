@@ -18,14 +18,13 @@ For more information on this file, see `How to deploy with WSGI
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Oct. 29, 2019
-
 """
 
 import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "p_soc_auto.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE",
+                      "p_soc_auto.settings.development")
 
 application = get_wsgi_application()

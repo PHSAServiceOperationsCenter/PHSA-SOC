@@ -13,10 +13,7 @@ used by the :ref:`Active Directory Services Monitoring Application`.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 6, 2019
-
 """
-import pprint
 from smtplib import SMTPConnectError
 
 from celery import shared_task, group
@@ -32,7 +29,7 @@ LOG = get_task_logger(__name__)
 
 
 @shared_task(queue='ldap_probe', rate_limit='5/s')
-def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
+def probe_ad_controller(ad_model=None, ad_pk=None):
     """
     probe the domain and save the AD monitoring data
 
@@ -42,9 +39,6 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
     :arg int ad_pk: the primary key of the
         :class:`django.db.modles.Model` instance that contains the
         AD controller  node information
-
-    :arg logger: the logger instance
-    :type logger: :class:`logging.Logger`
 
     :returns: the return of
         :meth:`ldap_probe.models.LdapProbeLog.create_from_probe`
@@ -65,10 +59,10 @@ def probe_ad_controller(ad_model=None, ad_pk=None, logger=LOG):
             ad_probe.ADProbe.probe(ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
-        logger.error(error)
+        LOG.exception(error)
         raise error
 
-    logger.debug(created)
+    LOG.debug(created)
 
     return created
 
@@ -106,15 +100,12 @@ def bootstrap_ad_probes(data_sources=None):
     if not isinstance(data_sources, (list, tuple)):
         data_sources = data_sources.split(',')
 
-    results = []
     for data_source in data_sources:
         pk_list = utils.get_pk_list(
             utils.get_base_queryset(data_source, enabled=True))
         group(probe_ad_controller.s(data_source, ad_pk) for ad_pk in pk_list)()
-        results.append(
-            f'Will probe {len(pk_list)} AD controllers from {data_source}.')
-
-    return '\n'.join(results)
+        LOG.info('Will probe %s AD controllers from %s.', len(pk_list),
+                 data_source)
 
 
 @shared_task(queue='data_prune')
@@ -183,13 +174,9 @@ def expire_entries(data_source=None, **age):
     count_expired = data_source.objects.filter(created_on__lte=older_than).\
         update(is_expired=True)
 
-    LOG.info('done expire_entries')
-    # pylint: disable=protected-access
-    return (
-        f'Marked {count_expired} {data_source._meta.verbose_name} rows'
-        f' created earlier than {older_than:%B %d, %Y at %H:%M} as expired.'
-    )
-    # pylint: enable=protected-access
+    LOG.info('Marked %s %s rows created earlier than %s as expired.',
+             count_expired, data_source._meta.verbose_name,
+             older_than.isoformat())
 
 
 @shared_task(queue='data_prune')
@@ -200,11 +187,11 @@ def delete_expired_entries(data_source=None):
 
     This task assumes that the :class:`model <django.db.models.Model>`
     defined by the data_source argument has a :class:`bool` attribute named
-    `is_expred`.
+    `is_expired`.
 
     The task will actually delete entries only if the user preference defined
     in :class:
-    `citrus_birg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
+    `citrus_borg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
     is so configured.
 
 
@@ -227,31 +214,30 @@ def delete_expired_entries(data_source=None):
         argument doesn't have an `is_expired` attribute
 
     """
-    LOG.info('kick delete_expired_entries')
+    LOG.debug('kick delete_expired_entries')
     if not get_preference('ldapprobe__ldap_delete_expired'):
-        return 'the application is not configured to delete expired rows'
+        LOG.info('the application is not configured to delete expired rows')
+        return
 
     if data_source is None:
         data_source = 'ldap_probe.LdapProbeLog'
 
     try:
         data_source = utils.get_model(data_source)
-    except utils.UnknownDataTargetError as error:
-        raise error
+    except utils.UnknownDataTargetError:
+        LOG.exception('Cannot delete entries for non-existent model %s',
+                      data_source)
+        raise
 
     if not hasattr(data_source, 'is_expired'):
         raise AttributeError(
-            f'There are no expired rows in the'
-            f' {data_source._meta.model_name}.'
+            f'There are no expired rows in {data_source._meta.model_name}.'
             ' It does not have an is_expired field')
 
     count_deleted = data_source.objects.filter(is_expired=True).all().delete()
 
-    LOG.info('completed delete_expired_entries')
-    return (
-        f'Deleted {count_deleted} expired rows from'
-        f' {data_source._meta.verbose_name}'
-    )
+    LOG.info('Deleted %s expired rows from %s',
+             count_deleted, data_source._meta.verbose_name)
 
 
 @shared_task(queue='data_prune')
@@ -269,11 +255,7 @@ def trim_ad_duplicates():
     :raises: :exc:`Exception` so that the exception is passed to `Celery`
     """
     for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
-        try:
-            node.remove_if_in_orion(logger=LOG)
-        except Exception as error:
-            LOG.error(error)
-            raise error
+        node.remove_if_in_orion()
 
 
 @shared_task(queue='data_prune')
@@ -295,7 +277,8 @@ def maintain_ad_orion_nodes():
     new_nodes = new_nodes_model.objects.exclude(id__in=known_node_ids)
 
     if not new_nodes.exists():
-        return 'did not find any unknown AD nodes in Orion'
+        LOG.debug('did not find any unknown AD nodes in Orion')
+        return
 
     service_user = known_nodes_model.get_or_create_user(
         username=get_preference('ldapprobe__service_user'))
@@ -308,10 +291,10 @@ def maintain_ad_orion_nodes():
         try:
             new_ad_orion_node.save()
         except Exception as error:
-            LOG.error(error)
+            LOG.exception(error)
             raise error
 
-    return f'created {new_nodes.count()} D nodes from Orion'
+    LOG.info('created %s AD nodes from Orion', new_nodes.count())
 
 
 @shared_task(queue='email', rate_limit='1/s')
@@ -429,7 +412,7 @@ def dispatch_bad_fqdn_reports():
     try:
         data = utils.get_model('ldap_probe.orionadnode').report_bad_fqdn()
     except Exception as error:
-        LOG.error(
+        LOG.exception(
             'invoking the fqdn report for orion ad nodes raises error %s',
             str(error))
         raise error
@@ -437,17 +420,14 @@ def dispatch_bad_fqdn_reports():
     subscription = utils.get_subscription(
         get_preference('ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'))
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
-            level=get_preference('commonalertargs__info_level'),)
-    except Exception as error:
-        raise error
+    info_level = get_preference('commonalertargs__info_level')
 
-    if ret:
-        return 'dispatched the fqdn report for orion ad nodes'
+    if utils.borgs_are_hailing(data=data, subscription=subscription,
+                               level=info_level):
+        LOG.info('dispatched the fqdn report for orion ad nodes')
+        return
 
-    return 'could not dispatch the fqdn report for orion ad nodes'
+    LOG.warning('could not dispatch the fqdn report for orion ad nodes')
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
@@ -467,25 +447,21 @@ def dispatch_dupe_nodes_reports():
         data = utils.get_model('ldap_probe.orionadnode').\
             report_duplicate_nodes()
     except Exception as error:
-        LOG.error(
-            'invoking the duplicate ad nodes in orion report raises error %s',
-            str(error))
+        LOG.exception('invoking the duplicate ad nodes in orion report raises'
+                      ' error %s', str(error))
         raise error
 
     subscription = utils.get_subscription(
         get_preference('ldapprobe__ldap_orion_dupes_ad_nodes_subscription'))
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
-            level=get_preference('commonalertargs__info_level'),)
-    except Exception as error:
-        raise error
+    info_level = get_preference('commonalertargs__info_level')
 
-    if ret:
-        return 'dispatched the duplicate ad nodes in orion report'
+    if utils.borgs_are_hailing(data=data, subscription=subscription,
+                               level=info_level):
+        LOG.info('dispatched the duplicate ad nodes in orion report')
+        return
 
-    return 'could not dispatch the duplicate ad nodes in orion report'
+    LOG.warning('could not dispatch the duplicate ad nodes in orion report')
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
@@ -508,24 +484,20 @@ def dispatch_non_orion_ad_nodes_report():
     try:
         data = utils.get_model('ldap_probe.nonorionadnode').report_nodes()
     except Exception as error:
-        LOG.error('invoking the non orion ad nodes report raises error %s',
-                  str(error))
+        LOG.exception('invoking the non orion ad nodes report raises error %s',
+                      str(error))
         raise error
 
     subscription = utils.get_subscription(
         get_preference('ldapprobe__ldap_non_orion_ad_nodes_subscription'))
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
-            level=get_preference('commonalertargs__warn_level'),)
-    except Exception as error:
-        raise error
+    warn_level = get_preference('commonalertargs__warn_level')
+    if utils.borgs_are_hailing(data=data, subscription=subscription,
+                               level=warn_level):
+        LOG.info('dispatched the non orion ad nodes report')
+        return
 
-    if ret:
-        return 'dispatched the non orion ad nodes report'
-
-    return 'could not dispatch the non orion ad nodes report'
+    LOG.warning('could not dispatch the non orion ad nodes report')
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
@@ -549,35 +521,32 @@ def dispatch_ldap_error_report(**time_delta_args):
 
     """
     LOG.debug(
-        'invoking ldap error report with time_delta_args = %s',
+        'invoking ldap error report with time_delta_args: %s',
         time_delta_args)
 
     try:
         now, time_delta, data = utils.get_model('ldap_probe.ldapprobelog').\
             error_report(**time_delta_args)
     except Exception as error:
-        LOG.error(
-            ('invoking ldap error report with time_delta_args = %s'
+        LOG.exception(
+            ('invoking ldap error report with time_delta_args: %s'
              ' raises error %s'), time_delta_args, error)
         raise error
 
     subscription = utils.get_subscription(
         get_preference('ldapprobe__ldap_error_report_subscription'))
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
-            level=get_preference('commonalertargs__error_level'), now=now,
-            time_delta=time_delta)
-    except Exception as error:
-        raise error
+    error_level = get_preference('commonalertargs__error_level')
 
-    if ret:
-        return ('dispatched LDAP error report with time_delta_args ='
-                f' {time_delta_args}')
+    if utils.borgs_are_hailing(data=data, subscription=subscription,
+                               level=error_level, now=now,
+                               time_delta=time_delta):
+        LOG.info('dispatched LDAP error report with time_delta_args: %s',
+                 time_delta_args)
+        return
 
-    return ('could not dispatch LDAP error report with time_delta_args ='
-            f' {time_delta_args}')
+    LOG.warning('could not dispatch LDAP error report with time_delta_args: %s',
+                time_delta_args)
 
 
 @shared_task(queue='email')
@@ -588,8 +557,8 @@ def dispatch_ldap_perf_reports(
 
     The number of performance degradation reports is determined by:
 
-    * the performance buckets that we are tracking: these are instances of the
-    :class:`ldap_probe.models.ADNodePerfBucket` model
+    * the performance buckets that we are tracking: these are instances"""\
+    """of the :class:`ldap_probe.models.ADNodePerfBucket` model
 
     * the `AD` nodes that we are tracking: known to Orion or not known to Orion
 
@@ -689,21 +658,19 @@ def dispatch_ldap_perf_reports(
     if not isinstance(buckets, (list, tuple)):
         buckets = buckets.split(',')
 
-    results = (
-        f'bootstrapped performance reports,'
-        f' time_delta_args: {time_delta_args}')
+    LOG.info('bootstrapped performance reports, time_delta_args: %s',
+             time_delta_args)
+    LOG.info('buckets: %s', buckets)
     for data_source in data_sources:
-        results = f'{results}\ndata_source: {data_source}'
+        LOG.info('data_source: %s', data_source)
         for level in levels:
-            results = f'{results}\nlevel: {level} \nbuckets: {buckets}'
+            LOG.info('level: %s', level)
             group(dispatch_ldap_perf_report.s(
                 data_source=data_source, bucket=bucket, anon=True,
                 level=level, **time_delta_args) for bucket in buckets)()
             group(dispatch_ldap_perf_report.s(
                 data_source=data_source, bucket=bucket, anon=False,
                 level=level, **time_delta_args) for bucket in buckets)()
-
-    return pprint.pformat(results)
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
@@ -752,8 +719,8 @@ def dispatch_ldap_perf_report(
         exception is allowed to propagate.
     """
     LOG.debug(
-        ('invoking ldap probes report with data_source = %s, bucket = %s,'
-         ' anon = %s, level = %s, time_delta_args = %s'),
+        ('invoking ldap probes report with data_source: %s, bucket: %s,'
+         ' anon: %s, level: %s, time_delta_args: %s'),
         data_source, bucket, anon, level, time_delta_args)
 
     try:
@@ -761,47 +728,40 @@ def dispatch_ldap_perf_report(
             utils.get_model(data_source).report_perf_degradation(
                 bucket=bucket, anon=anon, level=level, **time_delta_args
                 )
-    except Exception as err:
-        LOG.error(
-            ('invoking ldap probes report with data_source = %s,'
-             ' bucket = %s, anon = %s, level = %s, time_delta_args = %s'
+    except Exception as error:
+        LOG.exception(
+            ('invoking ldap probes report with data_source: %s,'
+             ' bucket: %s, anon: %s, level: %s, time_delta_args: %s'
              ' raises error %s'),
-            data_source, bucket, anon, level, time_delta_args, str(err))
-        raise err
+            data_source, bucket, anon, level, time_delta_args, error)
+        raise error
 
     if no_nodes:
-        return f'there are no AD network nodes for {bucket}'
+        LOG.warning('there are no AD network nodes for %s', bucket)
 
     if not get_preference('ldapprobe__ldap_perf_send_good_news') and not data:
-        return f'there is no performance degradation for {bucket}'
+        LOG.info('there is no performance degradation for %s', bucket)
+        return
 
     subscription = utils.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
     threshold = utils.show_milliseconds(threshold)
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG, level=level,
-            now=now, time_delta=time_delta, full=full, orion=orion,
-            bucket=bucket, threshold=threshold)
-    except Exception as error:
-        raise error
+    if utils.borgs_are_hailing(
+            data=data, subscription=subscription, level=level, now=now,
+            time_delta=time_delta, full=full, orion=orion, bucket=bucket,
+            threshold=threshold):
+        LOG.info('dispatched LDAP probes performance degradation report with '
+                 'data_source: %s, anon: %s, bucket: %s, level: %s, '
+                 'time_delta_args: %s',
+                 data_source, anon, bucket, level, time_delta_args)
+        return
 
-    if ret:
-        return (
-            f'dispatched LDAP probes performance degradation report'
-            f' with data_source = {data_source},'
-            f' anon = {anon}, bucket - {bucket},'
-            f' level = {level}'
-            f' time_delta_args = {time_delta_args}')
-
-    return (
-        f'could not dispatch LDAP probes performance degradation report'
-        f' with data_source = {data_source},'
-        f' anon = {anon}, bucket - {bucket},'
-        f'level = {level}'
-        f' time_delta_args = {time_delta_args}')
+    LOG.warning('could not dispatch LDAP probes performance degradation report'
+                ' with data_source: %s, anon: %s, bucket: %s, level: %s,'
+                ' time_delta_args: %s',
+                data_source, anon, bucket, level, time_delta_args)
 
 
 @shared_task(queue='email', rate_limit='1/s', max_retries=3,
@@ -840,8 +800,8 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
 
     """
     LOG.debug(
-        ('invoking ldap probes report with data_source = %s, anon = %s,'
-         ' perf_filter = %s, time_delta_args = %s'),
+        ('invoking ldap probes report with data_source: %s, anon: %s,'
+         ' perf_filter: %s, time_delta_args: %s'),
         data_source, anon, perf_filter, time_delta_args)
     try:
         now, time_delta, subscription, data, perf_filter = \
@@ -849,9 +809,9 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
             report_probe_aggregates(
                 anon=anon, perf_filter=perf_filter, **time_delta_args)
     except Exception as error:
-        LOG.error(
-            ('invoking ldap probes report with data_source = %s, anon = %s,'
-             ' perf_filter = %s, time_delta_args = %s raises error %s'),
+        LOG.exception(
+            ('invoking ldap probes report with data_source: %s, anon: %s,'
+             ' perf_filter: %s, time_delta_args: %s raises error %s'),
             data_source, anon, perf_filter, time_delta_args, str(error))
         raise error
 
@@ -859,26 +819,19 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
 
-    try:
-        ret = utils.borgs_are_hailing(
-            data=data, subscription=subscription, logger=LOG,
+    if utils.borgs_are_hailing(
+            data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'), now=now,
             time_delta=time_delta, full=full, orion=orion,
-            perf_filter=perf_filter)
-    except Exception as error:
-        raise error
+            perf_filter=perf_filter):
+        LOG.info('dispatched LDAP probes report with data_source: %s, anon: %s,'
+                 ' perf_filter: %s, time_delta_args: %s',
+                 anon, data_source, perf_filter, time_delta_args)
+        return
 
-    if ret:
-        return (
-            f'dispatched LDAP probes report with data_source = {data_source},'
-            f' anon = {anon}, perf_filter = {perf_filter},'
-            f' time_delta_args = {time_delta_args}')
-
-    return (
-        f'could not dispatch LDAP probes report with'
-        f' data_source = {data_source},'
-        f' anon = {anon}, perf_filter = {perf_filter},'
-        f' time_delta_args = {time_delta_args}')
+    LOG.warning('could not dispatch LDAP probes report with data_source: %s,'
+                ' anon: %s, perf_filter: %s, time_delta_args: %s',
+                data_source, anon, perf_filter, time_delta_args)
 
 
 def _raise_ldap_alert(subscription, level, instance_pk=None):
@@ -930,7 +883,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
 
     try:
         ret = utils.borgs_are_hailing(
-            data=data,  subscription=subscription, logger=LOG, add_csv=False,
+            data=data, subscription=subscription, add_csv=False,
             level=level, node=ldap_probe.node, errors=ldap_probe.errors,
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
@@ -944,6 +897,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
             alert_threshold=utils.show_milliseconds(
                 ldap_probe.node_perf_bucket.alert_threshold))
     except Exception as error:
+        LOG.exception(error)
         raise error
 
     if ldap_probe.failed:
@@ -956,6 +910,6 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
         return_specification = 'performance warning for'
 
     if not ret:
-        return f'could not raise {return_specification} {ldap_probe}'
+        LOG.error('could not raise %s %s', return_specification, ldap_probe)
 
-    return f'raised {return_specification} {ldap_probe}'
+    LOG.debug('raised %s %s', return_specification, ldap_probe)

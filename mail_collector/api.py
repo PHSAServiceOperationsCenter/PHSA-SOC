@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    aug. 9, 2019
-
 REST end-points for the :ref:`Mail Collector Application`
 
 """
@@ -19,7 +17,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from mail_collector.models import MailHost, ExchangeConfiguration
+from citrus_borg.models import WinlogbeatHost
+from mail_collector.models import ExchangeConfiguration
 from mail_collector.serializers import BotConfigSerializer
 
 
@@ -43,10 +42,10 @@ def get_bot_config(request, host_name):
     :rtype: :class:`rest_framework.response.Response`
 
     """
-    queryset = MailHost.objects.filter(host_name__iexact=host_name)
+    queryset = WinlogbeatHost.objects.filter(host_name__iexact=host_name)
 
     if not queryset.exists():
-        queryset = MailHost.objects.filter(host_name__iexact='host.not.exist')
+        queryset = WinlogbeatHost.objects.filter(host_name__iexact='host.not.exist')
         serializer = BotConfigSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -59,11 +58,10 @@ def get_bot_config(request, host_name):
             return Response(
                 ('Bot at %s does not have a configuration for the Exchange'
                  ' monitoring client.' % host_name),
-                status=status.HTTP_406_NOT_ACCEPTABLE)
+                status=status.HTTP_404_NOT_FOUND)
 
         bot.exchange_client_config = exchange_client_config
         bot.save()
-        queryset = MailHost.objects.filter(host_name__iexact=host_name)
 
     serializer = BotConfigSerializer(queryset, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)

@@ -49,7 +49,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0021_ldapprobelogfailed'),
+        ('ldap_probe', '0020_add_error_alert_subscription'),
     ]
 
     operations = [

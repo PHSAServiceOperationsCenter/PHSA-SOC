@@ -160,7 +160,7 @@ def add_subscriptions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0035_auto_20191219_1309'),
+        ('ldap_probe', '0031_orion_adnodes_rep_subs'),
     ]
 
     operations = [

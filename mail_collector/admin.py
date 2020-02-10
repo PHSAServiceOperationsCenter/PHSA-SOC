@@ -10,8 +10,6 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    aug. 7, 2019
-
 Admin forms for the :ref:`Mail Collector Application`
 
 """

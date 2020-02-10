@@ -569,8 +569,7 @@ class Subscription(BaseModel):
     `queryset`
 
     Note that if there are field names listed here that don't exist in the
-    :attr:`data` `queryset`.
-
+    :attr:`data` `queryset` they will not be displayed.
     """
 
     tags = models.TextField(

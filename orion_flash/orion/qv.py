@@ -12,8 +12,6 @@ queries and verbs for Orion SDK
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Feb. 22, 2019
-
 """
 ALL_CUSTOM_PROPS_QUERY = (
     'SELECT Table, Field, DataType, MaxLength, StorageMethod,'

@@ -69,7 +69,7 @@ def add_beats(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ldap_probe', '0023_add_subscriptions_ldap_summary_reports'),
+        ('ldap_probe', '0018_add_beat_for_removing_non_orion_nodes'),
     ]
 
     operations = [

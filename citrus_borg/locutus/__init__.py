@@ -13,6 +13,4 @@ library package for the citrux_borg application
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Nov. 28, 2018
-
 """

@@ -10,11 +10,11 @@
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    jun. 10, 2019
-
 Django Signals Module for the :ref:`Mail Collector Application`
 
 """
+from logging import getLogger
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -23,6 +23,9 @@ from .models import (
     MailBotLogEvent, MailBotMessage, ExchangeServer, ExchangeDatabase,
     MailBetweenDomains, MailSite,
 )
+
+LOG = getLogger(__name__)
+
 
 # pylint: disable=unused-argument
 
@@ -72,11 +75,11 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
             mail_message_identifier__exact=instance.mail_message_identifier).\
             count() == 2:
         # we don't have a quorum, go away
-        return None
+        return
 
     if instance.event.event_type not in ['receive']:
         # only received event have all the info that we need. skip others
-        return None
+        return
 
     try:
         site = MailSite.objects.get(
@@ -89,7 +92,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     if not instance.received_by:
         # the receive event is incomplete thus it failed, bail
-        return None
+        return
 
     to_domain = instance.received_by.split('@')[1]
 
@@ -115,9 +118,8 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
     verified_mail.last_updated_from_node_id = last_updated_from_node_id
     verified_mail.save()
 
-    return '{}: {}->{}, {}'.format(
-        verified_mail.site, verified_mail.from_domain,
-        verified_mail.to_domain, verified_mail.status)
+    LOG.info('%s: %s->%s, %s', verified_mail.site, verified_mail.from_domain,
+             verified_mail.to_domain, verified_mail.status)
 
 
 @receiver(post_save, sender=MailBotLogEvent)
@@ -132,11 +134,11 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     :returns: the updated :class:`mail_collector.models.ExchangeServer`
         instance
     """
-    if instance.event_status not in ['PASS']:
+    if instance.event_status != 'PASS':
         # only interested in successful events
         return None
 
-    if instance.event_type not in ['connection']:
+    if instance.event_type != 'connection':
         # and only connections in this function
         return None
 

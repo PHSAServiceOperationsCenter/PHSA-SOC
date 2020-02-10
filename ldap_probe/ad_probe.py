@@ -22,8 +22,6 @@ to a `Windows` `AD` controller.
 
 :contact:    daniel.busto@phsa.ca
 
-:updated:    Dec. 10, 2019
-
 """
 import logging
 
@@ -33,7 +31,7 @@ from ldap_probe import exceptions, models
 from p_soc_auto_base.utils import Timer, diagnose_network_problem
 
 
-LOGGER = logging.getLogger('ldap_probe_log')
+LOG = logging.getLogger(__name__)
 """default :class:`logging.Logger` instance"""
 
 
@@ -70,7 +68,7 @@ class _ADProbeElapsed():  # pylint: disable=too-few-public-methods
         """elapsed time for :meth:`ldap.LDAPObject.search_ext_s`"""
 
 
-class ADProbe():  # pylint: disable=too-many-instance-attributes
+class ADProbe:
     """
     Class that wraps around :class:`ldap.LDAPObject` methods of interest
     to us and adds timing facilities to each of them
@@ -85,7 +83,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, ad_controller=None, logger=LOGGER):
+    def __init__(self, ad_controller=None):
         """
         :class:`ADProbe` constructor
         """
@@ -104,14 +102,6 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
         If `True`, data collected by this :class:`ADProbe` instance will
         be made available for saving to the database but no other LDAP
         operations will be executed.
-        """
-
-        self.logger = logger
-        """
-        private `logging.Logger` instance
-
-        This should be provided by the caller but we do fall back to
-        the instance provided by :attr:`LOGGER` if we have to.
         """
 
         self._raise_ad_controller(ad_controller)
@@ -146,14 +136,14 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
                 f' Abandoning the AD probe...')
 
     @classmethod
-    def probe(cls, ad_controller=None, logger=LOGGER):
+    def probe(cls, ad_controller=None):
         """
         `class method
         <https://docs.python.org/3.6/library/functions.html#classmethod>`__
         that creates the :class:`ADProbe` instance and runs the `LDAP` probe
         in one shot
         """
-        probe = cls(ad_controller, logger)
+        probe = cls(ad_controller)
 
         probe.bind_and_search()
 
@@ -163,14 +153,13 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
         """
         initialize the :class:`ldap.LDAPObject`
         """
-        self.logger.debug(
-            'initialize ldap with %s', self.ad_controller.get_node())
+        LOG.debug('initialize ldap with %s', self.ad_controller.get_node())
 
         with Timer(use_duration=False) as timing:
             try:
                 self.ldap_object = ldap.initialize(
                     f'ldaps://{self.ad_controller.get_node()}')
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'LDAP Initialization error: {err}')
@@ -183,8 +172,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
         """
         set the abort flag and update the :attr:`errors` value
         """
-        self.logger.debug(
-            'aborting LDAP op for %s', self.ad_controller.get_node())
+        LOG.warning('aborting LDAP op for %s', self.ad_controller.get_node())
         self.abort = True
         self.errors += f'\nAD probe aborted. {error_message}'
 
@@ -195,11 +183,11 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
         If :meth:`ldap.LDAPObject.bind_s` fails with
         :exc:`ldap.INVALID_CREDENTIALS`, we will fall back and try an
-        anonymous bind with :meth:`bind_anonym_and_read`
+        anonymous bind with :meth:`bind_anon_and_read`
         """
-        self.logger.debug(
-            'trying bind ad search for %s with creds %s',
-            self.ad_controller.get_node(), self.ad_controller.ldap_bind_cred)
+        LOG.debug('trying bind ad search for %s with creds %s',
+                  self.ad_controller.get_node(),
+                  self.ad_controller.ldap_bind_cred)
 
         if self.abort:
             return
@@ -217,7 +205,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
                 self._fallback(err)
                 return
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}.')
                 return
@@ -241,7 +229,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
                     f' not available on the AD controller at'
                     f' {self.ad_controller.get_node()}')
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(
                     error_message=f'Extended search error: {err}')
@@ -251,7 +239,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
 
     def _fallback(self, err):
         """
-        try to fall back :meth:`bind_anonym_and_read` if
+        try to fall back :meth:`bind_anon_and_read` if
         :meth:`bind_and_search` fails
 
         When :meth:`ldap.LDAPObject.bind_s` fails because the credentials are
@@ -266,17 +254,17 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
                         f' {err.__class__.__name__}: {str(err)}.')
 
         try:
-            self.bind_anonym_and_read()
-        except:  # pylint: disable=bare-except
+            self.bind_anon_and_read()
+        except:
             self.failed = True
 
-    def bind_anonym_and_read(self):
+    def bind_anon_and_read(self):
         """
         execute an anonymous :meth:`ldap.LDAPObject.simple_bind_s` call
         and measure how long it took
         """
-        self.logger.debug('trying anonymous bind for %s',
-                          self.ad_controller.get_node())
+        LOG.debug('trying anonymous bind for %s',
+                  self.ad_controller.get_node())
         if self.abort:
             return
 
@@ -287,7 +275,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
                 self._diagnose_network(err)
                 return
 
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return
@@ -297,7 +285,7 @@ class ADProbe():  # pylint: disable=too-many-instance-attributes
         with Timer(use_duration=False) as timing:
             try:
                 self.ad_response = self.ldap_object.read_rootdse_s()
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 self.failed = True
                 self._set_abort(error_message=f'Error: {err}')
                 return

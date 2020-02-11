@@ -2,9 +2,11 @@
 from django.contrib.auth.models import User
 from django.db import migrations
 
+from p_soc_auto_base.utils import get_or_create_user
+
 
 def populate_ldap_cred_default(apps, schema_editor):
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     default_cred_dict = {
         'domain': 'VCH',
@@ -27,7 +29,7 @@ def populate_ldap_cred_default(apps, schema_editor):
 
 
 def populate_ac_orion_nodes(apps, schema_editor):
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
     ldap_bind_cred = apps.get_model(
         'ldap_probe', 'LDAPBindCred').objects.filter(is_default=True).get()
 
@@ -45,7 +47,7 @@ def populate_ac_orion_nodes(apps, schema_editor):
 
 
 def populate_ac_nodes(apps, schema_editor):
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     ldap_bind_cred = apps.get_model(
         'ldap_probe', 'LDAPBindCred').objects.filter(is_default=True).get()
@@ -103,8 +105,7 @@ def populate_ac_nodes(apps, schema_editor):
 
 
 def populate_ldap_errors(apps, schema_editor):
-
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     ldap_errors = [
         {'error_unique_identifier': '525',
@@ -169,7 +170,7 @@ def populate_ldap_errors(apps, schema_editor):
 
 
 def add_new_perf_buckets(apps, schema_editor):
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     user_dict = {'created_by_id': user.id, 'updated_by_id': user.id, }
 

@@ -275,6 +275,8 @@ class BaseADNode(BaseModel, models.Model):
 
     """
 
+    # TODO refactor implementation of class dependent methods to actually exist
+    #      in appropriate subclass
     def get_node(self):
         """
         get node network information in either `FQDN` or `IP` address format
@@ -317,7 +319,7 @@ class BaseADNode(BaseModel, models.Model):
                 to return only `enabled` nodes
         """
         if queryset is None:
-            queryset = cls.objects.filter(enabled=True)
+            queryset = cls.active
 
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             queryset = queryset.annotate(
@@ -342,7 +344,7 @@ class BaseADNode(BaseModel, models.Model):
         return queryset.values()
 
     @classmethod
-    def annotate_probe_details(cls, probes_model_name, queryset=None):
+    def annotate_probe_details(cls, probes_model_name, queryset):
         """
         annotate a :class:`queryset <django.db.models.query.QuerySet>`
         based on classes inheriting from :class:`BaseADNode` model with
@@ -373,9 +375,6 @@ class BaseADNode(BaseModel, models.Model):
             against the node
 
         """
-        if queryset is None:
-            queryset = cls.annotate_orion_url()
-
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             url_filters = '/?ad_orion_node__isnull=True&ad_node__id__exact='
         else:
@@ -462,11 +461,7 @@ class BaseADNode(BaseModel, models.Model):
             try:
                 bucket = ADNodePerfBucket.objects.get(name__iexact=bucket)
             except ADNodePerfBucket.DoesNotExist as error:
-                raise ValueError(
-                    f'{bucket} does not exist: {str(error)}')
-
-        if bucket is None:
-            raise TypeError(f'{type(bucket)} is not acceptable')
+                raise ValueError(f'{bucket} does not exist: {str(error)}')
 
         now, time_delta, subscription, queryset, perf_filter \
             = cls.report_probe_aggregates(
@@ -601,7 +596,7 @@ class BaseADNode(BaseModel, models.Model):
         """
         subscription = 'LDAP: summary report'
         if queryset is None:
-            queryset = cls.objects.filter(enabled=True)
+            queryset = cls.active
 
         if time_delta_args:
             time_delta = timezone.timedelta(**time_delta_args)
@@ -811,7 +806,7 @@ class NonOrionADNode(BaseADNode, models.Model):
               the :class:`NonOrionADNode` model
 
         """
-        return cls.objects.filter(enabled=True).order_by('node_dns')
+        return cls.active.order_by('node_dns')
 
     def __str__(self):
         return self.node_dns

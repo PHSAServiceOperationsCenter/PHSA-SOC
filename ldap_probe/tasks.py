@@ -649,8 +649,7 @@ def dispatch_ldap_perf_reports(
 
     if buckets is None:
         buckets = list(
-            apps.get_model('ldap_probe.adnodeperfbucket').
-            objects.filter(enabled=True).
+            apps.get_model('ldap_probe.adnodeperfbucket').active.
             values_list('name', flat=True)
         )
 

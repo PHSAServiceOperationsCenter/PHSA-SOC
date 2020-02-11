@@ -126,8 +126,7 @@ def get_orion_ids():
     This task will spawn a separate :func:`get_orion_id` task for each
     :class:`citrus_borg.models.WinlogbeatHost` instance that is `enabled`
     """
-    citrus_borg_pks = base_utils.get_pk_list(
-        WinlogbeatHost.objects.filter(enabled=True))
+    citrus_borg_pks = base_utils.get_pk_list(WinlogbeatHost.active)
 
     group(get_orion_id.s(pk) for pk in citrus_borg_pks)()
 
@@ -564,7 +563,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
-    sites = BorgSite.objects.filter(enabled=True)
+    sites = BorgSite.active
     if site:
         sites = sites.filter(site__iexact=site)
     if not sites.exists():
@@ -575,8 +574,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
 
     site_host_arg_list = []
     for borg_site in sites:
-        borg_names = WinlogbeatHost.objects.filter(
-            site__site__iexact=borg_site, enabled=True)
+        borg_names = WinlogbeatHost.active.filter(site__site__iexact=borg_site)
         if borg_name:
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
@@ -688,8 +686,7 @@ def email_ux_alarms(now=None, send_no_news=None, ux_alert_threshold=None,
         ux_alert_threshold = base_utils.MomentOfTime.time_delta(
             **ux_alert_threshold)
 
-    borg_names = WinlogbeatHost.objects.filter(enabled=True)\
-                 .values_list('host_name', flat=True)
+    borg_names = WinlogbeatHost.active.values_list('host_name', flat=True)
 
     group(email_ux_alarm.s(now, time_delta, send_no_news,
                            ux_alert_threshold, borg_name) for
@@ -928,7 +925,7 @@ def email_failed_login_sites_report(now=None, send_no_news=False,
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
-    borg_names = WinlogbeatHost.objects.filter(enabled=True)\
+    borg_names = WinlogbeatHost.active\
         .order_by('host_name').values_list('host_name', flat=True)
 
     group(email_failed_login_site_report.s(now, time_delta,

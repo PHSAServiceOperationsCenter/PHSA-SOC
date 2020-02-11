@@ -27,6 +27,7 @@ from logging import getLogger
 import humanfriendly
 
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -704,3 +705,15 @@ def get_subscription(subscription):
         error_msg = f'Subscription "{subscription}" does not exist.'
         LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
+
+
+def get_or_create_user(name="default"):
+    """
+    Used to supply a default user when created default objects
+
+    :arg str name: Name to use for the username. Default is "default".
+
+    :return: Default user
+    """
+    # return just the user, the created boolean is never used
+    return get_user_model().objects.get_or_create(name)[0]

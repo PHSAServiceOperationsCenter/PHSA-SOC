@@ -2,6 +2,8 @@
 from django.contrib.auth.models import User
 from django.db import migrations
 
+from p_soc_auto_base.utils import get_or_create_user
+
 
 def delete_perf_buckets(apps, schema_editor):
     perf_bucket_model = apps.get_model('ldap_probe', 'ADNodePerfBucket')
@@ -10,7 +12,7 @@ def delete_perf_buckets(apps, schema_editor):
 
 
 def add_new_perf_buckets(apps, schema_editor):
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     user_dict = {'created_by_id': user.id, 'updated_by_id': user.id, }
 

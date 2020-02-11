@@ -153,11 +153,10 @@ class BaseAdmin(admin.ModelAdmin):
             kwargs['initial'] = kwargs['queryset'].get()
 
         elif db_field.name == 'site':
-            kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
+            kwargs['queryset'] = BorgSite.active
 
         elif db_field.name == 'exchange_client_config':
-            kwargs['queryset'] = ExchangeConfiguration.objects.\
-                filter(enabled=True)
+            kwargs['queryset'] = ExchangeConfiguration.active
             kwargs['initial'] = ExchangeConfiguration.get_default()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)

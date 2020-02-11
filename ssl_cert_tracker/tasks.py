@@ -148,7 +148,7 @@ def get_ssl_for_node(orion_node):
         a list of ports to be probed
     :rtype: str
     """
-    ssl_ports = SslProbePort.objects.filter(enabled=True).all()
+    ssl_ports = SslProbePort.active.all()
 
     group(get_ssl_for_node_port.
           s(orion_node, ssl_port).
@@ -257,7 +257,7 @@ def verify_ssl_certificates():
     :returns: the number of `SSL` certificates that will be verified
     :rtype: str
     """
-    cert_node_port_list = SslCertificate.objects.filter(enabled=True).\
+    cert_node_port_list = SslCertificate.active.\
         values_list('id', 'orion_id', 'port__port')
 
     group(verify_ssl_for_node_port.s(cert_node_port_tuple) for

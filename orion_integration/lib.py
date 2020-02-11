@@ -110,7 +110,7 @@ class OrionSslNode:
             In [4]:
 
         """
-        queryset = OrionNode.objects.filter(enabled=True)
+        queryset = OrionNode.active
 
         if cerner_cst is None:
             cerner_cst = get_preference('orionprobe__cerner_cst')
@@ -122,7 +122,7 @@ class OrionSslNode:
             orion_ssl = get_preference('orionprobe__orion_ssl')
 
         if cerner_cst:
-            queryset = OrionCernerCSTNode.objects.filter(enabled=True)
+            queryset = OrionCernerCSTNode.active
 
         if servers_only:
             queryset = queryset.filter(

@@ -329,8 +329,7 @@ def report_mail_between_domains(only_fails=False, subscription=None):
 
     subscription = base_utils.get_subscription(subscription)
 
-    queryset = models.MailBetweenDomains.objects.filter(
-        enabled=True, is_expired=False)
+    queryset = models.MailBetweenDomains.active.filter(is_expired=False)
 
     if only_fails:
         queryset = queryset.filter(status__iexact='FAILED')

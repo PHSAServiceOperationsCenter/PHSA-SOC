@@ -49,7 +49,7 @@ class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
             kwargs['initial'] = kwargs['queryset'].get()
 
         elif db_field.name == 'domain_account':
-            kwargs['queryset'] = DomainAccount.objects.filter(enabled=True)
+            kwargs['queryset'] = DomainAccount.active
             kwargs['initial'] = DomainAccount.objects.filter(
                 is_default=True).get()
 
@@ -225,8 +225,7 @@ class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
             kwargs['queryset'] = MailSite.objects.all()
 
         if db_field.name == 'exchange_client_config':
-            kwargs['queryset'] = ExchangeConfiguration.objects.filter(
-                enabled=True)
+            kwargs['queryset'] = ExchangeConfiguration.active
             kwargs['initial'] = ExchangeConfiguration.objects.filter(
                 is_default=True).get()
 
@@ -477,7 +476,7 @@ class ExchangeDatabaseAdmin(ExchangeServerAdmin, admin.ModelAdmin):
         :type request:
         """
         if db_field.name == 'exchange_server':
-            kwargs['queryset'] = ExchangeServer.objects.filter(enabled=True)
+            kwargs['queryset'] = ExchangeServer.active
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

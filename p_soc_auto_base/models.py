@@ -19,7 +19,19 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# Create your models here.
+
+class EnabledManager(models.Manager):
+    """
+    Manager that only returns `active` objects.
+    """
+    def get_queryset(self):
+        """
+        override :meth:`models.Manager.get_queryset` to only return objects
+        which are enabled.
+
+        :return: all objects that are enabled.
+        """
+        return super().get_queryset().filter(enabled=True)
 
 
 class BaseModel(models.Model):
@@ -112,6 +124,21 @@ class BaseModel(models.Model):
             get_user_model().objects.create_user(username)
 
         return user.get()
+
+    objects = models.Manager()
+    """
+    Default manager.
+
+    Note first defined manager is always set as default, to ensure default is 
+    'all objects' this manager should remain defined first.
+    """
+
+    active = EnabledManager()
+    """
+    Manager that only returns objects that are currently active.
+
+    This manager should be used for most non-administrative tasks.
+    """
 
     class Meta:
         abstract = True

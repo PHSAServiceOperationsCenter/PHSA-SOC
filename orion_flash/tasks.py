@@ -15,7 +15,7 @@ celery tasks for the orion_flash app
 """
 from celery import shared_task, group  # @UnresolvedImport
 from celery.utils.log import get_task_logger  # @UnresolvedImport
-
+from django.apps import apps
 
 from ssl_cert_tracker.lib import (
     is_not_trusted, expires_in, has_expired,  # @UnresolvedImport
@@ -40,15 +40,10 @@ KNOWN_BORG_DESTINATIONS = [
 ]
 
 
-class UnknownDataSourceError(Exception):
+class UnknownDataSourceError(ValueError):
     """
     raise when we don't know where the data is supposed to come from
     """
-
-
-@shared_task(queue='orion_flash')
-def refresh_exchange_alerts():
-    raise NotImplementedError
 
 
 @shared_task(queue='orion_flash')
@@ -63,7 +58,7 @@ def purge_ssl_alerts():
     delete_info = []
     for data_source in KNOWN_SSL_DESTINATIONS:
 
-        model = base_utils.get_model(data_source)
+        model = apps.get_model(data_source)
         for alert in model.objects.values('orion_node_id', 'orion_node_port'):
             deleted = 0
             if not SslCertificate.objects.filter(
@@ -89,7 +84,7 @@ def create_or_update_orion_alert(destination, qs_rows_as_dict):
     create orion alert instances
 
     """
-    return base_utils.get_model(destination).create_or_update(qs_rows_as_dict)
+    return apps.get_model(destination).create_or_update(qs_rows_as_dict)
 
 
 @shared_task(
@@ -102,11 +97,11 @@ def refresh_ssl_alerts(destination, **kwargs):
         raise base_utils.UnknownDataTargetError(
             '%s is not known to this application' % destination)
 
-    deleted = base_utils.get_model(destination).objects.all().delete()
+    apps.get_model(destination).objects.all().delete()
 
     data_rows = get_data_for(destination, **kwargs).\
         values(*base_utils.get_queryset_values_keys(
-            base_utils.get_model(destination)))
+            apps.get_model(destination)))
 
     if not data_rows:
         return 'no data'
@@ -124,35 +119,32 @@ def refresh_ssl_alerts(destination, **kwargs):
     return msg
 
 
+# TODO refactor refresh methods into a single one
 @shared_task(
     task_serializer='pickle', result_serializer='pickle', queue='orion_flash')
 def refresh_borg_alerts(destination, **kwargs):
     """
     dispatch alert data to orion auxiliary citrix bot alert models
-
-    i know, i know, these refresh functions need to be refactored into
-    a single one. but there is an argument to be made for keeping the
-    periodic task definition simple
     """
     if destination.lower() not in KNOWN_BORG_DESTINATIONS:
         raise base_utils.UnknownDataTargetError(
             '%s is not known to this application' % destination)
 
-    deleted = base_utils.get_model(destination).objects.all().delete()
+    deleted = apps.get_model(destination).objects.all().delete()
     LOG.debug(
         'purged %s records from %s',
-        deleted, base_utils.get_model(destination)._meta.model_name)
+        deleted, apps.get_model(destination)._meta.model_name)
 
     data_rows = get_data_for(destination, **kwargs).\
         values(*base_utils.get_queryset_values_keys(
-            base_utils.get_model(destination)))
+            apps.get_model(destination)))
 
     if not data_rows:
         return 'no data'
 
-    logger.debug('retrieved %s new/updated data rows for destination %s.'
-                 ' first row sample: %s',
-                 len(data_rows), destination, data_rows[0])
+    LOG.debug('retrieved %s new/updated data rows for destination %s.'
+              ' first row sample: %s',
+              len(data_rows), destination, data_rows[0])
 
     group(create_or_update_orion_alert.s(destination, data_row).
           set(serializer='pickle')
@@ -172,7 +164,7 @@ def get_data_for(destination, **kwargs):
     exactly useful
 
     note that the lt_days default cannot be None. it doesn't make sense to
-    create alerts for certififcates that expire soon unless soon is actually
+    create alerts for certificates that expire soon unless soon is actually
     defined. for that matter lt_days default cannot be 0 for the same reason.
     it also shouldn't be 1 but in that case it will be reset to 2 in the
     queryset function

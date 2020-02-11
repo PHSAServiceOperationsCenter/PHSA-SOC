@@ -24,7 +24,7 @@ from ldap_probe.ad_probe import ADProbe
 from ldap_probe.models import LdapProbeLog
 from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url
-from ssl_cert_tracker.lib import Email
+from p_soc_auto_base.email import Email
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""

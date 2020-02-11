@@ -40,12 +40,6 @@ KNOWN_BORG_DESTINATIONS = [
 ]
 
 
-class UnknownDataSourceError(ValueError):
-    """
-    raise when we don't know where the data is supposed to come from
-    """
-
-
 @shared_task(queue='orion_flash')
 def purge_ssl_alerts():
     """
@@ -155,50 +149,36 @@ def refresh_borg_alerts(destination, **kwargs):
     return msg
 
 
-# TODO refactor to use dictionary rather than 7 return statements
 def get_data_for(destination, **kwargs):
     """
-    get the queryset that we need
+    Get the required queryset.
 
-    pass the named arguments to the functions called to return the queryset.
-    these arguments are function specific, see the appropriate function for
-    details
+    :arg str destination: The name of the alert to get data for.
 
-    note that the lt_days default cannot be None. it doesn't make sense to
-    create alerts for certificates that expire soon unless soon is actually
-    defined. for that matter lt_days default cannot be 0 for the same reason.
-    it also shouldn't be 1 but in that case it will be reset to 2 in the
-    queryset function
+    :arg kwargs: Named arguments for the function used to retrieve the data.
+        See the specific functions for details (review code for function names).
 
-    :raises: :exception:`<UnknownDataSourceError>`
+    :raises: :exception:`ValueError` If destination is not one of:
+        orion_flash.expiressoonsslalert, orion_flash.untrustedsslalert,
+        orion_flash.expiredsslalert, orion_flash.invalidsslalert,
+        orion_flash.deadcitrusbotalert, orion_flash.citrusborgloginalert,
+        orion_flash.citrusborguxalert
+
+    :raises: Errors varying by function if the arguments are passed in
+        incorrectly.
     """
-    lt_days = kwargs.get('lt_days', 2)
-    app_path = kwargs.get('app_path', 'citrus_borg')
-    model_path = kwargs.get('model_path', 'winlogevent')
-    param_name = kwargs.get('param_name', 'source_host__host_name')
-    param_lookup_name = kwargs.get('param_lookup_name', 'host_name')
+    dest_to_f = {
+        'orion_flash.expiressoonsslalert': expires_in,
+        'orion_flash.untrustedsslalert': is_not_trusted,
+        'orion_flash.expiredsslalert': has_expired,
+        'orion_flash.invalidsslalert': is_not_yet_valid,
+        'orion_flash.deadcitrusbotalert': get_dead_bots,
+        'orion_flash.citrusborgloginalert': get_failed_logons,
+        'orion_flash.citrusborguxalert': get_ux_alarms,
+    }
 
-    if destination == 'orion_flash.expiressoonsslalert':
-        return expires_in(lt_days=lt_days)
-    if destination == 'orion_flash.untrustedsslalert':
-        return is_not_trusted(**kwargs)
-    if destination == 'orion_flash.expiredsslalert':
-        return has_expired(**kwargs)
-    if destination == 'orion_flash.invalidsslalert':
-        return is_not_yet_valid(**kwargs)
-
-    if destination == 'orion_flash.deadcitrusbotalert':
-        return get_dead_bots(
-            app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name, **kwargs)
-    if destination == 'orion_flash.citrusborgloginalert':
-        return get_failed_logons(
-            app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name, **kwargs)
-    if destination == 'orion_flash.citrusborguxalert':
-        return get_ux_alarms(
-            app_path=app_path, model_path=model_path, param_name=param_name,
-            param_lookup_name=param_lookup_name, **kwargs)
-
-    raise UnknownDataSourceError(
-        'there is no known data source for destination %s' % destination)
+    try:
+        dest_to_f[destination](**kwargs)
+    except KeyError:
+        raise ValueError('there is no known data source for destination %s'
+                         % destination)

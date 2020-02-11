@@ -25,3 +25,6 @@ ALLOWED_HOSTS = ['lvmsocdev01', 'lvmsocdev03', 'lvmsocq02',
 """
 hosts that can be used to run development servers
 """
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = '5u7)@@#z0yr-$4q#enfc&20a6u6u-h1_nr^(z%fkqu3dx+y6jj'

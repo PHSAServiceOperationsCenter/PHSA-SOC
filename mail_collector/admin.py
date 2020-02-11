@@ -48,7 +48,7 @@ class MailConfigAdminBase(BaseAdmin, admin.ModelAdmin):
                 filter(username=request.user.username)
             kwargs['initial'] = kwargs['queryset'].get()
 
-        if db_field.name in ['domain_account', ]:
+        elif db_field.name == 'domain_account':
             kwargs['queryset'] = DomainAccount.objects.filter(enabled=True)
             kwargs['initial'] = DomainAccount.objects.filter(
                 is_default=True).get()
@@ -79,7 +79,7 @@ class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     show_account.short_description = _('Domain Account')
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name in ['password']:
+        if db_field.name == 'password':
             kwargs['widget'] = PasswordInput(render_value=True)
 
         return super().formfield_for_dbfield(db_field, request, **kwargs)
@@ -221,10 +221,10 @@ class MailBotAdmin(BaseAdmin, admin.ModelAdmin):
         :param request:
         :type request:
         """
-        if db_field.name in ['site', ]:
+        if db_field.name == 'site':
             kwargs['queryset'] = MailSite.objects.all()
 
-        if db_field.name in ['exchange_client_config', ]:
+        if db_field.name == 'exchange_client_config':
             kwargs['queryset'] = ExchangeConfiguration.objects.filter(
                 enabled=True)
             kwargs['initial'] = ExchangeConfiguration.objects.filter(
@@ -476,7 +476,7 @@ class ExchangeDatabaseAdmin(ExchangeServerAdmin, admin.ModelAdmin):
         :param request:
         :type request:
         """
-        if db_field.name in ['exchange_server', ]:
+        if db_field.name == 'exchange_server':
             kwargs['queryset'] = ExchangeServer.objects.filter(enabled=True)
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)

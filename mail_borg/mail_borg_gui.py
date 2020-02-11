@@ -672,13 +672,13 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 
         while not update_window_queue.empty():
             msg = update_window_queue.get_nowait()
-            if msg[0] in ['output']:
+            if msg[0] == 'output':
                 window.FindElement('output').Update(disabled=False)
                 window.FindElement('output').Update(msg[1], append=True)
                 window.FindElement('output').Update(disabled=True)
                 window.FindElement('status').Update('mail check in progress')
 
-            if msg[0] in ['abort']:
+            elif msg[0] == 'abort':
                 window.FindElement('output').Update(disabled=False)
                 window.FindElement('output').Update(
                     '\nmail check aborted\n', append=True)
@@ -687,7 +687,7 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
                     'mail check aborted. please verify the configuration')
                 window.FindElement('autorun').Update(value=False)
 
-            if msg[0] in ['control']:
+            elif msg[0] == 'control':
                 window.FindElement('output').Update(disabled=False)
                 window.FindElement('output').Update('\nmail check complete\n',
                                                     append=True)

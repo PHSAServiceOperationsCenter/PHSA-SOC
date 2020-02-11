@@ -155,13 +155,14 @@ def refresh_borg_alerts(destination, **kwargs):
     return msg
 
 
+# TODO refactor to use dictionary rather than 7 return statements
 def get_data_for(destination, **kwargs):
     """
     get the queryset that we need
 
     pass the named arguments to the functions called to return the queryset.
-    these arguments are function specific and documenting them here is not
-    exactly useful
+    these arguments are function specific, see the appropriate function for
+    details
 
     note that the lt_days default cannot be None. it doesn't make sense to
     create alerts for certificates that expire soon unless soon is actually
@@ -177,24 +178,24 @@ def get_data_for(destination, **kwargs):
     param_name = kwargs.get('param_name', 'source_host__host_name')
     param_lookup_name = kwargs.get('param_lookup_name', 'host_name')
 
-    if destination in ['orion_flash.expiressoonsslalert']:
+    if destination == 'orion_flash.expiressoonsslalert':
         return expires_in(lt_days=lt_days)
-    if destination in ['orion_flash.untrustedsslalert']:
+    if destination == 'orion_flash.untrustedsslalert':
         return is_not_trusted(**kwargs)
-    if destination in ['orion_flash.expiredsslalert']:
+    if destination == 'orion_flash.expiredsslalert':
         return has_expired(**kwargs)
-    if destination in ['orion_flash.invalidsslalert']:
+    if destination == 'orion_flash.invalidsslalert':
         return is_not_yet_valid(**kwargs)
 
-    if destination in ['orion_flash.deadcitrusbotalert']:
+    if destination == 'orion_flash.deadcitrusbotalert':
         return get_dead_bots(
             app_path=app_path, model_path=model_path, param_name=param_name,
             param_lookup_name=param_lookup_name, **kwargs)
-    if destination in ['orion_flash.citrusborgloginalert']:
+    if destination == 'orion_flash.citrusborgloginalert':
         return get_failed_logons(
             app_path=app_path, model_path=model_path, param_name=param_name,
             param_lookup_name=param_lookup_name, **kwargs)
-    if destination in ['orion_flash.citrusborguxalert']:
+    if destination == 'orion_flash.citrusborguxalert':
         return get_ux_alarms(
             app_path=app_path, model_path=model_path, param_name=param_name,
             param_lookup_name=param_lookup_name, **kwargs)

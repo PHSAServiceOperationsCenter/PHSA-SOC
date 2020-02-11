@@ -296,7 +296,7 @@ def load_config(current_base_config=None):
         # automation server is not aware of this bot. in that case a
         # default configuration is downloaded with a bogus host name
         # and then the real host name is injected into the configuration
-        if config['host_name'] in ['host.not.exist']:
+        if config['host_name'] == 'host.not.exist':
             config['host_name'] = socket.gethostname()
 
         if not config['site']:

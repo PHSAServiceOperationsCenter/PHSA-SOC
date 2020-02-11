@@ -48,13 +48,12 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
                 filter(username=request.user.username)
             kwargs['initial'] = kwargs['queryset'].get()
 
-        if db_field.name in ['issuer', ]:
+        elif db_field.name == 'issuer':
             kwargs['queryset'] = SslCertificateIssuer.objects.filter(
                 enabled=True)
 
-        if db_field.name in ['port', ]:
-            kwargs['queryset'] = SslProbePort.objects.filter(
-                enabled=True)
+        elif db_field.name == 'port':
+            kwargs['queryset'] = SslProbePort.objects.filter(enabled=True)
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

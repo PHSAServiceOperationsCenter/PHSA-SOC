@@ -46,10 +46,10 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
                 filter(username=request.user.username)
             kwargs['initial'] = kwargs['queryset'].get()
 
-        if db_field.name in ['site', ]:
+        elif db_field.name == 'site':
             kwargs['queryset'] = BorgSite.objects.filter(enabled=True)
 
-        if db_field.name in ['exchange_client_config', ]:
+        elif db_field.name == 'exchange_client_config':
             kwargs['queryset'] = ExchangeConfiguration.objects.\
                 filter(enabled=True)
             kwargs['initial'] = ExchangeConfiguration.get_default()

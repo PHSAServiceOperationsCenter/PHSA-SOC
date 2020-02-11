@@ -187,8 +187,8 @@ def get_ssl_base_queryset(app_label, model_name, url_annotate=True,
     if url_annotate:
         queryset = utils.url_annotate(queryset)
     if issuer_url_annotate \
-            and app_label in ['ssl_cert_tracker'] \
-            and model_name in ['sslcertificate']:
+            and app_label == 'ssl_cert_tracker' \
+            and model_name == 'sslcertificate':
         queryset = queryset.\
             annotate(url_issuer_id=Cast('issuer__id', TextField())).\
             annotate(url_issuer=Concat(

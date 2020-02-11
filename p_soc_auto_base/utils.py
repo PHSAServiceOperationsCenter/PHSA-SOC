@@ -730,9 +730,6 @@ def get_subscription(subscription):
 
     :arg str subscription: the subscription value
 
-    :arg logger: the logger used to record log messages
-    :type logger: :class:`logging.logger`
-
     :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't \
     exist.
     """

@@ -335,9 +335,6 @@ def process_borg_message(message=None):
 
     :arg dict message: the event message
 
-    :arg logger: the logging object
-    :type logger: :class:`logging.Logger`
-
     :returns: a :func:`collections.namedtuple` object representing the
         `ControlUp` event
 

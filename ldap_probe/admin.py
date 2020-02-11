@@ -37,16 +37,16 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         provide specialized drop-down values for 'ldap_bind_cred`,
         `ad_orion_node`, and `ad_node` `ForeignKey` fields.
         """
-        if db_field.name in ['ldap_bind_cred', ]:
+        if db_field.name == 'ldap_bind_cred':
             kwargs['queryset'] = models.LDAPBindCred.objects.filter(
                 enabled=True)
             kwargs['initial'] = models.LDAPBindCred.get_default()
 
-        if db_field.name in ['ad_orion_node', ]:
+        elif db_field.name == 'ad_orion_node':
             kwargs['queryset'] = models.OrionADNode.objects.filter(
                 enabled=True)
 
-        if db_field.name in ['ad_node', ]:
+        elif db_field.name == 'ad_node':
             kwargs['queryset'] = models.NonOrionADNode.objects.filter(
                 enabled=True)
 
@@ -258,7 +258,7 @@ class LDAPBindCredAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
     show_account.short_description = _('Domain Account')
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name in ['password']:
+        if db_field.name == 'password':
             kwargs['widget'] = PasswordInput(render_value=True)
 
         return super().formfield_for_dbfield(db_field, request, **kwargs)

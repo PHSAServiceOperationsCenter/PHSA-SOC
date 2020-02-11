@@ -251,40 +251,6 @@ def get_uuid():
     return uuid.uuid4()
 
 
-def get_model(destination):
-    """
-    get a :class:`django.db.models.Model` object
-
-    This function takes a :class:`str` argument and returns the matching
-    :class:`django.db.models.Model` model if possible. We use this function
-    because :class:`django.db.models.Model` objects cannot be ``JSON``
-    serialized when `calling Celery tasks
-    <https://docs.celeryproject.org/en/latest/userguide/calling.html#serializers>`_.
-    Using this function, the workaround is
-
-    .. code-block:: python
-
-        from p_soc_auto_base.utils import get_model
-
-        @shared_task
-        def a_task(model_name_as_string):
-            my_django_model = get_model(model_name_as_string)
-
-            return do_something_with(my_django_model)
-
-    :arg str destination: the 'app_name.model_name' string for a `model`
-
-    :returns: the matching :class:`django.db.models.Model` model object
-
-    :raises:
-
-        :exc:`UnknownDataTargetError` if there is no matching model
-        registered on the server
-
-    """
-    return apps.get_model(*destination.split('.'))
-
-
 def get_queryset_values_keys(model):
     """
     A :class:`Django queryset <django.db.models.query.QuerySet>` can have

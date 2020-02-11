@@ -30,9 +30,6 @@ from p_soc_auto_base.models import BaseModel
 from .lib import expires_in, has_expired, is_not_yet_valid
 
 
-# pylint: disable=too-few-public-methods, no-self-use
-
-
 class ExpiresIn(models.Manager):
     """
     `Custom manager
@@ -85,8 +82,6 @@ class NotYetValid(models.Manager):
         in the `Django` docs.
         """
         return is_not_yet_valid()
-
-# pylint: enable=too-few-public-methods, no-self-use
 
 
 class SslCertificateBase(BaseModel, models.Model):

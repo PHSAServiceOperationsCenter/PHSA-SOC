@@ -38,7 +38,6 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from ssl_cert_tracker.models import Subscription
-from ssl_cert_tracker.lib import Email
 
 LOG = getLogger(__name__)
 
@@ -630,7 +629,7 @@ class MomentOfTime:
                 If this key is not present, the method expects other keys
                 as per
                 `<https://docs.python.org/3/library/datetime.html"""\
-                """#datetime.timedelta>`__ so that a `datetime.timedelta` 
+                """#datetime.timedelta>`__ so that a `datetime.timedelta`
                 interval can be calculated
 
         """
@@ -739,67 +738,3 @@ def get_subscription(subscription):
         error_msg = f'Subscription "{subscription}" does not exist.'
         LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
-
-
-def borgs_are_hailing(
-        data, subscription, add_csv=True, **extra_context):
-    """
-    use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
-    email from the :ref:`SOC Automation Server`
-
-    :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
-
-    :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance that will be used
-        for rendering and addressing the email
-
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain a descriptor for the `queryset` fields that
-        will be rendered in the email.
-
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain the name and location of the template that
-        will be used to render the email.
-
-    :arg bool add_csv: attach a csv file with the contents of the `data`
-        argument to the email; default is `True`
-
-    :arg LOGGER: a logging handle
-    :type LOGGER: :class:`logging.Logger`
-
-    :arg dict extra_context: optional arguments with additional data to be
-        rendered in the email
-
-        .. note::
-
-            Do not use `data`, `subscription`, `logger`, `add_csv`, or
-            `extra_content` as names for email data elements as they will
-            be interpreted as other arguments of this function (causing
-            unexpected behaviour) or cause an exception.
-
-    :raises: :exc:`Exception` if the email cannot be rendered or if the email
-        cannot be sent
-
-        We are using the generic :class:`exceptions <Exception>` because this
-        function is almost always invoked from a `Celery task
-        <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
-        `Celery` will do all the error handling work if needed.
-
-        .. todo::
-
-            We need a custom error for rendering the email and an SMTP related
-            error for sending the email.
-    """
-    try:
-        email_alert = Email(
-            data=data, subscription_obj=subscription, add_csv=add_csv,
-            **extra_context)
-    except Exception as error:
-        LOG.exception('cannot initialize email object: %s', str(error))
-        raise error
-
-    try:
-        return email_alert.send()
-    except Exception as error:
-        LOG.exception(str(error))
-        raise error

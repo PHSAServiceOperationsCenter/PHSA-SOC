@@ -24,6 +24,7 @@ from ldap_probe.ad_probe import ADProbe
 from ldap_probe.models import LdapProbeLog
 from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url
+from ssl_cert_tracker.lib import Email
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
@@ -421,7 +422,7 @@ def dispatch_bad_fqdn_reports():
 
     info_level = get_preference('commonalertargs__info_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
+    if Email.send_email(data=data, subscription=subscription,
                                level=info_level):
         LOG.info('dispatched the fqdn report for orion ad nodes')
         return
@@ -455,7 +456,7 @@ def dispatch_dupe_nodes_reports():
 
     info_level = get_preference('commonalertargs__info_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
+    if Email.send_email(data=data, subscription=subscription,
                                level=info_level):
         LOG.info('dispatched the duplicate ad nodes in orion report')
         return
@@ -491,7 +492,7 @@ def dispatch_non_orion_ad_nodes_report():
         get_preference('ldapprobe__ldap_non_orion_ad_nodes_subscription'))
 
     warn_level = get_preference('commonalertargs__warn_level')
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
+    if Email.send_email(data=data, subscription=subscription,
                                level=warn_level):
         LOG.info('dispatched the non orion ad nodes report')
         return
@@ -537,7 +538,7 @@ def dispatch_ldap_error_report(**time_delta_args):
 
     error_level = get_preference('commonalertargs__error_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
+    if Email.send_email(data=data, subscription=subscription,
                                level=error_level, now=now,
                                time_delta=time_delta):
         LOG.info('dispatched LDAP error report with time_delta_args: %s',
@@ -747,7 +748,7 @@ def dispatch_ldap_perf_report(
     orion = 'non orion' not in subscription.subscription.lower()
     threshold = utils.show_milliseconds(threshold)
 
-    if utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, level=level, now=now,
             time_delta=time_delta, full=full, orion=orion, bucket=bucket,
             threshold=threshold):
@@ -818,7 +819,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
 
-    if utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'), now=now,
             time_delta=time_delta, full=full, orion=orion,
@@ -877,7 +878,7 @@ def _raise_ldap_alert(subscription, level, instance_pk):
         }
 
     try:
-        ret = utils.borgs_are_hailing(
+        ret = Email.send_email(
             data=data, subscription=subscription, add_csv=False,
             level=level, node=ldap_probe.node, errors=ldap_probe.errors,
             created_on=ldap_probe.created_on,

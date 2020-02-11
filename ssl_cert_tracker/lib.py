@@ -395,7 +395,7 @@ class NoSubscriptionEmailError(Exception):
     """
 
 
-class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+class Email:
     """
     Subclass of :class:`django.core.mail.EmailMultiAlternatives`; (see `Sending
     alternative content types
@@ -421,6 +421,126 @@ class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attrib
     See :ref:`Email template sample` for an example of a `Django template`
     to be plugged into an instance of this class
     """
+    def __init__(self, data, subscription_obj, add_csv=True,
+                 **extra_context):
+        """
+        :arg data: a :class:`django.db.models.query.QuerySet`
+
+        :arg subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
+            instance
+
+            Will contain all the metadata required to build and send the email
+            message. This includes template information and pure SMTP data
+            (like email addresses and stuff).
+
+        :arg bool add_csv: generate the csv file from :attr:`Email.data` and
+            attach it to the email message?
+
+        :arg dict extra_context: additional data required by the
+            `Django template
+            <https://docs.djangoproject.com/en/2.2/topics/templates/#module-django.template>`_
+            for rendering the email message
+
+            If this argument is present, the {key: value,} pairs therein will
+            be appended to the :attr:`Email.context`
+            :class:`dictionary <dict>`.
+
+        :raises: :exc:`Exception` if the email message cannot be prepared
+        """
+
+        self.add_csv = add_csv
+        """
+        :class:`bool` attribute controlling whether a comma-separated file is
+        to be created and attached to the email message
+        """
+
+        self.csv_file = None
+        """
+        :class:`str` attribute for the name of the comma-separated file
+
+        This attribute is set in the :meth:`prepare_csv`.
+        """
+
+        self.data = data
+        """
+        :class:`django.db.models.query.QuerySet` with the data to be rendered
+        in the email message body
+        """
+
+        self.subscription_obj = subscription_obj
+        """
+        an :class:`ssl_cert_tracker.models.Subscriptions` instance with the
+        details required for rendering and sending the email message
+        """
+
+        self.headers = self._get_headers_with_titles()
+        """
+        a :class:`dictionary <dict>` that maps human readable column names
+        (headers) to the fields in the :attr:`data`
+        :class:`django.db.models.query.QuerySet`
+        """
+
+        self._prepare_csv()
+
+        self.prepared_data = [
+            {key: data_item[key] for key in self.headers.keys()}
+            for data_item in data.values(*self.headers.keys())
+        ]
+        """
+        :class:`list` of :class:`dictionaries <dict>` where each item
+        represents a row in the :attr:`Email.data`
+        :class:`django.db.models.query.QuerySet` with the human readable
+        format of the field name (as represented by the values in the
+        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and
+        the contents of the field as values
+
+        For example, if the `queryset` has one entry with
+        dog_name: 'jimmy', the corresponding entry in
+        :attr:`Email.headers` is {'dog_name': 'Dog name'}, and the item
+        in this list will end up as {'Dog name': 'jimmy'}.
+        """
+
+        self.context = dict(
+            report_date_time=timezone.now(),
+            headers=self.headers, data=self.prepared_data,
+            source_host_name='http://%s:%s' % (socket.getfqdn(),
+                                               settings.SERVER_PORT),
+            source_host=socket.getfqdn(),
+            tags=self._set_tags(),
+            email_subject=self.subscription_obj.email_subject,
+            alternate_email_subject=self.subscription_obj.
+            alternate_email_subject,
+            subscription_name=subscription_obj.subscription,
+            subscription_id=subscription_obj.pk)
+        """
+        :class:`dictionary <dict>` used to `render the context
+        <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_
+        for the email message
+        """
+
+        if extra_context:
+            self.context.update(**extra_context)
+
+        self._debug_init()
+
+        try:
+            self.email = get_templated_mail(
+                template_name=subscription_obj.template_name,
+                template_dir=subscription_obj.template_dir,
+                template_prefix=subscription_obj.template_prefix,
+                from_email=get_preference('emailprefs__from_email')
+                if settings.DEBUG else subscription_obj.from_email,
+                to=get_list_preference('emailprefs__to_emails')
+                if settings.DEBUG
+                else subscription_obj.emails_list.split(','),
+                context=self.context, create_link=True)
+            LOG.debug('email object is ready')
+        except Exception as err:
+            LOG.exception(str(err))
+            raise err
+
+        if self.csv_file:
+            self.email.attach_file(self.csv_file)
 
     def _debug_init(self):
         """
@@ -496,7 +616,21 @@ class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attrib
 
         return headers
 
-    def prepare_csv(self):
+    def _send(self):
+        try:
+            sent = self.email.send()
+        except SMTPConnectError as err:
+            LOG.exception(str(err))
+            raise err
+        except Exception as err:
+            LOG.exception(str(err))
+            raise err
+
+        LOG.debug('sent email with subject %s', self.email.subject)
+
+        return sent
+
+    def _prepare_csv(self):
         """
         generate a comma-separated file with the values in the
         :attr:`Email.data` if required via the :attr:`Email.add_csv` attribute
@@ -507,7 +641,7 @@ class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attrib
 
         The file will be named by linking the value of the :attr:`email subject
         <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
-        :attr:`Email.subscription_obj` instance member with a time stamp.
+        :attr:`Email.subscription` instance member with a time stamp.
         The file will be saved under the path described by
         :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
         """
@@ -536,148 +670,11 @@ class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attrib
 
         self.csv_file = filename
 
-    def __init__(self, data=None, subscription_obj=None, add_csv=True,
-                 **extra_context):
-        """
-        :arg data: a :class:`django.db.models.query.QuerySet`
-
-        :arg subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
-            instance
-
-            Will contain all the metadata required to build and send the email
-            message. This includes template information and pure SMTP data
-            (like email addresses and stuff).
-
-        :arg logger: a :class:`logging.logger` object
-
-            If one is not provided, the constructor will create one
-
-        :arg bool add_csv: generate the csv file from :attr:`Email.data` and
-            attach it to the email message?
-
-        :arg dict extra_context: additional data required by the
-            `Django template
-            <https://docs.djangoproject.com/en/2.2/topics/templates/#module-django.template>`_
-            for rendering the email message
-
-            If this argument is present, the {key: value,} pairs therein will
-            be appended to the :attr:`Email.context`
-            :class:`dictionary <dict>`.
-
-        :raises: :exc:`Exception` if the email message cannot be prepared
-        """
-
-        self.add_csv = add_csv
-        """
-        :class:`bool` attribute controlling whether a comma-separated file is
-        to be created and attached to the email message
-        """
-
-        self.csv_file = None
-        """
-        :class:`str` attribute for the name of the comma-separated file
-
-        This attribute is set in the :meth:`prepare_csv`.
-        """
-
-        if data is None:
-            LOG.error('no data was provided for the email')
-            raise NoDataEmailError('no data was provided for the email')
-
-        self.data = data
-        """
-        :class:`django.db.models.query.QuerySet` with the data to be rendered
-        in the email message body
-        """
-        if subscription_obj is None:
-            LOG.error('no subscription was provided for the email')
-            raise NoSubscriptionEmailError(
-                'no subscription was provided for the email')
-
-        self.subscription_obj = subscription_obj
-        """
-        an :class:`ssl_cert_tracker.models.Subscriptions` instance with the
-        details required for rendering and sending the email message
-        """
-
-        self.headers = self._get_headers_with_titles()
-        """
-        a :class:`dictionary <dict>` that maps human readable column names
-        (headers) to the fields in the :attr:`data`
-        :class:`django.db.models.query.QuerySet`
-        """
-
-        self.prepare_csv()
-
-        self.prepared_data = []
-        """
-        :class:`list` of :class:`dictionaries <dict>` where each item
-        represents a row in the :attr:`Email.data`
-        :class:`django.db.models.query.QuerySet` with the human readable
-        format of the field name (as represented by the values in the
-        :attr:`Email.headers` :class:`dictionary <dict>`) as the key and
-        the contents of the field as values
-
-        For example, if the `queryset` has one entry with
-        dog_name: 'jimmy', the corresponding entry in
-        :attr:`Email.headers` is {'dog_name': 'Dog name'}, and the item
-        in this list will end up as {'Dog name': 'jimmy'}.
-        """
-
-        # pylint: disable=consider-iterating-dictionary
-        for data_item in data.values(*self.headers.keys()):
-            self.prepared_data.append(
-                {key: data_item[key] for key in self.headers.keys()})
-
-        # pylint: enable=consider-iterating-dictionary
-
-        self.context = dict(
-            report_date_time=timezone.now(),
-            headers=self.headers, data=self.prepared_data,
-            source_host_name='http://%s:%s' % (socket.getfqdn(),
-                                               settings.SERVER_PORT),
-            source_host=socket.getfqdn(),
-            tags=self.set_tags(),
-            email_subject=self.subscription_obj.email_subject,
-            alternate_email_subject=self.subscription_obj.
-            alternate_email_subject,
-            subscription_name=subscription_obj.subscription,
-            subscription_id=subscription_obj.pk)
-        """
-        :class:`dictionary <dict>` used to `render the context
-        <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a-context>`_
-        for the email message
-        """
-
-        if extra_context:
-            self.context.update(**extra_context)
-
-        self._debug_init()
-
-        try:
-            self.email = get_templated_mail(
-                template_name=subscription_obj.template_name,
-                template_dir=subscription_obj.template_dir,
-                template_prefix=subscription_obj.template_prefix,
-                from_email=get_preference('emailprefs__from_email')
-                if settings.DEBUG else subscription_obj.from_email,
-                to=get_list_preference('emailprefs__to_emails')
-                if settings.DEBUG
-                else subscription_obj.emails_list.split(','),
-                context=self.context, create_link=True)
-            LOG.debug('email object is ready')
-        except Exception as err:
-            LOG.exception(str(err))
-            raise err
-
-        if self.csv_file:
-            self.email.attach_file(self.csv_file)
-
-    def set_tags(self):
+    def _set_tags(self):
         """
         format the contents of the
         :attr:`ssl_cert_tracker.models.Subscription.tags` of the
-        :attr:`Email.subscription_obj` to something like "[TAG1][TAG2]etc".
+        :attr:`Email.subscription` to something like "[TAG1][TAG2]etc".
 
         By convention, the :attr:`ssl_cert_tracker.models.Subscription.tags`
         value is a list of comma separated words or phrases. This method
@@ -703,30 +700,30 @@ class Email:  # pylint: disable=too-few-public-methods, too-many-instance-attrib
 
         return tags
 
-    def send(self):
+    @classmethod
+    def send_email(cls, data, subscription, add_csv=True, **extra_context):
         """
-        send the email message
+        send an email message
 
-        wrapper around :meth:`django.core.mail.EmailMultiAlternatives.send`
+        :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
+
+        :arg str subscription: the key for retrieving the :class:`Subscription
+            <ssl_cert_tracker.models.Subscription>` instance that will be used
+            for rendering and addressing the email
+
+        :arg bool add_csv: attach a csv file with the contents of the `data`
+            argument to the email; default is `True`
+
+        :arg dict extra_context: optional arguments with additional data to be
+            rendered in the email
+
+            .. note::
+
+                Do not use `data`, `subscription`, `logger`, `add_csv`, or
+                `extra_content` as names for email data elements as they will
+                be interpreted as other arguments of this function (causing
+                unexpected behaviour) or cause an exception.
 
         :returns: '1' if the email message was sent, and '0' if not
-
-        :raises:
-
-            :exc:`smtplib.SMTPConnectError` if an `SMTP` error is thrown
-
-            :exc:`Exception` if any other errors are thrown
-
         """
-        try:
-            sent = self.email.send()
-        except SMTPConnectError as err:
-            LOG.exception(str(err))
-            raise err
-        except Exception as err:
-            LOG.exception(str(err))
-            raise err
-
-        LOG.debug('sent email with subject %s', self.email.subject)
-
-        return sent
+        cls(data, subscription, add_csv, **extra_context)._send()

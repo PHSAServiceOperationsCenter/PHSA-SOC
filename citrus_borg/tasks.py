@@ -36,6 +36,8 @@ from citrus_borg.models import (
 
 from p_soc_auto_base import utils as base_utils
 
+from ssl_cert_tracker.lib import Email
+
 
 LOG = get_task_logger(__name__)
 
@@ -266,7 +268,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
                  timezone.localtime(now - time_delta).isoformat())
         return None
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription('Dead Citrix monitoring bots'),
         time_delta=time_delta)
@@ -307,7 +309,7 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix monitoring bots'),
@@ -358,7 +360,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix client sites'),
@@ -399,7 +401,7 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix client sites'),
@@ -450,7 +452,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Missing Citrix farm hosts'),
@@ -487,7 +489,7 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Missing Citrix farm hosts'),
@@ -520,7 +522,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=get_logins_by_event_state_borg_hour(
             now=base_utils.MomentOfTime.now(now), time_delta=time_delta),
         subscription=base_utils.get_subscription(
@@ -617,7 +619,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
     <../../../admin/ssl_cert_tracker/subscription/"""\
     """?q=Citrix+logon+event+and+ux+summary>`__ to render the emails being sent.
     """
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=login_states_by_site_host_hour(
             now=now, time_delta=time_delta,
             site=site_host_args[0], host_name=site_host_args[1]),
@@ -725,7 +727,7 @@ def email_ux_alarm(
                  timezone.localtime(value=now).isoformat(),
                  timezone.localtime(now - time_delta).isoformat())
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data, subscription=base_utils.get_subscription('Citrix UX Alert'),
         time_delta=time_delta, ux_alert_threshold=ux_alert_threshold,
         host_name=host, site=site)
@@ -772,7 +774,7 @@ def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data, subscription=base_utils.get_subscription(
             'Citrix logon alert'),
         time_delta=time_delta,
@@ -809,7 +811,7 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed Logins Report'),
@@ -876,7 +878,7 @@ def email_failed_ux_report(now=None, send_no_news=False,
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed UX Event Components Report'),
@@ -969,7 +971,7 @@ def email_failed_login_site_report(now, reporting_period, send_no_news, host):
                  timezone.localtime(now - reporting_period).isoformat())
         return 0  # Did not send email.
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed Logins per Site Report'),

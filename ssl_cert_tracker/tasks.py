@@ -77,7 +77,7 @@ def email_ssl_report():
     the recommended patterns for basic `Celery` tasks.
 
     """
-    return _email_report(
+    return Email.send_email(
         data=expires_in(),
         subscription_obj=Subscription.objects.get(
             subscription='SSl Report'))
@@ -96,7 +96,7 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
         days than the number provided by this argument.
 
     """
-    return _email_report(
+    return Email.send_email(
         data=expires_in(lt_days=lt_days),
         subscription_obj=Subscription.objects.get(subscription='SSl Report'),
         expires_in_less_than=lt_days)
@@ -110,7 +110,7 @@ def email_expired_ssl_report():
     task to send reports about expired `SSL` by email
 
     """
-    return _email_report(
+    return Email.send_email(
         data=has_expired(),
         subscription_obj=Subscription.objects.get(
             subscription='Expired SSl Report'), expired=True)
@@ -125,38 +125,10 @@ def email_invalid_ssl_report():
     email
 
     """
-    return _email_report(
+    return Email.send_email(
         data=is_not_yet_valid(),
         subscription_obj=Subscription.objects.get(
             subscription='Invalid SSl Report'), invalid=True)
-
-
-def _email_report(
-        data=None, subscription_obj=None, **extra_context):
-    """
-    function that wraps around the functionality provided by the :class:`Email
-    <ssl_cert_tracker.lib.Email>` class
-
-    This function will create an :class:`ssl_cert_tracker.lib.Email` instance
-    and invoke the :meth:`ssl_cert_tracker.lib.Email.send` on it
-
-    :arg data: the data to be placed in the email
-    :type data: :class:`django.db.models.query.QuerySet`
-
-    :arg subscription_obj: the subscription data
-    :type subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
-
-    :arg logger: the :class:`logging.Logger` object used by this function
-    :type logger: :class:`logging.Logger`
-
-    :arg dict extra_context: optional arguments that will provide extra context
-        for rendering the email
-
-    """
-    email_report = Email(
-        data=data, subscription_obj=subscription_obj, **extra_context)
-
-    return email_report.send()
 
 
 @shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')

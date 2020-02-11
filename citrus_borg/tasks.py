@@ -36,7 +36,7 @@ from citrus_borg.models import (
 
 from p_soc_auto_base import utils as base_utils
 
-from ssl_cert_tracker.lib import Email
+from p_soc_auto_base.email import Email
 
 
 LOG = get_task_logger(__name__)

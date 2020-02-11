@@ -1097,21 +1097,20 @@ class LdapProbeLog(models.Model):
 
         :arg probe_data: the data returned by the LDAP probe
         :type probe_data: :class:`ldap_probe.ad_probe.ADProbe`
-
-        :returns: the new :class:`LdapProbeLog` instance
         """
+        # Pop the ad_controller, because it is not a field of this model
+        ad_controller = probe_data.pop('ad_controller')
         ldap_probe_log_entry = cls(**probe_data)
 
-        if isinstance(probe_data.ad_controller, OrionADNode):
-            ldap_probe_log_entry.ad_orion_node = probe_data.ad_controller
+        # Set the appropriate field (orion or non) to the ad_controller
+        if isinstance(ad_controller, OrionADNode):
+            ldap_probe_log_entry.ad_orion_node = ad_controller
         else:
-            ldap_probe_log_entry.ad_node = probe_data.ad_controller
+            ldap_probe_log_entry.ad_node = ad_controller
 
         ldap_probe_log_entry.save()
 
         LOG.debug(f'created {ldap_probe_log_entry}')
-
-        return ldap_probe_log_entry
 
     class Meta:
         app_label = 'ldap_probe'

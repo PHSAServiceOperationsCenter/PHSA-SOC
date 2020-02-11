@@ -85,7 +85,6 @@ class ADProbe:
 
         self.get_ldap_object()
 
-
     @classmethod
     def probe(cls, ad_controller):
         """
@@ -100,6 +99,7 @@ class ADProbe:
 
         data = dict(probe.elapsed)
 
+        data['ad_controller'] = ad_controller
         data['ad_response'] = probe.ad_response
         data['errors'] = probe.errors
         data['failed'] = probe.failed

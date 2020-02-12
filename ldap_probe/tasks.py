@@ -283,7 +283,7 @@ def maintain_ad_orion_nodes():
 
     service_user = known_nodes_model.get_or_create_user(
         username=get_preference('ldapprobe__service_user'))
-    ldap_bind_cred = apps.get_model('ldap_probe.ldapbindcred').get_default()
+    ldap_bind_cred = apps.get_model('ldap_probe.ldapbindcred').default()
 
     for node in new_nodes:
         new_ad_orion_node = known_nodes_model(
@@ -802,6 +802,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
          ' perf_filter: %s, time_delta_args: %s'),
         data_source, anon, perf_filter, time_delta_args)
     try:
+        # TODO why is report_probe_aggregates supplying now, time_delta, etc
         now, time_delta, subscription, data, perf_filter = \
             apps.get_model(data_source).\
             report_probe_aggregates(

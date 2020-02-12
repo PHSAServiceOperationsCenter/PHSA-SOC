@@ -157,7 +157,7 @@ class BaseAdmin(admin.ModelAdmin):
 
         elif db_field.name == 'exchange_client_config':
             kwargs['queryset'] = ExchangeConfiguration.active
-            kwargs['initial'] = ExchangeConfiguration.get_default()
+            kwargs['initial'] = ExchangeConfiguration.default()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

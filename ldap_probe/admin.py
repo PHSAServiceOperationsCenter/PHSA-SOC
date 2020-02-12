@@ -39,7 +39,7 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
         """
         if db_field.name == 'ldap_bind_cred':
             kwargs['queryset'] = models.LDAPBindCred.active
-            kwargs['initial'] = models.LDAPBindCred.get_default()
+            kwargs['initial'] = models.LDAPBindCred.default()
 
         elif db_field.name == 'ad_orion_node':
             kwargs['queryset'] = models.OrionADNode.active

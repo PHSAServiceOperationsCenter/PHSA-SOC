@@ -20,7 +20,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.models import get_uuid, WinlogbeatHost, BorgSite
-from p_soc_auto_base.models import BaseModel as _BaseModel
+from p_soc_auto_base.models import BaseModel, BaseModelWithDefaultInstance
 
 
 class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -63,7 +63,7 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
             winlogbeathost__excgh_last_seen__isnull=False).distinct()
 
 
-class DomainAccount(_BaseModel, models.Model):
+class DomainAccount(BaseModelWithDefaultInstance, models.Model):
     """
     Windows domain accounts data class
 
@@ -80,9 +80,6 @@ class DomainAccount(_BaseModel, models.Model):
         validators=[validators.validate_slug])
     password = models.CharField(
         _('password'), max_length=64, blank=False, null=False)
-    is_default = models.BooleanField(
-        _('default windows account'),
-        db_index=True, blank=False, null=False, default=False)
 
     def __str__(self):
         return '%s\\%s' % (self.domain, self.username)
@@ -127,18 +124,6 @@ class DomainAccount(_BaseModel, models.Model):
 
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def get_default():
-        """
-        get the default instance for this model
-
-        :returns: the default instance of this model or `None`
-        """
-        try:
-            return DomainAccount.objects.filter(is_default=True).get()
-        except DomainAccount.DoesNotExist:
-            return None
-
     class Meta:
         app_label = 'mail_collector'
         constraints = [models.UniqueConstraint(
@@ -148,7 +133,7 @@ class DomainAccount(_BaseModel, models.Model):
         verbose_name_plural = _('Domain Accounts')
 
 
-class BaseEmail(_BaseModel, models.Model):
+class BaseEmail(BaseModel, models.Model):
     """
     base class for email addresses
     """
@@ -198,7 +183,7 @@ class WitnessEmail(BaseEmail, models.Model):
         verbose_name = _('Witness Email Address')
 
 
-class ExchangeConfiguration(_BaseModel, models.Model):
+class ExchangeConfiguration(BaseModelWithDefaultInstance, models.Model):
     """
     Model storing all the information required to configure an active
     Exchange Monitoring Client
@@ -212,9 +197,6 @@ class ExchangeConfiguration(_BaseModel, models.Model):
     exchange_accounts = models.ManyToManyField(
         ExchangeAccount, limit_choices_to={'enabled': True},
         verbose_name=_('Exchange Accounts'))
-    is_default = models.BooleanField(
-        _('is default?'),
-        db_index=True, blank=False, null=False, default=False)
     debug = models.BooleanField(
         _('Debug'), default=False,
         help_text=_('In debug mode the client will not clean up old messages'))
@@ -313,16 +295,6 @@ class ExchangeConfiguration(_BaseModel, models.Model):
             raise error
 
         super().save(*args, **kwargs)
-
-    @staticmethod
-    def get_default():
-        """
-        :returns: the default instance of this model or `None`
-        """
-        try:
-            return ExchangeConfiguration.objects.filter(is_default=True).get()
-        except ExchangeConfiguration.DoesNotExist:
-            return None
 
     class Meta:
         verbose_name = _('Exchange Monitoring Client Configuration')

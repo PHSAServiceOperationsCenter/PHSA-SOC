@@ -390,6 +390,7 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
 
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('no %s data found for %s', level, subscription.subscription)
+        return
 
     if base_utils.borgs_are_hailing(
             data=data, subscription=subscription, time_delta=time_delta,
@@ -691,6 +692,7 @@ def raise_site_not_configured_for_bot():
 
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('all exchange bots are properly configured')
+        return
 
     if base_utils.borgs_are_hailing(
             data=data,

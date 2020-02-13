@@ -724,6 +724,7 @@ def email_ux_alarm(
                  ' between %s and %s', host, site, ux_alert_threshold,
                  timezone.localtime(value=now).isoformat(),
                  timezone.localtime(now - time_delta).isoformat())
+        return 0  # did not send email
 
     return base_utils.borgs_are_hailing(
         data=data, subscription=base_utils.get_subscription('Citrix UX Alert'),

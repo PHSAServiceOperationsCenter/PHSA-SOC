@@ -293,6 +293,7 @@ def bring_out_your_dead(
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('no %s data found for %s',
                  level, subscription.subscription)
+        return
 
     if Email.send_email(
             data=data, subscription=subscription, time_delta=filter_pref,

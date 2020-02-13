@@ -21,8 +21,9 @@ from celery.utils.log import get_task_logger
 
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
+from p_soc_auto_base.email import Email
 
-from .lib import Email, expires_in, has_expired, is_not_yet_valid
+from .lib import expires_in, has_expired, is_not_yet_valid
 from .models import Subscription, SslProbePort, SslCertificate
 from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
@@ -79,7 +80,7 @@ def email_ssl_report():
     """
     return Email.send_email(
         data=expires_in(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='SSl Report'))
 
 
@@ -98,7 +99,7 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
     """
     return Email.send_email(
         data=expires_in(lt_days=lt_days),
-        subscription_obj=Subscription.objects.get(subscription='SSl Report'),
+        subscription=Subscription.objects.get(subscription='SSl Report'),
         expires_in_less_than=lt_days)
 
 
@@ -112,7 +113,7 @@ def email_expired_ssl_report():
     """
     return Email.send_email(
         data=has_expired(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='Expired SSl Report'), expired=True)
 
 
@@ -127,7 +128,7 @@ def email_invalid_ssl_report():
     """
     return Email.send_email(
         data=is_not_yet_valid(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='Invalid SSl Report'), invalid=True)
 
 

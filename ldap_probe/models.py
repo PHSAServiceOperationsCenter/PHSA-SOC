@@ -308,15 +308,10 @@ class BaseADNode(BaseModel, models.Model):
         :arg queryset: a :class:`django.db.models.query.QuerySet` based
             on one of the models inheriting from :class:`BaseADNode`
 
-            If `None`, one will be created by this method
+            Default is the active nodes of the class.
 
         :returns: the :class:`django.db.models.query.QuerySet` with the
             'orion_url' field included
-
-            :Note:
-
-                The :class:`django.db.models.query.QuerySet` is filtered
-                to return only `enabled` nodes
         """
         if queryset is None:
             queryset = cls.active
@@ -344,7 +339,7 @@ class BaseADNode(BaseModel, models.Model):
         return queryset.values()
 
     @classmethod
-    def annotate_probe_details(cls, probes_model_name, queryset):
+    def annotate_probe_details(cls, probes_model_name, queryset=None):
         """
         annotate a :class:`queryset <django.db.models.query.QuerySet>`
         based on classes inheriting from :class:`BaseADNode` model with
@@ -375,10 +370,12 @@ class BaseADNode(BaseModel, models.Model):
             against the node
 
         """
+        if queryset is None:
+            queryset = cls.active
         if 'node_dns' in [field.name for field in cls._meta.fields]:
-            url_filters = '/?ad_orion_node__isnull=True&ad_node__id__exact='
+            url_filters = '/?ad_node__id='
         else:
-            url_filters = '/?ad_node__isnull=True&ad_orion_node__id__exact='
+            url_filters = '/?ad_orion_node__id='
 
         return queryset.annotate(probes_url=Concat(
             Value(settings.SERVER_PROTO), Value('://'),
@@ -456,7 +453,7 @@ class BaseADNode(BaseModel, models.Model):
         """
         no_nodes = False
         if bucket is None:
-            bucket = ADNodePerfBucket.get_default()
+            bucket = ADNodePerfBucket.default()
         else:
             try:
                 bucket = ADNodePerfBucket.objects.get(name__iexact=bucket)
@@ -473,10 +470,8 @@ class BaseADNode(BaseModel, models.Model):
         if not queryset.exists():
             no_nodes = True
 
-        if level is None:
-            level = get_preference('commonalertargs__info_level')
-
-        if level == get_preference('commonalertargs__info_level'):
+        if (level is None
+                or level == get_preference('commonalertargs__info_level')):
 
             threshold = bucket.avg_warn_threshold
             if anon:
@@ -489,7 +484,6 @@ class BaseADNode(BaseModel, models.Model):
                     Q(average_extended_search_duration__gte=threshold))
 
         elif level == get_preference('commonalertargs__warn_level'):
-
             threshold = bucket.avg_err_threshold
             if anon:
                 perf_filter = (
@@ -501,7 +495,6 @@ class BaseADNode(BaseModel, models.Model):
                     Q(average_extended_search_duration__gte=threshold))
 
         elif level == get_preference('commonalertargs__error_level'):
-
             subscription = f'{subscription},err'
             threshold = bucket.alert_threshold
             if anon:
@@ -749,7 +742,7 @@ class OrionADNode(BaseADNode, models.Model):
         """
         return cls.annotate_orion_url(
             cls.objects.filter(Q(node__node_dns__isnull=True) |
-                               Q(node__node_dns__iexact='')).values())
+                               Q(node__node_dns='')).values())
 
     @classmethod
     def report_duplicate_nodes(cls):

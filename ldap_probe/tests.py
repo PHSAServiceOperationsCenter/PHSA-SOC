@@ -30,30 +30,31 @@ from p_soc_auto_base.utils import get_or_create_user
 # TODO should this be in some shared test library?
 class UserTestCase(TestCase):
     """
-    Class that provides se-tup for test cases that require users
+    Class that provides set-up for test cases that require users
     """
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        USER = get_or_create_user()
-        cls.USER_ARGS = {'created_by': USER, 'updated_by': USER}
+        user = get_or_create_user()
+        cls.USER_ARGS = {'created_by': user, 'updated_by': user}
 
 
 class OrionTestCase(UserTestCase):
     """
     Class that provides set-up for Orion related test cases
     """
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.ORION_CATEGORY, _ = OrionNodeCategory.objects.get_or_create(
-            orion_id=0, **cls.USER_ARGS)
+    def setUp(self):
+        self.ORION_CATEGORY = OrionNodeCategory.objects.create(
+            orion_id=0, **self.USER_ARGS)
         _ORION_NODE_ARGS = {
             'node_caption': 'test', 'sensor': 'test_sensor',
             'ip_address': '0.0.0.0', 'status': 'testing', 'status_orion_id': 0,
-            'category': cls.ORION_CATEGORY,
+            'category': self.ORION_CATEGORY,
         }
-        cls.ORION_NODE_ARGS = {**_ORION_NODE_ARGS, **cls.USER_ARGS}
+        self.ORION_NODE_ARGS = {**_ORION_NODE_ARGS, **self.USER_ARGS}
+
+    def tearDown(self):
+        OrionNodeCategory.objects.all().delete()
 
 
 class LdapBindCredTest(UserTestCase):
@@ -64,6 +65,9 @@ class LdapBindCredTest(UserTestCase):
         LDAPBindCred.objects.create(
             domain='domain', username='user', password='password',
             ldap_search_base='search', **self.USER_ARGS)
+
+    def tearDown(self):
+        LDAPBindCred.objects.filter(username='user').delete()
 
     def test_str_is_domain_slash_user(self):
         """
@@ -78,23 +82,27 @@ class BaseAdNodeTest(OrionTestCase):
     """
     Tests for :class:`ldap_probe.BaseADNode`
     """
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         """
         Override setUpClass to set up AD nodes in test db
         """
-        super().setUpClass()
-        cls.orion_node_with_dns, _ = OrionNode.objects.get_or_create(
+        super().setUp()
+        self.orion_node_with_dns = OrionNode.objects.create(
             node_name='withdns', orion_id=0, details_url='/dnsurl',
-            node_dns='fdqn', **cls.ORION_NODE_ARGS)
-        cls.orion_node_no_dns, _ = OrionNode.objects.get_or_create(
+            node_dns='fdqn', **self.ORION_NODE_ARGS)
+        self.orion_node_no_dns = OrionNode.objects.create(
             node_name='nodns', orion_id=1, details_url='/nodnsurl',
-            **cls.ORION_NODE_ARGS,)
-        # TODO should I just try create instead?
-        OrionADNode.objects.get_or_create(node=cls.orion_node_with_dns,
-                                          **cls.USER_ARGS)
-        OrionADNode.objects.get_or_create(node=cls.orion_node_no_dns,
-                                          **cls.USER_ARGS)
+            **self.ORION_NODE_ARGS,)
+
+        OrionADNode.objects.create(node=self.orion_node_with_dns,
+                                   **self.USER_ARGS)
+        OrionADNode.objects.create(node=self.orion_node_no_dns,
+                                   **self.USER_ARGS)
+
+    def tearDown(self):
+        OrionADNode.objects.all().delete()
+        OrionNode.objects.all().delete()
+        super().tearDown()
 
     def test_get_node_on_nonorionadnode_returns_node_dns(self):
         """
@@ -228,28 +236,29 @@ class OrionAdNodeTest(OrionTestCase):
     """
     Tests for :class:`ldap_probe.OrionADNode`
     """
-    @classmethod
-    def setUpClass(cls):
-        """
-        Override setUpClass to set up AD nodes in test db
-        """
-        super().setUpClass()
-        cls.orion_node, _ = OrionNode.objects.get_or_create(
+    def setUp(self):
+        super().setUp()
+        self.orion_node = OrionNode.objects.create(
             node_name='withdns', orion_id=0, node_dns='fdqn',
-            **cls.ORION_NODE_ARGS)
-        cls.ad_node, _ = OrionADNode.objects.get_or_create(
-            node=cls.orion_node, **cls.USER_ARGS)
+            **self.ORION_NODE_ARGS)
+        self.ad_node = OrionADNode.objects.create(
+            node=self.orion_node, **self.USER_ARGS)
+
+    def tearDown(self):
+        OrionADNode.objects.all().delete()
+        OrionNode.objects.all().delete()
+        super().tearDown()
 
     def test_report_bad_fdqn(self):
-        no_dns, _ = OrionNode.objects.get_or_create(
+        no_dns = OrionNode.objects.create(
             node_name='nodns', orion_id=1, **self.ORION_NODE_ARGS)
-        empty_dns, _ = OrionNode.objects.get_or_create(
+        empty_dns = OrionNode.objects.create(
             node_name='emptydns', node_dns='', orion_id=2,
             **self.ORION_NODE_ARGS)
 
-        no_dns_ad, _ = OrionADNode.objects.get_or_create(
+        no_dns_ad = OrionADNode.objects.create(
             node=no_dns, **self.USER_ARGS)
-        empty_dns_ad, _ = OrionADNode.objects.get_or_create(
+        empty_dns_ad = OrionADNode.objects.create(
             node=empty_dns, **self.USER_ARGS)
 
         ids_of_bad_fdqns = OrionADNode.report_bad_fqdn().values_list('id',

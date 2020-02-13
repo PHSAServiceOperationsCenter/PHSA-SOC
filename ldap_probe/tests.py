@@ -252,6 +252,9 @@ class OrionAdNodeTest(OrionTestCase):
         empty_dns_ad, _ = OrionADNode.objects.get_or_create(
             node=empty_dns, **self.USER_ARGS)
 
-        bad_fdqns = OrionADNode.report_bad_fqdn()
+        ids_of_bad_fdqns = OrionADNode.report_bad_fqdn().values_list('id',
+                                                                     flat=True)
 
-        self.assertIn(no_dns_ad, bad_fdqns)
+        self.assertIn(no_dns_ad.id, ids_of_bad_fdqns)
+        self.assertIn(empty_dns_ad.id, ids_of_bad_fdqns)
+        self.assertNotIn(self.ad_node.id, ids_of_bad_fdqns)

@@ -716,4 +716,4 @@ def get_or_create_user(name="default"):
     :return: Default user
     """
     # return just the user, the created boolean is never used
-    return get_user_model().objects.get_or_create(name)[0]
+    return get_user_model().objects.get_or_create(username=name)[0]

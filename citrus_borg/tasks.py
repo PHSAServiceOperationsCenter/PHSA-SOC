@@ -733,6 +733,23 @@ def email_ux_alarm(
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def raise_citrix_slow_alert(event_id, threshold_secs):
+    """
+    Raises an alert for slow Citrix timings.
+
+    :param event_id: The id of the WinlogEvent with slow timings.
+    :param threshold_secs: The threshold used, in seconds.
+    :return: 1 if an email is sent, 0 otherwise.
+    """
+    data = WinlogEvent.active.filter(pk=event_id)
+    return Email.send_email(
+        data=data,
+        subscription=base_utils.get_subscription('Citrix Slow Alert'),
+        ux_alert_threshold=timezone.timedelta(seconds=threshold_secs))
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
     """
     raise alert about failed `Citrix` logon events and send it via email

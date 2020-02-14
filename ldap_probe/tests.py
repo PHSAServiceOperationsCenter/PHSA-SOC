@@ -17,8 +17,10 @@ import socket
 
 from django.conf import settings
 from django.db.models import QuerySet
-from django.test import TestCase
 from django.utils import timezone
+from hypothesis import given, assume
+from hypothesis.extra.django import TestCase
+from hypothesis.strategies import text, characters
 
 from ldap_probe.models import LDAPBindCred, NonOrionADNode, OrionADNode
 from orion_integration.models import OrionNode, OrionNodeCategory
@@ -61,21 +63,23 @@ class LdapBindCredTest(UserTestCase):
     """
     Tests for :class:`ldap_probe.LDAPBindCred`
     """
-    def setUp(self):
-        LDAPBindCred.objects.create(
-            domain='domain', username='user', password='password',
-            ldap_search_base='search', **self.USER_ARGS)
-
-    def tearDown(self):
-        LDAPBindCred.objects.filter(username='user').delete()
-
-    def test_str_is_domain_slash_user(self):
+    @given(name=text(characters(whitelist_categories=('Lu', 'Ll', 'Nd',),
+                                whitelist_characters=('_', '-',),
+                                min_codepoint=0, max_codepoint=128),
+                     min_size=1),
+           domain=text(characters(whitelist_categories=('Lu', 'Ll', 'Nd',),
+                                  whitelist_characters=('_', '-',),
+                                  min_codepoint=0, max_codepoint=128),
+                       min_size=1, max_size=15))
+    def test_str_is_domain_slash_user(self, name, domain):
         """
         Test that the str representation of :class:`ldap_probe.LDAPBindCred`
         is domain\\user
         """
-        test_bind_cred = LDAPBindCred.objects.get(username='user')
-        self.assertEqual(str(test_bind_cred), 'domain\\user')
+        LDAPBindCred.objects.create(domain=domain, username=name,
+            password='password', ldap_search_base='search', **self.USER_ARGS)
+        test_bind_cred = LDAPBindCred.objects.get(username=name)
+        self.assertEqual(str(test_bind_cred), f'{domain}\\{name}')
 
 
 class BaseAdNodeTest(OrionTestCase):
@@ -267,3 +271,20 @@ class OrionAdNodeTest(OrionTestCase):
         self.assertIn(no_dns_ad.id, ids_of_bad_fdqns)
         self.assertIn(empty_dns_ad.id, ids_of_bad_fdqns)
         self.assertNotIn(self.ad_node.id, ids_of_bad_fdqns)
+
+    def test_report_duplicate_nodes(self):
+        dup_orion = OrionNode.objects.create(
+            node_name='dup', orion_id=1, **self.ORION_NODE_ARGS)
+        self.ORION_NODE_ARGS['ip_address'] = '1.1.1.1'
+        new_orion = OrionNode.objects.create(
+            node_name='new', orion_id=2, **self.ORION_NODE_ARGS)
+
+        dup_node = OrionADNode.objects.create(node=dup_orion, **self.USER_ARGS)
+        new_node = OrionADNode.objects.create(node=new_orion, **self.USER_ARGS)
+
+        ids_of_dup_nodes = OrionADNode.report_duplicate_nodes().values_list(
+            'id', flat=True)
+
+        self.assertIn(dup_node.id, ids_of_dup_nodes)
+        self.assertNotIn(new_node.id, ids_of_dup_nodes)
+

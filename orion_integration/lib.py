@@ -130,7 +130,7 @@ class OrionSslNode:
                     'orionfilters__server_node'))
 
         if orion_ssl:
-            return queryset.filter(**cls.ssl_filters).all()
+            queryset = queryset.filter(**cls.ssl_filters)
 
         return queryset
 

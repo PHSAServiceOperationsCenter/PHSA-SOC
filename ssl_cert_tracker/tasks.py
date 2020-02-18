@@ -279,7 +279,7 @@ def get_ssl_nodes():
         <orion_integration.models.OrionNode>` that will be inspected
     :rtype: str
     """
-    orion_nodes = OrionSslNode.nodes()
+    orion_nodes = OrionSslNode.nodes().all()
     if not orion_nodes:
         raise OrionDataError(
             'there are no Orion nodes available for SSL nmap probing')

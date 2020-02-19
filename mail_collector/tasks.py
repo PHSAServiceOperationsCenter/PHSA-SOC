@@ -26,7 +26,7 @@ from citrus_borg.locutus.assimilation import process_borg
 from citrus_borg.models import WinlogbeatHost
 from mail_collector import exceptions, models, lib, queries
 from p_soc_auto_base import utils as base_utils
-
+from p_soc_auto_base.email import Email
 
 LOG = get_task_logger(__name__)
 
@@ -140,7 +140,7 @@ def raise_failed_event_by_mail(event_pk):
         'uuid', 'event_type',
         'source_host__site__site', 'source_host__host_name')[0]
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription,
             level=get_preference('commonalertargs__error_level'),
             event_type=data_extract.get('event_type'),
@@ -293,8 +293,9 @@ def bring_out_your_dead(
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('no %s data found for %s',
                  level, subscription.subscription)
+        return
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, time_delta=filter_pref,
             level=level):
         LOG.info('emailed data for %s', data.model._meta.verbose_name_plural)
@@ -329,13 +330,12 @@ def report_mail_between_domains(only_fails=False, subscription=None):
 
     subscription = base_utils.get_subscription(subscription)
 
-    queryset = models.MailBetweenDomains.objects.filter(
-        enabled=True, is_expired=False)
+    queryset = models.MailBetweenDomains.active.filter(is_expired=False)
 
     if only_fails:
         queryset = queryset.filter(status__iexact='FAILED')
 
-    if base_utils.borgs_are_hailing(data=queryset, subscription=subscription):
+    if Email.send_email(data=queryset, subscription=subscription):
         LOG.info('emailed report for mail between domains verification')
         return
 
@@ -389,8 +389,9 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
 
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('no %s data found for %s', level, subscription.subscription)
+        return
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, time_delta=time_delta,
             level=level):
         LOG.info('emailed data for %s', data.model._meta.verbose_name_plural)
@@ -481,7 +482,7 @@ def report_events_by_site(site, report_interval, report_level):
         event__source_host__site__site=site).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, logger=LOG,
             time_delta=report_interval, level=report_level, site=site):
         LOG.info('emailed exchange send receive events report for site %s',
@@ -527,7 +528,7 @@ def report_failed_events_by_site(site, report_interval):
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, time_delta=report_interval,
             level=get_preference('exchange__server_error'), site=site):
         LOG.info('emailed exchange failed send receive events report for site'
@@ -619,7 +620,7 @@ def report_events_by_bot(bot, report_interval, report_level):
         event__source_host__host_name=bot).\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, time_delta=report_interval,
             level=report_level, bot=bot):
         LOG.info('emailed exchange send receive events report for bot %s', bot)
@@ -664,7 +665,7 @@ def report_failed_events_by_bot(bot, report_interval):
         event__event_status__iexact='fail').\
         order_by('-mail_message_identifier', 'event__event_type_sort')
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, time_delta=report_interval,
             level=get_preference('exchange__server_error'), bot=bot):
         LOG.info('emailed exchange failed send receive events report for bot %s'
@@ -690,8 +691,9 @@ def raise_site_not_configured_for_bot():
 
     if not data and not get_preference('exchange__empty_alerts'):
         LOG.info('all exchange bots are properly configured')
+        return
 
-    if base_utils.borgs_are_hailing(
+    if Email.send_email(
             data=data,
             subscription=base_utils.get_subscription('Exchange bot no site'),
             level=get_preference('exchange__server_error')):

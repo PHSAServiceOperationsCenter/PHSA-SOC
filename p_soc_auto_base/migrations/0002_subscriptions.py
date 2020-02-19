@@ -1,32 +1,6 @@
-from django.contrib.auth.models import User
 from django.db import migrations
 
-
-TO_EMAILS = 'TSCST-Support@hssbc.ca,TSCST-Shiftmanager@hssbc.ca,' \
-            'daniel.busto@hssbc.ca'
-
-
-def create_subscription(apps, subscription_dict):
-    subscription_model = apps.get_model('ssl_cert_tracker', 'Subscription')
-
-    user = User.objects.filter(is_superuser=True).first()
-
-    # TODO can I have alternate_email_subject='', do we even need the alt?
-    subscription_defaults = {
-        'email_list': TO_EMAILS,
-        'from_email': 'TSCST-Support@hssbc.ca',
-        'template_dir': 'ssl_cert_tracker/template/',
-        'template_prefix': 'email/',
-        'created_by_id': user.id,
-        'updated_by_id': user.id,
-        'enabled': True,
-    }
-
-    subscription_dict.update(subscription_defaults)
-
-    subscription = subscription_model(**subscription_dict)
-
-    subscription.save()
+from p_soc_auto_base.migrations import create_subscription
 
 
 def populate_subscriptions(apps, schema_editor):
@@ -401,5 +375,5 @@ class Migration(migrations.Migration):
     dependencies = [('p_soc_auto_base', '0001_beats')]
 
     operations = [
-
+        migrations.RunPython(populate_subscriptions)
     ]

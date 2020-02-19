@@ -36,6 +36,8 @@ from citrus_borg.models import (
 
 from p_soc_auto_base import utils as base_utils
 
+from p_soc_auto_base.email import Email
+
 
 LOG = get_task_logger(__name__)
 
@@ -124,8 +126,7 @@ def get_orion_ids():
     This task will spawn a separate :func:`get_orion_id` task for each
     :class:`citrus_borg.models.WinlogbeatHost` instance that is `enabled`
     """
-    citrus_borg_pks = base_utils.get_pk_list(
-        WinlogbeatHost.objects.filter(enabled=True))
+    citrus_borg_pks = base_utils.get_pk_list(WinlogbeatHost.active)
 
     group(get_orion_id.s(pk) for pk in citrus_borg_pks)()
 
@@ -266,7 +267,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
                  timezone.localtime(now - time_delta).isoformat())
         return None
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription('Dead Citrix monitoring bots'),
         time_delta=time_delta)
@@ -307,7 +308,7 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix monitoring bots'),
@@ -358,7 +359,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix client sites'),
@@ -399,7 +400,7 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Dead Citrix client sites'),
@@ -450,7 +451,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Missing Citrix farm hosts'),
@@ -487,7 +488,7 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Missing Citrix farm hosts'),
@@ -520,7 +521,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**dead_for)
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=get_logins_by_event_state_borg_hour(
             now=base_utils.MomentOfTime.now(now), time_delta=time_delta),
         subscription=base_utils.get_subscription(
@@ -562,7 +563,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
-    sites = BorgSite.objects.filter(enabled=True)
+    sites = BorgSite.active
     if site:
         sites = sites.filter(site__iexact=site)
     if not sites.exists():
@@ -573,8 +574,7 @@ def email_sites_login_ux_summary_reports(now=None, site=None,
 
     site_host_arg_list = []
     for borg_site in sites:
-        borg_names = WinlogbeatHost.objects.filter(
-            site__site__iexact=borg_site, enabled=True)
+        borg_names = WinlogbeatHost.active.filter(site__site__iexact=borg_site)
         if borg_name:
             borg_names = borg_names.filter(host_name__iexact=borg_name)
         if not borg_names.exists():
@@ -617,7 +617,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
     <../../../admin/ssl_cert_tracker/subscription/"""\
     """?q=Citrix+logon+event+and+ux+summary>`__ to render the emails being sent.
     """
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=login_states_by_site_host_hour(
             now=now, time_delta=time_delta,
             site=site_host_args[0], host_name=site_host_args[1]),
@@ -686,8 +686,7 @@ def email_ux_alarms(now=None, send_no_news=None, ux_alert_threshold=None,
         ux_alert_threshold = base_utils.MomentOfTime.time_delta(
             **ux_alert_threshold)
 
-    borg_names = WinlogbeatHost.objects.filter(enabled=True)\
-                 .values_list('host_name', flat=True)
+    borg_names = WinlogbeatHost.active.values_list('host_name', flat=True)
 
     group(email_ux_alarm.s(now, time_delta, send_no_news,
                            ux_alert_threshold, borg_name) for
@@ -724,11 +723,29 @@ def email_ux_alarm(
                  ' between %s and %s', host, site, ux_alert_threshold,
                  timezone.localtime(value=now).isoformat(),
                  timezone.localtime(now - time_delta).isoformat())
+        return 0  # did not send email
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data, subscription=base_utils.get_subscription('Citrix UX Alert'),
         time_delta=time_delta, ux_alert_threshold=ux_alert_threshold,
         host_name=host, site=site)
+
+
+@shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
+             retry_backoff=True, autoretry_for=(SMTPConnectError,))
+def raise_citrix_slow_alert(event_id, threshold_secs):
+    """
+    Raises an alert for slow Citrix timings.
+
+    :param event_id: The id of the WinlogEvent with slow timings.
+    :param threshold_secs: The threshold used, in seconds.
+    :return: 1 if an email is sent, 0 otherwise.
+    """
+    data = WinlogEvent.active.filter(pk=event_id)
+    return Email.send_email(
+        data=data,
+        subscription=base_utils.get_subscription('Citrix Slow Alert'),
+        ux_alert_threshold=timezone.timedelta(seconds=threshold_secs))
 
 
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
@@ -772,7 +789,7 @@ def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data, subscription=base_utils.get_subscription(
             'Citrix logon alert'),
         time_delta=time_delta,
@@ -809,7 +826,7 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed Logins Report'),
@@ -876,7 +893,7 @@ def email_failed_ux_report(now=None, send_no_news=False,
                    timezone.localtime(now - time_delta))
         )
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed UX Event Components Report'),
@@ -926,7 +943,7 @@ def email_failed_login_sites_report(now=None, send_no_news=False,
     else:
         time_delta = base_utils.MomentOfTime.time_delta(**reporting_period)
 
-    borg_names = WinlogbeatHost.objects.filter(enabled=True)\
+    borg_names = WinlogbeatHost.active\
         .order_by('host_name').values_list('host_name', flat=True)
 
     group(email_failed_login_site_report.s(now, time_delta,
@@ -969,7 +986,7 @@ def email_failed_login_site_report(now, reporting_period, send_no_news, host):
                  timezone.localtime(now - reporting_period).isoformat())
         return 0  # Did not send email.
 
-    return base_utils.borgs_are_hailing(
+    return Email.send_email(
         data=data,
         subscription=base_utils.get_subscription(
             'Citrix Failed Logins per Site Report'),

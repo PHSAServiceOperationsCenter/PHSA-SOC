@@ -78,7 +78,7 @@ def get_session():
     return session
 
 
-class SourceSwis():  # pylint: disable=too-few-public-methods
+class SourceSwis:  # pylint: disable=too-few-public-methods
     """
     wrap around the SwisClient for a cleaner look
 

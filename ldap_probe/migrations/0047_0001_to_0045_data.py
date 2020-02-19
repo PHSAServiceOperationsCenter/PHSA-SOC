@@ -186,7 +186,7 @@ def add_new_perf_buckets(apps, schema_editor):
         'avg_err_threshold':  .05,
         'alert_threshold':    .1,
         'notes':              '',
-        'is_default':         True,
+        'is_default':         False,
     }, {
         'name':               'Alert at 1 s',
         'avg_warn_threshold': .25,
@@ -200,7 +200,7 @@ def add_new_perf_buckets(apps, schema_editor):
         'avg_err_threshold': 5,
         'alert_threshold': 10,
         'notes': '',
-        'is_default': False,
+        'is_default': True,
     }, ]
 
     perf_bucket_model = apps.get_model('ldap_probe', 'ADNodePerfBucket')

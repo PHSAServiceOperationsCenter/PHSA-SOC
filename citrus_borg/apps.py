@@ -42,4 +42,7 @@ class CitrusBorgConfig(AppConfig):
         See `AppConfig.ready()
         <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`__.
         """
+        # These imports are required for Django to set up correctly.
+        # pylint: disable=import-outside-toplevel, unused-import
         import citrus_borg.consumers
+        import citrus_borg.signals

@@ -18,18 +18,21 @@ from smtplib import SMTPConnectError
 
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
+from django.apps import apps
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-from ldap_probe import ad_probe, models, exceptions
+from ldap_probe.ad_probe import ADProbe
+from ldap_probe.models import LdapProbeLog
 from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url
+from p_soc_auto_base.email import Email
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
 
 
 @shared_task(queue='ldap_probe', rate_limit='5/s')
-def probe_ad_controller(ad_model=None, ad_pk=None):
+def probe_ad_controller(ad_model, ad_pk):
     """
     probe the domain and save the AD monitoring data
 
@@ -47,7 +50,7 @@ def probe_ad_controller(ad_model=None, ad_pk=None):
     """
     # TODO handle this error more gracefully
     try:
-        ad_model = utils.get_model(ad_model)
+        ad_model = apps.get_model(ad_model)
     except utils.UnknownDataTargetError as error:
         raise error
 
@@ -55,14 +58,12 @@ def probe_ad_controller(ad_model=None, ad_pk=None):
         raise TypeError(f'ad_pk must be an integer. Got: {type(ad_pk)}.')
 
     try:
-        created = models.LdapProbeLog.create_from_probe(
-            ad_probe.ADProbe.probe(ad_model.objects.get(pk=ad_pk))
+        created = LdapProbeLog.create_from_probe(
+            ADProbe.probe(ad_model.objects.get(pk=ad_pk))
         )
     except Exception as error:
         LOG.exception(error)
         raise error
-
-    LOG.debug(created)
 
     return created
 
@@ -151,7 +152,7 @@ def expire_entries(data_source=None, **age):
         data_source = 'ldap_probe.LdapProbeLog'
 
     try:
-        data_source = utils.get_model(data_source)
+        data_source = apps.get_model(data_source)
     except utils.UnknownDataTargetError as error:
         raise error
 
@@ -223,7 +224,7 @@ def delete_expired_entries(data_source=None):
         data_source = 'ldap_probe.LdapProbeLog'
 
     try:
-        data_source = utils.get_model(data_source)
+        data_source = apps.get_model(data_source)
     except utils.UnknownDataTargetError:
         LOG.exception('Cannot delete entries for non-existent model %s',
                       data_source)
@@ -254,7 +255,7 @@ def trim_ad_duplicates():
 
     :raises: :exc:`Exception` so that the exception is passed to `Celery`
     """
-    for node in utils.get_model('ldap_probe.nonorionadnode').objects.all():
+    for node in apps.get_model('ldap_probe.nonorionadnode').objects.all():
         node.remove_if_in_orion()
 
 
@@ -267,8 +268,8 @@ def maintain_ad_orion_nodes():
     This is needed because `AD` `Orion` nodes may change outside this
     application
     """
-    known_nodes_model = utils.get_model('ldap_probe.orionadnode')
-    new_nodes_model = utils.get_model(
+    known_nodes_model = apps.get_model('ldap_probe.orionadnode')
+    new_nodes_model = apps.get_model(
         'orion_integration.oriondomaincontrollernode')
 
     known_node_ids = known_nodes_model.objects.values_list(
@@ -282,7 +283,7 @@ def maintain_ad_orion_nodes():
 
     service_user = known_nodes_model.get_or_create_user(
         username=get_preference('ldapprobe__service_user'))
-    ldap_bind_cred = utils.get_model('ldap_probe.ldapbindcred').get_default()
+    ldap_bind_cred = apps.get_model('ldap_probe.ldapbindcred').default()
 
     for node in new_nodes:
         new_ad_orion_node = known_nodes_model(
@@ -410,7 +411,7 @@ def dispatch_bad_fqdn_reports():
     LOG.debug('invoking the fqdn report for orion ad nodes')
 
     try:
-        data = utils.get_model('ldap_probe.orionadnode').report_bad_fqdn()
+        data = apps.get_model('ldap_probe.orionadnode').report_bad_fqdn()
     except Exception as error:
         LOG.exception(
             'invoking the fqdn report for orion ad nodes raises error %s',
@@ -422,8 +423,8 @@ def dispatch_bad_fqdn_reports():
 
     info_level = get_preference('commonalertargs__info_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
-                               level=info_level):
+    if Email.send_email(data=data, subscription=subscription,
+                        level=info_level):
         LOG.info('dispatched the fqdn report for orion ad nodes')
         return
 
@@ -444,7 +445,7 @@ def dispatch_dupe_nodes_reports():
     LOG.debug('invoking the duplicate ad nodes in orion report')
 
     try:
-        data = utils.get_model('ldap_probe.orionadnode').\
+        data = apps.get_model('ldap_probe.orionadnode').\
             report_duplicate_nodes()
     except Exception as error:
         LOG.exception('invoking the duplicate ad nodes in orion report raises'
@@ -456,8 +457,8 @@ def dispatch_dupe_nodes_reports():
 
     info_level = get_preference('commonalertargs__info_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
-                               level=info_level):
+    if Email.send_email(data=data, subscription=subscription,
+                        level=info_level):
         LOG.info('dispatched the duplicate ad nodes in orion report')
         return
 
@@ -482,7 +483,7 @@ def dispatch_non_orion_ad_nodes_report():
     LOG.debug('invoking the non orion ad nodes report')
 
     try:
-        data = utils.get_model('ldap_probe.nonorionadnode').report_nodes()
+        data = apps.get_model('ldap_probe.nonorionadnode').report_nodes()
     except Exception as error:
         LOG.exception('invoking the non orion ad nodes report raises error %s',
                       str(error))
@@ -492,8 +493,7 @@ def dispatch_non_orion_ad_nodes_report():
         get_preference('ldapprobe__ldap_non_orion_ad_nodes_subscription'))
 
     warn_level = get_preference('commonalertargs__warn_level')
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
-                               level=warn_level):
+    if Email.send_email(data=data, subscription=subscription, level=warn_level):
         LOG.info('dispatched the non orion ad nodes report')
         return
 
@@ -525,7 +525,7 @@ def dispatch_ldap_error_report(**time_delta_args):
         time_delta_args)
 
     try:
-        now, time_delta, data = utils.get_model('ldap_probe.ldapprobelog').\
+        now, time_delta, data = apps.get_model('ldap_probe.ldapprobelog').\
             error_report(**time_delta_args)
     except Exception as error:
         LOG.exception(
@@ -538,9 +538,8 @@ def dispatch_ldap_error_report(**time_delta_args):
 
     error_level = get_preference('commonalertargs__error_level')
 
-    if utils.borgs_are_hailing(data=data, subscription=subscription,
-                               level=error_level, now=now,
-                               time_delta=time_delta):
+    if Email.send_email(data=data, subscription=subscription, level=error_level,
+                        now=now, time_delta=time_delta):
         LOG.info('dispatched LDAP error report with time_delta_args: %s',
                  time_delta_args)
         return
@@ -650,8 +649,7 @@ def dispatch_ldap_perf_reports(
 
     if buckets is None:
         buckets = list(
-            utils.get_model('ldap_probe.adnodeperfbucket').
-            objects.filter(enabled=True).
+            apps.get_model('ldap_probe.adnodeperfbucket').active.
             values_list('name', flat=True)
         )
 
@@ -725,7 +723,7 @@ def dispatch_ldap_perf_report(
 
     try:
         (now, time_delta, subscription, data, threshold, no_nodes) = \
-            utils.get_model(data_source).report_perf_degradation(
+            apps.get_model(data_source).report_perf_degradation(
                 bucket=bucket, anon=anon, level=level, **time_delta_args
                 )
     except Exception as error:
@@ -748,7 +746,7 @@ def dispatch_ldap_perf_report(
     orion = 'non orion' not in subscription.subscription.lower()
     threshold = utils.show_milliseconds(threshold)
 
-    if utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription, level=level, now=now,
             time_delta=time_delta, full=full, orion=orion, bucket=bucket,
             threshold=threshold):
@@ -804,8 +802,9 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
          ' perf_filter: %s, time_delta_args: %s'),
         data_source, anon, perf_filter, time_delta_args)
     try:
+        # TODO why is report_probe_aggregates supplying now, time_delta, etc
         now, time_delta, subscription, data, perf_filter = \
-            utils.get_model(data_source).\
+            apps.get_model(data_source).\
             report_probe_aggregates(
                 anon=anon, perf_filter=perf_filter, **time_delta_args)
     except Exception as error:
@@ -819,7 +818,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
 
-    if utils.borgs_are_hailing(
+    if Email.send_email(
             data=data, subscription=subscription,
             level=get_preference('commonalertargs__info_level'), now=now,
             time_delta=time_delta, full=full, orion=orion,
@@ -834,7 +833,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
                 data_source, anon, perf_filter, time_delta_args)
 
 
-def _raise_ldap_alert(subscription, level, instance_pk=None):
+def _raise_ldap_alert(subscription, level, instance_pk):
     """
     invoke the email sending mechanism for an `LDAP` alert
 
@@ -859,11 +858,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
     :raises: generic :exc:`exceptions.Exception` for whatever error is
         raised by :meth:`ssl_cert_tracker.lib.Email.send`
     """
-    if instance_pk is None:
-        raise exceptions.AlertArgsError(
-            'Must provide LDAP probe identifier when raising this alert')
-
-    data = utils.get_model('ldap_probe.ldapprobelog').objects.filter(
+    data = apps.get_model('ldap_probe.ldapprobelog').objects.filter(
         id=instance_pk)
 
     ldap_probe = data.get()
@@ -882,7 +877,7 @@ def _raise_ldap_alert(subscription, level, instance_pk=None):
         }
 
     try:
-        ret = utils.borgs_are_hailing(
+        ret = Email.send_email(
             data=data, subscription=subscription, add_csv=False,
             level=level, node=ldap_probe.node, errors=ldap_probe.errors,
             created_on=ldap_probe.created_on,

@@ -4,22 +4,28 @@
 {% if time_delta %}
 {{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts for the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}
 {% else %}
-{{ tags }}{{ site }}, {{ host_name }} Citrix User Experience Alerts
+{{ tags }}{{ site }} {{ host_name }} Citrix User Experience Alert
 {% endif %}
 {% endblock %}
 
 {% block html %}
 {% if data %}
 <p>
-The User Experience for the 
+{% if site %}
+The User Experience for the
 <strong>{{ host_name }}</strong>
-Citrix monitoring bot in <strong>{{ site }}</strong> has encountered 
-response times longer than <strong>{{ ux_alert_threshold|timedelta:"{seconds_total} seconds" }}</strong> 
+Citrix monitoring bot in <strong>{{ site }}</strong>
+{% else %}
+A Citrix monitoring bot
+{% endif %}
+has encountered response times longer than
+<strong>{{ ux_alert_threshold|timedelta:"{seconds_total} seconds" }}</strong>
 {% if time_delta %}
 over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 {% else %}
 .
 {% endif %}
+See below for details.
 </p>
 <div><p>
 <table>
@@ -39,7 +45,7 @@ over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 </p></div>
 
 <div>
-<p>A list of all the sites with ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is 
+<p>A list of all the sites with ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is
 available at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_borgsite_changelist' %}">
 {{ source_host }}{% url 'admin:citrus_borg_borgsite_changelist' %}</a></p>
 <p>To stop receiving alarms and reports about a specific site with Citrix bots, disable it using
@@ -47,7 +53,7 @@ the Web interface opened by the link above.</p>
 </div>
 
 <div>
-<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available 
+<p>A list of all the ControlUp Logon Monitoring Hosts a.k.a Citrix Bots is available
 at:<a href="{{ source_host_name }}{% url 'admin:citrus_borg_citrixhost_changelist' %}">
 {{ source_host }}{% url 'admin:citrus_borg_citrixhost_changelist' %}</a></p>
 <p>To stop receiving alarms and reports about a specific Citrix bot, disable it using
@@ -63,7 +69,7 @@ the Web interface opened by the link above.</p>
 {% endif %}
 {% elif not data %}
 <div><p>
-The User Experience on <strong>{{ site }}, {{ host_name }}</strong> has been 
+The User Experience on <strong>{{ site }}, {{ host_name }}</strong> has been
 acceptable over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.
 </p></div>
 {% endif %}

@@ -69,7 +69,7 @@ class BorgSiteNotSeenManager(models.Manager):
             with a dynamic preference.
 
         """
-        return BorgSite.objects.\
+        return super().get_queryset().\
             exclude(winlogbeathost__last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
@@ -101,7 +101,7 @@ class WinlogbeatHostNotSeenManager(models.Manager):
             with a dynamic preference.
 
         """
-        return WinlogbeatHost.objects.\
+        return super().get_queryset().\
             exclude(last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
@@ -133,7 +133,7 @@ class KnownBrokeringDeviceNotSeenManager(models.Manager):
             with a dynamic preference.
 
         """
-        return KnownBrokeringDevice.objects.\
+        return super().get_queryset().\
             exclude(last_seen__gt=now() -
                     settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
 
@@ -165,7 +165,7 @@ class CitrixHostManager(models.Manager):
             a dynamic preference.
 
         """
-        return WinlogbeatHost.objects.exclude(last_seen__isnull=True)
+        return super().get_queryset().exclude(last_seen__isnull=True)
 
 # pylint: enable=too-few-public-methods,no-self-use
 

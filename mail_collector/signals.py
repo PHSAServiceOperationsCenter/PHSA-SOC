@@ -77,7 +77,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
         # we don't have a quorum, go away
         return
 
-    if instance.event.event_type not in ['receive']:
+    if instance.event.event_type != 'receive':
         # only received event have all the info that we need. skip others
         return
 
@@ -134,12 +134,8 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     :returns: the updated :class:`mail_collector.models.ExchangeServer`
         instance
     """
-    if instance.event_status != 'PASS':
-        # only interested in successful events
-        return None
-
-    if instance.event_type != 'connection':
-        # and only connections in this function
+    if instance.event_status != 'PASS' or instance.event_type != 'connection':
+        # only interested in successful connections
         return None
 
     exchange_server = instance.mail_account.split('-')[1]
@@ -180,10 +176,8 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     :returns: a :class:`tuple` with the updated Exchange entity instance
         and the event type that caused the update
     """
-    if instance.event.event_status not in ['PASS']:
-        return None
-
-    if instance.event.event_type not in ['send', 'receive']:
+    if instance.event.event_status != 'PASS' \
+            or instance.event.event_type not in ['send', 'receive']:
         return None
 
     exchange_server, database = instance.event.mail_account.split('-')[1:3]
@@ -199,7 +193,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
 
     exchange_server.last_updated_from_node_id = last_updated_from_node_id
 
-    if instance.event.event_type in ['send']:
+    if instance.event.event_type == 'send':
         exchange_server.last_send = instance.event.event_registered_on
         exchange_server.save()
 

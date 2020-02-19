@@ -69,8 +69,7 @@ def _get_dead_objects(now, obj_class, obj_name, key_for_event, time_pref=None,
 
     live = set(WinlogEvent.objects.filter(created_on__gt=now - time_delta)
                .values_list(f'{key_for_event}__{obj_name}', flat=True))
-    all_objs = set(obj_class.objects.filter(enabled=True)
-                   .values_list(obj_name, flat=True))
+    all_objs = set(obj_class.active.values_list(obj_name, flat=True))
 
     dead = all_objs - live
 
@@ -766,8 +765,8 @@ def raise_failed_logins_alarm(
             '%s type invalid for %s' % (type(failed_threshold),
                                         failed_threshold))
 
-    return WinlogbeatHost.objects.\
-        filter(enabled=True, winlogevent__created_on__gt=now - time_delta).\
+    return WinlogbeatHost.active.\
+        filter(winlogevent__created_on__gt=now - time_delta).\
         annotate(
             failed_events=Count(
                 'winlogevent__event_state',

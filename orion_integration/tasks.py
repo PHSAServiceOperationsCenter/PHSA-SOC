@@ -85,8 +85,7 @@ def verify_known_orion_data():
     """
     ret = []
     for model in [OrionNodeCategory, OrionAPMApplication, OrionNode]:
-        ids = list(model.objects.filter(
-            enabled=True).all().values_list('id', flat=True))
+        ids = list(model.active.all().values_list('id', flat=True))
         if not ids:
             ret.append(
                 'no entries in %s. skipping...' % model._meta.verbose_name)

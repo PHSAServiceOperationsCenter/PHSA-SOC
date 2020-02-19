@@ -66,7 +66,7 @@ from config import load_config
 from logger import LogWinEvent
 
 
-class _Logger():
+class _Logger:
     """
     Custom logging class that will write to the windows event log, and to
     a GUI window text control if access to one such destination is provided
@@ -241,14 +241,6 @@ def validate_email_to_ascii(email_address, **config):
         argument is provided via an :attr:`WitnessMessages.config` instance
         attribute
 
-    :arg logger: log all problems
-
-        Usually provided by the caller the logger data is provided by the
-        calling function but this function is capable of creating a
-        :class:`_Logger` instance if needed
-
-    :type logger: :class:`_Logger`
-
     :returns:
 
         a valid, normalized email address value or ``None`` if the
@@ -327,15 +319,6 @@ def get_accounts(**config):
        argument is provided via an :attr:`WitnessMessages.config` instance
        attribute
 
-    :arg logger:
-
-        logging facility; Usually provided by the caller the logger
-        data is provided by the calling function but this function is capable
-        of creating a :class:`_Logger` instance if needed
-
-    :type logger: :class:`_Logger`
-
-
     :returns:
         :class:`list` of :class:`exchangelib.Account` objects
         An :class:`exchangelib.Account` object is only created if this
@@ -349,7 +332,6 @@ def get_accounts(**config):
         If none of the Exchange account entries in the ``config`` argument can
         be used to create a valid :class:`exchangelib.Account` instance,
         an error will be logged and the function will return ``None``
-
     """
     if not config:
         config = load_config()
@@ -443,7 +425,7 @@ class describing an exchange message created using the
 """
 
 
-class WitnessMessages():  # pylint: disable=too-many-instance-attributes
+class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     """
     Class that encapsulates all the functionality required to execute
     an Exchange verification operation once
@@ -499,14 +481,6 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
             If accounts is ``None``, the constructor will build one using
             the data in the ``config`` argument(s)
 
-        :arg logger:
-
-            logging facility; Usually provided by the caller the logger
-            data is provided by the calling function but this function is
-            capable of creating a :class:`_Logger` instance if needed
-
-        :type logger: :class:`_Logger`
-
         :arg queue.Queue console_logger:
 
             the queue used to pass messages to a GUI interface running on the
@@ -526,7 +500,6 @@ class WitnessMessages():  # pylint: disable=too-many-instance-attributes
 
             If this argument is not provided, the constructor will invoke the
             :func:`mail_borg.configuration.load_config` function.
-
         """
         self._sent = False
         """state variable for the send op"""

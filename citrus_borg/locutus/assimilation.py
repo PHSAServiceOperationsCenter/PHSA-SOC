@@ -335,9 +335,6 @@ def process_borg_message(message=None):
 
     :arg dict message: the event message
 
-    :arg logger: the logging object
-    :type logger: :class:`logging.Logger`
-
     :returns: a :func:`collections.namedtuple` object representing the
         `ControlUp` event
 
@@ -383,7 +380,7 @@ def process_borg_message(message=None):
     message = message.split('\n')
     borg_message.state = message[0].split()[0]
 
-    if borg_message.state.lower() in ['successful']:
+    if borg_message.state.lower() == 'successful':
         LOG.debug('citrus borg event state: successful')
         borg_message.broker = message[0].split()[-1]
         borg_message.test_result = bool(message[4].split()[-1])
@@ -400,7 +397,7 @@ def process_borg_message(message=None):
         borg_message.failure_reason = None
         borg_message.failure_details = None
 
-    elif borg_message.state.lower() in ['failed']:
+    elif borg_message.state.lower() == 'failed':
         LOG.debug('citrus borg event state: failed')
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])

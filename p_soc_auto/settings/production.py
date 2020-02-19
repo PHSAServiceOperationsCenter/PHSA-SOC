@@ -23,3 +23,5 @@ ALLOWED_HOSTS = ['lvmsocq01', 'lvmsocq01.healthbc.org', ]
 """
 hosts that can be used to run production servers
 """
+
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']

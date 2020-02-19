@@ -21,8 +21,9 @@ from celery.utils.log import get_task_logger
 
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
+from p_soc_auto_base.email import Email
 
-from .lib import Email, expires_in, has_expired, is_not_yet_valid
+from .lib import expires_in, has_expired, is_not_yet_valid
 from .models import Subscription, SslProbePort, SslCertificate
 from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
@@ -77,9 +78,9 @@ def email_ssl_report():
     the recommended patterns for basic `Celery` tasks.
 
     """
-    return _email_report(
+    return Email.send_email(
         data=expires_in(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='SSl Report'))
 
 
@@ -96,9 +97,9 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
         days than the number provided by this argument.
 
     """
-    return _email_report(
+    return Email.send_email(
         data=expires_in(lt_days=lt_days),
-        subscription_obj=Subscription.objects.get(subscription='SSl Report'),
+        subscription=Subscription.objects.get(subscription='SSl Report'),
         expires_in_less_than=lt_days)
 
 
@@ -110,9 +111,9 @@ def email_expired_ssl_report():
     task to send reports about expired `SSL` by email
 
     """
-    return _email_report(
+    return Email.send_email(
         data=has_expired(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='Expired SSl Report'), expired=True)
 
 
@@ -125,38 +126,10 @@ def email_invalid_ssl_report():
     email
 
     """
-    return _email_report(
+    return Email.send_email(
         data=is_not_yet_valid(),
-        subscription_obj=Subscription.objects.get(
+        subscription=Subscription.objects.get(
             subscription='Invalid SSl Report'), invalid=True)
-
-
-def _email_report(
-        data=None, subscription_obj=None, **extra_context):
-    """
-    function that wraps around the functionality provided by the :class:`Email
-    <ssl_cert_tracker.lib.Email>` class
-
-    This function will create an :class:`ssl_cert_tracker.lib.Email` instance
-    and invoke the :meth:`ssl_cert_tracker.lib.Email.send` on it
-
-    :arg data: the data to be placed in the email
-    :type data: :class:`django.db.models.query.QuerySet`
-
-    :arg subscription_obj: the subscription data
-    :type subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
-
-    :arg logger: the :class:`logging.Logger` object used by this function
-    :type logger: :class:`logging.Logger`
-
-    :arg dict extra_context: optional arguments that will provide extra context
-        for rendering the email
-
-    """
-    email_report = Email(
-        data=data, subscription_obj=subscription_obj, **extra_context)
-
-    return email_report.send()
 
 
 @shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')
@@ -176,7 +149,7 @@ def get_ssl_for_node(orion_node):
         a list of ports to be probed
     :rtype: str
     """
-    ssl_ports = SslProbePort.objects.filter(enabled=True).all()
+    ssl_ports = SslProbePort.active.all()
 
     group(get_ssl_for_node_port.
           s(orion_node, ssl_port).
@@ -285,7 +258,7 @@ def verify_ssl_certificates():
     :returns: the number of `SSL` certificates that will be verified
     :rtype: str
     """
-    cert_node_port_list = SslCertificate.objects.filter(enabled=True).\
+    cert_node_port_list = SslCertificate.active.\
         values_list('id', 'orion_id', 'port__port')
 
     group(verify_ssl_for_node_port.s(cert_node_port_tuple) for
@@ -306,7 +279,7 @@ def get_ssl_nodes():
         <orion_integration.models.OrionNode>` that will be inspected
     :rtype: str
     """
-    orion_nodes = OrionSslNode.nodes()
+    orion_nodes = OrionSslNode.nodes().all()
     if not orion_nodes:
         raise OrionDataError(
             'there are no Orion nodes available for SSL nmap probing')

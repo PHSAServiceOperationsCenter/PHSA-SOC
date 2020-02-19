@@ -17,7 +17,7 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from .models import OrionNode, OrionCernerCSTNode
 
 
-class OrionSslNode():
+class OrionSslNode:
     '''
     Class with methods for retrieving `Orion` data cached by the :ref:`Orion
     Integration Application`
@@ -110,7 +110,7 @@ class OrionSslNode():
             In [4]:
 
         """
-        queryset = OrionNode.objects.filter(enabled=True)
+        queryset = OrionNode.active
 
         if cerner_cst is None:
             cerner_cst = get_preference('orionprobe__cerner_cst')
@@ -122,7 +122,7 @@ class OrionSslNode():
             orion_ssl = get_preference('orionprobe__orion_ssl')
 
         if cerner_cst:
-            queryset = OrionCernerCSTNode.objects.filter(enabled=True)
+            queryset = OrionCernerCSTNode.active
 
         if servers_only:
             queryset = queryset.filter(
@@ -130,7 +130,7 @@ class OrionSslNode():
                     'orionfilters__server_node'))
 
         if orion_ssl:
-            return queryset.filter(**cls.ssl_filters).all()
+            queryset = queryset.filter(**cls.ssl_filters)
 
         return queryset
 

@@ -19,7 +19,19 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-# Create your models here.
+
+class EnabledManager(models.Manager):
+    """
+    Manager that only returns `active` objects.
+    """
+    def get_queryset(self):
+        """
+        override :meth:`models.Manager.get_queryset` to only return objects
+        which are enabled.
+
+        :return: all objects that are enabled.
+        """
+        return super().get_queryset().filter(enabled=True)
 
 
 class BaseModel(models.Model):
@@ -113,6 +125,21 @@ class BaseModel(models.Model):
 
         return user.get()
 
+    objects = models.Manager()
+    """
+    Default manager.
+
+    Note first defined manager is always set as default, to ensure default is 
+    'all objects' this manager should remain defined first.
+    """
+
+    active = EnabledManager()
+    """
+    Manager that only returns objects that are currently active.
+
+    This manager should be used for most non-administrative tasks.
+    """
+
     class Meta:
         abstract = True
 
@@ -178,18 +205,34 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
         super().save(*args, **kwargs)
 
     @classmethod
-    def get_default(cls):
+    def default(cls):
         """
         get the default instance for this model
 
-        :returns: the id of the default instance of this model or `None`
+        :returns: the default instance of this model or `None`
         """
         if not hasattr(cls, 'objects'):
             return None
 
         try:
-            return cls.objects.filter(is_default=True).get().id
+            return cls.objects.filter(is_default=True).get()
         except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def get_default(cls):
+        """
+        Get the id for the default instance for this model
+
+        Many models point to this as their 'default' for foreign keys, hence it
+        must return an int. Refactoring to make a more clear distinction
+        between this and default would require resetting all of those defaults.
+
+        :returns: the default instance id of this model or `None`
+        """
+        try:
+            return cls.default().id
+        except AttributeError:
             return None
 
     class Meta:

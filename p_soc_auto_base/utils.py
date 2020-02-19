@@ -38,7 +38,6 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from ssl_cert_tracker.models import Subscription
-from ssl_cert_tracker.lib import Email
 
 LOG = getLogger(__name__)
 
@@ -250,40 +249,6 @@ def get_uuid():
               unique identifier
     """
     return uuid.uuid4()
-
-
-def get_model(destination):
-    """
-    get a :class:`django.db.models.Model` object
-
-    This function takes a :class:`str` argument and returns the matching
-    :class:`django.db.models.Model` model if possible. We use this function
-    because :class:`django.db.models.Model` objects cannot be ``JSON``
-    serialized when `calling Celery tasks
-    <https://docs.celeryproject.org/en/latest/userguide/calling.html#serializers>`_.
-    Using this function, the workaround is
-
-    .. code-block:: python
-
-        from p_soc_auto_base.utils import get_model
-
-        @shared_task
-        def a_task(model_name_as_string):
-            my_django_model = get_model(model_name_as_string)
-
-            return do_something_with(my_django_model)
-
-    :arg str destination: the 'app_name.model_name' string for a `model`
-
-    :returns: the matching :class:`django.db.models.Model` model object
-
-    :raises:
-
-        :exc:`UnknownDataTargetError` if there is no matching model
-        registered on the server
-
-    """
-    return apps.get_model(*destination.split('.'))
 
 
 def get_queryset_values_keys(model):
@@ -526,7 +491,7 @@ def make_aware(datetime_input, use_timezone=timezone.utc, is_dst=False):
         datetime_input, timezone=use_timezone, is_dst=is_dst)
 
 
-class MomentOfTime():
+class MomentOfTime:
     """
     Utility class for calculating a `datetime.datetime` moment
     relative to another `datetime.datetime` moment (the reference
@@ -630,7 +595,7 @@ class MomentOfTime():
                 If this key is not present, the method expects other keys
                 as per
                 `<https://docs.python.org/3/library/datetime.html"""\
-                """#datetime.timedelta>`__ so that a `datetime.timedelta` 
+                """#datetime.timedelta>`__ so that a `datetime.timedelta`
                 interval can be calculated
 
         """
@@ -730,9 +695,6 @@ def get_subscription(subscription):
 
     :arg str subscription: the subscription value
 
-    :arg logger: the logger used to record log messages
-    :type logger: :class:`logging.logger`
-
     :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't \
     exist.
     """
@@ -742,67 +704,3 @@ def get_subscription(subscription):
         error_msg = f'Subscription "{subscription}" does not exist.'
         LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
-
-
-def borgs_are_hailing(
-        data, subscription, add_csv=True, **extra_context):
-    """
-    use the :class:`ssl_cert_tracker.lib.Email` class to prepare and send an
-    email from the :ref:`SOC Automation Server`
-
-    :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
-
-    :arg str subscription: the key for retrieving the :class:`Subscription
-        <ssl_cert_tracker.models.Subscription>` instance that will be used
-        for rendering and addressing the email
-
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain a descriptor for the `queryset` fields that
-        will be rendered in the email.
-
-        The :class:`Subscription <ssl_cert_tracker.models.Subscription>`
-        instance must contain the name and location of the template that
-        will be used to render the email.
-
-    :arg bool add_csv: attach a csv file with the contents of the `data`
-        argument to the email; default is `True`
-
-    :arg LOGGER: a logging handle
-    :type LOGGER: :class:`logging.Logger`
-
-    :arg dict extra_context: optional arguments with additional data to be
-        rendered in the email
-
-        .. note::
-
-            Do not use `data`, `subscription`, `logger`, `add_csv`, or
-            `extra_content` as names for email data elements as they will
-            be interpreted as other arguments of this function (causing
-            unexpected behaviour) or cause an exception.
-
-    :raises: :exc:`Exception` if the email cannot be rendered or if the email
-        cannot be sent
-
-        We are using the generic :class:`exceptions <Exception>` because this
-        function is almost always invoked from a `Celery task
-        <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`_ and
-        `Celery` will do all the error handling work if needed.
-
-        .. todo::
-
-            We need a custom error for rendering the email and an SMTP related
-            error for sending the email.
-    """
-    try:
-        email_alert = Email(
-            data=data, subscription_obj=subscription, add_csv=add_csv,
-            **extra_context)
-    except Exception as error:
-        LOG.exception('cannot initialize email object: %s', str(error))
-        raise error
-
-    try:
-        return email_alert.send()
-    except Exception as error:
-        LOG.exception(str(error))
-        raise error

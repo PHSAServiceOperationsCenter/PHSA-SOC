@@ -11,7 +11,14 @@
 {% block html %}
 {% if data %}
 <p>
-A Citrix monitoring bot has encountered response times longer than
+{% if site %}
+The User Experience for the
+<strong>{{ host_name }}</strong>
+Citrix monitoring bot in <strong>{{ site }}</strong>
+{% else %}
+A Citrix monitoring bot
+{% endif %}
+has encountered response times longer than
 <strong>{{ ux_alert_threshold|timedelta:"{seconds_total} seconds" }}</strong>
 {% if time_delta %}
 over the last {{ time_delta|timedelta:"{minutes_total} Minutes" }}.

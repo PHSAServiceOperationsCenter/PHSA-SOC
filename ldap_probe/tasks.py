@@ -19,6 +19,7 @@ from smtplib import SMTPConnectError
 from celery import shared_task, group
 from celery.utils.log import get_task_logger
 from django.apps import apps
+from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from ldap_probe.ad_probe import ADProbe
@@ -482,7 +483,7 @@ def dispatch_non_orion_ad_nodes_report():
     LOG.debug('invoking the non orion ad nodes report')
 
     try:
-        data = apps.get_model('ldap_probe.nonorionadnode').report_nodes()
+        data = apps.get_model('ldap_probe.nonorionadnode').active
     except Exception as error:
         LOG.exception('invoking the non orion ad nodes report raises error %s',
                       str(error))
@@ -523,9 +524,16 @@ def dispatch_ldap_error_report(**time_delta_args):
         'invoking ldap error report with time_delta_args: %s',
         time_delta_args)
 
+    if time_delta_args:
+        time_delta = timezone.timedelta(**time_delta_args)
+    else:
+        time_delta = get_preference('ldapprobe__ldap_reports_period')
+
+    now = timezone.now()
+
     try:
-        now, time_delta, data = apps.get_model('ldap_probe.ldapprobelog').\
-            error_report(**time_delta_args)
+        data = apps.get_model('ldap_probe.ldapprobelog').\
+            error_report(time_delta)
     except Exception as error:
         LOG.exception(
             ('invoking ldap error report with time_delta_args: %s'
@@ -882,6 +890,7 @@ def _raise_ldap_alert(subscription, level, instance_pk):
             created_on=ldap_probe.created_on,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,
+            # TODO why doesn't this have its own function?
             node_url=get_absolute_admin_change_url(**change_url_args),
             bucket=ldap_probe.node_perf_bucket.name,
             avg_warn_threshold=utils.show_milliseconds(

@@ -72,49 +72,38 @@ LOGGING = {
             'formatter': 'verbose',
             'filters':   ['require_debug_true']
         }, 'ssl_cert_tracker_log':  {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
             'formatter': 'verbose',
         }, 'p_soc_auto_log':               {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'p_soc_auto.log'),
             'formatter': 'verbose',
         },
-
-        # ======================================================================
-        # 'orion_flash_log': {
-        #     'level': 'DEBUG',
-        #     'class': 'logging.FileHandler',
-        #     'filename': os.path.join(LOG_DIR, 'orion_flash.log'),
-        #     'formatter': 'verbose',
-        #     'filters': ['require_debug_true']
-        # },
-        # ======================================================================
-
         'citrus_borg_log':          {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'citrus_borg.log'),
             'formatter': 'verbose',
         }, 'mail_collector_log':    {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'mail_collector.log'),
             'formatter': 'verbose',
         }, 'orion_integration_log': {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'orion_integration.log'),
             'formatter': 'verbose',
         }, 'django_smtp_log':       {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'django_smtp.log'),
             'formatter': 'verbose',
         }, 'ldap_probe_log':        {
-            'level':     'DEBUG',
+            'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'ldap_probe.log'),
             'formatter': 'verbose',
@@ -145,15 +134,6 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-
-        # ======================================================================
-        # 'orion_flash': {
-        #     'handlers': ['orion_flash_log', 'console'],
-        #     'level': 'DEBUG',
-        #     'propagate': True,
-        # },
-        # ======================================================================
-
         'citrus_borg':          {
             'handlers':  ['citrus_borg_log', 'console', 'warning_log'],
             'level':     'DEBUG',

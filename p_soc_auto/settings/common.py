@@ -76,13 +76,11 @@ LOGGING = {
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'ssl_cert_tracker.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'p_soc_auto_log':               {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'p_soc_auto.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         },
 
         # ======================================================================
@@ -100,31 +98,26 @@ LOGGING = {
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'citrus_borg.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'mail_collector_log':    {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'mail_collector.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'orion_integration_log': {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'orion_integration.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'django_smtp_log':       {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'django_smtp.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'ldap_probe_log':        {
             'level':     'DEBUG',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'ldap_probe.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }, 'console':               {
             'level':     'DEBUG',
             'filters':   ['require_debug_true'],
@@ -137,7 +130,6 @@ LOGGING = {
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'warning.log'),
             'formatter': 'verbose',
-            'filters':   ['require_debug_true']
         }
     }, 'loggers':  {
         'django': {

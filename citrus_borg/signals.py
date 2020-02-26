@@ -44,6 +44,9 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
                          instance.connection_achieved_duration,
                          instance.receiver_startup_duration]
 
+    # remove None values
+    alertable_timings = [d for d in alertable_timings if d]
+
     threshold = get_preference('citrusborgux__ux_alert_threshold')
     if any(timing > threshold for timing in alertable_timings):
         LOG.info('Slowdown on %s', instance.source_host.host_name)

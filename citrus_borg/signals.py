@@ -44,6 +44,8 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
                          instance.connection_achieved_duration,
                          instance.receiver_startup_duration]
 
+    # TODO alternately just check if the test passed, if it did there should be
+    #      timings if not is it worth alerting?
     # remove None values
     alertable_timings = [d for d in alertable_timings if d]
 
@@ -59,16 +61,18 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
     Send an alert if there has been a cluster of failed winlogevents, as defined
     by the appropriate preferences (TBD).
     """
-    if instance.event_state != 'Failed':
+    if instance.event_id not in [1006, 1007, 1016, 1017]:
         return
 
-    # TODO should be the time of the received event, not now.
+    # TODO event_id list should be dynamic preference
     # TODO timeframe should be configurable (eg a dynamic preference)
     recent_failure_count = WinlogEvent.active.filter(
-        created_on__gte=timezone.now() - timedelta(minutes=5),
-        created_on__lte=timezone.now(), event_state='Failed').count()
+        timestamp__gte=instance.timestamp - timedelta(minutes=5),
+        timestamp__lte=instance.timestamp,
+        event_id__in=[1006, 1007, 1016, 1017]
+    ).count()
 
-    LOG.info('there have been %d failures recently', recent_failure_count)
+    LOG.debug('there have been %d failures recently', recent_failure_count)
 
     # TODO failure threshold should be a dynamic preference
     if recent_failure_count >= 5:

@@ -197,7 +197,7 @@ def get_ip_for_host_name(host_name, ip_list=None):
     return _get_host_by_name()
 
 
-def process_borg(body):
+def parse_citrix_login_event(body):
     """
     :returns: a :func:`collections.namedtuple` object
 
@@ -236,7 +236,7 @@ def process_borg(body):
         borg.mail_borg_message = None
     elif borg.event_source in get_list_preference('exchange__source'):
         borg.borg_message = None
-        borg.mail_borg_message = process_exchange_message(
+        borg.mail_borg_message = parse_exchange_message(
             json.loads(body.get('event_data')['param1'])
         )
 
@@ -399,7 +399,6 @@ def process_borg_message(message=None):
             parse_duration(message[9].split()[-1])
         borg_message.failure_reason = None
         borg_message.failure_details = None
-
     elif borg_message.state.lower() == 'failed':
         LOG.debug('citrus borg event state: failed')
         borg_message.failure_reason = message[1].split(': ')[1]
@@ -428,7 +427,7 @@ def process_borg_message(message=None):
     return borg_message
 
 
-def process_exchange_message(message):
+def parse_exchange_message(message):
     """
     prepare a `Python` object representing a `Mail Borg` event
 
@@ -496,7 +495,7 @@ def process_exchange_message(message):
     return exchange_event, exchange_message
 
 
-def _parse_datetime(date_time=None):
+def _parse_datetime(date_time):
     """
     parse a string representation of date-time to a :class:`datetime.datetime`
     object

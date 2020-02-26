@@ -14,15 +14,16 @@ used by the :ref:`Citrus Borg Application`.
 :contact:    daniel.busto@phsa.ca
 
 """
+from datetime import timedelta
+from logging import getLogger
 from smtplib import SMTPConnectError
 
 from django.utils import timezone
 
 from celery import shared_task, group
-from celery.utils.log import get_task_logger
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-from citrus_borg.locutus.assimilation import process_borg
+from citrus_borg.locutus.assimilation import parse_citrix_login_event
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,
     get_logins_by_event_state_borg_hour, raise_failed_logins_alarm,
@@ -39,34 +40,34 @@ from p_soc_auto_base import utils as base_utils
 from p_soc_auto_base.email import Email
 
 
-LOG = get_task_logger(__name__)
+LOG = getLogger(__name__)
 
 
 @shared_task(queue='citrus_borg', rate_limit='10/s')
-def store_borg_data(body):
+def process_citrix_login(body):
     """
     task responsible for saving the data collected from remote `ControlUp`
     monitoring bot to various models in the :mod:`citrus_borg.models` module
 
     :arg dict body: the event data
 
-    :returns: the value of the :attr:`uuid`
-        attribute of the :class:`citrus_borg.models.WinlogEvent` instance
-        saved by the task
-
-    We are raising and logging multiple generic :exc:`Exceptions <Exception>`
-    if things go wrong.
+    :raises: DoesNotExist errors if there isn't an Event Source or Windows Log
+             object corresponding to the description in the citrix event.
     """
+    borg = parse_citrix_login_event(body)
+    save_citrix_login_event(borg)
+    LOG.debug('citrix event saved')
+
+
+def save_citrix_login_event(borg):
     def reraise(msg):
-        LOG.exception('%s %s.', msg, body)
+        LOG.exception('%s %s.', msg, borg)
         # This function should only be called from inside an except block
         # If an Exception is not being handled it will cause a RuntimeError
         raise  # pylint: disable=misplaced-bare-raise
 
-    borg = process_borg(body)
     event_host = WinlogbeatHost.get_or_create_from_borg(borg)
     event_broker = KnownBrokeringDevice.get_or_create_from_borg(borg)
-
     try:
         event_source = AllowedEventSource.objects.get(
             source_name=borg.event_source)
@@ -80,16 +81,20 @@ def store_borg_data(body):
 
     user = WinlogEvent.get_or_create_user(
         get_preference('citrusborgcommon__service_user'))
+
     winlogevent = WinlogEvent(
-        source_host=event_host, record_number=borg.record_number,
-        event_source=event_source, windows_log=windows_log,
-        event_state=borg.borg_message.state, xml_broker=event_broker,
+        source_host=event_host,
+        record_number=borg.record_number,
+        event_source=event_source,
+        windows_log=windows_log,
+        event_state=borg.borg_message.state,
+        xml_broker=event_broker,
         event_test_result=borg.borg_message.test_result,
-        storefront_connection_duration=borg.borg_message.
-        storefront_connection_duration,
+        storefront_connection_duration
+            =borg.borg_message.storefront_connection_duration,
         receiver_startup_duration=borg.borg_message.receiver_startup_duration,
-        connection_achieved_duration=borg.borg_message.
-        connection_achieved_duration,
+        connection_achieved_duration
+            =borg.borg_message.connection_achieved_duration,
         logon_achieved_duration=borg.borg_message.logon_achieved_duration,
         logoff_achieved_duration=borg.borg_message.logoff_achieved_duration,
         failure_reason=borg.borg_message.failure_reason,

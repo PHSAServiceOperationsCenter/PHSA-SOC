@@ -13,10 +13,12 @@ for the :ref:`Citrus Borg Application`.
 
 :contact:    daniel.busto@phsa.ca
 """
+from datetime import timedelta
 from logging import getLogger
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from citrus_borg.models import WinlogEvent
@@ -46,3 +48,27 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
     if any(timing > threshold for timing in alertable_timings):
         LOG.info('Slowdown on %s', instance.source_host.host_name)
         raise_citrix_slow_alert.delay(instance.id, threshold.total_seconds())
+
+
+@receiver(post_save, sender=WinlogEvent)
+def failure_cluster_check(sender, instance, *args, **kwargs):
+    """
+    Send an alert if there has been a cluster of failed winlogevents, as defined
+    by the appropriate preferences (TBD).
+    """
+    if instance.event_state != 'Failed':
+        return
+
+    # TODO should be the time of the received event, not now.
+    # TODO timeframe should be configurable (eg a dynamic preference)
+    recent_failure_count = WinlogEvent.active.filter(
+        created_on__gte=timezone.now() - timedelta(minutes=5),
+        created_on__lte=timezone.now(), event_state='Failed').count()
+
+    LOG.info('there have been %d failures recently', recent_failure_count)
+
+    # TODO failure threshold should be a dynamic preference
+    if recent_failure_count >= 5:
+        # TODO actually send alert
+        LOG.warning('There have been %d citrix login failures in the last %d'
+                    ' minutes', recent_failure_count, 5)

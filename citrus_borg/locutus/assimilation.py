@@ -220,7 +220,8 @@ def parse_citrix_login_event(body):
     borg = collections.namedtuple(
         'Borg', [
             'source_host', 'record_number', 'opcode', 'level',
-            'event_source', 'windows_log', 'borg_message', 'mail_borg_message'
+            'event_source', 'windows_log', 'borg_message', 'mail_borg_message',
+            'event_id', 'timestamp'
         ]
     )
 
@@ -230,6 +231,8 @@ def parse_citrix_login_event(body):
     borg.level = body.get('level', None)
     borg.event_source = body.get('source_name', None)
     borg.windows_log = body.get('log_name', None)
+    borg.event_id = body.get('event_id', None)
+    borg.timestamp = _parse_datetime(body.get('@timestamp', None))
 
     if borg.event_source in get_list_preference('citrusborgevents__source'):
         borg.borg_message = process_borg_message(body.get('message', None))

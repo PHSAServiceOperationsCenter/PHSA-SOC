@@ -100,9 +100,9 @@ def save_citrix_login_event(borg):
         failure_reason=borg.borg_message.failure_reason,
         failure_details=borg.borg_message.failure_details,
         raw_message=borg.borg_message.raw_message,
-        created_by=user, updated_by=user
-    )
-
+        event_id=borg.event_id,
+        timestamp=borg.timestamp,
+        created_by=user, updated_by=user)
     winlogevent.save()
 
     LOG.info('saved event: %s', winlogevent.uuid)

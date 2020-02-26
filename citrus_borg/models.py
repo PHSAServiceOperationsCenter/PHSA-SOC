@@ -615,6 +615,13 @@ class WinlogEvent(BaseModel, models.Model):
         _('Failure Reason'), blank=True, null=True)
     failure_details = models.TextField(
         _('Failure Details'), blank=True, null=True)
+    event_id = models.BigIntegerField(
+        _('Event ID'), db_index=True, blank=True, null=True,
+        help_text=_('the type of the event represented by this log')
+    )
+    timestamp = models.DateTimeField(
+        _('Timestamp'), db_index=True, blank=True, null=True,
+        help_text=_('windows log event creation time stamp'))
     raw_message = models.TextField(
         _('Raw Message'), blank=True, null=True,
         help_text=_('the application cannot process this message'))

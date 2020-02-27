@@ -20,7 +20,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.dynamic_preferences_registry import (get_preference,
+                                                      get_int_list_preference)
 from citrus_borg.models import WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
 
@@ -59,23 +60,24 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
 def failure_cluster_check(sender, instance, *args, **kwargs):
     """
     Send an alert if there has been a cluster of failed winlogevents, as defined
-    by the appropriate preferences (TBD).
+    by the appropriate preferences: citrusborgux__cluster_event_ids.,
+    citrusborgux__cluster_length, citrusborgux__cluster_size. See preference
+    definitions for more details.
     """
-    if instance.event_id not in [1006, 1007, 1016, 1017]:
+    failure_ids = get_int_list_preference('citrusborgux__cluster_event_ids')
+    if instance.event_id not in failure_ids:
         return
 
-    # TODO event_id list should be dynamic preference
-    # TODO timeframe should be configurable (eg a dynamic preference)
     recent_failure_count = WinlogEvent.active.filter(
-        timestamp__gte=instance.timestamp - timedelta(minutes=5),
+        timestamp__gte=instance.timestamp
+                            - get_preference('citrusborgux__cluster_length'),
         timestamp__lte=instance.timestamp,
-        event_id__in=[1006, 1007, 1016, 1017]
+        event_id__in=failure_ids
     ).count()
 
     LOG.debug('there have been %d failures recently', recent_failure_count)
 
-    # TODO failure threshold should be a dynamic preference
-    if recent_failure_count >= 5:
+    if recent_failure_count >= get_preference('citrusborgux__cluster_size'):
         # TODO actually send alert
-        LOG.warning('There have been %d citrix login failures in the last %d'
-                    ' minutes', recent_failure_count, 5)
+        LOG.warning('There have been %d citrix login failures recently',
+                    recent_failure_count)

@@ -1024,6 +1024,65 @@ class UxReportingPeriod(DurationPreference):
 
 
 @global_preferences_registry.register
+class ClusterEventIds(StringPreference):
+    """
+    Dynamic preference used for storing the ids that are considered pertinent to
+    recognizing clusters of citrix events
+
+    :access_key: 'citrusborgux__cluster_event_ids
+    """
+    section = citrus_borg_ux
+    name = 'cluster_event_ids'
+    default = '1006,1007,1016,1017'
+    required = True
+    verbose_name = _('ids of events to consider when searching for clusters')\
+        .title()
+    help_text = format_html(
+        '{}<br>{}',
+        _('events with ids on this list will be counted when'),
+        _('looking for event clusters'))
+
+
+@global_preferences_registry.register
+class ClusterLength(DurationPreference):
+    """
+    Dynamic preference used for storing the length of time to consider when
+    searching for clusters
+
+    :access_key: 'citrusborgux__cluster_length
+    """
+    section = citrus_borg_ux
+    name = 'cluster_length'
+    default = timezone.timedelta(minutes=5)
+    required = True
+    verbose_name = _('amount of time to consider when searching for clusters')\
+        .title()
+    help_text = format_html(
+        '{}<br>{}',
+        _('when a failure occurs any events within this duration in the'),
+        _('past will be considered when looking for clusters'))
+
+
+@global_preferences_registry.register
+class ClusterSize(IntPreference):
+    """
+    Dynamic preference used for storing the number of failures that makes a
+    cluster
+
+    :access_key: 'citrusborgux__cluster_size
+    """
+    section = citrus_borg_ux
+    name = 'cluster_size'
+    default = 5
+    required = True
+    verbose_name = _('number of failures that makes a cluster').title()
+    help_text = format_html(
+        '{}<br>{}',
+        _('if more than this many failures have occurred recently'),
+        _('than a cluster alert will be sent'))
+
+
+@global_preferences_registry.register
 class NodeForgottenAfter(DurationPreference):
     """
     Dynamic preferences class used for storing the interval used when
@@ -1515,3 +1574,16 @@ def get_list_preference(key):
         it follows this format 'section__preference_name`
     """
     return get_preference(key).split(',')
+
+
+def get_int_list_preference(key):
+    """
+    get a list of ints from a dynamic preference
+
+
+    :arg str key: the accessor key for the preference
+        it follows this format 'section__preference_name`
+    :return list: returns the list of integers represented by the string
+                  preference
+    """
+    return [int(i) for i in get_list_preference(key)]

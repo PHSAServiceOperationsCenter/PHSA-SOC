@@ -13,17 +13,18 @@ for the :ref:`Citrus Borg Application`.
 
 :contact:    daniel.busto@phsa.ca
 """
-from datetime import timedelta
 from logging import getLogger
 
+from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import (get_preference,
                                                       get_int_list_preference)
-from citrus_borg.models import WinlogEvent
+from citrus_borg.models import EventCluster, WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
+from p_soc_auto_base.email import Email
+from p_soc_auto_base.utils import get_subscription
 
 LOG = getLogger(__name__)
 
@@ -68,16 +69,31 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
     if instance.event_id not in failure_ids:
         return
 
-    recent_failure_count = WinlogEvent.active.filter(
+    recent_failures = WinlogEvent.active.filter(
         timestamp__gte=instance.timestamp
-                            - get_preference('citrusborgux__cluster_length'),
+        - get_preference('citrusborgux__cluster_length'),
         timestamp__lte=instance.timestamp,
-        event_id__in=failure_ids
-    ).count()
+        event_id__in=failure_ids,
+        cluster__isnull=True
+    )
+    recent_failures_count = recent_failures.count()
 
-    LOG.debug('there have been %d failures recently', recent_failure_count)
+    LOG.debug('there have been %d failures recently', recent_failures_count)
 
-    if recent_failure_count >= get_preference('citrusborgux__cluster_size'):
-        # TODO actually send alert
-        LOG.warning('There have been %d citrix login failures recently',
-                    recent_failure_count)
+    if recent_failures_count >= get_preference('citrusborgux__cluster_size'):
+        # TODO replace this with get_or_create_user when the automated testing
+        #      branch is merged (or possibly set it to the default?)
+        default_user = \
+            get_user_model().objects.get_or_create(username='default')[0]
+        new_cluster = EventCluster(
+            created_by=default_user, updated_by=default_user
+        )
+        new_cluster.save()
+        LOG.debug(list(recent_failures))
+        new_cluster.winlogevent_set.add(*list(recent_failures))
+
+        Email.send_email(None, get_subscription('Citrix Cluster Alert'), False,
+                         start_time=new_cluster.start_time,
+                         end_time=new_cluster.end_time,
+                         bots=new_cluster.winlogevent_set.all())
+        LOG.debug('sent cluster email')

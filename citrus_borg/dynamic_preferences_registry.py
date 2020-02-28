@@ -1083,6 +1083,48 @@ class ClusterSize(IntPreference):
 
 
 @global_preferences_registry.register
+class BackoffTime(DurationPreference):
+    """
+    Dynamic preference used for storing the time period to consider to mute
+    new cluster alerts
+
+    :access_key: 'citrusborgux__backoff_time
+    """
+    section = citrus_borg_ux
+    name = 'backoff_time'
+    default = timezone.timedelta(hours=1)
+    required = True
+    verbose_name = _(
+        'amount of time to consider when considering whether to send page'
+    ).title()
+    help_text = format_html(
+        '{}<br>{}',
+        _('when a failure occurs any cluster within this duration is counted'),
+        _('towards the backoff limit'))
+
+
+@global_preferences_registry.register
+class BackoffLimit(IntPreference):
+    """
+    Dynamic preference used for storing the time period to consider to mute
+    new cluster alerts
+
+    :access_key: 'citrusborgux__backoff_limit
+    """
+    section = citrus_borg_ux
+    name = 'backoff_limit'
+    default = 3
+    required = True
+    verbose_name = _(
+        'numbers of clusters after which we will not send pages'
+    ).title()
+    help_text = format_html(
+        '{}<br>{}',
+        _('when a failure occurs any if there are more clusters than this in'),
+        _('the backoff time we will not send out a page'))
+
+
+@global_preferences_registry.register
 class NodeForgottenAfter(DurationPreference):
     """
     Dynamic preferences class used for storing the interval used when

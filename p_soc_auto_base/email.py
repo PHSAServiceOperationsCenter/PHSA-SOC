@@ -96,16 +96,16 @@ class Email:
         This attribute is set in the :meth:`prepare_csv`.
         """
 
-        self.data = data
-        """
-        :class:`django.db.models.query.QuerySet` with the data to be rendered
-        in the email message body
-        """
-
         self.subscription_obj = subscription_obj
         """
         an :class:`ssl_cert_tracker.models.Subscriptions` instance with the
         details required for rendering and sending the email message
+        """
+
+        self.data = data
+        """
+        :class:`django.db.models.query.QuerySet` with the data to be rendered
+        in the email message body
         """
 
         self.headers = self._get_headers_with_titles()
@@ -117,10 +117,7 @@ class Email:
 
         self._prepare_csv()
 
-        self.prepared_data = [
-            {key: data_item[key] for key in self.headers.keys()}
-            for data_item in data.values(*self.headers.keys())
-        ]
+        self.prepared_data = []
         """
         :class:`list` of :class:`dictionaries <dict>` where each item
         represents a row in the :attr:`Email.data`
@@ -134,6 +131,12 @@ class Email:
         :attr:`Email.headers` is {'dog_name': 'Dog name'}, and the item
         in this list will end up as {'Dog name': 'jimmy'}.
         """
+
+        if data:
+            self.prepared_data = [
+                {key: data_item[key] for key in self.headers.keys()}
+                for data_item in data.values(*self.headers.keys())
+            ]
 
         self.context = dict(
             report_date_time=timezone.now(),
@@ -157,6 +160,8 @@ class Email:
             self.context.update(**extra_context)
 
         self._debug_init()
+
+        LOG.debug('Context: %s', self.context)
 
         try:
             self.email = get_templated_mail(
@@ -236,6 +241,9 @@ class Email:
             and the values are created using the rules above
 
         """
+        if not self.data:
+            return {}
+
         field_names = [
             field.name for field in self.data.model._meta.get_fields()]
         headers = dict()
@@ -329,6 +337,7 @@ class Email:
         if settings.DEBUG:
             tags = '[DEBUG]{}'.format(tags)
 
+        LOG.debug('tags are %s', tags)
         return tags
 
     @classmethod

@@ -95,10 +95,12 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
         new_cluster.winlogevent_set.add(*list(recent_failures))
 
         # TODO could this be done on the server side?
+        # Note that this count includes the cluster we just created, hence <=
         if len(
             [cluster for cluster in EventCluster.active.all()
-             if cluster.end_time > timezone.now() - timedelta(hours=1)]
-        ) <= 3:  # Note that the newly created
+             if cluster.end_time > timezone.now()
+                - get_preference('citrusborgux__backoff_time')]
+        ) <= get_preference('citrusborgux__backoff_limit'):
             Email.send_email(None, get_subscription('Citrix Cluster Alert'),
                              False, start_time=new_cluster.start_time,
                              end_time=new_cluster.end_time,

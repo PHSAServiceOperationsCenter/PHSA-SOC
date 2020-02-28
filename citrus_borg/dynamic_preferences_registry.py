@@ -1484,8 +1484,8 @@ class LdapPerfNeverExceedThreshold(DecimalPreference):
     """default value for this dynamic preference"""
     required = True
     verbose_name = _(
-        'LDAP Performance Error Threshold for Immediate Alerts'
-        ' (in seconds)').title()
+        'LDAP Performance Error Threshold for Immediate Alerts (in seconds)'
+    ).title()
     """verbose name for this dynamic preference"""
 
 

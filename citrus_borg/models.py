@@ -2,8 +2,9 @@
 citrus_borg.models
 ------------------
 
-This module contains the :class:`models <django.db.models.Model>` and :class:`model
-managers <django.db.models.Manager>` used by the :ref:`Citrus Borg Application`.
+This module contains the :class:`models <django.db.models.Model>` and
+:class:`model managers <django.db.models.Manager>` used by the
+:ref:`Citrus Borg Application`.
 
 :copyright:
 
@@ -18,6 +19,7 @@ from logging import getLogger
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Max, Min
 from django.db.models.deletion import SET_NULL
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
@@ -556,6 +558,42 @@ class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
         verbose_name_plural = _('Citrix App Servers not seen for a while')
 
 
+class EventCluster(BaseModel, models.Model):
+    """
+    :class:`django.db.models.Model` class used for storing cluster of `Citrix`
+    events. The many-to-one relationship is maintained by foreign keys in the
+    :class:`WinlogEvent` model.
+    """
+    uuid = models.UUIDField(
+        _('UUID'), unique=True, db_index=True, blank=False, null=False,
+        default=get_uuid)
+
+    @property
+    def start_time(self):
+        """
+        Earliest time of an event in the cluster
+
+        :return: The timestamp of the first event in the cluster
+        """
+        return self.winlogevent_set.all().aggregate(
+            Min('timestamp'))['timestamp__min']
+
+    @property
+    def end_time(self):
+        """
+        Latest time of an event in the cluster
+
+        :return: The timestamp of the last event in the cluster
+        """
+        return self.winlogevent_set.all().aggregate(
+            Max('timestamp'))['timestamp__max']
+
+    class Meta:
+        app_label = 'citrus_borg'
+        verbose_name = _('Cluster of Citrix Logon Failures')
+        verbose_name_plural = _('Clusters of Citrix Logon Failures')
+
+
 class WinlogEvent(BaseModel, models.Model):
     """
     :class:`django.db.models.Model` class used for storing `Citrix`  events
@@ -628,6 +666,10 @@ class WinlogEvent(BaseModel, models.Model):
     is_expired = models.BooleanField(
         _('event has expired'), db_index=True, blank=False, null=False,
         default=False)
+    cluster = models.ForeignKey(
+        EventCluster, on_delete=SET_NULL, blank=True, null=True,
+        verbose_name=_('Alert Cluster'),
+        help_text=_('The cluster this event belongs to. May be null.'))
 
     def __str__(self):
         return str(self.uuid)

@@ -107,4 +107,6 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
                              bots=new_cluster.winlogevent_set.all())
             LOG.debug('sent cluster email')
         else:
+            new_cluster.enabled = False
+            new_cluster.save()
             LOG.info('Cluster created, but alert skipped due to frequency.')

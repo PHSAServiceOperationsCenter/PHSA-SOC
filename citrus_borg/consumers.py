@@ -39,8 +39,7 @@ from citrus_borg.dynamic_preferences_registry import get_list_preference
 from mail_collector.tasks import store_mail_data
 
 from .models import AllowedEventSource
-from .tasks import store_borg_data
-
+from .tasks import process_citrix_login
 
 LOG = get_task_logger(__name__)
 """
@@ -87,6 +86,6 @@ def process_win_event(body):
         return
 
     if source_name in get_list_preference('citrusborgevents__source'):
-        store_borg_data.delay(borg)
+        process_citrix_login.delay(borg)
     elif source_name in get_list_preference('exchange__source'):
         store_mail_data.delay(borg)

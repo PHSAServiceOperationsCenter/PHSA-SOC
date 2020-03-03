@@ -58,8 +58,8 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         """
         override :meth:`django.contrib.admin.ModelAdmin.add_view`
 
-        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -239,7 +239,7 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         """
         return False
 
-    list_display = ('broker_name',  'enabled', 'last_seen', 'created_on',)
+    list_display = ('broker_name', 'enabled', 'last_seen', 'created_on',)
     list_editable = ('enabled',)
     list_filter = ('enabled',)
     readonly_fields = ('broker_name', 'last_seen', 'created_on',)
@@ -265,8 +265,8 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on', 'orion_id',)
-    list_filter = ('site__site', 'enabled', 'exchange_client_config__is_default',
-                   ('last_seen', DateTimeRangeFilter),)
+    list_filter = ('enabled', 'exchange_client_config__is_default',
+                   ('last_seen', DateTimeRangeFilter), 'site__site', )
     search_fields = ('site__site', 'host_name', 'ip_address',
                      'exchange_client_config__config_name',)
 
@@ -287,7 +287,6 @@ class WinlogbeatHostNotSeenAdmin(WinlogbeatHostAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`citrus_borg.models.WinlogbeatHostNotSeen`
     """
-    pass
 
 
 @admin.register(WinlogEvent)

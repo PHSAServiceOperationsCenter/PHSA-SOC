@@ -47,6 +47,7 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
                          instance.connection_achieved_duration,
                          instance.receiver_startup_duration]
 
+
     # TODO alternately just check if the test passed, if it did there should be
     #      timings if not is it worth alerting?
     # remove None values

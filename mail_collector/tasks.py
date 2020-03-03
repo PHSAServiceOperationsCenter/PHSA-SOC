@@ -22,7 +22,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-from citrus_borg.locutus.assimilation import process_borg
+from citrus_borg.locutus.assimilation import parse_citrix_login_event
 from citrus_borg.models import WinlogbeatHost
 from mail_collector import exceptions, models, lib, queries
 from p_soc_auto_base import utils as base_utils
@@ -58,7 +58,7 @@ def store_mail_data(body):
 
     """
     try:
-        exchange_borg = process_borg(body)
+        exchange_borg = parse_citrix_login_event(body)
     except Exception as error:
         raise exceptions.BadEventDataError(
             'cannot process event data from %s, error: %s'

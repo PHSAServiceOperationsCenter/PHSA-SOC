@@ -13,7 +13,6 @@ for the :ref:`Citrus Borg Application`.
 
 :contact:    daniel.busto@phsa.ca
 """
-from datetime import timedelta
 from logging import getLogger
 
 from django.contrib.auth import get_user_model
@@ -99,8 +98,8 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
         # TODO could this be done on the server side?
         # Note that this count includes the cluster we just created, hence <=
         if (len([cluster for cluster in EventCluster.active.all()
-                if cluster.end_time > timezone.now()
-                - get_preference('citrusborgux__backoff_time')])
+                 if cluster.end_time > timezone.now()
+                 - get_preference('citrusborgux__backoff_time')])
                 <= get_preference('citrusborgux__backoff_limit')):
             Email.send_email(None, get_subscription('Citrix Cluster Alert'),
                              False, start_time=new_cluster.start_time,

@@ -195,7 +195,6 @@ def delete_expired_entries(data_source=None):
     `citrus_borg.dynamic_preferences_registry.LdapDeleteExpiredProbeLogEntries`
     is so configured.
 
-
     :arg str data_source: the name of a :class:`model
         <django.db.models.Model>` in the `app_label.modelname` format
 

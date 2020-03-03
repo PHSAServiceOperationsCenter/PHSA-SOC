@@ -87,20 +87,21 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
         #      branch is merged (or possibly set it to the default?)
         default_user = \
             get_user_model().objects.get_or_create(username='default')[0]
+
         new_cluster = EventCluster(
             created_by=default_user, updated_by=default_user
         )
+
         new_cluster.save()
-        LOG.debug(list(recent_failures))
+
         new_cluster.winlogevent_set.add(*list(recent_failures))
 
         # TODO could this be done on the server side?
         # Note that this count includes the cluster we just created, hence <=
-        if len(
-            [cluster for cluster in EventCluster.active.all()
-             if cluster.end_time > timezone.now()
-                - get_preference('citrusborgux__backoff_time')]
-        ) <= get_preference('citrusborgux__backoff_limit'):
+        if (len([cluster for cluster in EventCluster.active.all()
+                if cluster.end_time > timezone.now()
+                - get_preference('citrusborgux__backoff_time')])
+                <= get_preference('citrusborgux__backoff_limit')):
             Email.send_email(None, get_subscription('Citrix Cluster Alert'),
                              False, start_time=new_cluster.start_time,
                              end_time=new_cluster.end_time,

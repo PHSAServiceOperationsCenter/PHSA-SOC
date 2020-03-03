@@ -214,6 +214,9 @@ def process_borg(body):
     The `event_source` property will determine which application is the
     destination of the `Windows` `event`.
     """
+
+    LOG.info('Processing %s', body)
+
     borg = collections.namedtuple(
         'Borg', [
             'source_host', 'record_number', 'opcode', 'level',

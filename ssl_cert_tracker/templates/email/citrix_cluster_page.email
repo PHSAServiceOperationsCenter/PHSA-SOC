@@ -1,0 +1,15 @@
+{% block subject %}
+{{tags}} Citrix Logon Bot Failure Cluster
+{% endblock %}
+
+{% block html %}
+<p>
+There was a cluster of Citrix Logon Bot failures between {{start_time}} and {{end_time}}
+</p>
+<p>
+The following machines had failures:
+{% for bot in bots %}
+{{bot.source_host}},
+{% endfor %}
+</p>
+{% endblock %}

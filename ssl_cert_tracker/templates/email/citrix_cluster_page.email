@@ -1,15 +1,6 @@
 {% block subject %}
-{{tags}} Citrix Logon Bot Failure Cluster
+Cluster of Citrix Logon failures btw {{start_time}} & {{end_time}} Machines: {% for bot in bots %}{{bot.source_host}}, {% endfor %}
 {% endblock %}
 
-{% block html %}
-<p>
-There was a cluster of Citrix Logon Bot failures between {{start_time}} and {{end_time}}
-</p>
-<p>
-The following machines had failures:
-{% for bot in bots %}
-{{bot.source_host}},
-{% endfor %}
-</p>
+{% block plain %}
 {% endblock %}

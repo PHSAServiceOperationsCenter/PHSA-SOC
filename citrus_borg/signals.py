@@ -47,7 +47,6 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
                          instance.connection_achieved_duration,
                          instance.receiver_startup_duration]
 
-
     # TODO alternately just check if the test passed, if it did there should be
     #      timings if not is it worth alerting?
     # remove None values
@@ -104,7 +103,8 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
                 <= get_preference('citrusborgux__backoff_limit')):
             Email.send_email(None, get_subscription('Citrix Cluster Alert'),
                              False, start_time=new_cluster.start_time,
-                             end_time=new_cluster.end_time,
+                             end_time=new_cluster.end_time.astimezone(
+                                 timezone.get_current_timezone()).time(),
                              bots=new_cluster.winlogevent_set.all())
             LOG.debug('sent cluster email')
         else:

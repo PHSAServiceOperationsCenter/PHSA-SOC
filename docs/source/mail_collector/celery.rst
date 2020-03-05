@@ -103,7 +103,7 @@ The :file:`phsa_celery_mail_collector.conf` file
 This file is used to configure the :file:`phsa_celery_mail_collector.service`
 `systemd service <https://www.freedesktop.org/wiki/Software/systemd/>`_.
 
-This files resides under the :file:`p_soc_auto\configs\celery` directory. No
+This files resides under the :file:`p_soc_auto\\configs\\celery` directory. No
 special OS level steps are required under the current runtime configuration.
 
 Here is the content of this file:

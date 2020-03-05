@@ -6,13 +6,13 @@ same host as the :ref:`SOC Automation Server`.
 
 The configuration file used by the `memcached <https://memcached.org/>`__ server
 is under source control. The path for this file is
-``configs/memcached/memcached``.
+:file:`configs/memcached/memcached`.
 
 .. literalinclude:: ../../../configs/memcached/memcached
    :language: cfg
 
 Symlink or copy this file to the `memcached <https://memcached.org/>`__
-environment file at ``/etc/sysconfig/memcached``.
+environment file at :file:`/etc/sysconfig/memcached`.
 
 The :ref:`SOC Automation Server` is connecting to the `memcached
 <https://memcached.org/>`__ server using the setting described by the
@@ -34,7 +34,7 @@ This requires some more research.
 `Memcached <https://memcached.org/>`__ supports `SASL
 <https://github.com/memcached/memcached/wiki/SASLHowto>`__ but it is not clear
 whether the :class:`django.core.cache.backends.memcached.PyLibMCCache` backend
-will work with ``SASL``.
+will work with SASL.
 
 Here is an article about `How To Secure Memcached by Reducing Exposure
 <https://www.digitalocean.com/community/tutorials/how-to-secure-memcached-by-reducing-exposure>`__.

@@ -1,8 +1,8 @@
 SOC Automation Project
 ======================
 
-The :ref:`SOC Automation Project` is a multi-component IT system used by the
-``SOC`` team.
+The *SOC Automation Project* is a multi-component IT system used by the
+*SOC* team.
 
 All the components, whether off the shelf, or developed in house, can be
 readily scaled horizontally via virtualization or containerization.
@@ -13,7 +13,7 @@ readily scaled horizontally via virtualization or containerization.
     <https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol>`_ to `HTTPS
     <https://en.wikipedia.org/wiki/HTTPS>`_.
     
-    Currently, all the components of this project are comunicating over
+    Currently, all the components of this project are communicating over
     insecure channels. We need to implement `SASL
     <https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer>`_
     and `TLS <https://en.wikipedia.org/wiki/Transport_Layer_Security>`_ based

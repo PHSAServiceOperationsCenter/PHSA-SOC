@@ -6,27 +6,27 @@ from p_soc_auto_base.migrations import create_subscription
 def populate_subscriptions(apps, schema_editor):
     # TODO do I need to add subjects to all the subscriptions that did have them
     citrix_subs = [
-        {'name': 'Dead Citrix monitoring bots',
+        {'subscription': 'Dead Citrix monitoring bots',
          'template_name': 'borg_hosts_dead',
          'headers': 'host_name,ip_address,site__site,last_seen', },
-        {'name': 'Dead Citrix client sites',
+        {'subscription': 'Dead Citrix client sites',
          'template_name': 'borg_sites_dead',
          'headers': 'site,winlogbeathost__last_seen', },
-        {'name': 'Missing Citrix farm hosts',
+        {'subscription': 'Missing Citrix farm hosts',
          'template_name': 'borg_servers_dead',
          'headers': 'broker_name,last_seen', },
-        {'name': 'Citrix logon event summary',
+        {'subscription': 'Citrix logon event summary',
          'template_name': 'borg_logins_by_host_report',
          'headers': 'host_name,site__site,hour,failed_events,successful_events',
          },
-        {'name': 'citrix logon alert',
+        {'subscription': 'citrix logon alert',
          'template_name': 'borg_failed_logins',
          'headers': 'host_name,site__site,hour,failed_events', },
-        {'name': 'Citrix Failed Logins Report',
+        {'subscription': 'Citrix Failed Logins Report',
          'template_name': 'borg_failed_logins_report',
          'headers': 'created_on,source_host__site__site,source_host__host_name'
                     ',failure_reason,failure_details', },
-        {'name': 'Citrix Failed Logins per Site Report',
+        {'subscription': 'Citrix Failed Logins per Site Report',
          'template_name': 'borg_failed_logins_by_site_report',
          'headers': 'created_on,failure_reason,failure_details', },
         {'subscription': 'Citrix logon event and ux summary',
@@ -372,7 +372,11 @@ class Migration(migrations.Migration):
         ('mail_collector', '0040_add_subscription_unconfig_bots'),
     ]
 
-    dependencies = [('p_soc_auto_base', '0001_beats')]
+    dependencies = [
+        # TODO when templates are moved this will presumably no longer be
+        #      necessary
+        ('ssl_cert_tracker', '0011_auto_20200123_1457'),
+        ('p_soc_auto_base', '0001_beats')]
 
     operations = [
         migrations.RunPython(populate_subscriptions)

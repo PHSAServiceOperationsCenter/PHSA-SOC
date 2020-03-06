@@ -81,7 +81,7 @@ restart the ``celery workers``.
     [root@lvmsocq01 rabbit@lvmsocq01]# systemctl start rabbitmq-server
     [root@lvmsocq01 rabbit@lvmsocq01]# 
 
-* restart the ``Logstash`` server:
+* restart the *Logstash* server:
 
 .. code-block:: bash
 
@@ -131,16 +131,18 @@ The ``SOC Automation server`` also needs to consume `AMQP
 <https://www.elastic.co/products/logstash>`_ server.
 
 The `Logstash <https://www.elastic.co/products/logstash>`_ server will create
-the ``logstash`` ``exchange`` automatically when starting. See
+the *logstash exchange* automatically when starting. See
 :ref:`Logstash Server` for details.
 
-We must add a ``binding`` from the ``logstash`` ``exchange`` to the
-``logstash`` ``queue`` so that the ``SOC Automation server`` can consume
+We must add a binding from the *logstash exchange* to the
+*logstash queue* so that the *SOC Automation server* can consume
 messages from the `Logstash
 <https://www.elastic.co/products/logstash>`_ server.
 
 This is done via the `RabbitMQ Management Web Console
 <https://www.rabbitmq.com/management.html>`_.
 
-.. image:: rabbitmq_exchange_config.png
+.. image:: rabbitmq_exchange_page_logstash_highlighted.png
+.. image:: rabbitmq_logstash_exchange_binding_input.png
+.. image:: rabbitmq_logstash_exchange_final.png
 

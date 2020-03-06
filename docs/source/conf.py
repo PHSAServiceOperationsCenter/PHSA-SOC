@@ -20,7 +20,7 @@ from django.conf import settings
 sys.path.insert(0, os.path.abspath('../../mail_borg'))
 sys.path.insert(0, os.path.abspath('../../'))
 import p_soc_auto
-os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings.common'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'p_soc_auto.settings.development'
 django.setup()
 
 # set the location of the GraphVix binary

@@ -23,7 +23,7 @@ the `Celery application
 used by the :ref:`SOC Automation Server`
 """
 
-__version__ = '1.1.1-release_candidate'
+__version__ = '1.1.3'
 """
 the :ref:`SOC Automation Server` version
 """

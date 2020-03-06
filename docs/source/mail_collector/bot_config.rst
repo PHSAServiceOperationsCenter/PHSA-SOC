@@ -77,18 +77,17 @@ Note that the configuration data is pulled from multiple tables as per the
 Special configuration cases
 ---------------------------
 
-If a bot is not known to the ``SOC Automation server``, it can still pull the
+If a bot is not known to the *SOC Automation server*, it can still pull the
 main configuration from the server but:
 
 * The ``host_name`` key in sample above will contain the value 'host.not.exist'
   
-  When the bot sends its first event to the ``SOC Automation server``, a
+  When the bot sends its first event to the *SOC Automation server*, a
   record will be made of its name.
   
-  **The** ``SOC Automation server`` **user must then change the record above
-  by:**
+  The *SOC Automation server* user must then change the record above by:
   
-  1. assigning an :class:`mail_collector.models.ExchangeCofiguration`
+  1. assigning an :class:`mail_collector.models.ExchangeConfiguration`
      instance to said bot
  
   2. assigning a valid :class:`mail_collector.models.MailSite` instance
@@ -101,16 +100,11 @@ main configuration from the server but:
   :ref:`Mail Borg Client Application` will populate this key with the value
   ``{'site': 'site.not.seen'}``
 
-.. todo: `<https://trello.com/c/E2cSQpwA>`_
-
-.. todo: `<https://trello.com/c/Vs0LWMD5>`_
-
-
 Data structure
 --------------
 
 All the notes in the diagram below are written using Django jargon. The
-**mail_collector** group label in the diagram maps to the
+``mail_collector`` group label in the diagram maps to the
 :ref:`Mail Collector Application`. Some notes in the diagram also reference
 models defined in the :ref:`Citrus Borg Application`.
 

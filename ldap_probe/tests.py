@@ -20,25 +20,12 @@ from django.conf import settings
 from django.db.models import QuerySet
 from django.utils import timezone
 from hypothesis import given
-from hypothesis.extra.django import TestCase
 from hypothesis.strategies import text, characters
 
 from ldap_probe.models import LDAPBindCred, NonOrionADNode, OrionADNode, \
     LdapProbeLog
 from orion_integration.models import OrionNode, OrionNodeCategory
-from p_soc_auto_base.utils import get_or_create_user
-
-
-# TODO should this be in some shared test library?
-class UserTestCase(TestCase):
-    """
-    Class that provides set-up for test cases that require users
-    """
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        user = get_or_create_user()
-        cls.USER_ARGS = {'created_by': user, 'updated_by': user}
+from p_soc_auto_base.test_lib import UserTestCase
 
 
 class OrionTestCase(UserTestCase):

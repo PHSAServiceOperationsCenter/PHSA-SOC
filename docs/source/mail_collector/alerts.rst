@@ -284,7 +284,7 @@ This can happen in either of the following cases:
   operator has changed the ``site`` info in this configuration to something
   the server is not aware of
   
-This alert is evaluated periodically as configured in the ``Schedule``
+This alert is evaluated periodically as configured in the *Schedule*
 section of the `Site not configured on bot Exchange alert 
 <../../../admin/django_celery_beat/periodictask/?q=exchange+alert+site+not+configured>`_
 page.

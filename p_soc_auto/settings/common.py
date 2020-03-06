@@ -81,8 +81,12 @@ LOGGING = {
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'p_soc_auto.log'),
             'formatter': 'verbose',
-        },
-        'citrus_borg_log':          {
+        },  'p_soc_auto_base_log':               {
+            'level':     'INFO',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'p_soc_auto.log'),
+            'formatter': 'verbose',
+        }, 'citrus_borg_log':          {
             'level':     'INFO',
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'citrus_borg.log'),
@@ -132,6 +136,10 @@ LOGGING = {
         }, 'p_soc_auto': {
             'handlers': ['p_soc_auto_log', 'warning_log'],
             'level': 'INFO',
+            'propagate': True,
+        }, 'p_soc_auto_base': {
+            'handlers': ['p_soc_auto_base_log', 'console', 'warning_log'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'citrus_borg':          {

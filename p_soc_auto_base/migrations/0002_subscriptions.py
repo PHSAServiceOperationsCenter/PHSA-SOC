@@ -1,7 +1,5 @@
 from django.db import migrations
 
-from p_soc_auto_base.utils import get_or_create_user
-
 from p_soc_auto_base.migrations import create_subscription
 
 

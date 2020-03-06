@@ -16,7 +16,7 @@ application.
 """
 import pytz
 
-from django.contrib.auth.models import User
+from p_soc_auto_base.utils import get_or_create_user
 
 TO_EMAILS = 'TSCST-Support@hssbc.ca,TSCST-Shiftmanager@hssbc.ca,' \
             'daniel.busto@hssbc.ca'
@@ -31,7 +31,7 @@ def create_subscription(apps, subscription_dict):
     """
     subscription_model = apps.get_model('ssl_cert_tracker', 'Subscription')
 
-    user = User.objects.filter(is_superuser=True).first()
+    user = get_or_create_user()
 
     # TODO can I have alternate_email_subject='', do we even need the alt?
     subscription_defaults = {

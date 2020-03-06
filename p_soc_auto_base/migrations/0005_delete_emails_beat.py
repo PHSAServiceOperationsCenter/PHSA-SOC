@@ -14,7 +14,7 @@ TASK = ({'name': 'Delete old templated emails',
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('p_soc_auto_base', '0003_citrix_slow_alert_subscription'),
+        ('p_soc_auto_base', '0004_citrix_cluster_subscription'),
     ]
 
     operations = [

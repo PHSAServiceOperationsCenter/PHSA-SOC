@@ -15,15 +15,14 @@ This module contains the `Django admin` classes for the
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model
-from rangefilter.filter import DateRangeFilter, DateTimeRangeFilter
+from rangefilter.filter import DateTimeRangeFilter
 
-from p_soc_auto_base.admin import BaseAdmin
-from .models import (
-    WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
-    BorgSiteNotSeen, WinlogbeatHostNotSeen, KnownBrokeringDeviceNotSeen,
-    AllowedEventSource, CitrixHost
-)
 from mail_collector.models import ExchangeConfiguration
+from p_soc_auto_base.admin import BaseAdmin
+from .models import (AllowedEventSource, BorgSite, BorgSiteNotSeen, CitrixHost,
+                     EventCluster, KnownBrokeringDevice,
+                     KnownBrokeringDeviceNotSeen, WinlogEvent,
+                     WinlogbeatHostNotSeen)
 
 
 class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
@@ -59,8 +58,8 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         """
         override :meth:`django.contrib.admin.ModelAdmin.add_view`
 
-        pre-populate `created_by` and `updated_by` from the :attr:`user` attribute
-        of the `request` object.
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
         """
         data = request.GET.copy()
         data['created_by'] = request.user
@@ -166,6 +165,55 @@ class BorgSiteNotSeenAdmin(BorgSiteAdmin):
     """
 
 
+@admin.register(EventCluster)
+class EventClusterAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`citrus_borg.models.EventCluster`
+    """
+    list_display = ('bots', 'alert_sent', 'start_time', 'end_time', 'notes')
+    list_editable = ('notes', )
+    list_filter = ('enabled', )
+    readonly_fields = ('enabled', 'bots', 'end_time', 'start_time',
+                       'updated_by', 'uuid')
+
+    def bots(self, obj):
+        """
+        Get the bots that were involved in this cluster of failures.
+
+        :param obj: The EventCluster being displayed
+        :return: All bots in the cluster
+        """
+        return [str(event.source_host) for event in obj.winlogevent_set.all()]
+
+    def alert_sent(self, obj):
+        """
+        Wrapper for enabled, to make the meaning more clear to the end user.
+
+        :param obj: The EventCluster being displayed
+        :return: Whether or not a notification was sent
+        """
+        return obj.enabled
+
+    def has_add_permission(self, request):  # @UnusedVariable
+        """
+        override :meth:`django.contrib.admin.has_add_permission`.
+
+        Nobody is allowed to create any instance using this class.
+        All the data is maintained by background processes.
+        """
+        return False
+
+    def has_delete_permission(self, request, obj=None):  # @UnusedVariable
+        """
+        override :meth:`django.contrib.admin.has_delete_permission`
+
+        Nobody is allowed to delete any instance using this class.
+        All the data is maintained by background processes.
+        """
+        return False
+
+
 @admin.register(KnownBrokeringDevice)
 class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     """
@@ -191,7 +239,7 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         """
         return False
 
-    list_display = ('broker_name',  'enabled', 'last_seen', 'created_on',)
+    list_display = ('broker_name', 'enabled', 'last_seen', 'created_on',)
     list_editable = ('enabled',)
     list_filter = ('enabled',)
     readonly_fields = ('broker_name', 'last_seen', 'created_on',)
@@ -217,8 +265,8 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
                        'created_on', 'orion_id',)
-    list_filter = ('site__site', 'enabled', 'exchange_client_config__is_default',
-                   ('last_seen', DateTimeRangeFilter),)
+    list_filter = ('enabled', 'exchange_client_config__is_default',
+                   ('last_seen', DateTimeRangeFilter), 'site__site', )
     search_fields = ('site__site', 'host_name', 'ip_address',
                      'exchange_client_config__config_name',)
 
@@ -239,7 +287,6 @@ class WinlogbeatHostNotSeenAdmin(WinlogbeatHostAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`citrus_borg.models.WinlogbeatHostNotSeen`
     """
-    pass
 
 
 @admin.register(WinlogEvent)

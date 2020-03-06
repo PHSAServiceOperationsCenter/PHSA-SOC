@@ -1,0 +1,6 @@
+{% block subject %}
+Cluster of Citrix Logon failures btw {{start_time}} & {{end_time}} Machines: {% for bot in bots %}{{bot.source_host}}, {% endfor %}
+{% endblock %}
+
+{% block plain %}
+{% endblock %}

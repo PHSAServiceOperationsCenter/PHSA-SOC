@@ -2,17 +2,15 @@ Building the Mail Borg Application
 ==================================
 
 The :ref:`Mail Borg Client Application` is written in `Python
-<https://www.python.org/about/>`_ and under most circumstances `Python
-<https://www.python.org/about/>`_ applications have a lot of depedencies and
-are relatively hard to deploy.
+<https://www.python.org/about/>`_ and under most circumstances *Python*
+applications have a lot of depedencies and are relatively hard to deploy.
 
 Compiling
 ---------
 
-It is possible to package a complete `Python
-<https://www.python.org/about/>`_ application into a single executable file.
+It is possible to package a complete *Python* application into a single executable file.
 The executable will contain all the dependencies required by the application,
-including the `Python <https://www.python.org/about/>`_ interpreter.
+including the *Python* interpreter.
 
 We are using the `PyInstaller
 <https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package.
@@ -21,12 +19,11 @@ The `PyInstaller <https://pyinstaller.readthedocs.io/en/stable/index.html>`__
 package must be installed in the `virtual environment
 <https://docs.python.org/3.6/tutorial/venv.html?highlight=virtual%20environments>`__
 used for developing the :ref:`Mail Borg Client Application`. Currently, there
-is a `pip requirements file
-<https://pip.pypa.io/en/stable/user_guide/?highlight=requirements#requirements-files>`__
+is a `pip requirements file <https://pip.pypa.io/en/stable/user_guide/requirements-files>`__
 under source control that is used for Windows specific requirements named
 requirements_win.txt and the `PyInstaller
 <https://pyinstaller.readthedocs.io/en/stable/index.html>`__ package is
-referenced within said requirements file. To update the ``Python`` packages in
+referenced within said requirements file. To update the *Python* packages in
 the environment, execute:
 
 .. code-block:: ps1con
@@ -165,7 +162,7 @@ As show in the ``dir`` listing, there is now a file named
 
   :note:
     We assume that the virtual environment is named ``carmina`` and that it
-    is installed under ``%HOMEPATH%\Envs\``.
+    is installed under :file:`%HOMEPATH%\\Envs`.
 
 Signing
 -------
@@ -224,7 +221,7 @@ Import the certificate to the Root cert store:
     PS C:\Users\serban> Import-Certificate -FilePath .\mail_borg_gui_sig.crt -Cert Cert:\CurrentUser\Root
 
 The file with the signing certificate is now present under
-``C:\users\serban\mail_borg_gui_sig.crt``.
+:file:`C:\\users\\serban\\mail_borg_gui_sig.crt`.
 
 The detailed documentation for handling self-signed certificates in Windows is
 available from `Microsoft <https://www.microsoft.com/en-ca/>`_ at
@@ -274,12 +271,12 @@ The :ref:`Mail Borg Client Application` must run with ``Adminstrator``
 privileges. Navigate to the folder where one has installed the application.
 
 Open the mail_borg.ini file and verify that the ``cfg_srv_ip`` property is
-pointing to the correct ``Soc Automation server`` and that the ``use_cfg_srv``
+pointing to the correct SOC Automation server and that the ``use_cfg_srv``
 is set to ``True``. Edit and save the file if necessary, then close it.
 
-Right-click the ``exe`` file and choose to run it as admin. Tell ``Norton`` to
-sit down and shut up. Click the ``Run mail check`` button or wait for the
-program to execute the mail check automatically as configured.
+Right-click the ``exe`` file and choose to run it as admin.
+Click the ``Run mail check`` button or wait for the program to execute the
+mail check automatically as configured.
 
 It is highly recommended to create a start-up task for this application.
 

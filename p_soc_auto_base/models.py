@@ -197,10 +197,7 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
         :meth:`django.db.models.Model.full_clean`, otherwise the
         :meth:`clean` will not be invoked.
         """
-        try:
-            self.full_clean()
-        except ValidationError as error:
-            raise error
+        self.full_clean()
 
         super().save(*args, **kwargs)
 

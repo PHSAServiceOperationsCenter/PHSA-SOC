@@ -92,37 +92,13 @@ class DomainAccount(BaseModelWithDefaultInstance, models.Model):
         * force the domain to upper case letters to respect the
           Windows conventions
 
-        * only one instance can be the default domain account. this is
-          tracked using :attr:`is_default`. this method is looking through
-          all the saved instances and raising an error if there already
-          is a default domain account
-
         :raises: :exc:`django.core.exceptions.ValidationError`
         """
         self.domain = self.domain.upper()
 
-        if not self.is_default:
-            return
-
-        if self._meta.model.objects.filter(is_default=True).\
-                exclude(pk=self.pk).exists():
-            raise ValidationError(
-                {'is_default': _('A default domain account already exists')})
+        super().clean()
 
         return
-
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        """
-        override :meth:`django.db.models.Model.save` to invoke
-        :meth:`django.db.models.Model.full_clean`. otherwise the
-        :meth:`clean` will not be invoked
-        """
-        try:
-            self.full_clean()
-        except ValidationError as error:
-            raise error
-
-        super().save(*args, **kwargs)
 
     class Meta:
         app_label = 'mail_collector'
@@ -259,13 +235,7 @@ class ExchangeConfiguration(BaseModelWithDefaultInstance, models.Model):
         override :meth:`django.db.models.Model.clean` to
         clean the instance data before saving it to the database
 
-        * force the domain to upper case letters to respect the
-          Windows conventions
-
-        * only one instance can be the default domain account. this is
-          tracked using :attr:`is_default`. this method is looking through
-          all the saved instances and raising an error if there already
-          is a default domain account
+        * remove line breaks from email subject
 
         :raises: :exc:`django.core.exceptions.ValidationError`
 
@@ -274,27 +244,7 @@ class ExchangeConfiguration(BaseModelWithDefaultInstance, models.Model):
             self.email_subject = self.email_subject.\
                 replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
 
-        if not self.is_default:
-            return
-
-        if self._meta.model.objects.filter(is_default=True).\
-                exclude(pk=self.pk).exists():
-            raise ValidationError(
-                {'is_default':
-                 _('A default exchange client configuration already exists')})
-
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        """
-        override :meth:`django.db.models.Model.save` to invoke
-        :meth:`django.db.models.Model.full_clean`. otherwise the
-        :meth:`clean` will not be invoked
-        """
-        try:
-            self.full_clean()
-        except ValidationError as error:
-            raise error
-
-        super().save(*args, **kwargs)
+        super().clean()
 
     class Meta:
         verbose_name = _('Exchange Monitoring Client Configuration')

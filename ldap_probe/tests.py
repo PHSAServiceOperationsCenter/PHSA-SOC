@@ -7,7 +7,7 @@ Application`.
 
 :copyright:
 
-    Copyright 2018 - 2019 Provincial Health Service Authority
+    Copyright 2020 - Provincial Health Service Authority
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
@@ -318,18 +318,30 @@ class LdapProbeLogTest(UserTestCase):
         super().tearDownClass()
 
     def test_error_report_does_not_include_old_logs(self):
+        """
+        test old logs are not included in error report
+        """
         log = LdapProbeLog.objects.create(ad_node=self.node, created_on=0)
         self.assertNotIn(log, LdapProbeLog.error_report(self.test_delta))
 
     def test_error_report_includes_failed_logs(self):
+        """
+        test error report includes failed logs
+        """
         log = LdapProbeLog.objects.create(ad_node=self.node, failed=True)
         self.assertIn(log, LdapProbeLog.error_report(self.test_delta))
 
     def test_error_report_does_not_include_pass(self):
+        """
+        test error report does not include successes
+        """
         log = LdapProbeLog.objects.create(ad_node=self.node)
         self.assertNotIn(log, LdapProbeLog.error_report(self.test_delta))
 
     def test_create_from_probe(self):
+        """
+        test create from probe creates an ldap probe log entry
+        """
         probe_data = {
             'elapsed_initialize': 1,
             'elapsed_bind': 1,

@@ -47,20 +47,6 @@ class DomainAccountTest(UserTestCase):
         self.assertEqual(domain.domain, domain_name.upper())
         domain.delete()
 
-    def test_createtwodefaults_throwsexception(self):
-        """
-        Test that creating two default domain accounts throws error.
-        :return:
-        """
-        # using a private function to create the DomainAccount allows us to use
-        # assertRaises
-        def _domain_account_default():
-            DomainAccount(domain='domain', username='name', password='word',
-                          is_default=True, **self.USER_ARGS).save()
-
-        _domain_account_default()
-        self.assertRaises(ValidationError, _domain_account_default)
-
 
 class ExchangeConfigurationTest(UserTestCase):
     """

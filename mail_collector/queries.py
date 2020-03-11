@@ -131,7 +131,7 @@ def dead_mail_sites(not_seen_after=None):
     queryset = get_base_queryset('mail_collector.mailhost', enabled=True)
 
     queryset = queryset.values('site__site').\
-        annotate(most_recent=Max('excgh_last_seen')).\
+        annotate(most_recent=Max('exchange_last_seen')).\
         filter(most_recent__lte=not_seen_after).\
         order_by('site__site', '-most_recent')
 

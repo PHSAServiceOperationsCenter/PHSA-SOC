@@ -172,7 +172,7 @@ class WinlogbeatHost(BaseModel, models.Model):
         _('IP address'), protocol='IPv4', blank=True, null=True)
     last_seen = models.DateTimeField(
         _('Citrix bot last seen'), db_index=True, blank=True, null=True)
-    excgh_last_seen = models.DateTimeField(
+    exchange_last_seen = models.DateTimeField(
         _('Exchange client bot last seen'),
         db_index=True, blank=True, null=True)
     site = models.ForeignKey(
@@ -321,13 +321,13 @@ class WinlogbeatHost(BaseModel, models.Model):
             if last_seen:
                 winloghost.last_seen = last_seen
             if exch_last_seen:
-                winloghost.excgh_last_seen = exch_last_seen
+                winloghost.exchange_last_seen = exch_last_seen
         else:
             user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(
                 host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
-                excgh_last_seen=exch_last_seen, updated_by=user)
+                exchange_last_seen=exch_last_seen, updated_by=user)
 
         winloghost.save()
         return winloghost

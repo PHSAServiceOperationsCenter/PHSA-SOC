@@ -117,10 +117,10 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     :class:`citrus_borg.models.BorgSite`
     """
     list_display = ('site', 'enabled', 'notes',
-                    'last_seen', 'excgh_last_seen', 'updated_on', 'updated_by')
+                    'last_seen', 'exchange_last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)
     list_filter = ('enabled',)
-    readonly_fields = ('last_seen', 'excgh_last_seen',)
+    readonly_fields = ('last_seen', 'exchange_last_seen',)
 
     def last_seen(self, obj):  # pylint: disable=no-self-use
         """
@@ -138,10 +138,10 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         return 'Please allocate at least one Citrix bot to this site'
     last_seen.short_description = 'last seen'
 
-    def excgh_last_seen(self, obj):  # pylint: disable=no-self-use
+    def exchange_last_seen(self, obj):  # pylint: disable=no-self-use
         """
         calculated display for :attr:`field
-        <citrus_borg.models.BorgSite.excgh_last_seen>`
+        <citrus_borg.models.BorgSite.exchange_last_seen>`
 
         Warns the user to allocate at least one
         :class:`citrus_borg.models.WinlogbeatHost` instance pointing to a
@@ -149,12 +149,12 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
         """
         first_bot = obj.winlogbeathost_set.\
-            filter(excgh_last_seen__isnull=False).first()
+            filter(exchange_last_seen__isnull=False).first()
 
         if first_bot:
-            return first_bot.excgh_last_seen
+            return first_bot.exchange_last_seen
         return 'Please allocate at least one Exchange client bot to this site'
-    excgh_last_seen.short_description = 'Exchange client bot last seen'
+    exchange_last_seen.short_description = 'Exchange client bot last seen'
 
 
 @admin.register(BorgSiteNotSeen)

@@ -11,8 +11,6 @@ This module contains tests for the mail collector module.
 
 :contact:    daniel.busto@phsa.ca
 """
-from django.core.exceptions import ValidationError
-
 from mail_collector.models import DomainAccount, ExchangeConfiguration
 from p_soc_auto_base.test_lib import UserTestCase
 

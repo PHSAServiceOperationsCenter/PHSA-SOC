@@ -263,7 +263,7 @@ def bring_out_your_dead(
 
     example::
 
-        qs=dead_bodies('mail_collector.mailhost','excgh_last_seen__lte',
+        qs=dead_bodies('mail_collector.mailhost','exchange_last_seen__lte',
                     not_seen_after={'minutes': 1}, enabled=True)
 
     """

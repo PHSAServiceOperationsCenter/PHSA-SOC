@@ -37,9 +37,9 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
         an Exchange Monitoring Client running
 
         the filter is using an is not null lookup against the
-        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
+        :attr:`citrus_borg.models.WinlogbeatHost.exchange_last_seen`
         """
-        return super().get_queryset().exclude(excgh_last_seen__isnull=True)
+        return super().get_queryset().exclude(exchange_last_seen__isnull=True)
 
 
 class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -56,11 +56,11 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         running an Exchange Monitoring Client
 
         the filter is using an is not null lookup against the
-        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
+        :attr:`citrus_borg.models.WinlogbeatHost.exchange_last_seen`
 
         """
         return super().get_queryset().filter(
-            winlogbeathost__excgh_last_seen__isnull=False).distinct()
+            winlogbeathost__exchange_last_seen__isnull=False).distinct()
 
 
 class DomainAccount(BaseModelWithDefaultInstance, models.Model):
@@ -263,8 +263,8 @@ class MailSite(BorgSite):
         proxy = True
         verbose_name = _('Exchange Monitoring Site')
         verbose_name_plural = _('Exchange Monitoring Sites')
-        get_latest_by = '-winlogbeathost__excgh_last_seen'
-        ordering = ['-winlogbeathost__excgh_last_seen', ]
+        get_latest_by = '-winlogbeathost__exchange_last_seen'
+        ordering = ['-winlogbeathost__exchange_last_seen', ]
 
 
 class MailHost(WinlogbeatHost):
@@ -279,8 +279,8 @@ class MailHost(WinlogbeatHost):
         proxy = True
         verbose_name = _('Exchange Monitoring Bot')
         verbose_name_plural = _('Exchange Monitoring Bots')
-        get_latest_by = '-excgh_last_seen'
-        ordering = ['-excgh_last_seen', ]
+        get_latest_by = '-exchange_last_seen'
+        ordering = ['-exchange_last_seen', ]
 
 
 class MailBotLogEvent(models.Model):
@@ -304,7 +304,7 @@ class MailBotLogEvent(models.Model):
     source_host = models.ForeignKey(
         'citrus_borg.WinlogbeatHost', db_index=True, blank=False, null=False,
         on_delete=models.PROTECT,
-        limit_choices_to={'excgh_last_seen__isnull': False},
+        limit_choices_to={'exchange_last_seen__isnull': False},
         verbose_name=_('Event Source Host'))
     event_status = models.CharField(
         _('Status'), max_length=16, db_index=True, blank=False, null=False,

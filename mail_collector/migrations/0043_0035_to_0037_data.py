@@ -132,7 +132,7 @@ def create_fake_site_bot(apps, schema_editor):
                        ' system'),
                    'exchange_client_config':
                    ExchangeConfiguration.objects.filter(is_default=True).get(),
-                   'excgh_last_seen':
+                   'exchange_last_seen':
                    dateparse.parse_datetime('1970-01-01T00:00:00+00'),
                    'enabled': False}, ], },
     ]
@@ -153,7 +153,7 @@ def create_fake_site_bot(apps, schema_editor):
             else:
                 bot = Borg(
                     host_name=_bot['host_name'],
-                    excgh_last_seen=_bot.get('excgh_last_seen'),
+                    exchange_last_seen=_bot.get('exchange_last_seen'),
                     created_by_id=user.id, updated_by_id=user.id)
 
             bot.site = site

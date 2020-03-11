@@ -339,7 +339,7 @@ INTERVAL_TASKS = {
          {'every': 30, 'period': 'minutes', }, ),
         ({'name': 'Raise critical  alert for exchange client bots',
           'task': 'mail_collector.tasks.bring_out_your_dead',
-          'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
+          'args': '["mail_collector.mailhost","exchange_last_seen__lte",'
                   '"Exchange Client Bots Not Seen"]',
           'kwargs': '{"url_annotate": false,'
                     '"level": "CRITICAL",'
@@ -347,7 +347,7 @@ INTERVAL_TASKS = {
          {'every': 30, 'period': 'minutes', }, ),
         ({'name': 'Raise warning  alert for exchange client bots',
           'task': 'mail_collector.tasks.bring_out_your_dead',
-          'args': '["mail_collector.mailhost","excgh_last_seen__lte",'
+          'args': '["mail_collector.mailhost","exchange_last_seen__lte",'
                   '"Exchange Client Bots Not Seen"]',
           'kwargs': '{"url_annotate": false,'
                     '"level": "WARNING",'

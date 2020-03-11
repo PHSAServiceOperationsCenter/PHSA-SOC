@@ -236,19 +236,19 @@ def populate_subscriptions(apps, schema_editor):
          'template_name': 'exc_serv_alert_all',
          'email_subject': 'Exchange client sites not been tested over the last',
          'alternate_email_subject': 'All Exchange client sites are up',
-         'headers': 'site,winlogbeathost__excgh_last_seen', },
+         'headers': 'site,winlogbeathost__exchange_last_seen', },
         {'subscription': 'Exchange Client Bot',
          'template_name': 'exc_serv_alert_all',
          'email_subject': 'Site where email services verification failed',
          'alternate_email_subject': 'Email services are working on all sites',
-         'headers': 'host_name,site__site,excgh_last_seen', },
+         'headers': 'host_name,site__site,exchange_last_seen', },
         {'subscription': 'Exchange Client Bots Not Seen',
          'template_name': 'exc_serv_alert_all',
          'email_subject': 'Exchange client bots that have not made any mail'
                           ' requests over the last',
          'alternate_email_subject': 'All Exchange client bots have been'
                                     ' functioning properly over the last',
-         'headers': 'host_name,site__site,excgh_last_seen', },
+         'headers': 'host_name,site__site,exchange_last_seen', },
         {'subscription': 'Exchange Client Bot Sites Not Seen',
          'template_name': 'exc_serv_alert_all',
          'email_subject': 'Exchange client bot sites that have not made any'

@@ -14,7 +14,6 @@ used by the :ref:`Citrus Borg Application`.
 :contact:    daniel.busto@phsa.ca
 
 """
-from datetime import timedelta
 from logging import getLogger
 from smtplib import SMTPConnectError
 

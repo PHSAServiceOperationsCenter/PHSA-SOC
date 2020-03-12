@@ -887,7 +887,7 @@ class LdapProbeLog(models.Model):
         the LDAP errors generated over the last $x minutes
 
         :arg time_delta: a :class:`datetime.duration` object that determines how
-        far in the past to get failed LDAP probes from
+            far in the past to get failed LDAP probes from
 
         :returns: a :class:`django.db.models.query.QuerySet` with the
               failed LDAP probes over the defined period

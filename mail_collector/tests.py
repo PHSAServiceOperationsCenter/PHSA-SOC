@@ -2,8 +2,7 @@
 mail_collector.tests
 --------------------
 
-This module contains tests for the mail collector module.
-
+This module contains tests for the :ref:`Mail Collector Application`.
 :copyright:
 
     Copyright 2020 - Provincial Health Service Authority

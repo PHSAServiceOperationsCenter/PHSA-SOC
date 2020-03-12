@@ -2,7 +2,8 @@
 p_soc_auto_base.tests
 ---------------------
 
-This module contains tests for the base module.
+This module contains tests for functionality shared across the
+:ref:`SOC Automation Server`.
 
 :copyright:
 

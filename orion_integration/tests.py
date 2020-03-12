@@ -2,7 +2,7 @@
 orion_integration.tests
 -----------------------
 
-This module contains tests for the orion integration module.
+This module contains tests for the :ref:`Orion Integration Application`.
 
 :copyright:
 

@@ -2,7 +2,7 @@
 ssl_cert_tracker.tests
 ----------------------
 
-This module contains tests for the ssl cert tracker module.
+This module contains tests for the :ref:`SSL Certificate Tracker Application`.
 :copyright:
 
     Copyright 2020 - Provincial Health Service Authority

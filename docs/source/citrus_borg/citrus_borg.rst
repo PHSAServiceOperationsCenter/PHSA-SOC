@@ -1,7 +1,7 @@
 Citrus Borg Application
 =======================
 
-The :ref:`Citrus Borg Application` is responsible for collecting Windows
+The Citrus Borg Application is responsible for collecting Windows
 log events created by instances of the
 *ControlUp* application running on remote monitoring bots. `ControlUp
 <https://www.controlup.com/products/logon-simulator/>`_ is a

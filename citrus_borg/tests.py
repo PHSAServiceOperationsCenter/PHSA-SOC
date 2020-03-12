@@ -1,8 +1,8 @@
 """
 citrus_borg.tests
-----------------
+-----------------
 
-This module contains tests for the citrus borg module
+This module contains tests for the :ref:`Citrus Borg Application`.
 
 :copyright:
 

@@ -20,13 +20,12 @@ The `borg_chat` queue is dedicated to handling all alert and reporting tasks.
 Citrus Borg Celery Workers
 --------------------------
 
-The :ref:`Citrus Borg Application` is using two dedicated `Celery
-<https://docs.celeryproject.org/en/latest/index.html>`__
-`worker <https://docs.celeryproject.org/en/latest/userguide/workers.html>`__.
+The :ref:`Citrus Borg Application` is using two dedicated `Celery worker
+<https://docs.celeryproject.org/en/latest/userguide/workers.html>`__.
 
 See :ref:`Celery Worker Configuration` for more details about configuring and
-daemonizing `Celery workers` and :ref:`monkey_with_systemd` for more details
-about running such `workers`.
+daemonizing `Celery workers` and :ref:`The phsa_celery_mail_collector.service file`
+for more details about running such `workers`.
 
 PHSA Automation Celery Worker Service for Citrus Borg Assimilation Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

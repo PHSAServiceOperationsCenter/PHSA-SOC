@@ -97,36 +97,15 @@ the ``soc_docs`` alias. See :file:`/configs/nginx/nginx.conf` for details.
 Building the documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From the normal command line django dev environment, execute:
+Log-on to the machine you wish to build documentation on as phsa.
+Ensure you are using the ``phsa_venv`` virtual environment (if not run ``workon phsa_venv``)
+then run ``make_docs``.
+
+For reference ``make_docs`` is an alias for the following list of commands:
 
 .. code-block:: bash
 
-   (phsa_venv) phsa@lvmsocq02:~/p_soc_auto$ cd docs
-   (phsa_venv) phsa@lvmsocq02:~/p_soc_auto/docs$ make clean
-   Removing everything under 'build'...
-   (phsa_venv) phsa@lvmsocq02:~/p_soc_auto/docs$ make html
-   Running Sphinx v2.1.2
-   making output directory... done
-   loading intersphinx inventory from https://docs.python.org/3.6/objects.inv...
-   loading intersphinx inventory from http://docs.djangoproject.com/en/2.2/_objects/...
-   building [mo]: targets for 0 po files that are out of date
-   building [html]: targets for 29 source files that are out of date
-   updating environment: 29 added, 0 changed, 0 removed
-   reading sources... [100%] ssl_cert_tracker/subscriptions
-   looking for now-outdated files... none found
-   pickling environment... done
-   checking consistency... done
-   preparing documents... done
-   writing output... [100%] ssl_cert_tracker/subscriptions
-   generating indices... genindex py-modindex
-   highlighting module code... [100%] ssl_cert_tracker.models
-   writing additional pages... search
-   copying static files... done
-   copying extra files... done
-   dumping search index in English (code: en) ... done
-   dumping object inventory... done
-   build succeeded.
-
-   The HTML pages are in build/html.
-   (phsa_venv) phsa@lvmsocq02:~/p_soc_auto/docs$
-
+    cd ~/p_soc_auto/docs
+    make clean
+    make html
+    cd -

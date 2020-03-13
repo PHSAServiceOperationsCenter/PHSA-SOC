@@ -11,7 +11,7 @@ The path for this file is :file:`configs/nginx/nginx.conf`.
 .. literalinclude:: ../../../configs/nginx/nginx.conf
    :language: nginx
      
-Symlink or copy this file to :file:`/etc/nginx/nginx.conf`.
+Create a link to this file at :file:`/etc/nginx/nginx.conf`.
     
 Nginx scaling
 -------------

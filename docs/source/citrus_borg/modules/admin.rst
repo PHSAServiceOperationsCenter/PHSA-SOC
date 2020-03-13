@@ -9,7 +9,7 @@
    
 .. autoclass:: citrus_borg.admin.BorgSiteAdmin
    :show-inheritance:
-   :members: last_seen, excgh_last_seen
+   :members: last_seen, exchange_last_seen
    
 .. autoclass:: citrus_borg.admin.BorgSiteNotSeenAdmin
    :show-inheritance:

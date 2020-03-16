@@ -14,6 +14,7 @@ Abstract base model classes
 """
 __updated__ = '2018_08_08'
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -234,3 +235,122 @@ class BaseModelWithDefaultInstance(BaseModel, models.Model):
 
     class Meta:
         abstract = True
+
+
+class Subscription(BaseModel):
+    """
+    Data model with all the details required to create and send an email
+    message
+
+    This :class:`django.db.models.Model` is used across all the applications
+    running on the :ref:`SOC Automation Server`.
+    """
+    subscription = models.CharField('subscription', max_length=128, unique=True,
+        db_index=True, blank=False, null=False)
+    """
+    string uniquely identifying a :class:`Subscription` instance
+    """
+
+    emails_list = models.TextField('subscribers', blank=False, null=False)
+    """
+    comma-separated string with the email addresses to which the email will be
+    sent
+    """
+
+    from_email = models.CharField('from', max_length=255, blank=True, null=True,
+        default=settings.DEFAULT_FROM_EMAIL)
+    """
+    email address to be placed in the `FROM` email header; default will be
+    picked from :attr:`p_soc_auto.settings.DEFAULT_FROM_EMAIL`
+    """
+
+    template_dir = models.CharField('email templates directory', max_length=255,
+        blank=False, null=False)
+    """
+    directory for `Templates
+    <https://docs.djangoproject.com/en/2.2/topics/templates/>`_
+
+    In most cases this is an `application_directory/templates/` directory.
+    """
+
+    template_name = models.CharField('email template name', max_length=64,
+        blank=False, null=False)
+    """
+    the short name of the template file used to render this type of email
+
+    The extension is picked from the configuration of the
+    `django-templated-mail` package in `p_soc_auto.settings`.
+    """
+
+    template_prefix = models.CharField('email template prefix', max_length=64,
+        blank=False, null=False, default='email/')
+    """
+    the subdirectory under :attr:`templatedir` where email templates are
+    located
+    """
+
+    email_subject = models.TextField('email subject fragment', blank=True,
+        null=True,
+        help_text=('this is the conditional subject of the email template.'
+                   ' it is normally just a fragment that will augmented'
+                   ' by other variables'))
+    """
+    the strings to be used as the core of the email subject line
+
+    The application will most probably prepend and/or append various other
+    strings to the subject line.
+
+    There is no limit on the length of the subject line but in this application
+    but according to `RFC 2822
+    <http://www.faqs.org/rfcs/rfc2822.html>`_, section 2.1.1, this field must
+    not be longer than 998 characters, and should not be longer than
+    78 characters (we are nowhere near respecting the later).
+
+    This value is used as an email subject line only if the rendering template
+    is invoked with a `context
+    <https://docs.djangoproject.com/en/2.2/ref/templates/api/#rendering-a
+    -context>`_
+    that includes a reference to it.
+    """
+
+    alternate_email_subject = models.TextField('fallback email subject',
+        blank=True, null=True,
+        help_text='this is the non conditional subject of the email template.')
+    """
+    an alternate value for the core of the email subject line
+
+    This value is subject to the same rules as :attr:`email_subject`.
+
+    We include this value because in some cases the same template will render
+    with different subject lines based on various conditions. E.g. if the
+    :attr:`data is not ``None``, the subject line will include some references
+    to the its content, otherwise the subject line would be like 'Move along,
+    nothing to see here'.
+    """
+
+    headers = models.TextField('data headers', blank=False, null=False,
+        default='common_name,expires_in,not_before,not_after')
+    """
+    a comma-separated list of field names to retrieve from the :attr:`data`
+    `queryset`
+
+    Note that if there are field names listed here that don't exist in the
+    :attr:`data` `queryset` they will not be displayed.
+    """
+
+    tags = models.TextField('tags', blank=True, null=True,
+        help_text=('email classification tags placed on the subject line'
+                   ' and in the email body'))
+    """
+    a string af tags that will be pre-pended to the email subject line
+
+    The application will not do any processing on this value. If one expects
+    tags to look like [TAG1][TAG2], this value must be created using this
+    pattern.
+    """
+
+    def __str__(self):
+        return self.subscription
+
+    class Meta:
+        app_label = 'p_soc_auto_base'

@@ -38,7 +38,7 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
-from ssl_cert_tracker.models import Subscription
+from p_soc_auto_base.models import Subscription
 
 LOG = getLogger(__name__)
 
@@ -692,7 +692,7 @@ def get_base_queryset(data_source, **base_filters):
 
 def get_subscription(subscription):
     """
-    :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
+    :returns: a :class:`p_soc_auto_base.models.Subscription` instance
 
     :arg str subscription: the subscription value
 

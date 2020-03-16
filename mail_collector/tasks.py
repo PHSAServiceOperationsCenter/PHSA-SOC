@@ -229,7 +229,7 @@ def bring_out_your_dead(
         it is actually geared to deal with datetime fields
 
     :arg str subscription: the reference to the
-        :class:`ssl_cert_tracker.models.Subscription` instance to be used
+        :class:`p_soc_auto_base.models.Subscription` instance to be used
         for rendering the email alert
 
     :arg bool url_annotate:

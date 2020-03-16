@@ -22,9 +22,10 @@ from celery.utils.log import get_task_logger
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
 from p_soc_auto_base.email import Email
+from p_soc_auto_base.utils import get_subscription
 
 from .lib import expires_in, has_expired, is_not_yet_valid
-from .models import Subscription, SslProbePort, SslCertificate
+from .models import SslProbePort, SslCertificate
 from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
 )
@@ -80,8 +81,7 @@ def email_ssl_report():
     """
     return Email.send_email(
         data=expires_in(),
-        subscription=Subscription.objects.get(
-            subscription='SSl Report'))
+        subscription=get_subscription('SSl Report'))
 
 
 @shared_task(
@@ -99,7 +99,7 @@ def email_ssl_expires_in_days_report(lt_days):  # pylint: disable=invalid-name
     """
     return Email.send_email(
         data=expires_in(lt_days=lt_days),
-        subscription=Subscription.objects.get(subscription='SSl Report'),
+        subscription=get_subscription(subscription='SSl Report'),
         expires_in_less_than=lt_days)
 
 
@@ -112,9 +112,8 @@ def email_expired_ssl_report():
 
     """
     return Email.send_email(
-        data=has_expired(),
-        subscription=Subscription.objects.get(
-            subscription='Expired SSl Report'), expired=True)
+        data=has_expired(), subscription=get_subscription('Expired SSl Report'),
+        expired=True)
 
 
 @shared_task(
@@ -128,8 +127,8 @@ def email_invalid_ssl_report():
     """
     return Email.send_email(
         data=is_not_yet_valid(),
-        subscription=Subscription.objects.get(
-            subscription='Invalid SSl Report'), invalid=True)
+        subscription=get_subscription(subscription='Invalid SSl Report'),
+        invalid=True)
 
 
 @shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')

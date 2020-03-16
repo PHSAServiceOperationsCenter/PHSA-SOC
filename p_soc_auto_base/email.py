@@ -61,7 +61,7 @@ class Email:
         """
         :arg data: a :class:`django.db.models.query.QuerySet`
 
-        :arg subscription_obj: :class:`ssl_cert_tracker.models.Subscription`
+        :arg subscription_obj: :class:`p_soc_auto_base.models.Subscription`
             instance
 
             Will contain all the metadata required to build and send the email
@@ -98,7 +98,7 @@ class Email:
 
         self.subscription_obj = subscription_obj
         """
-        an :class:`ssl_cert_tracker.models.Subscriptions` instance with the
+        an :class:`p_soc_auto_base.models.Subscriptions` instance with the
         details required for rendering and sending the email message
         """
 
@@ -205,9 +205,9 @@ class Email:
         message body
 
         This method will infer the column names from the field names stored
-        under the :attr:`ssl_cert_tracker.models.Subscription.headers` field.
+        under the :attr:`p_soc_auto_base.models.Subscription.headers` field.
         The method assumes that the field names in the :attr:`headers
-        <ssl_cert_tracker.models.Subscription.headers>` field will match field
+        <p_soc_auto_base.models.Subscription.headers>` field will match field
         names in the :attr:`Email.data`
         :class:`queryset <django.db.models.query.QuerySet>`.
 
@@ -237,7 +237,7 @@ class Email:
         All column headers are capitalized using :meth:`str.title`.
 
         :returns: a :class:`dictionary <dict>` in which the keys are the field
-            names from :attr:`ssl_cert_tracker.models.Subscription.headers`
+            names from :attr:`p_soc_auto_base.models.Subscription.headers`
             and the values are created using the rules above
 
         """
@@ -283,7 +283,7 @@ class Email:
         created.
 
         The file will be named by linking the value of the :attr:`email subject
-        <ssl_cert_tracker.models.Subscription.email_subject> attribute of the
+        <p_soc_auto_base.models.Subscription.email_subject> attribute of the
         :attr:`Email.subscription` instance member with a time stamp.
         The file will be saved under the path described by
         :attr:`p_soc_auto.settings.CSV_MEDIA_ROOT`.
@@ -312,10 +312,10 @@ class Email:
     def _set_tags(self):
         """
         format the contents of the
-        :attr:`ssl_cert_tracker.models.Subscription.tags` of the
+        :attr:`p_soc_auto_base.models.Subscription.tags` of the
         :attr:`Email.subscription` to something like "[TAG1][TAG2]etc".
 
-        By convention, the :attr:`ssl_cert_tracker.models.Subscription.tags`
+        By convention, the :attr:`p_soc_auto_base.models.Subscription.tags`
         value is a list of comma separated words or phrases. This method
         converts that value to [TAGS][][], etc.
         A tag containing the hostname of the :ref:`SOC Automation Server` host
@@ -348,7 +348,7 @@ class Email:
         :arg data: a :class:`Django queryset <django.db.models.query.QuerySet>`
 
         :arg str subscription: the key for retrieving the :class:`Subscription
-            <ssl_cert_tracker.models.Subscription>` instance that will be used
+            <p_soc_auto_base.models.Subscription>` instance that will be used
             for rendering and addressing the email
 
         :arg bool add_csv: attach a csv file with the contents of the `data`

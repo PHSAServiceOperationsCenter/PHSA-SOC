@@ -3,7 +3,7 @@ email footer include with subscription info, host name and timestamp
 {% endcomment %}
 <div>
 <h5>
-Configure email subscription: <a href="{{ source_host_name }}{% url 'admin:ssl_cert_tracker_subscription_change' subscription_id %}">
+Configure email subscription: <a href="{{ source_host_name }}{% url 'admin:p_soc_auto_base_subscription_change' subscription_id %}">
 {{ subscription_name }}</a>
 </h5>
 

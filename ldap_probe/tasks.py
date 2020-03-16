@@ -307,9 +307,9 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
     :arg int instance_pk: the primary key of the instance
 
     :arg str subscription: the value of the :attr:`subscription
-        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        <p_soc_auto_base.models.Subscription.subscription>` attribute
         used to retrieve the
-        :class:`ssl_cert_tracker.models.Subscription` instance required
+        :class:`p_soc_auto_base.models.Subscription` instance required
         for raising this alert via email
 
     """
@@ -332,9 +332,9 @@ def raise_ldap_probe_perf_err(instance_pk=None, subscription=None):
     :arg int instance_pk: the primary key of the instance
 
     :arg str subscription: the value of the :attr:`subscription
-        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        <p_soc_auto_base.models.Subscription.subscription>` attribute
         used to retrieve the
-        :class:`ssl_cert_tracker.models.Subscription` instance required
+        :class:`p_soc_auto_base.models.Subscription` instance required
         for raising this alert via email
 
     """
@@ -357,9 +357,9 @@ def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
     :arg int instance_pk: the primary key of the instance
 
     :arg str subscription: the value of the :attr:`subscription
-        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        <p_soc_auto_base.models.Subscription.subscription>` attribute
         used to retrieve the
-        :class:`ssl_cert_tracker.models.Subscription` instance required
+        :class:`p_soc_auto_base.models.Subscription` instance required
         for raising this alert via email
 
     """
@@ -382,9 +382,9 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
     :arg int instance_pk: the primary key of the instance
 
     :arg str subscription: the value of the :attr:`subscription
-        <ssl_cert_tracker.models.Subscription.subscription>` attribute
+        <p_soc_auto_base.models.Subscription.subscription>` attribute
         used to retrieve the
-        :class:`ssl_cert_tracker.models.Subscription` instance required
+        :class:`p_soc_auto_base.models.Subscription` instance required
         for raising this alert via email
 
     """
@@ -852,7 +852,7 @@ def _raise_ldap_alert(subscription, level, instance_pk):
 
     :arg subscription: the subscription required for addressing and
         rendering the email object
-    :type subscription: :class:`ssl_cert_tracker.models.Subscription`
+    :type subscription: :class:`p_soc_auto_base.models.Subscription`
 
     :arg str level: the level of the alert
 

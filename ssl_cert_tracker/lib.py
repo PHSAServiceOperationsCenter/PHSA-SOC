@@ -386,5 +386,5 @@ class NoSubscriptionEmailError(Exception):
 
     Raise this exception if one tries to create an instance of :class:`Email`
     without specifying the `subscription` key for a :class:`Subscription
-    <ssl_cert_tracker.models.Subscription>` instance.
+    <p_soc_auto_base.models.Subscription>` instance.
     """

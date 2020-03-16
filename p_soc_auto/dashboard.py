@@ -53,7 +53,7 @@ class CustomIndexDashboard(Dashboard):
                     _('SSL Certificates Tracker'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('ssl_cert_tracker.models.*',),
-                    exclude=('ssl_cert_tracker.models.Subscription',)),
+                    exclude=('p_soc_auto_base.models.Subscription',)),
                 modules.ModelList(
                     _('Orion Integration'), collapsible=True,
                     css_classes=('collapse closed',),
@@ -73,7 +73,7 @@ class CustomIndexDashboard(Dashboard):
                     models=('dynamic_preferences.*',)),
                 modules.ModelList(
                     _('Email Subscriptions'), collapsible=True,
-                    models=('ssl_cert_tracker.models.Subscription',)),
+                    models=('p_soc_auto_base.models.Subscription',)),
                 modules.RecentActions(
                     _('Recent Actions'), limit=5, collapsible=True,), ]))
 

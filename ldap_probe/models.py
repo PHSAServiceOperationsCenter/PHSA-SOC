@@ -430,7 +430,7 @@ class BaseADNode(BaseModel, models.Model):
             * the moments used to filter the data in the report by time
 
             * the :attr:`subscription
-              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              <p_soc_auto_base.models.Subscription.subscription>` that will
               be used to deliver this report via email
 
             * the :class:`django.db.models.query.QuerySet` based on one
@@ -551,7 +551,7 @@ class BaseADNode(BaseModel, models.Model):
             * the moments used to filter the data in the report by time
 
             * the :attr:`subscription
-              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              <p_soc_auto_base.models.Subscription.subscription>` that will
               be used to deliver this report via email
 
             * the :class:`django.db.models.query.QuerySet` based on one

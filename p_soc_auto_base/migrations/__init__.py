@@ -37,7 +37,7 @@ def create_subscription(apps, subscription_dict):
     subscription_defaults = {
         'emails_list': TO_EMAILS,
         'from_email': 'TSCST-Support@hssbc.ca',
-        'template_dir': 'ssl_cert_tracker/template/',
+        'template_dir': 'p_soc_auto_base/template/',
         'template_prefix': 'email/',
         'created_by_id': user.id,
         'updated_by_id': user.id,

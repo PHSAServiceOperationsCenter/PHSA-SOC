@@ -82,18 +82,21 @@ def get_window():
          gui.Button('Clear execution data', key='clear'), ]
     ]
 
+    # Default to an empty dict to avoid AttributeErrors from calling get on a
+    # None object
+    exch_client_conf = config.get('exchange_client_config', {})
+
     conf_labels_col = [
         [gui.Checkbox(
             'Enable Auto-run on startup', key='autorun',  enable_events=True,
-            default=config.get('exchange_client_config').get('autorun')), ],
+            default=exch_client_conf.get('autorun', False)), ],
         [
             gui.Checkbox(
-                'Debug',
-                default=config.get('exchange_client_config').get('debug'),
+                'Debug', default=exch_client_conf.get('debug', False),
                 key='debug', enable_events=True),
             gui.Checkbox(
                 'Verify MX deliverability',
-                default=config.get('exchange_client_config').get('check_mx'),
+                default=exch_client_conf.get('check_mx', False),
                 key='check_mx', enable_events=True),
         ],
         [gui.Text('Verify MX Timeout:', justification='left'), ],
@@ -108,10 +111,9 @@ def get_window():
             justification='left'), ],
         [gui.Text('Originating Site:', justification='left'), ],
         [gui.Text('Mail Subject:', size=(None, 1), justification='left'), ],
-        [gui.Multiline(config.get(
-            'exchange_client_config').get('email_subject'),
-            key='email_subject', size=(32, 3), auto_size_text=True,
-            do_not_clear=True,  enable_events=True), ],
+        [gui.Multiline(exch_client_conf.get('email_subject', ''),
+                       key='email_subject', size=(32, 3), auto_size_text=True,
+                       do_not_clear=True,  enable_events=True), ],
     ]
 
     conf_values_col = [
@@ -119,50 +121,44 @@ def get_window():
          # TODO do spinners actually require lists? (probably yes...)
          gui.Spin(
             list(range(1, 60)), key='mail_check_period',
-            initial_value=config.get(
-                'exchange_client_config').get('mail_check_period'),
+            initial_value=exch_client_conf.get('mail_check_period', 60),
             size=(3, 1), enable_events=True),
          gui.Text('minutes'), ],
         [gui.Checkbox(
             'Force ASCII email',
-            default=config.get('exchange_client_config').get('ascii_address'),
+            default=exch_client_conf.get('ascii_address', False),
             key='ascii_address',  enable_events=True),
          gui.Checkbox(
              'UTF-8 addresses',
-            default=config.get('exchange_client_config').get('utf8_email'),
+            default=exch_client_conf.get('utf8_email', False),
             key='utf8_email', enable_events=True), ],
         [gui.Spin(
             list(range(1, 20)),
             key='check_mx_timeout',
-            initial_value=config.get(
-                'exchange_client_config').get('check_mx_timeout'),
+            initial_value=exch_client_conf.get('check_mx_timeout', 20),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
             list(range(1, 120)), key='min_wait_receive',
-            initial_value=config.get(
-                'exchange_client_config').get('min_wait_receive'),
+            initial_value=exch_client_conf.get('min_wait_receive', 120),
             size=(3, 1), enable_events=True),
          gui.Text('seconds'), ],
         [gui.Spin(
             list(range(1, 10)), key='backoff_factor',
-            initial_value=config.get(
-                'exchange_client_config').get('backoff_factor'),
+            initial_value=exch_client_conf.get('backoff_factor', 10),
             size=(3, 1), enable_events=True), ],
         [gui.Spin(
             list(range(1, 600)), key='max_wait_receive',
-            initial_value=config.get(
-                'exchange_client_config').get('max_wait_receive'),
+            initial_value=exch_client_conf.get('max_wait_receive', 600),
             size=(3, 1),  enable_events=True),
          gui.Text('seconds'), ],
-        [gui.InputText(config.get('site').get('site'), key='site',
+        [gui.InputText(config.get('site', {}).get('site', ''), key='site',
                        size=(32, 1), disabled=True), ],
         [gui.Text('Additional Email Tags:',
                   size=(None, 1), justification='left'), ],
-        [gui.Multiline(config.get(
-            'exchange_client_config').get('tags'), key='tags', size=(32, 3),
-            auto_size_text=True, do_not_clear=True,
-            enable_events=True), ], ]
+        [gui.Multiline(exch_client_conf.get('tags', ''), key='tags',
+                       size=(32, 3), auto_size_text=True, do_not_clear=True,
+                       enable_events=True), ], ]
 
     conf_emails_col = [
         [gui.Text('Exchange Accounts:',  justification='left'), ],
@@ -173,8 +169,7 @@ def get_window():
             auto_size_columns=True, display_row_numbers=True), ],
         [gui.Text('Witness Addresses:', justification='left'), ],
         [gui.Multiline(
-            ', '.join(
-                config.get('exchange_client_config').get('witness_addresses')),
+            ', '.join(exch_client_conf.get('witness_addresses', [])),
             size=(96, 1), key='witness_addresses', disabled=True), ], ]
 
     config_frame = [
@@ -200,7 +195,8 @@ def get_window():
                     disabled=True),
          gui.Button('Reset local config', key='reset_config',
                     disabled=False), ],
-        [gui.Text(config.get('load_status'))],
+        [gui.Text(config.get('load_status',
+                             'Configuration did not load correctly.'))],
     ]
 
     mail_check_frame = [
@@ -213,7 +209,8 @@ def get_window():
                 format(
                     HTTP_PROTO, base_config.get('cfg_srv_ip'),
                     base_config.get('cfg_srv_port'),
-                    config.get('exchange_client_config').get('config_name')),
+                    exch_client_conf.get('config_name',
+                                         'ERROR: CONFIG NOT LOADED')),
                 disabled=True, size=(80, 1), key='bot_cfg_url'),
             gui.Button('Refresh config from server', key='reload_config',
                        disabled=False),
@@ -238,8 +235,6 @@ def get_window():
     window.Layout(layout).Finalize()
 
     return base_config, config, window
-
-# pylint: enable=unnecessary-comprehension
 
 
 def _accounts_to_table(accounts, window):
@@ -432,7 +427,7 @@ def do_reload_config(window):
     ]
 
     current_base_config = collections.OrderedDict(items)
-    config = load_config(current_base_config=current_base_config)
+    _, config = load_config(base_config=current_base_config)
 
     window.FindElement('bot_cfg_url').Update(
         '{}://{}:{}/admin/mail_collector/mailhost/?q={}'.format(
@@ -440,47 +435,51 @@ def do_reload_config(window):
             current_base_config.get('cfg_srv_port'),
             config.get('host_name'))
     )
+
+    # TODO this is similar to above, is there some way to refactor to reduce
+    #      code duplication?
+    exch_client_conf = config.get('exchange_client_config', {})
+
     window.FindElement('autorun').Update(
-        config.get('exchange_client_config').get('autorun')
+        exch_client_conf.get('autorun', False)
     )
     window.FindElement('debug').Update(
-        config.get('exchange_client_config').get('debug')
+        exch_client_conf.get('debug', False)
     )
     window.FindElement('check_mx').Update(
-        config.get('exchange_client_config').get('check_mx')
+        exch_client_conf.get('check_mx', False)
     )
     window.FindElement('email_subject').Update(
-        config.get('exchange_client_config').get('email_subject')
+        exch_client_conf.get('email_subject', '')
     )
     window.FindElement('mail_check_period').Update(
-        config.get('exchange_client_config').get('mail_check_period')
+        exch_client_conf.get('mail_check_period', 60)
     )
     window.FindElement('ascii_address').Update(
-        config.get('exchange_client_config').get('ascii_address')
+        exch_client_conf.get('ascii_address', False)
     )
     window.FindElement('utf8_email').Update(
-        config.get('exchange_client_config').get('utf8_email')
+        exch_client_conf.get('utf8_email', False)
     )
     window.FindElement('check_mx_timeout').Update(
-        config.get('exchange_client_config').get('check_mx_timeout')
+        exch_client_conf.get('check_mx_timeout', 10)
     )
     window.FindElement('min_wait_receive').Update(
-        config.get('exchange_client_config').get('min_wait_receive')
+        exch_client_conf.get('min_wait_receive', 10)
     )
     window.FindElement('backoff_factor').Update(
-        config.get('exchange_client_config').get('backoff_factor')
+        exch_client_conf.get('backoff_factor', 1)
     )
     window.FindElement('max_wait_receive').Update(
-        config.get('exchange_client_config').get('max_wait_receive')
+        exch_client_conf.get('max_wait_receive', 120)
     )
     window.FindElement('site').Update(config.get('site').get('site'))
     window.FindElement('tags').Update(
-        config.get('exchange_client_config').get('tags')
+        exch_client_conf.get('tags')
     )
-    _accounts_to_table(config.get(
-        'exchange_client_config').get('exchange_accounts'), window)
+    _accounts_to_table(exch_client_conf.get('exchange_accounts', []), window)
     _witness_emails_from_list(
-        config.get('exchange_client_config').get('witness_addresses'), window)
+        exch_client_conf.get('witness_addresses', []), window)
 
     return config
 
@@ -647,7 +646,9 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
     update_window_queue = Queue(maxsize=500)
     base_config, config, window = get_window()
     _accounts_to_table(
-        config.get('exchange_client_config').get('exchange_accounts'), window)
+        config.get('exchange_client_config', {}).get('exchange_accounts', []),
+        window
+    )
 
     config_is_dirty = False
     next_run_at = datetime.now() + \
@@ -793,7 +794,6 @@ def main():  # pylint: disable=too-many-branches,too-many-statements
 if __name__ == '__main__':
 
     if sys.platform != 'win32':
-        # me only like windows, booooo
         raise OSError('%s will not work on %s' % (__name__, sys.platform))
 
     main()

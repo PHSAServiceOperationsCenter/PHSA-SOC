@@ -20,10 +20,11 @@ import collections
 import configparser
 import json
 import socket
+from json import JSONDecodeError
 
 import pytimeparse
 
-from requests import Session, urllib3
+from requests import Session, urllib3, ConnectTimeout, ConnectionError
 
 HTTP_PROTO = 'http'
 """
@@ -219,7 +220,7 @@ def save_base_configuration(dict_config, config_file='mail_borg.ini'):
         config_parser.write(file_handle, space_around_delimiters=True)
 
 
-def load_config(current_base_config=None):
+def load_config():
     """
     load the main configuration for the :ref:`Mail Borg Client Application`
 
@@ -243,16 +244,6 @@ def load_config(current_base_config=None):
     function in order to de-serialize duration fields to minutes or seconds
     expressed as :class:`int`.
 
-    :arg dict current_base_config:
-
-        The basic configuration currently active
-
-        The values in this :class:`dict` are required when the main
-        configuration is loaded (or re-loaded) from the ``SOC Automation
-        server``. The data originates from the main window of the
-        :mod:`mail_borg.mail_borg_gui` module. If ``None`` (the default),
-        the basic configuration is loaded from the INI file
-
     :returns:
 
         a complex structure that results from reading the JSON encoded string
@@ -265,29 +256,25 @@ def load_config(current_base_config=None):
         module
     """
     config = dict()
-    from_server = False
 
-    base_config = load_base_configuration(current_base_config)
+    base_config = load_base_configuration()
     if not base_config.get('use_cfg_srv'):
         try:
-            config = get_config_from_file()
-            config['load_status'] = (
-                'Using cached configuration.')
-        except Exception as file_err:  # pylint: disable=broad-except
-            config['load_status'] = (
-                'Cannot load local configuration.'
-                'Local error: %s' % str(file_err))
-
+            with open(LOCAL_CONFIG, 'r') as local_config:
+                config = json.load(local_config)
+            config['load_status'] = 'Using cached configuration.'
+        except (JSONDecodeError, FileNotFoundError) as file_err:
+            config['load_status'] = \
+                f'Cannot load local configuration. Local error: {file_err}'
+        # TODO if local load fails should we attempt to get config from server?
         return config
 
     try:
         config = get_config_from_server(base_config)
-    except Exception as err:  # pylint: disable=broad-except
-        config_err = err
-        config = None
-
-    if config:
-        from_server = True
+    except (ConnectTimeout, ConnectionError, ValueError) as server_err:
+        config['load_status'] = f'Could not load config from server, ' \
+                                f'{server_err}. '
+    else:
         config['load_status'] = (
             'Loaded configuration %s from server'
             % config['exchange_client_config']['config_name'])
@@ -302,38 +289,14 @@ def load_config(current_base_config=None):
         if not config['site']:
             config['site'] = {'site': 'site.not.exist'}
 
-        config['exchange_client_config']['mail_check_period'] = \
-            parse_duration(
-            config['exchange_client_config']['mail_check_period'],
-            to_minutes=True)
-        config['exchange_client_config']['check_mx_timeout'] = \
-            parse_duration(
-            config['exchange_client_config']['check_mx_timeout'])
-        config['exchange_client_config']['min_wait_receive'] = \
-            parse_duration(
-            config['exchange_client_config']['min_wait_receive'])
-        config['exchange_client_config']['max_wait_receive'] = \
-            parse_duration(
-            config['exchange_client_config']['max_wait_receive'])
-
-    else:
-        try:
-            config = get_config_from_file()
-            config['load_status'] = (
-                'Loaded cached configuration. Server error: %s'
-                % str(config_err))
-        except Exception as file_err:
-            config['load_status'] = (
-                'Cannot load a configuration.'
-                ' Server error: %s. Local error: %s' % (str(err),
-                                                        str(file_err)))
-
-    if from_server:
-        dump_config_to_file(config)
+        with open(LOCAL_CONFIG, 'w') as local_config:
+            json.dump(config, local_config, indent=4)
 
     return config
 
 
+# TODO base_configuration could probably be passed as keyword args
+#      or four (?) arguments to prevent the whole accessing it as a dict
 def get_config_from_server(base_configuration):
     """
     Get the configuration from the ``SOC Automation server``
@@ -346,60 +309,27 @@ def get_config_from_server(base_configuration):
         the basic configuration values required for connecting to the server
 
     :returns: a JSON encoded :class:`str`
+
+    :raises: lowest on this totem->requests.exceptions.ConnectTimeout, urllib3.exceptions.MaxRetryError, urllib3.exceptions.ConnectTimeoutError
+             requests.exceptions.ConnectionError
+             requests.exceptions.HTTPError
     """
     rest_endpoint = 'mail_collector/api/get_config'
     SESSION.verify = VERIFY_SSL
+    cfg_ip = base_configuration.get('cfg_srv_ip')
+    cfg_port = base_configuration.get('cfg_srv_port')
+    hostname = socket.gethostname()
+
+    url = f'{HTTP_PROTO}://{cfg_ip}:{cfg_port}/{rest_endpoint}/{hostname}/'
 
     response = SESSION.get(
-        '{}://{}:{}/{}/{}/'.format(
-            HTTP_PROTO, base_configuration.get('cfg_srv_ip'),
-            base_configuration.get('cfg_srv_port'), rest_endpoint,
-            socket.gethostname()),
+        url,
         timeout=(base_configuration.get('cfg_srv_conn_timeout'),
                  base_configuration.get('cfg_srv_read_timeout')))
 
-    response.raise_for_status()
+    if response.json():  # if there is json data in the response
+        return response.json()[0]
 
-    return response.json()[0]
+    raise ValueError()
 
-
-def get_config_from_file(json_file=LOCAL_CONFIG):
-    """
-    get the main configuration from a local file
-
-    The local file must be in `JSON <https://www.json.org/>`_ format and it
-    must match the first list entry of the structure described at
-    :ref:`borg_client_config`.
-
-    :arg str json_file:
-
-        the relative path and name  of the `JSON <https://www.json.org/>`_ file
-
-        The default value is provided via the :attr:`LOCAL_CONFIG` variable
-        value
-
-    :returns: a JSON encoded :class:`str`
-    """
-    with open(json_file, 'r') as local_config:
-        config = json.load(local_config)
-
-    return config
-
-
-def dump_config_to_file(config, json_file=LOCAL_CONFIG):
-    """
-    save the latest main configuration retrieved from the ``SOC Automation
-    server`` to a local file
-
-    :arg dict config: the main configuration
-
-    :arg str json_file:
-
-        the relative path and name  of the `JSON <https://www.json.org/>`__
-        file
-
-        The default value is provided via the :attr:`LOCAL_CONFIG` variable
-        value
-    """
-    with open(json_file, 'w') as local_config:
-        json.dump(config, local_config, indent=4)
+    return None

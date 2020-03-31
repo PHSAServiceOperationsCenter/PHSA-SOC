@@ -131,7 +131,7 @@ class WindowManager:
         """
         try:
             witness_messages = WitnessMessages(
-                console_logger=self.update_queue, **self.config_mgr.config)
+                console_logger=self.update_queue, **self.config_mgr.app_config)
         except AttributeError:
             # TODO what is causing this?
             print('Yup we caught it.')
@@ -236,7 +236,7 @@ class WindowManager:
             '{:%c}: running mail check\n'.format(datetime.now()), append=True)
 
         thr = threading.Thread(target=self._mail_check, args=(
-            self.update_queue, dict(self.config_mgr.config)))
+            self.update_queue, dict(self.config_mgr.app_config)))
         thr.start()
 
     def new_window(self):

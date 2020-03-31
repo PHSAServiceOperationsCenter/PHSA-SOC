@@ -95,7 +95,7 @@ class ConfigManager:
         self.local = False
 
     @property
-    def config(self):
+    def app_config(self):
         if self.local:
             return None
         return self.server.config

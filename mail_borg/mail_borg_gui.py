@@ -201,7 +201,17 @@ class WindowManager:
         out_elem.Update(disabled=True)
 
     def get_config_val(self, elem_name, default=None):
-        return self.config_mgr.config.get(elem_name, default)
+        ret = default
+        try:
+            ret = self.config_mgr.app_config[elem_name]
+        except KeyError:
+            try:
+                ret = self.config_mgr.server_config[elem_name]
+            except KeyError:
+                pass  # if we can't find the element in either dictionary,
+                      # return the default
+
+        return ret
 
     def mail_check(self):
         """
@@ -369,20 +379,20 @@ class WindowManager:
 
         config_frame = [
             [Gui.Checkbox('Load Config from Server',
-                          default=self.base_config.get('use_cfg_srv'),
+                          default=self.get_config_val('use_cfg_srv'),
                           key='use_cfg_srv', enable_events=True),
              Gui.Text('Config Server Address', justification='left'),
-             Gui.InputText(self.base_config.get('cfg_srv_ip'), key='cfg_srv_ip',
+             Gui.InputText(self.get_config_val('cfg_srv_ip'), key='cfg_srv_ip',
                            size=(12, 1), do_not_clear=True, enable_events=True),
              Gui.Text('Config Server Port', justification='left'),
-             Gui.InputText(self.base_config.get('cfg_srv_port'), key='cfg_srv_port',
+             Gui.InputText(self.get_config_val('cfg_srv_port'), key='cfg_srv_port',
                            size=(5, 1), do_not_clear=True, enable_events=True),
              Gui.Text('Connection timeout'),
-             Gui.InputText(self.base_config.get('cfg_srv_conn_timeout'),
+             Gui.InputText(self.get_config_val('cfg_srv_conn_timeout'),
                            key='cfg_srv_conn_timeout', size=(3, 1),
                            do_not_clear=True, enable_events=True),
              Gui.Text('Read timeout'),
-             Gui.InputText(self.base_config.get('cfg_srv_read_timeout'),
+             Gui.InputText(self.get_config_val('cfg_srv_read_timeout'),
                            key='cfg_srv_read_timeout', size=(3, 1),
                            do_not_clear=True, enable_events=True),
              Gui.Text('', size=(39, 1)),
@@ -390,7 +400,7 @@ class WindowManager:
                         disabled=True),
              Gui.Button('Reset local config', key='reset_config',
                         disabled=False), ],
-            [Gui.Text(self.config.get('load_status',
+            [Gui.Text(self.get_config_val('load_status',
                                       'Configuration did not load correctly.'))
              ],
         ]
@@ -403,8 +413,8 @@ class WindowManager:
                 Gui.InputText(
                     '{}://{}:{}/admin/mail_collector/exchangeconfiguration/?q={}'.
                     format(
-                        HTTP_PROTO, self.base_config.get('cfg_srv_ip'),
-                        self.base_config.get('cfg_srv_port'),
+                        HTTP_PROTO, self.get_config_val('cfg_srv_ip'),
+                        self.get_config_val('cfg_srv_port'),
                         exch_client_conf.get('config_name',
                                              'ERROR: CONFIG NOT LOADED')),
                     disabled=True, size=(80, 1), key='bot_cfg_url'),
@@ -484,7 +494,8 @@ class WindowManager:
                                                       update_defaults[elem]))
         # site is not stored in the exchange client configuration, so we handle
         # it separately
-        self._update_element('site', self.config.get('site').get('site'))
+        self._update_element('site',
+                             self.get_config_val('site', {}).get('site'))
         self._accounts_to_table(exch_client_conf.get('exchange_accounts', []))
         self._witness_emails_from_list(
             exch_client_conf.get('witness_addresses', []))

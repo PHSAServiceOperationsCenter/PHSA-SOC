@@ -48,7 +48,7 @@ class WindowManager:
 
         self.update_queue = Queue(maxsize=500)
         self._accounts_to_table(
-            self.config.get('exchange_client_config', {})
+            self.get_config_val('exchange_client_config', {})
                 .get('exchange_accounts', []))
 
         self._next_run_at = datetime.now() + timedelta(
@@ -200,8 +200,8 @@ class WindowManager:
         out_elem.Update(msg, **kwargs)
         out_elem.Update(disabled=True)
 
-    def get_config_val(self, elem_name):
-        return self.config_mgr.config.get(elem_name)
+    def get_config_val(self, elem_name, default=None):
+        return self.config_mgr.config.get(elem_name, default)
 
     def mail_check(self):
         """
@@ -236,7 +236,7 @@ class WindowManager:
             '{:%c}: running mail check\n'.format(datetime.now()), append=True)
 
         thr = threading.Thread(target=self._mail_check, args=(
-            self.update_queue, dict(self.config)))
+            self.update_queue, dict(self.config_mgr.config)))
         thr.start()
 
     def new_window(self):
@@ -278,12 +278,11 @@ class WindowManager:
 
         # Default to an empty dict to avoid AttributeErrors from calling get on
         # a None object
-        # TODO store this in object?
-        exch_client_conf = self.config.get('exchange_client_config', {})
+        exch_client_conf = self.get_config_val('exchange_client_config', {})
 
         conf_labels_col = [
             [Gui.Checkbox(
-                'Enable Auto-run on startup', key='autorun',  enable_events=True,
+                'Enable Auto-run on startup', key='autorun', enable_events=True,
                 default=exch_client_conf.get('autorun', False)), ],
             [
                 Gui.Checkbox(
@@ -348,7 +347,7 @@ class WindowManager:
                 initial_value=exch_client_conf.get('max_wait_receive', 600),
                 size=(3, 1),  enable_events=True),
              Gui.Text('seconds'), ],
-            [Gui.InputText(self.config.get('site', {}).get('site', ''),
+            [Gui.InputText(self.get_config_val('site', {}).get('site', ''),
                            key='site', size=(32, 1), disabled=True), ],
             [Gui.Text('Additional Email Tags:',
                       size=(None, 1), justification='left'), ],
@@ -462,7 +461,7 @@ class WindowManager:
 
         # TODO this is similar to above, is there some way to refactor to reduce
         #      code duplication?
-        exch_client_conf = self.get_config_val('exchange_client_config') or {}
+        exch_client_conf = self.get_config_val('exchange_client_config', {})
 
         update_defaults = {
             'autorun': False,

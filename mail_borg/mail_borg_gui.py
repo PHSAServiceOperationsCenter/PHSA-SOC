@@ -145,7 +145,7 @@ class WindowManager:
         """
         self._update_element('status',
                              'automated mail check execution is paused')
-        self.set_pause(True)
+        self._set_pause(True)
 
     # TODO what is this for?
     def _set_autorun(self):
@@ -203,7 +203,7 @@ class WindowManager:
     def get_config_val(self, elem_name, default=None):
         ret = default
         try:
-            ret = self.config_mgr.app_config[elem_name]
+            ret = self.config_mgr.set[elem_name]
         except KeyError:
             try:
                 ret = self.config_mgr.server_config[elem_name]

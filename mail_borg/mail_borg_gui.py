@@ -32,10 +32,8 @@ import threading
 import time
 
 import PySimpleGUI as Gui
-from .config import (
-    ConfigManager, HTTP_PROTO, WIN_EVT_CFG
-)
-from .mailer import WitnessMessages
+from config import ConfigManager, HTTP_PROTO, WIN_EVT_CFG
+from mailer import WitnessMessages
 
 
 class WindowManager:

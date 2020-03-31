@@ -203,7 +203,7 @@ class WindowManager:
     def get_config_val(self, elem_name, default=None):
         ret = default
         try:
-            ret = self.config_mgr.set[elem_name]
+            ret = self.config_mgr.app_config[elem_name]
         except KeyError:
             try:
                 ret = self.config_mgr.server_config[elem_name]

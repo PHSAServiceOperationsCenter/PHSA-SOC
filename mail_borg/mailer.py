@@ -62,7 +62,6 @@ from exchangelib import (
 from exchangelib.errors import ErrorTooManyObjectsOpened
 from retry import retry
 
-from config import load_config
 from logger import LogWinEvent
 
 
@@ -256,9 +255,6 @@ def validate_email_to_ascii(email_address, **config):
         :exc:`email_validator.EmailUndeliverableError`
 
     """
-    if not config:
-        config = load_config()
-
     try:
         email_dict = validate_email(
             email_address,
@@ -510,9 +506,6 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
 
         Aborting happens if there are no messages in the sending queue
         """
-
-        if not config:
-            config = load_config()
 
         self.config = config
         """

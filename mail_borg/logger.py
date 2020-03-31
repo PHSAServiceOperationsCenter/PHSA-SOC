@@ -72,19 +72,19 @@ class LogWinEvent:
 
             the application name as it will appear in the Windows events log
 
-            Will default to 'BorgExchangeMonitor`
+            Will default to value in config.WIN_EVT_CFG
 
         :arg str log_type:
 
             the Windows events log to write to
 
-            Will default to 'Application'
+            Will default to value in config.WIN_EVT_CFG
         '''
         if app_name is None:
-            app_name = WIN_EVT_CFG.get('app_name', 'BorgExchangeMon')
+            app_name = WIN_EVT_CFG['app_name']
 
         if log_type is None:
-            log_type = WIN_EVT_CFG.get('log_type', 'Application')
+            log_type = WIN_EVT_CFG['log_type']
 
         self.app_name = app_name
         """

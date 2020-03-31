@@ -192,7 +192,7 @@ class WindowManager:
         self._update_element('witness_addresses', ', '.join(witness_emails))
 
     def _update_element(self, elem_name, *args, **kwargs):
-        return self.window.FindElement(elem_name).Upadate(*args, **kwargs)
+        return self.window.FindElement(elem_name).Update(*args, **kwargs)
 
     def _update_output(self, msg, **kwargs):
         out_elem = self.FindElement('output')

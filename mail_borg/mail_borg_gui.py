@@ -51,6 +51,8 @@ class WindowManager:
             self.get_config_val('exchange_client_config', {})
                 .get('exchange_accounts', []))
 
+        self._next_run_at = None
+
         if self._get_element('autorun'):
             self._set_next_run_time()
             self._set_running()

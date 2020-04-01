@@ -160,7 +160,7 @@ class ConfigManager:
         return config
 
     def clear_conifg(self):
-        self.sever.clear_config()
+        self.server.clear_config()
 
     def reset_server_configuration(self):
         """

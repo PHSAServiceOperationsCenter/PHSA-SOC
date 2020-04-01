@@ -174,7 +174,7 @@ class WindowManager:
         :returns: a :class:`tuple` in minutes, seconds format that represents the
             time left until the next call of the :func:`mail_check`
         """
-        mins, secs = divmod((self.next_run_at - datetime.now()).total_seconds(), 60)
+        mins, secs = divmod((self._next_run_at - datetime.now()).total_seconds(), 60)
         self._update_element('status', f'next mail check run in '
                                        f'{mins} minutes, {secs} seconds')
 
@@ -575,7 +575,7 @@ class WindowManager:
                 self._update_element('mailcheck', disabled=False)
                 if self._get_element('autorun'):
                     self._update_element('pause', disabled=False)
-                    next_run_at = datetime.now() + timedelta(minutes=int(
+                    self._next_run_at = datetime.now() + timedelta(minutes=int(
                         self._get_element('mail_check_period')))
                     self._update_next_run_in()
                 else:
@@ -595,7 +595,7 @@ class WindowManager:
                 self._set_autorun()
 
             if event == 'mail_check_period':
-                next_run_at = datetime.now() + timedelta(
+                self._next_run_at = datetime.now() + timedelta(
                     minutes=int(self._get_element('mail_check_period')))
 
         if event == 'save_config':
@@ -616,17 +616,17 @@ class WindowManager:
             self._update_element('pause', disabled=False)
             self._update_element('status',
                                  f'next mail check run in '
-                                 f'{self.next_run_in(next_run_at)}')
+                                 f'{self.next_run_in(self._next_run_at)}')
 
-            if next_run_at <= datetime.now():
+            if self._next_run_at <= datetime.now():
                 self.mail_check()
-                next_run_at = datetime.now() + \
+                self._next_run_at = datetime.now() + \
                               timedelta(minutes=int(self._get_element(
                                   'mail_check_period')))
 
         if event == 'mailcheck':
             self.mail_check()
-            self.next_run_at = datetime.now() + \
+            self._next_run_at = datetime.now() + \
                           timedelta(
                               minutes=int(
                                   self._get_element('mail_check_period')))
@@ -637,7 +637,7 @@ class WindowManager:
                 self._update_element('pause', disabled=False)
                 self._update_element('status',
                                      f'next mail check run in '
-                                     f'{self.next_run_in(next_run_at)}')
+                                     f'{self.next_run_in(self._next_run_at)}')
             else:
                 self._update_element('run', disabled=False)
                 self._update_element('pause', disabled=True)
@@ -653,7 +653,7 @@ class WindowManager:
             self._update_element('run', disabled=True)
             self._update_element('pause', disabled=False)
             self._update_element('status',
-                                 f'next mail check run in {self.next_run_at}')
+                                 f'next mail check run at {self._next_run_at}')
 
         return True
 

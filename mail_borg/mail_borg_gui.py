@@ -177,7 +177,8 @@ class WindowManager:
         mins, secs = divmod(
             (self._next_run_at - datetime.now()).total_seconds(), 60)
         self._update_element('status', f'next mail check run in '
-                                       f'{mins} minutes, {secs} seconds')
+                                       f'{int(mins)} minutes, '
+                                       f'{int(secs)} seconds')
 
     def _witness_emails_from_list(self, witness_emails):
         """

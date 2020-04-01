@@ -51,15 +51,19 @@ class WindowManager:
             self.get_config_val('exchange_client_config', {})
                 .get('exchange_accounts', []))
 
-        self._next_run_at = datetime.now() + timedelta(
-            minutes=int(self._get_element('mail_check_period')))
-        self._set_autorun()
+        if self._get_element('autorun'):
+            self._set_next_run_time()
+            self._set_running()
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, value, tb):
         self.window.Close()
+
+    @property
+    def _autorunning(self):
+        return not self.window.FindElement('pause').Disabled
 
     def _accounts_to_table(self, accounts):
         """
@@ -138,28 +142,20 @@ class WindowManager:
         else:
             witness_messages.verify_receive()
 
-    def _pause(self):
-        """
-        update various ``GUI`` elements to reflect the :attr:`main.autorun` state
-        variable
-        """
-        self._update_element('status',
-                             'automated mail check execution is paused')
-        self._set_pause(True)
+    def _set_next_run_time(self):
+        self._next_run_at = datetime.now() + timedelta(
+                minutes=int(self._get_element('mail_check_period'))
+            )
 
-    # TODO what is this for?
-    def _set_autorun(self):
-        """
-        calculate the value of the :attr:`main.autorun` state variable
-        """
-        if self._get_element('autorun'):
-            self.set_pause(False)
-        else:
-            self._pause()
-
-    def _set_pause(self, pause):
-        self._update_element('pause', disabled=pause)
-        self._update_element('run', disabled=not pause)
+    def _set_running(self, running=True):
+        self._update_element('pause', disabled=not running)
+        self._update_element('run', disabled=running)
+        if running:
+            self._set_next_run_time()
+            self._update_next_run_in()
+        if not running:
+            self._update_element('status',
+                                 'automated mail check execution is paused')
 
     def _update_next_run_in(self):
         """
@@ -593,13 +589,6 @@ class WindowManager:
 
             self._dirty_window()
 
-            if event == 'autorun':
-                self._set_autorun()
-
-            if event == 'mail_check_period':
-                self._next_run_at = datetime.now() + timedelta(
-                    minutes=int(self._get_element('mail_check_period')))
-
         if event == 'save_config':
             self.save_config()
             self._update_element('save_config', disabled=True)
@@ -614,44 +603,24 @@ class WindowManager:
         if event == 'clear':
             self._update_output('')
 
-        if self._get_element('autorun'):
-            self._update_element('pause', disabled=False)
+        if self._autorunning:
             self._update_next_run_in()
 
             if self._next_run_at <= datetime.now():
                 self.mail_check()
-                self._next_run_at = datetime.now() + \
-                              timedelta(minutes=int(self._get_element(
-                                  'mail_check_period')))
+                self._set_next_run_time()
 
         if event == 'mailcheck':
             self.mail_check()
-            self._next_run_at = datetime.now() + \
-                          timedelta(
-                              minutes=int(
-                                  self._get_element('mail_check_period')))
-
-            # TODO how/why is this different from _pause
-            if self._get_element('autorun'):
-                self._update_element('run', disabled=True)
-                self._update_element('pause', disabled=False)
+            if self._autorunning:
+                self._set_next_run_time()
                 self._update_next_run_in()
-            else:
-                self._update_element('run', disabled=False)
-                self._update_element('pause', disabled=True)
-                self._update_element('status',
-                                     'automated mail check execution is paused')
 
         if event == 'pause':
-            self._update_element('autorun', False)
-            self._pause()
+            self._set_running(False)
 
         if event == 'run':
-            self._update_element('autorun', True)
-            self._update_element('run', disabled=True)
-            self._update_element('pause', disabled=False)
-            self._update_element('status',
-                                 f'next mail check run at {self._next_run_at}')
+            self._set_running()
 
         return True
 

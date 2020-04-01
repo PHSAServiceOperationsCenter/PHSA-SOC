@@ -174,7 +174,8 @@ class WindowManager:
         :returns: a :class:`tuple` in minutes, seconds format that represents the
             time left until the next call of the :func:`mail_check`
         """
-        mins, secs = divmod((self._next_run_at - datetime.now()).total_seconds(), 60)
+        mins, secs = divmod(
+            (self._next_run_at - datetime.now()).total_seconds(), 60)
         self._update_element('status', f'next mail check run in '
                                        f'{mins} minutes, {secs} seconds')
 
@@ -614,9 +615,7 @@ class WindowManager:
 
         if self._get_element('autorun'):
             self._update_element('pause', disabled=False)
-            self._update_element('status',
-                                 f'next mail check run in '
-                                 f'{self.next_run_in(self._next_run_at)}')
+            self._update_next_run_in()
 
             if self._next_run_at <= datetime.now():
                 self.mail_check()
@@ -635,9 +634,7 @@ class WindowManager:
             if self._get_element('autorun'):
                 self._update_element('run', disabled=True)
                 self._update_element('pause', disabled=False)
-                self._update_element('status',
-                                     f'next mail check run in '
-                                     f'{self.next_run_in(self._next_run_at)}')
+                self._update_next_run_in()
             else:
                 self._update_element('run', disabled=False)
                 self._update_element('pause', disabled=True)

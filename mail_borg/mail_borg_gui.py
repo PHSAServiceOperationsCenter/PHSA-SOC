@@ -56,6 +56,8 @@ class WindowManager:
         if self._get_element('autorun'):
             self._set_next_run_time()
             self._set_running()
+        else:
+            self._set_running(False)
 
     def __enter__(self):
         return self

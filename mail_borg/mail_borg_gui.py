@@ -38,8 +38,11 @@ from mailer import WitnessMessages
 
 class WindowManager:
     def __init__(self):
+        """
+        Create a new WindowManager.
+        Gets the configuration, and sets up the window appropriately.
+        """
         self.window = None
-        # TODO merge config and base configs?
         self.config_mgr = ConfigManager()
         self.config_is_dirty = False
         self.new_window()
@@ -59,6 +62,7 @@ class WindowManager:
         else:
             self._set_running(False)
 
+    # enter and exit so we can use with keyword to automatically close the window on exit.
     def __enter__(self):
         return self
 
@@ -67,6 +71,11 @@ class WindowManager:
 
     @property
     def _autorunning(self):
+        """
+        Determine whether or not autorun is enabled
+        """
+        # We use the pause button's state as a proxy for whether we are autorunning
+        # NOTE: the Disabled member variable is set on creation of a button and never updated
         return not (self.window.FindElement('pause').TKButton['state']
                     == 'disabled')
 
@@ -75,7 +84,7 @@ class WindowManager:
         Information pertinent to Exchange accounts is displayed using a
         `PySimpleGUI.Table` element.
 
-        This function is reponsible for taking a list of Exchange accounts and
+        This function is responsible for taking a list of Exchange accounts and
         generating a `PySimpleGUI.Table` row for each account.
 
         An Exchange account is described by the structure shown below:
@@ -113,30 +122,23 @@ class WindowManager:
 
     def _dirty_window(self):
         """
-        update various ``GUI`` elements to reflect the
-        :attr:`main.config_is_dirty` state variable
+        update various ``GUI`` elements to reflect the :attr:`_config_is_dirty` variable
         """
         self._update_element('save_config', disabled=False)
         self._update_element('reset_config', disabled=False)
 
     def _get_element(self, elem_name):
+        """
+        Get the value of a GUI element.
+
+        :arg str elem_name: name of the GUI input to get the value for.
+        """
         return self.window.FindElement(elem_name).Get()
 
     def _mail_check(self):
         """
-        the threaded call to the :class:`mail_borg.mailer.WitnessMessages`
+        make the threaded call to the :class:`mail_borg.mailer.WitnessMessages`
         instance used to execute the Exchange verification op
-
-        :arg `PySimpleGUI.window` window: the window object associated with the
-            ``GUI`` interface. This argument is used to update various elements
-            in the ``GUI``. This includes updating the `PySimpleGUI.Text`
-            element that shows the status of the application and disabling and/or
-            enabling various `PySimpleGUI.Button` elements
-
-        :arg `queue.Queue` update_window_queue: the `queue.Queue` used to pass
-            information between the Exchange verification thread and the ``GUI``
-            (main) thread
-
         """
         try:
             witness_messages = WitnessMessages(
@@ -148,11 +150,17 @@ class WindowManager:
             witness_messages.verify_receive()
 
     def _set_next_run_time(self):
+        """
+        set the time for the next run
+        """
         self._next_run_at = datetime.now() + timedelta(
                 minutes=int(self._get_element('mail_check_period'))
             )
 
     def _set_running(self, running=True):
+        """
+        update buttons based on whether we are autorunning tests
+        """
         self._update_element('pause', disabled=not running)
         self._update_element('run', disabled=running)
         if running:
@@ -165,15 +173,6 @@ class WindowManager:
     def _update_next_run_in(self):
         """
         update the time counter for the next :func:`mail_check` call
-
-        :arg `datetime.datetime` next_run_at: the moment for the next
-            :func:`mail_check` call
-
-            This moment is re-evaluated every time the :func:`mail_check` is called
-            and it is stored in a state variable in the :func:`main` function.
-
-        :returns: a :class:`tuple` in minutes, seconds format that represents the
-            time left until the next call of the :func:`mail_check`
         """
         mins, secs = divmod(
             (self._next_run_at - datetime.now()).total_seconds(), 60)
@@ -195,15 +194,26 @@ class WindowManager:
         self._update_element('witness_addresses', ', '.join(witness_emails))
 
     def _update_element(self, elem_name, *args, **kwargs):
+        """
+        wrapper for PySimpleGUI's Update, to reduce code length.
+        """
         return self.window.FindElement(elem_name).Update(*args, **kwargs)
 
     def _update_output(self, msg, **kwargs):
+        """
+        update the output text
+        """
         out_elem = self.FindElement('output')
+        # Users cannot modify output, so it is normally disabled.
+        # In order for our output to update we need to enabled it.
         out_elem.Update(disabled=False)
         out_elem.Update(msg, **kwargs)
         out_elem.Update(disabled=True)
 
     def get_config_val(self, elem_name, default=None):
+        """
+        Get a config value. Can be used for either app config or server config.
+        """
         ret = default
         try:
             ret = self.config_mgr.app_config[elem_name]
@@ -223,21 +233,6 @@ class WindowManager:
 
         This function is called from the OnClickUp event of the
         ``Run Mail Check Now`` `PySimpleGUI.Button`.
-
-        :arg dict config: the main configuration that is currently active. Note
-            that this :ref:`configuration <borg_client_config>` may have been
-            changed locally in the ``GUI`` interface
-
-        :arg `PySimpleGUI.window` window: the window object associated with the
-            ``GUI`` interface. This argument is used to update various elements
-            in the ``GUI``. This includes updating the `PySimpleGUI.Text`
-            element that shows the status of the application and disabling and/or
-            enabling various `PySimpleGUI.Button` elements
-
-        :arg `queue.Queue` update_window_queue: the `queue.Queue` used to pass
-            information between the Exchange verification thread and the ``GUI``
-            (main) thread
-
         """
         self._update_element('mailcheck', disabled=True)
         if not self.window.FindElement('run').Disabled:
@@ -255,21 +250,6 @@ class WindowManager:
     def new_window(self):
         """
         Function that builds the GUI interface and all its elements
-
-        :returns:
-
-            a :class:`tuple` containing
-
-            * the ``basic configuration`` as loaded into the ``GUI`` on launch
-            * the ``main configuration`` as loaded into the ``GUI`` on launch
-            * the `PySimpleGUI.window` object of the
-              :ref:`Mail Borg Client Application`
-
-        GUI elements showing main configuration data are populated using
-        the :func:`mail_borg.config.load_config` function.
-
-        GUI elements showing basic configuration data are populated using the
-        :func:`mail_borg.config.load_base_configuration` function.
         """
         self.window = Gui.Window(WIN_EVT_CFG['app_name'],
                                  auto_size_buttons=True,
@@ -326,7 +306,7 @@ class WindowManager:
 
         conf_values_col = [
             [Gui.Text('Check Email Every', justification='left'),
-             # TODO do spinners actually require lists? (probably yes...)
+             # TODO spinners just require iterable, don't need list cast
              Gui.Spin(
                 list(range(1, 60)), key='mail_check_period',
                 initial_value=exch_client_conf.get('mail_check_period', 60),
@@ -460,9 +440,6 @@ class WindowManager:
         associated ``GUI`` elements and uses it as an argument to the
         :func:`mail_borg.config.load_config` function. It then re-populates
         the main configuration ``GUI`` controls with the new data.
-
-        :arg `PySimpleGUI.window` window: the window objects associated with
-            the ``GUI`` interface
         """
         self.config_mgr.clear_conifg()
 
@@ -525,12 +502,6 @@ class WindowManager:
 
         This function is invoked by OnClickUp event of the ``Save local config``
         `PySimpleGUI.Button`
-
-        :arg `PySimpleGUI.window` window: the window object associated with the
-            ``GUI`` interface. This function will access the values of the
-            ``GUI`` elements associated with the local configuration and pass
-            them to the saving function
-
         """
         items = [('use_cfg_srv', bool()),
             ('cfg_srv_ip', self._get_element('cfg_srv_ip')),
@@ -545,6 +516,11 @@ class WindowManager:
         self.config_mgr.save_server_configuration()
 
     def tick(self):
+        """
+        The function that updates the GUI. It is called each second.
+
+        :return bool:False if the window is closed, False otherwise.
+         """
         event, values = self.window.Read(timeout=0)
 
         if values is None or event == 'Exit':
@@ -629,88 +605,7 @@ class WindowManager:
         return True
 
 
-def main():
-    """
-    The ``main()`` function
-
-    This is the entry point to the script using this module.
-
-    For a discussion about ``main()`` functions in `Python
-    <https://www.python.org/about/>`_, please see
-    `Defining Main Functions in Python
-    <https://realpython.com/python-main-function/>`_.
-
-    Under normal ops this module is never imported anywhere and using a
-    ``main()`` function and the `__main__ Python facility
-    <https://docs.python.org/3.6/library/__main__.html?highlight=__main__>`_
-    is not needed.
-
-    The requirement for using the ``main()`` function is introduced by our
-    choice to use the `Sphinx autodoc extension
-    <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
-    for generating documentation. This extension needs to import all the
-    modules that are self-documented using ``docstrings``. The extension
-    will not be able to import this module unless the ``main()`` function
-    mechanism is being used
-
-    :state variables:
-
-        :config_is_dirty:
-
-            local state variable keeping track of whether the ``basic
-            configuration`` currently shown in the ``GUI`` interface is different
-            from the ``basic configuration`` that was initially loaded in the
-            ``GUI`` i.e. from a stored medium
-
-            This variable is consulted on ``Exit`` and a ``dialog box``
-            prompting the user to save a changed (dirty) ``basic
-            configuration`` if the variable is ``True``.
-
-            The variable is set if the value of any `PySimpleGUI.window` element
-            matching an entry in the :class:`editable <list>` has changed.
-
-            The variable is reset when the ``Save local config``
-            `PySimpleGU.Button` element is clicked.
-
-        :autorun:
-
-            local state variable keeping track of whether the :func:`mail_check`
-            function is invoked automatically or manually
-
-        :next_run_at:
-
-            Local `datetime.datetime` variable that keeps track of when the
-            :func:`mail_check` will execute next but only if the :attr:`autorun`
-            is ``True``
-
-    :control variables:
-
-        :editable:
-
-            local :class:`list` that used for identifying ``GUI`` elements
-            that will trigger a state change for the :attr:`config_is_dirty`
-            variable
-
-        :update_window_queue:
-
-            `queue.Queue` that is used for keeping track of the state of
-            the ``Exchange verification op`` `threading.Thread` launched by
-            the :func:`mail_check` function
-
-            The following "events" will be delivered via this `queue.Queue`:
-
-            * ``output``: update the status tracking ``GUI`` elements with
-              the progress of the ``Exchange verification op``
-
-            * ``abort``: the ``Exchange verification op`` has been aborted.
-              Set various ``GUI`` elements accordingly.
-
-            * ``control``: the ``Exchange verification op`` has completed
-               successfully. Make ready for the next ``Exchange verification
-               op`` taking into consideration the value of the
-               :attr:`autorun` state variable
-
-    """
+def _main():
     with WindowManager() as manager:
         while manager.tick():
             time.sleep(1)
@@ -720,4 +615,4 @@ if __name__ == '__main__':
     if sys.platform != 'win32':
         raise OSError('%s will not work on %s' % (__name__, sys.platform))
 
-    main()
+    _main()

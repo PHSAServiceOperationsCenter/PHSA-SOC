@@ -67,7 +67,8 @@ class WindowManager:
 
     @property
     def _autorunning(self):
-        return not self.window.FindElement('pause').Disabled
+        return not (self.window.FindElement('pause').TKButton['state']
+                    == 'disabled')
 
     def _accounts_to_table(self, accounts):
         """

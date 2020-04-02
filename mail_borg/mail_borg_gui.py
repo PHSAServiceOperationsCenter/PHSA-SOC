@@ -609,11 +609,10 @@ class WindowManager:
             self._update_output('')
 
         if self._autorunning:
-            self._update_next_run_in()
-
             if self._next_run_at <= datetime.now():
                 self.mail_check()
                 self._set_next_run_time()
+            self._update_next_run_in()
 
         if event == 'mailcheck':
             self.mail_check()

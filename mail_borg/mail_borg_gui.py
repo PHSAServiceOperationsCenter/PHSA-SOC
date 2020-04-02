@@ -306,9 +306,8 @@ class WindowManager:
 
         conf_values_col = [
             [Gui.Text('Check Email Every', justification='left'),
-             # TODO spinners just require iterable, don't need list cast
              Gui.Spin(
-                list(range(1, 60)), key='mail_check_period',
+                range(1, 60), key='mail_check_period',
                 initial_value=exch_client_conf.get('mail_check_period', 60),
                 size=(3, 1), enable_events=True),
              Gui.Text('minutes'), ],
@@ -321,22 +320,22 @@ class WindowManager:
                 default=exch_client_conf.get('utf8_email', False),
                 key='utf8_email', enable_events=True), ],
             [Gui.Spin(
-                list(range(1, 20)),
+                range(1, 20),
                 key='check_mx_timeout',
                 initial_value=exch_client_conf.get('check_mx_timeout', 20),
                 size=(3, 1), enable_events=True),
              Gui.Text('seconds'), ],
             [Gui.Spin(
-                list(range(1, 120)), key='min_wait_receive',
+                range(1, 120), key='min_wait_receive',
                 initial_value=exch_client_conf.get('min_wait_receive', 120),
                 size=(3, 1), enable_events=True),
              Gui.Text('seconds'), ],
             [Gui.Spin(
-                list(range(1, 10)), key='backoff_factor',
+                range(1, 10), key='backoff_factor',
                 initial_value=exch_client_conf.get('backoff_factor', 10),
                 size=(3, 1), enable_events=True), ],
             [Gui.Spin(
-                list(range(1, 600)), key='max_wait_receive',
+                range(1, 600), key='max_wait_receive',
                 initial_value=exch_client_conf.get('max_wait_receive', 600),
                 size=(3, 1),  enable_events=True),
              Gui.Text('seconds'), ],

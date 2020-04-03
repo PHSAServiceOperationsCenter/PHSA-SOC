@@ -32,11 +32,18 @@ import threading
 import time
 
 import PySimpleGUI as Gui
+# pylint can't find these module because it uses non-module imports
+# this import style is required by PyInstaller
+# pylint: disable=no-name-in-module
 from config import ConfigManager, HTTP_PROTO, WIN_EVT_CFG
 from mailer import WitnessMessages
+# pylint: enable=no-name-in-module
 
 
 class WindowManager:
+    """
+    Maintains the state of the GUI
+    """
     def __init__(self):
         """
         Create a new WindowManager.
@@ -52,7 +59,8 @@ class WindowManager:
         self.update_queue = Queue(maxsize=500)
         self._accounts_to_table(
             self.get_config_val('exchange_client_config', {})
-                .get('exchange_accounts', []))
+            .get('exchange_accounts', [])
+        )
 
         self._next_run_at = None
 
@@ -62,11 +70,12 @@ class WindowManager:
         else:
             self._set_running(False)
 
-    # enter and exit so we can use with keyword to automatically close the window on exit.
+    # enter and exit so we can use with keyword to automatically close
+    # the window on exit.
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, value, tb):
+    def __exit__(self, exc_type, exc_value, traceback):
         self.window.Close()
 
     @property
@@ -74,8 +83,10 @@ class WindowManager:
         """
         Determine whether or not autorun is enabled
         """
-        # We use the pause button's state as a proxy for whether we are autorunning
-        # NOTE: the Disabled member variable is set on creation of a button and never updated
+        # We use the pause button's state as a proxy for
+        # whether we are autorunning
+        # NOTE: the Disabled member variable is set on creation of a button
+        # and never updated, as such cannot be used to determine the state
         return not (self.window.FindElement('pause').TKButton['state']
                     == 'disabled')
 
@@ -120,9 +131,16 @@ class WindowManager:
 
         self._update_element('exc_accs', listed_accounts)
 
+    def _clear_output(self):
+        """
+        Clear the output
+        """
+        self._update_output('')
+
     def _dirty_window(self):
         """
-        update various ``GUI`` elements to reflect the :attr:`_config_is_dirty` variable
+        update various ``GUI`` elements to reflect the :attr:`_config_is_dirty`
+        variable
         """
         self._update_element('save_config', disabled=False)
         self._update_element('reset_config', disabled=False)
@@ -134,6 +152,34 @@ class WindowManager:
         :arg str elem_name: name of the GUI input to get the value for.
         """
         return self.window.FindElement(elem_name).Get()
+
+    def _handle_update_msg(self, msg):
+        """
+        Update GUI based no message from update queue
+        """
+        if msg[0] == 'output':
+            self._update_output(msg[1], append=True)
+            self._update_element('status', 'mail check in progress')
+
+        elif msg[0] == 'abort':
+            self._update_output('\nmail check aborted\n', append=True)
+            self._update_element('status', 'Mail check aborted. Please verify '
+                                           'the configuration is correct.')
+            self._update_element('autorun', value=False)
+
+        elif msg[0] == 'control':
+            self._update_output('\nmail check complete\n', append=True)
+            self._update_element('mail_check_period', disabled=False)
+            self._update_element('mailcheck', disabled=False)
+            if self._get_element('autorun'):
+                self._update_element('pause', disabled=False)
+                self._next_run_at = datetime.now() + timedelta(
+                    minutes=int(self._get_element('mail_check_period')))
+                self._update_next_run_in()
+            else:
+                self._update_element('run', disabled=False)
+                self._update_element(
+                    'status', 'Automated mail check execution is paused.')
 
     def _mail_check(self):
         """
@@ -149,13 +195,18 @@ class WindowManager:
         else:
             witness_messages.verify_receive()
 
+    def _pause(self):
+        """
+        Wrapper for `set_running(false)` to be used in event func dict.
+        """
+        self._set_running(False)
+
     def _set_next_run_time(self):
         """
         set the time for the next run
         """
-        self._next_run_at = datetime.now() + timedelta(
-                minutes=int(self._get_element('mail_check_period'))
-            )
+        self._next_run_at = datetime.now() \
+            + timedelta(minutes=int(self._get_element('mail_check_period')))
 
     def _set_running(self, running=True):
         """
@@ -193,6 +244,29 @@ class WindowManager:
         """
         self._update_element('witness_addresses', ', '.join(witness_emails))
 
+    def _update_config(self, name):
+        """
+        Update the value in the config based on the value on the GUI
+
+        :param name: The name of the config value to update
+        """
+        self.config_is_dirty = True
+        self.config_mgr.server_config[name] = self._get_element(name).replace(
+            '\n', '')
+
+        self._dirty_window()
+
+    def _update_config_func(self, name):
+        """
+        Helper function so we can put update_config into a func dict
+
+        :param name: The name of the config value to update
+        """
+        def ret_func():
+            return self._update_config(name)
+
+        return ret_func
+
     def _update_element(self, elem_name, *args, **kwargs):
         """
         wrapper for PySimpleGUI's Update, to reduce code length.
@@ -203,7 +277,7 @@ class WindowManager:
         """
         update the output text
         """
-        out_elem = self.FindElement('output')
+        out_elem = self.window.FindElement('output')
         # Users cannot modify output, so it is normally disabled.
         # In order for our output to update we need to enabled it.
         out_elem.Update(disabled=False)
@@ -247,6 +321,10 @@ class WindowManager:
             self.update_queue, dict(self.config_mgr.app_config)))
         thr.start()
 
+        if self._autorunning:
+            self._set_next_run_time()
+            self._update_next_run_in()
+
     def new_window(self):
         """
         Function that builds the GUI interface and all its elements
@@ -256,10 +334,10 @@ class WindowManager:
                                  use_default_focus=False)
 
         control_frame = [
-            [Gui.Text('',  key='status', size=(133, 1),  justification='left'),
+            [Gui.Text('', key='status', size=(133, 1), justification='left'),
              Gui.Button('Run Mail Check Now', key='mailcheck'),
-                Gui.Button('Start Auto-run', key='run'),
-                Gui.Button('Pause Auto-run', key='pause'), ],
+             Gui.Button('Start Auto-run', key='run'),
+             Gui.Button('Pause Auto-run', key='pause'), ],
         ]
 
         output_frame = [
@@ -277,25 +355,18 @@ class WindowManager:
             [Gui.Checkbox(
                 'Enable Auto-run on startup', key='autorun', enable_events=True,
                 default=exch_client_conf.get('autorun', False)), ],
-            [
-                Gui.Checkbox(
-                    'Debug', default=exch_client_conf.get('debug', False),
-                    key='debug', enable_events=True),
-                Gui.Checkbox(
-                    'Verify MX deliverability',
-                    default=exch_client_conf.get('check_mx', False),
-                    key='check_mx', enable_events=True),
-            ],
+            [Gui.Checkbox('Debug', default=exch_client_conf.get('debug', False),
+                          key='debug', enable_events=True),
+             Gui.Checkbox('Verify MX deliverability',
+                          default=exch_client_conf.get('check_mx', False),
+                          key='check_mx', enable_events=True), ],
             [Gui.Text('Verify MX Timeout:', justification='left'), ],
-            [Gui.Text(
-                'Min. wait to retry Exchange action:',
-                justification='left'), ],
-            [Gui.Text(
-                'Back-off retry factor for Exchange action:',
-                justification='left'), ],
-            [Gui.Text(
-                'Max. time to retry an Exchange action:',
-                justification='left'), ],
+            [Gui.Text('Min. wait to retry Exchange action:',
+                      justification='left'), ],
+            [Gui.Text('Back-off retry factor for Exchange action:',
+                      justification='left'), ],
+            [Gui.Text('Max. time to retry an Exchange action:',
+                      justification='left'), ],
             [Gui.Text('Originating Site:', justification='left'), ],
             [Gui.Text('Mail Subject:', size=(None, 1), justification='left'), ],
             [Gui.Multiline(exch_client_conf.get('email_subject', ''),
@@ -307,18 +378,18 @@ class WindowManager:
         conf_values_col = [
             [Gui.Text('Check Email Every', justification='left'),
              Gui.Spin(
-                range(1, 60), key='mail_check_period',
-                initial_value=exch_client_conf.get('mail_check_period', 60),
-                size=(3, 1), enable_events=True),
+                 range(1, 60), key='mail_check_period',
+                 initial_value=exch_client_conf.get('mail_check_period', 60),
+                 size=(3, 1), enable_events=True),
              Gui.Text('minutes'), ],
             [Gui.Checkbox(
                 'Force ASCII email',
                 default=exch_client_conf.get('ascii_address', False),
-                key='ascii_address',  enable_events=True),
+                key='ascii_address', enable_events=True),
              Gui.Checkbox(
                  'UTF-8 addresses',
-                default=exch_client_conf.get('utf8_email', False),
-                key='utf8_email', enable_events=True), ],
+                 default=exch_client_conf.get('utf8_email', False),
+                 key='utf8_email', enable_events=True), ],
             [Gui.Spin(
                 range(1, 20),
                 key='check_mx_timeout',
@@ -337,7 +408,7 @@ class WindowManager:
             [Gui.Spin(
                 range(1, 600), key='max_wait_receive',
                 initial_value=exch_client_conf.get('max_wait_receive', 600),
-                size=(3, 1),  enable_events=True),
+                size=(3, 1), enable_events=True),
              Gui.Text('seconds'), ],
             [Gui.InputText(self.get_config_val('site', {}).get('site', ''),
                            key='site', size=(32, 1), disabled=True), ],
@@ -348,12 +419,13 @@ class WindowManager:
                            enable_events=True), ], ]
 
         conf_emails_col = [
-            [Gui.Text('Exchange Accounts:',  justification='left'), ],
+            [Gui.Text('Exchange Accounts:', justification='left'), ],
             [Gui.Table(
                 [[None, None, None, None, None, None]],
                 headings=['domain', 'username', 'password', 'smtp',
-                          'autodiscover', 'autodiscover server'], key='exc_accs',
-                auto_size_columns=True, display_row_numbers=True), ],
+                          'autodiscover', 'autodiscover server'],
+                key='exc_accs', auto_size_columns=True,
+                display_row_numbers=True), ],
             [Gui.Text('Witness Addresses:', justification='left'), ],
             [Gui.Multiline(
                 ', '.join(exch_client_conf.get('witness_addresses', [])),
@@ -367,8 +439,9 @@ class WindowManager:
              Gui.InputText(self.get_config_val('cfg_srv_ip'), key='cfg_srv_ip',
                            size=(12, 1), do_not_clear=True, enable_events=True),
              Gui.Text('Config Server Port', justification='left'),
-             Gui.InputText(self.get_config_val('cfg_srv_port'), key='cfg_srv_port',
-                           size=(5, 1), do_not_clear=True, enable_events=True),
+             Gui.InputText(self.get_config_val('cfg_srv_port'),
+                           key='cfg_srv_port', size=(5, 1), do_not_clear=True,
+                           enable_events=True),
              Gui.Text('Connection timeout'),
              Gui.InputText(self.get_config_val('cfg_srv_conn_timeout'),
                            key='cfg_srv_conn_timeout', size=(3, 1),
@@ -382,23 +455,23 @@ class WindowManager:
                         disabled=True),
              Gui.Button('Reset local config', key='reset_config',
                         disabled=False), ],
-            [Gui.Text(self.get_config_val('load_status',
-                                      'Configuration did not load correctly.'))
+            [Gui.Text(self.get_config_val(
+                'load_status', 'Configuration did not load correctly.'))
              ],
         ]
 
+        config_name = exch_client_conf.get('config_name',
+                                           'ERROR: CONFIG NOT LOADED')
+        ip = self.get_config_val("cfg_srv_ip")  # pylint: disable=invalid-name
+        port = self.get_config_val("cfg_srv_port")
         mail_check_frame = [
             [
-                Gui.Text(
-                    ('Configuration changes are not preserved across startups.'
-                     ' To persist changes, edit the configuration on the server at')),
+                Gui.Text('Configuration changes are not preserved across '
+                         'startups. To persist changes, edit the configuration '
+                         'on the server at.'),
                 Gui.InputText(
-                    '{}://{}:{}/admin/mail_collector/exchangeconfiguration/?q={}'.
-                    format(
-                        HTTP_PROTO, self.get_config_val('cfg_srv_ip'),
-                        self.get_config_val('cfg_srv_port'),
-                        exch_client_conf.get('config_name',
-                                             'ERROR: CONFIG NOT LOADED')),
+                    f'{HTTP_PROTO}://{ip}:{port}/admin/mail_collector'
+                    f'/exchangeconfiguration/?q={config_name}',
                     disabled=True, size=(80, 1), key='bot_cfg_url'),
                 Gui.Button('Refresh config from server', key='reload_config',
                            disabled=False),
@@ -432,8 +505,8 @@ class WindowManager:
         This function is invoked by the OnClickUp event of the ``Refresh config
         from server`` `PySimpleGUI.Button` element.
 
-        The source of the new main configuration is determined based on the state
-        of the ``Load Config from Server`` `PySimpleGUI.Checkbox` element.
+        The source of the new main configuration is determined based on the
+        state of the ``Load Config from Server`` `PySimpleGUI.Checkbox` element.
 
         The function assembles the current basic configuration from the
         associated ``GUI`` elements and uses it as an argument to the
@@ -502,104 +575,78 @@ class WindowManager:
         This function is invoked by OnClickUp event of the ``Save local config``
         `PySimpleGUI.Button`
         """
-        items = [('use_cfg_srv', bool()),
+        items = [
+            ('use_cfg_srv', bool()),
             ('cfg_srv_ip', self._get_element('cfg_srv_ip')),
-            ('cfg_srv_port', int(self._get_element('cfg_srv_port'))), (
-            'cfg_srv_conn_timeout',
-            int(self._get_element('cfg_srv_conn_timeout'))), (
-            'cfg_srv_read_timeout',
-            int(self._get_element('cfg_srv_read_timeout'))), ]
+            ('cfg_srv_port', int(self._get_element('cfg_srv_port'))),
+            ('cfg_srv_conn_timeout',
+             int(self._get_element('cfg_srv_conn_timeout'))),
+            ('cfg_srv_read_timeout',
+             int(self._get_element('cfg_srv_read_timeout'))),
+        ]
 
         self.config_mgr.server_config = collections.Ordereddict(items)
 
         self.config_mgr.save_server_configuration()
 
+        self._update_element('save_config', disabled=True)
+        self.config_is_dirty = False
+
     def tick(self):
         """
         The function that updates the GUI. It is called each second.
 
-        :return bool:False if the window is closed, False otherwise.
+        :return bool:False if the window is closed, True otherwise.
          """
         event, values = self.window.Read(timeout=0)
 
         if values is None or event == 'Exit':
             if self.config_is_dirty:
-                save = Gui.PopupYesNo('Save configuration?',
-                    'There are unsaved changes'
-                    ' in the application configuration.'
-                    ' Do you wish to save them?')
+                save = Gui.PopupYesNo(
+                    'Save configuration?',
+                    'There are unsaved changes in the '
+                    'application configuration. Do you wish to save them?'
+                )
 
                 if save == 'Yes':
-                    self.save_config(self.config)
+                    self.save_config()
 
             return False
 
         while not self.update_queue.empty():
-            msg = self.update_queue.get_nowait()
-            if msg[0] == 'output':
-                self._update_output(msg[1], append=True)
-                self._update_element('status', 'mail check in progress')
+            self._handle_update_msg(self.update_queue.get_nowait())
 
-            elif msg[0] == 'abort':
-                self._update_output('\nmail check aborted\n', append=True)
-                self._update_element('status',
-                                     'Mail check aborted. Please verify '
-                                     'the configuration is correct.')
-                self._update_element('autorun', value=False)
+        update_func_dict = {
+            event: self._update_config_func(event)
+            for event in  ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
+                           'cfg_srv_conn_timeout', 'cfg_srv_read_timeout']
+        }
 
-            elif msg[0] == 'control':
-                self._update_output('\nmail check complete\n', append=True)
-                self._update_element('mail_check_period', disabled=False)
-                self._update_element('mailcheck', disabled=False)
-                if self._get_element('autorun'):
-                    self._update_element('pause', disabled=False)
-                    self._next_run_at = datetime.now() + timedelta(minutes=int(
-                        self._get_element('mail_check_period')))
-                    self._update_next_run_in()
-                else:
-                    self._update_element('run', disabled=False)
-                    self._update_element(
-                        'status', 'Automated mail check execution is paused.')
+        event_func_dict = {
+            'clear': self._clear_output,
+            'mail_check': self.mail_check,
+            'pause': self._pause,
+            'reset_config': self.reset_config,
+            'reload_config': self.reload_config,
+            'run': self._set_running(),
+            'save_config': self.save_config,
+        }
 
-        if event in ['use_cfg_srv', 'cfg_srv_ip', 'cfg_srv_port',
-                     'cfg_srv_conn_timeout', 'cfg_srv_conn_timeout']:
-            self.config_is_dirty = True
-            self.config_mgr.server_config[event] = \
-                self._get_element(event).replace('\n', '')
+        event_func_dict = {**update_func_dict, **event_func_dict}
 
-            self._dirty_window()
-
-        if event == 'save_config':
-            self.save_config()
-            self._update_element('save_config', disabled=True)
-            self.config_is_dirty = False
-
-        if event == 'reset_config':
-            self.reset_config()
-
-        if event == 'reload_config':
-            self.reload_config()
-
-        if event == 'clear':
-            self._update_output('')
+        try:
+            event_func_dict[event]()
+        except ValueError:
+            # TODO log this somehow?
+            pass  # if event is not in dict, do nothing
 
         if self._autorunning:
             if self._next_run_at <= datetime.now():
                 self.mail_check()
-                self._set_next_run_time()
-            self._update_next_run_in()
-
-        if event == 'mailcheck':
-            self.mail_check()
-            if self._autorunning:
+            else:
+                # mail check will do this, so we can put it in an else
                 self._set_next_run_time()
                 self._update_next_run_in()
-
-        if event == 'pause':
-            self._set_running(False)
-
-        if event == 'run':
-            self._set_running()
 
         return True
 

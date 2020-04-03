@@ -513,7 +513,7 @@ class WindowManager:
         :func:`mail_borg.config.load_config` function. It then re-populates
         the main configuration ``GUI`` controls with the new data.
         """
-        self.config_mgr.clear_conifg()
+        self.config_mgr.clear_config()
 
         self.window.FindElement('bot_cfg_url').Update(
             f'{HTTP_PROTO}://{self.config_mgr.server.ip}:'
@@ -636,7 +636,7 @@ class WindowManager:
 
         try:
             event_func_dict[event]()
-        except ValueError:
+        except KeyError:
             # TODO log this somehow?
             pass  # if event is not in dict, do nothing
 

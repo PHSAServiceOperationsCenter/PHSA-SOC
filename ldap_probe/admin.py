@@ -269,6 +269,10 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
     that inherit from :class:`ldap_probe.models.LdapProbeLog`
     """
 
+    search_fields = ('ad_node__node_dns', 'ad_orion_node__node__node_dns',
+                     'ad_orion_node__node__node_caption',
+                     'ad_orion_node__node__ip_address',)
+
     def has_add_permission(self, request):
         """
         :class:`ldap_probe.models.LdapProbeLog` instances are created
@@ -310,9 +314,6 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
         ('ad_orion_node', admin.RelatedOnlyFieldListFilter),
         ('created_on', DateTimeRangeFilter),
     )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address',)
 
 
 @admin.register(models.LdapProbeFullBindLog)
@@ -328,9 +329,6 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter), )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address', )
 
 
 @admin.register(models.LdapProbeAnonBindLog)
@@ -347,9 +345,6 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                     admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter),
                    'ad_orion_node__performance_bucket__name', )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address',)
 
 
 @admin.register(models.LdapCredError)

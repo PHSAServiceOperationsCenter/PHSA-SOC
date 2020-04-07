@@ -19,7 +19,7 @@ def create_slow_sub(apps, schema_editor):
 
 
 def remove_slow_sub(apps, schema_editor):
-    subscription_model = apps.get_model('ssl_cert_tracker', 'Subscription')
+    subscription_model = apps.get_model('p_soc_auto_base', 'Subscription')
     subscription_model.filter(subscription='Citrix Slow Alert').delete()
 
 

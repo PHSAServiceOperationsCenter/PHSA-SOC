@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('p_soc_auto_base', '0005_delete_emails_beat'),
         ('ssl_cert_tracker', '0012_delete_subscription')
     ]
 

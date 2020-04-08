@@ -96,6 +96,7 @@ class BaseModel(models.Model):
     :class:`Django model <django.db.models.Model>`.
     """
 
+    # TODO why is this here?
     @classmethod
     def get_or_create_user(cls, username):
         """

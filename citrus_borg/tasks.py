@@ -7,12 +7,10 @@ This module contains the `Celery tasks
 used by the :ref:`Citrus Borg Application`.
 
 :copyright:
-
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
-
 """
 from logging import getLogger
 from smtplib import SMTPConnectError
@@ -59,6 +57,11 @@ def process_citrix_login(body):
 
 
 def save_citrix_login_event(borg):
+    """
+    Save data received from a citrix bot.
+    :param borg: Message received from bot.
+    :raises: Any exception raised during
+    """
     def reraise(msg):
         LOG.exception('%s %s.', msg, borg)
         # This function should only be called from inside an except block
@@ -90,10 +93,10 @@ def save_citrix_login_event(borg):
         xml_broker=event_broker,
         event_test_result=borg.borg_message.test_result,
         storefront_connection_duration
-            =borg.borg_message.storefront_connection_duration,
+        =borg.borg_message.storefront_connection_duration,
         receiver_startup_duration=borg.borg_message.receiver_startup_duration,
         connection_achieved_duration
-            =borg.borg_message.connection_achieved_duration,
+        =borg.borg_message.connection_achieved_duration,
         logon_achieved_duration=borg.borg_message.logon_achieved_duration,
         logoff_achieved_duration=borg.borg_message.logoff_achieved_duration,
         failure_reason=borg.borg_message.failure_reason,

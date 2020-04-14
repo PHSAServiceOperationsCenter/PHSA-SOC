@@ -225,6 +225,7 @@ def parse_citrix_login_event(body):
         ]
     )
 
+    # TODO this will throw a TypeError if passed None, why bother with get?
     borg.source_host = process_borg_host(body.get('host', None))
     borg.record_number = body.get('record_number', 0)
     borg.opcode = body.get('opcode', None)
@@ -295,6 +296,28 @@ def process_borg_host(host):
     return borg_host
 
 
+def create_empty_borg_message():
+    borg_message = collections.namedtuple(
+        'BorgMessage',
+        ['state', 'broker', 'test_result', 'storefront_connection_duration',
+         'receiver_startup_duration', 'connection_achieved_duration',
+         'logon_achieved_duration', 'logoff_achieved_duration',
+         'failure_reason', 'failure_details', 'raw_message'])
+    borg_message.broker = None
+    borg_message.test_result = False
+    borg_message.storefront_connection_duration = None
+    borg_message.receiver_startup_duration = None
+    borg_message.connection_achieved_duration = None
+    borg_message.logon_achieved_duration = None
+    borg_message.logoff_achieved_duration = None
+    borg_message.failure_reason = None
+    borg_message.failure_details = None
+    borg_message.raw_message = None
+    borg_message.state = 'undetermined'
+
+    return borg_message
+
+
 # TODO refactor this
 def process_borg_message(message=None):
     """
@@ -356,29 +379,13 @@ def process_borg_message(message=None):
         raw_message property of the `namedtuple`.
 
     """
-    borg_message = collections.namedtuple(
-        'BorgMessage', [
-            'state', 'broker', 'test_result', 'storefront_connection_duration',
-            'receiver_startup_duration', 'connection_achieved_duration',
-            'logon_achieved_duration', 'logoff_achieved_duration',
-            'failure_reason', 'failure_details', 'raw_message'
-        ]
-    )
+
+    borg_message = create_empty_borg_message()
 
     if message is None:
         # this is an error case
         LOG.error('a message was not provided with this event')
         borg_message.raw_message = 'a message was not provided with this event'
-        borg_message.state = 'undetermined'
-        borg_message.broker = None
-        borg_message.test_result = False
-        borg_message.storefront_connection_duration = None
-        borg_message.receiver_startup_duration = None
-        borg_message.connection_achieved_duration = None
-        borg_message.logon_achieved_duration = None
-        borg_message.logoff_achieved_duration = None
-        borg_message.failure_reason = None
-        borg_message.failure_details = None
 
         return borg_message
 
@@ -400,32 +407,15 @@ def process_borg_message(message=None):
             parse_duration(message[8].split()[-1])
         borg_message.logoff_achieved_duration = \
             parse_duration(message[9].split()[-1])
-        borg_message.failure_reason = None
-        borg_message.failure_details = None
+
     elif borg_message.state.lower() == 'failed':
         LOG.debug('citrus borg event state: failed')
         borg_message.failure_reason = message[1].split(': ')[1]
         borg_message.failure_details = '\n'.join(message[-12:-1])
-        borg_message.broker = None
-        borg_message.test_result = False
-        borg_message.storefront_connection_duration = None
-        borg_message.receiver_startup_duration = None
-        borg_message.connection_achieved_duration = None
-        borg_message.logon_achieved_duration = None
-        borg_message.logoff_achieved_duration = None
+
     else:
         LOG.error('citrus borg event state undetermined %s',
                   borg_message.raw_message)
-        borg_message.state = 'undetermined'
-        borg_message.broker = None
-        borg_message.test_result = False
-        borg_message.storefront_connection_duration = None
-        borg_message.receiver_startup_duration = None
-        borg_message.connection_achieved_duration = None
-        borg_message.logon_achieved_duration = None
-        borg_message.logoff_achieved_duration = None
-        borg_message.failure_reason = None
-        borg_message.failure_details = None
 
     return borg_message
 

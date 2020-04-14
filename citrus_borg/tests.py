@@ -16,6 +16,7 @@ import collections
 from django.conf import settings
 from django.utils import timezone
 
+from citrus_borg.locutus.assimilation import create_empty_borg_message
 from citrus_borg.models import WinlogbeatHost, BorgSite, BorgSiteNotSeen, \
     CitrixHost, KnownBrokeringDevice, EventCluster, WinlogEvent, \
     AllowedEventSource, WindowsLog
@@ -36,23 +37,11 @@ def _empty_borg():
     borg_host.host_name = 'Test'
     borg_host.ip_address = '1.1.1.1'
 
-    borg_message = collections.namedtuple('BorgMessage',
-        ['state', 'broker', 'test_result', 'storefront_connection_duration',
-            'receiver_startup_duration', 'connection_achieved_duration',
-            'logon_achieved_duration', 'logoff_achieved_duration',
-            'failure_reason', 'failure_details', 'raw_message'])
+    borg_message = create_empty_borg_message()
 
     borg_message.raw_message = 'a message was not provided with this event'
     borg_message.state = 'undetermined'
     borg_message.broker = 'TestBroker'
-    borg_message.test_result = False
-    borg_message.storefront_connection_duration = None
-    borg_message.receiver_startup_duration = None
-    borg_message.connection_achieved_duration = None
-    borg_message.logon_achieved_duration = None
-    borg_message.logoff_achieved_duration = None
-    borg_message.failure_reason = None
-    borg_message.failure_details = None
 
     borg.source_host = borg_host
     borg.record_number = 0
@@ -235,4 +224,3 @@ class EventClusterTest(UserTestCase):
         test that end time is the latest time recorded in the cluster
         """
         self.assertEqual(self.cluster.end_time, self.times[-1])
-

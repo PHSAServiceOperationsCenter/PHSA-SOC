@@ -154,41 +154,16 @@ def raise_failed_event_by_mail(event_pk):
 
 
 @shared_task(queue='mail_collector')
-def expire_events(moment=None):
+def expire_events():
     """
     mark events as expired. also delete them if so configured
 
     expired events are deleted based on the value of the
     :class:`citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired`
     dynamic settings
-
-    :arg `datetime.datetime` moment:
-
-        the cutoff moment; all rows older than this will be expired.
-        default: ``None``. when ``None`` it will be calculated based on the
-        value of the
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents`
-        dynamic setting relative to the moment returned by
-        :meth:`datetime.datetime.now`
-
-    .. todo::
-
-        Argument type is not suitable for celery tasks. How does one
-        pass a datetime from a celery beat task? This need to change to
-        something that can be passed in as a string of some sorts (or a
-        dictionary of basic types).
-
     """
-    if moment is None:
-        moment = base_utils.MomentOfTime.past(
+    moment = base_utils.MomentOfTime.past(
             time_delta=get_preference('exchange__expire_events'))
-
-    if not isinstance(moment, timezone.datetime):
-        error = TypeError(
-            'Invalid object type %s, was expecting datetime'
-            % type(moment))
-        LOG.error(error)
-        raise error
 
     count_expired = models.MailBotLogEvent.objects.filter(
         event_registered_on__lte=moment).update(is_expired=True)

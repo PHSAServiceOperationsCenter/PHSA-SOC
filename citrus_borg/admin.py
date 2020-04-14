@@ -7,7 +7,7 @@ This module contains the `Django admin` classes for the
 
 :copyright:
 
-    Copyright 2018 - 2019 Provincial Health Service Authority
+    Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
 
 :contact:    daniel.busto@phsa.ca
@@ -116,8 +116,8 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`citrus_borg.models.BorgSite`
     """
-    list_display = ('site', 'enabled', 'notes',
-                    'last_seen', 'exchange_last_seen', 'updated_on', 'updated_by')
+    list_display = ('site', 'enabled', 'notes', 'last_seen',
+                    'exchange_last_seen', 'updated_on', 'updated_by')
     list_editable = ('notes', 'enabled',)
     list_filter = ('enabled',)
     readonly_fields = ('last_seen', 'exchange_last_seen',)
@@ -177,6 +177,10 @@ class EventClusterAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('enabled', 'bots', 'end_time', 'start_time',
                        'updated_by', 'uuid')
 
+    # For the admin framework to use these functions properly they cannot be
+    # static, despite not actually using the self variable.
+    # pylint: disable=no-self-use
+
     def bots(self, obj):
         """
         Get the bots that were involved in this cluster of failures.
@@ -194,6 +198,8 @@ class EventClusterAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         :return: Whether or not a notification was sent
         """
         return obj.enabled
+
+    # pylint: enable=no-self-use
 
     def has_add_permission(self, request):  # @UnusedVariable
         """

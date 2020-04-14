@@ -190,11 +190,11 @@ The ``mail_borg_gui.exe`` is now signed.
 Self-signed certificate
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-In an ideal world, one is supposed to sign an executable with a trusted
-certificate but life is cruel.
+One is supposed to sign an executable with a trusted certificate but we currently do not have access
+to such a signing authority.
 
-Therefore, one will generate one's own self-signed certificate as shown
-below. Note that this is a PowerShell session with Administrator privileges.
+Therefore, one will generate one's own self-signed certificate as shownbelow.
+Note that this is a PowerShell session with Administrator privileges.
 
 Create the certificate:
 

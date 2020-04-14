@@ -25,7 +25,7 @@ from citrus_borg.dynamic_preferences_registry import (get_preference,
 from citrus_borg.models import EventCluster, WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.utils import get_subscription
+from p_soc_auto_base.utils import get_or_create_user, get_subscription
 
 LOG = getLogger(__name__)
 
@@ -82,10 +82,7 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
     LOG.debug('there have been %d failures recently', recent_failures_count)
 
     if recent_failures_count >= get_preference('citrusborgux__cluster_size'):
-        # TODO replace this with get_or_create_user when the automated testing
-        #      branch is merged (or possibly set it to the default?)
-        default_user = \
-            get_user_model().objects.get_or_create(username='default')[0]
+        default_user = get_or_create_user()
 
         new_cluster = EventCluster(
             created_by=default_user, updated_by=default_user

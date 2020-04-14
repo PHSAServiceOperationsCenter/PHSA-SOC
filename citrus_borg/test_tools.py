@@ -11,7 +11,7 @@ FAILURE_EXAMPLE = {
     'host': {
         'architecture': 'x86_64',
         'ip': ['fe80::fc8c:6b8:65fb:3d84', '10.21.179.4',
-            'fe80::5efe:a15:b304'],
+               'fe80::5efe:a15:b304'],
         'os': {
             'version': '6.1',
             'family': 'windows',
@@ -87,7 +87,7 @@ IGNORE_FAILURE_EXAMPLE = {
     'host': {
         'architecture': 'x86_64',
         'ip': ['fe80::fc8c:6b8:65fb:3d84', '10.21.179.4',
-            'fe80::5efe:a15:b304'],
+               'fe80::5efe:a15:b304'],
         'os': {
             'version': '6.1',
             'family': 'windows',
@@ -162,7 +162,7 @@ PASS_EXAMPLE = {
     'host': {
         'architecture': 'x86_64',
         'ip': ['fe80::fc8c:6b8:65fb:3d84', '10.21.179.4',
-            'fe80::5efe:a15:b304'],
+               'fe80::5efe:a15:b304'],
         'os': {
             'version': '6.1',
             'family': 'windows',
@@ -309,11 +309,19 @@ HOSTS = [LD038075, BCCSST450S04, LD031147]
 
 
 def generate_failure():
-    return generate_example(True,
+    """
+    Generate an example of a successful citrix test message.
+    """
+    return generate_example(
+        True,
         choice(get_int_list_preference('citrusborgux__cluster_event_ids')),
         str(datetime.now(timezone.utc)), choice(HOSTS))
 
+
 def generate_success():
+    """
+    Generate an example of a successful citrix test message.
+    """
     return generate_example(False, choice([1000, 1020, 1003, 500]),
                             str(datetime.now(timezone.utc)), choice(HOSTS))
 
@@ -353,6 +361,9 @@ def generate_example(failed, id_num, timestamp, host):
 
 
 def keep_on_generating():
+    """
+    Generate example borg messages for testing purposes.
+    """
     while True:
         process_citrix_login(choice([generate_failure, generate_success])())
         sleep(5)

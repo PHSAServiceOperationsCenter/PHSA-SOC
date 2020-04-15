@@ -66,6 +66,10 @@ def _get_default_alert_threshold():
     return get_preference('ldapprobe__ldap_perf_err')
 
 
+# Managers only require the get_queryset method
+# pylint: disable=too-few-public-methods
+
+
 class LdapProbeLogFullBindManager(models.Manager):
     """
     custom :class:`django.db.models.Manager` used by the
@@ -74,8 +78,7 @@ class LdapProbeLogFullBindManager(models.Manager):
     We have observed that the default set of `Windows` domain credentials
     will allow full LDAP binds for a limited number of `AD` controllers.
     By design LDAP probe data collected from these `AD` controllers will
-    present with :attr:`LdapProbeLog.elapsed_bind` values that are not
-    null (`None` in `Python` speak).
+    present with :attr:`LdapProbeLog.elapsed_bind` values that are not null.
     """
 
     def get_queryset(self):
@@ -89,7 +92,6 @@ class LdapProbeLogFullBindManager(models.Manager):
         :returns: a :class:`django.db.models.query.QuerySet` with the
             :class:`LdapProbeLog` instances that contain timing data for
             `LDAP` full bind operations
-
         """
         return super().get_queryset().filter(elapsed_bind__isnull=False)
 
@@ -105,7 +107,6 @@ class LdapProbeLogAnonBindManager(models.Manager):
     By design LDAP probe data collected from these `AD` controllers will
     present with :attr:`LdapProbeLog.elapsed_anon_bind` values that are not
     null (`None` in `Python` speak).
-
     """
 
     def get_queryset(self):
@@ -119,7 +120,6 @@ class LdapProbeLogAnonBindManager(models.Manager):
         :returns: a :class:`django.db.models.query.QuerySet` with the
             :class:`LdapProbeLog` instances that contain timing data for
             `LDAP` anonymous bind operations
-
         """
         return super().get_queryset().filter(elapsed_anon_bind__isnull=False)
 
@@ -128,7 +128,6 @@ class LdapProbeLogFailedManager(models.Manager):
     """
     custom :class:`django.db.models.Manager` used by the
     :class:`LdapProbeLogFailed` model
-
     """
 
     def get_queryset(self):
@@ -141,9 +140,11 @@ class LdapProbeLogFailedManager(models.Manager):
 
         :returns: a :class:`django.db.models.query.QuerySet` with the
             :class:`LdapProbeLog` failed instances
-
         """
         return super().get_queryset().filter(failed=True)
+
+
+# pylint: enable=too-few-public-methods
 
 
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
@@ -275,8 +276,6 @@ class BaseADNode(BaseModel, models.Model):
 
     """
 
-    # TODO refactor implementation of class dependent methods to actually exist
-    #      in appropriate subclass
     def get_node(self):
         """
         get node network information in either `FQDN` or `IP` address format
@@ -285,14 +284,7 @@ class BaseADNode(BaseModel, models.Model):
         from `Orion` nodes. `Orion` nodes are guaranteed to have an `IP`
         address but sometimes they don't have a valid `FQDN`.
         """
-        if hasattr(self, 'node_dns'):
-            return getattr(self, 'node_dns')
-
-        if hasattr(self, 'node'):
-            node = getattr(self, 'node')
-            if node.node_dns:
-                return node.node_dns
-            return node.ip_address
+        raise NotImplementedError()
 
     @classmethod
     def annotate_orion_url(cls, queryset=None):
@@ -310,33 +302,23 @@ class BaseADNode(BaseModel, models.Model):
 
             Default is the active nodes of the class.
 
-        :returns: the :class:`django.db.models.query.QuerySet` with the
-            'orion_url' field included
+        :returns: the values of the :class:`django.db.models.query.QuerySet`
+            with the 'orion_url' field included
         """
         if queryset is None:
             queryset = cls.active
 
-        if 'node_dns' in [field.name for field in cls._meta.fields]:
-            queryset = queryset.annotate(
-                orion_url=Concat(
-                    Value('AD node '), F('node_dns'),
-                    Value(' is not defined in Orion'),
-                    output_field=TextField()
-                )
-            )
-        else:
-            queryset = queryset.\
-                annotate(orion_anchor=cls.sql_orion_anchor_field).\
-                annotate(
-                    orion_url=Concat(
-                        Value(get_preference(
-                            'orionserverconn__orion_server_url')),
-                        F('node__details_url'),
-                        output_field=URLField()
-                    )
-                )
+        queryset = cls._annotate_orion_url(queryset)
 
         return queryset.values()
+
+    @classmethod
+    def _annotate_orion_url(cls, queryset):
+        """
+        Helper method for :meth:`annotate_orion_url` that is overridden by the
+        derived classes
+        """
+        raise NotImplementedError()
 
     @classmethod
     def annotate_probe_details(cls, probes_model_name, queryset=None):
@@ -372,17 +354,20 @@ class BaseADNode(BaseModel, models.Model):
         """
         if queryset is None:
             queryset = cls.active
-        if 'node_dns' in [field.name for field in cls._meta.fields]:
-            url_filters = '/?ad_node__id='
-        else:
-            url_filters = '/?ad_orion_node__id='
 
-        return queryset.annotate(probes_url=Concat(
-            Value(settings.SERVER_PROTO), Value('://'),
-            Value(socket.getfqdn()), Value(':'),
-            Value(settings.SERVER_PORT),
-            Value('/admin/ldap_probe/'), Value(probes_model_name),
-            Value(url_filters), F('id'), output_field=TextField())).values()
+        return queryset.annotate(
+            probes_url=Concat(
+                Value(settings.SERVER_PROTO), Value('://'),
+                Value(socket.getfqdn()), Value(':'),
+                Value(settings.SERVER_PORT),
+                Value('/admin/ldap_probe/'), Value(probes_model_name),
+                Value(cls._details_url_filter()), F('id'),
+                output_field=TextField())
+        ).values()
+
+    @classmethod
+    def _details_url_filter(cls):
+        raise NotImplementedError()
 
     @classmethod
     def report_perf_degradation(
@@ -451,7 +436,6 @@ class BaseADNode(BaseModel, models.Model):
             is not known to the system
 
         """
-        no_nodes = False
         if bucket is None:
             bucket = ADNodePerfBucket.default()
         else:
@@ -464,57 +448,47 @@ class BaseADNode(BaseModel, models.Model):
             = cls.report_probe_aggregates(
                 anon=anon, perf_filter=True, **time_delta_args)
 
-        subscription = f'{subscription},degrade'
+        subscription = f'{subscription}, degrade'
 
         queryset = queryset.filter(performance_bucket=bucket)
-        if not queryset.exists():
-            no_nodes = True
+        measure_point = 'average'
 
-        if (level is None
-                or level == get_preference('commonalertargs__info_level')):
+        if level == get_preference('commonalertargs__error_level'):
+            subscription = f'{subscription}, err'
+            measure_point = 'maximum'
 
-            threshold = bucket.avg_warn_threshold
-            if anon:
-                perf_filter = (
-                    Q(average_bind_duration__gte=threshold) |
-                    Q(average_read_root_dse_duration__gte=threshold))
-            else:
-                perf_filter = (
-                    Q(average_bind_duration__gte=threshold) |
-                    Q(average_extended_search_duration__gte=threshold))
+        threshold = {
+            None: bucket.avg_warn_threshold,
+            get_preference('commonalertargs__info_level'):
+                bucket.avg_warn_threshold,
+            get_preference('commonalertargs__warn_level'):
+                bucket.avg_err_threshold,
+            get_preference('commonalertargs__error_level'):
+                bucket.alert_threshold
+        }[level]
 
-        elif level == get_preference('commonalertargs__warn_level'):
-            threshold = bucket.avg_err_threshold
-            if anon:
-                perf_filter = (
-                    Q(average_bind_duration__gte=threshold) |
-                    Q(average_read_root_dse_duration__gte=threshold))
-            else:
-                perf_filter = (
-                    Q(average_bind_duration__gte=threshold) |
-                    Q(average_extended_search_duration__gte=threshold))
+        duration_filters = {
+            'bind': {f'{measure_point}_bind_duration__gte': threshold},
+            'read_root': {f'{measure_point}_read_root_dse_duration__gte':
+                              threshold},
+            'extended': {f'{measure_point}_extended_search_duration__gte':
+                             threshold},
+        }
 
-        elif level == get_preference('commonalertargs__error_level'):
-            subscription = f'{subscription},err'
-            threshold = bucket.alert_threshold
-            if anon:
-                perf_filter = (
-                    Q(maximum_bind_duration__gte=threshold) |
-                    Q(maximum_read_root_dse_duration__gte=threshold))
-            else:
-                perf_filter = (
-                    Q(maximum_bind_duration__gte=threshold) |
-                    Q(maximum_extended_search_duration__gte=threshold))
-
+        if anon:
+            perf_filter = (Q(**duration_filters['bind'])
+                           | Q(**duration_filters['read_root']))
         else:
-            raise ValueError(f'unknown perf degradation level {level}')
+            perf_filter = (Q(**duration_filters['bind'])
+                           | Q(**duration_filters['extended']))
 
-        if no_nodes:
-            return now, time_delta, subscription, queryset, threshold, no_nodes
+        # TODO figure out a better way to return all this stuff
+        if not queryset.exists():
+            return now, time_delta, subscription, queryset, threshold, True
 
         queryset = queryset.filter(perf_filter).values()
 
-        return now, time_delta, subscription, queryset, threshold, no_nodes
+        return now, time_delta, subscription, queryset, threshold, False
 
     @classmethod
     def report_probe_aggregates(
@@ -573,7 +547,6 @@ class BaseADNode(BaseModel, models.Model):
               * min, max, average timing for `extended search` calls or
                 `read root dse` calls of the successful probes
 
-
         .. todo::
 
             Add a catch for no nodes available.
@@ -584,8 +557,6 @@ class BaseADNode(BaseModel, models.Model):
             However, the normal case is that all `AD` nodes are now
             defined in Orion and in that case, we can safely abort
             report calls for non Orion nodes.
-
-
         """
         subscription = 'LDAP: summary report'
         if queryset is None:
@@ -676,6 +647,8 @@ class BaseADNode(BaseModel, models.Model):
         queryset = cls.annotate_probe_details(
             probes_model_name, cls.annotate_orion_url(queryset))
 
+    # TODO rework this to return the truly pertinent information, and move to
+    #      subclass if possible.
         if 'node_dns' in [field.name for field in cls._meta.fields]:
             subscription = f'{subscription}, non orion'
             return (now, time_delta, subscription,
@@ -707,10 +680,25 @@ class OrionADNode(BaseADNode, models.Model):
         verbose_name=_('Orion Node for Domain Controller'))
 
     def __str__(self):
-        if self.node.node_dns:
-            return self.node.node_dns
+        return self.node.node_dns or self.node.node_caption
 
-        return self.node.node_caption
+    def get_node(self):
+        return self.node.node_dns or self.node.ip_address
+
+    @classmethod
+    def _annotate_orion_url(cls, queryset=None):
+        return queryset.annotate(
+            orion_anchor=cls.sql_orion_anchor_field).annotate(
+                orion_url=Concat(
+                    Value(get_preference('orionserverconn__orion_server_url')),
+                    F('node__details_url'),
+                    output_field=URLField()
+                )
+            )
+
+    @classmethod
+    def _details_url_filter(cls):
+        return '/?ad_orion_node__id='
 
     @property
     @mark_safe
@@ -789,7 +777,22 @@ class NonOrionADNode(BaseADNode, models.Model):
     )
 
     def __str__(self):
+        return self.get_node()
+
+    def get_node(self):
         return self.node_dns
+
+    @classmethod
+    def _annotate_orion_url(cls, queryset):
+        return queryset.annotate(
+            orion_url=Concat(
+                Value('AD node '), F('node_dns'),
+                Value(' is not defined in Orion'), output_field=TextField())
+        )
+
+    @classmethod
+    def _details_url_filter(cls):
+        return '/?ad_node__id='
 
     def remove_if_in_orion(self):
         """
@@ -1068,7 +1071,7 @@ class LdapProbeLog(models.Model):
 
         ldap_probe_log_entry.save()
 
-        LOG.debug(f'created {ldap_probe_log_entry}')
+        LOG.debug('created %s', ldap_probe_log_entry)
 
     class Meta:
         app_label = 'ldap_probe'

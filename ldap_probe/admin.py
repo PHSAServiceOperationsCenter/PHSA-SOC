@@ -49,6 +49,10 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    # The way the admin framework works requires the functions be defined this
+    # way, despite not using self.
+    # pylint: disable=no-self-use
+
     def show_avg_warn_threshold(self, obj):
         """
         show :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
@@ -88,6 +92,7 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
     show_alert_threshold.short_description = _(
         'Response Time Alert')
 
+    # pylint: enable=no-self-use
 
 @admin.register(models.ADNodePerfBucket)
 class AdNodePerfBucketAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):

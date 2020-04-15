@@ -38,4 +38,4 @@ class LdapProbeConfig(AppConfig):
         See `AppConfig.ready()
         <https://docs.djangoproject.com/en/2.2/ref/applications/#django.apps.AppConfig.ready>`__.
         """
-        import ldap_probe.signals  # pylint: disable=import-outside-toplevel
+        import ldap_probe.signals  # pylint: disable=import-outside-toplevel,unused-import

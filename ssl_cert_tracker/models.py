@@ -2,9 +2,9 @@
 ssl_cert_tracker.models
 -----------------------
 
-This module contains the :class:`models <django.db.models.Model>` and :class:`model
-managers <django.db.models.Manager>` used by the :ref:`SSL Certificate Tracker
-Application`.
+This module contains the :class:`models <django.db.models.Model>` and
+:class:`model managers <django.db.models.Manager>` used by the
+:ref:`SSL Certificate Tracker Application`.
 
 :copyright:
 
@@ -30,10 +30,15 @@ from p_soc_auto_base.models import BaseModel
 from .lib import expires_in, has_expired, is_not_yet_valid
 
 
+# Managers only need to implement get_queryset. Since we are overriding the base
+# get queryset function we need to match the arguments, despite not using self.
+# pylint: disable=too-few-public-methods, no-self-use
+
+
 class ExpiresIn(models.Manager):
     """
     `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+<https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
     class used in the :class:`SslExpiresIn` model
     """
 
@@ -42,7 +47,8 @@ class ExpiresIn(models.Manager):
         override :meth:`django.db.models.Manager.get_queryset`
 
         See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
+        """#modifying-a-manager-s-initial-queryset>`__
         in the `Django` docs.
         """
         return expires_in()
@@ -51,7 +57,8 @@ class ExpiresIn(models.Manager):
 class ExpiredSince(models.Manager):
     """
     `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
+    """#custom-managers>`_
     class used in the :class:`SslHasExpired` model
     """
 
@@ -60,7 +67,8 @@ class ExpiredSince(models.Manager):
         override :meth:`django.db.models.Manager.get_queryset`
 
         See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/#modifying-a-manager-s-initial-queryset>`__
+        <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
+            """#modifying-a-manager-s-initial-queryset>`__
         in the `Django` docs.
         """
         return has_expired()
@@ -250,9 +258,9 @@ class SslCertificate(SslCertificateBase, models.Model):
 
         Currently, we are uniquely identifying an `SSL` certificate by the
         ('network address', 'network port') tuple where the certificate is being
-        served. This approach is fully justified from an operational perspective;
-        it is not possible to serve more than one certificate per the network
-        tuple.
+        served. This approach is fully justified from an operational
+        perspective; it is not possible to serve more than one certificate per
+        the network tuple.
 
         However, a (valid) SSL certificate is an ephemeral construct. When it
         expires, it cannot be extended. It can only be replaced by a new `SSL`
@@ -312,11 +320,9 @@ class SslCertificate(SslCertificateBase, models.Model):
         if ssl_obj.exists():
             ssl_obj = ssl_obj.get()
             if ssl_obj.pk_md5 != ssl_certificate.ssl_md5:
-                """
-                host and port are the same but the checksum has changed,
-                ergo the certificate has been replaced. we need to save
-                the new data
-                """
+                # host and port are the same but the checksum has changed,
+                # ergo the certificate has been replaced. we need to save
+                # the new data
                 ssl_obj.common_name = ssl_certificate.ssl_subject.\
                     get('commonName')
                 ssl_obj.organization_name = ssl_certificate.ssl_subject.\

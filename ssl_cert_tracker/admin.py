@@ -122,11 +122,11 @@ class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
     readonly_fields = ('common_name', 'organization_name', 'pk_bits',
                        'country_name', 'node_admin_url', 'orion_node_url',
                        'not_before', 'not_after', 'last_seen', 'is_trusted',)
-    list_filter = ('enabled',  'organization_name',
+    list_filter = ('enabled', 'organization_name',
                    ('last_seen', DateTimeRangeFilter),
                    ('updated_on', DateTimeRangeFilter),)
-    search_fields = ['common_name',
-                     'organization_name', 'country_name', 'notes', ]
+    search_fields = ['common_name', 'organization_name', 'country_name',
+                     'notes', ]
 
     fieldsets = (
         ('Identification', {
@@ -161,6 +161,10 @@ class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
                        ('updated_on', 'updated_by', ),),
         }, ),
     )
+
+    # Django admin requires methods be definied this way, despite not using self
+    # explicitly
+    # pylint: disable=no-self-use
 
     def is_trusted(self, obj):
         """
@@ -206,8 +210,8 @@ class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
 
     def link_field(self, obj):  # pylint: disable=no-self-use
         """
-        calculated field with issuing authority data used on the summary page for
-        linking to detail pages
+        calculated field with issuing authority data used on the summary page
+        for linking to detail pages
         """
         return 'CN: %s, O: %s' % (obj.common_name, obj.organization_name)
     link_field.short_description = _('Issuing Authority')
@@ -253,6 +257,7 @@ class SslProbePortAdmin(admin.ModelAdmin):
         """
         return True
 
+# pylint: disable=no-self-use
 
 @admin.register(SslExpiresIn)
 class SslExpiresInAdmin(SslCertificateAdmin):
@@ -267,6 +272,9 @@ class SslExpiresInAdmin(SslCertificateAdmin):
                     'orion_node_url', 'updated_on']
 
     def expires_in_days(self, obj):
+        """
+        get the number of days until the SSL cert expires
+        """
         return obj.expires_in_x_days
     expires_in_days.short_description = 'expires in X days'
 
@@ -284,6 +292,9 @@ class SslHasExpiredAdmin(SslCertificateAdmin):
                     'orion_node_url', 'updated_on']
 
     def has_expired_days_ago(self, obj):
+        """
+        get the number of days since the SSL cert expired
+        """
         return obj.has_expired_x_days_ago
     has_expired_days_ago.short_description = 'has expired X days ago'
 
@@ -301,5 +312,8 @@ class SslNotYetValidAdmin(SslCertificateAdmin):
                     'orion_node_url', 'updated_on']
 
     def valid_in_days(self, obj):
+        """
+        get the number of days until the SSL cert is valid
+        """
         return obj.will_become_valid_in_x_days
     valid_in_days.short_description = 'will become valid in X days'

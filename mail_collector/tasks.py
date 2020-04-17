@@ -163,7 +163,7 @@ def expire_events():
     dynamic settings
     """
     moment = base_utils.MomentOfTime.past(
-            time_delta=get_preference('exchange__expire_events'))
+        time_delta=get_preference('exchange__expire_events'))
 
     count_expired = models.MailBotLogEvent.objects.filter(
         event_registered_on__lte=moment).update(is_expired=True)
@@ -194,8 +194,6 @@ def bring_out_your_dead(
     :ref:`Mail Collector Application` entities that have been in an
     abnormal state for a given duration measured going back from the
     current moment
-
-    .. todo:: see `<https://trello.com/c/vav94p7e>`_
 
     :arg str data_source: the reference to a
         :class:`django.db.models.Model` in the form of 'app_label.model_name'
@@ -331,18 +329,18 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
         :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
         dynamic setting
 
-        *    if there are alerts, this task will return the result of the email
-             send op
+        *  if there are alerts, this task will return the result of the email
+           send op
 
-        *    otherwise the task will check the value of the
-             :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
-             dynamic setting.
+        *  otherwise the task will check the value of the
+           :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
+           dynamic setting.
 
-             *    if the value is ``False``, the task will not send any emails
-                  and it will return this information
+             *  if the value is ``False``, the task will not send any emails
+                and it will return this information
 
-             *    otherwise the task will send an email saying that there are
-                  no alerts and return the result of the email send op
+             *  otherwise the task will send an email saying that there are
+                no alerts and return the result of the email send op
     :rtype: str
 
     :raises: :exc:`Exception` if an exception was thrown while sending the alert
@@ -394,7 +392,8 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     :arg str report_level: similar to a log level, defaults to ``None``
 
         when ``None``, the value is picked from
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+        :class:`citrus_borg.dynamic_preferences_registry."""\
+            """ExchangeDefaultErrorLevel`
 
 
     :returns: the sites for which the report tasks have been invoked
@@ -532,7 +531,8 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     :arg str report_level: similar to a log level, defaults to ``None``
 
         when ``None``, the value is picked from
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+        :class:`citrus_borg.dynamic_preferences_registry"""\
+        """.ExchangeDefaultErrorLevel`
 
 
     :returns: the bots for which the report tasks have been invoked

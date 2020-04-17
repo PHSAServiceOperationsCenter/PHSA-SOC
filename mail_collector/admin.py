@@ -64,7 +64,7 @@ class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     """
     list_display_links = ('show_account',)
     list_display = ('show_account', 'enabled', 'domain',
-                    'username',  'is_default', 'updated_on', 'updated_by')
+                    'username', 'is_default', 'updated_on', 'updated_by')
     list_editable = ('enabled', 'domain', 'username', 'is_default')
     list_filter = ('enabled', 'domain')
     search_fields = ('domain', 'username')
@@ -118,6 +118,9 @@ class WitnessEmailAdmin(MailConfigAdminBase, admin.ModelAdmin):
 
 @admin.register(ExchangeConfiguration)
 class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
+    """
+    Admin class for Exchange configuration.
+    """
     list_display_links = ('config_name',)
     list_display = ('config_name', 'enabled', 'is_default', 'debug',
                     'autorun', 'mail_check_period', 'ascii_address',
@@ -141,7 +144,7 @@ class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
         }, ),
         ('Runtime Configuration', {
             'classes': ('extrapretty',),
-            'fields': (('debug',  'autorun', 'mail_check_period', ), ),
+            'fields': (('debug', 'autorun', 'mail_check_period', ), ),
         }, ),
         ('Email Features', {
             'classes': ('extrapretty', ),
@@ -171,6 +174,10 @@ class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
                        ('updated_on', 'updated_by', ),),
         }, ),
     )
+
+    # Admin functions have to be formatted as instance functions even if self is
+    # not explicitly used
+    # pylint: disable=no-self-use
 
     def count_exchange_accounts(self, obj):
         """
@@ -255,7 +262,8 @@ class MailBetweenDomainsAdmin(MailBotAdmin, admin.ModelAdmin):
         """
         show the domain to domain information
         """
-        return '{}: {} -> {}'.format(obj.site.site, obj.from_domain, obj.to_domain)
+        return '{}: {} -> {}'.format(obj.site.site, obj.from_domain,
+                                     obj.to_domain)
     show_link.short_description = 'Verification'
 
 
@@ -304,8 +312,8 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     admin forms for exchange monitoring bots
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
-                    'exchange_client_config', 'resolved_fqdn', 'exchange_last_seen',
-                    'created_on',)
+                    'exchange_client_config', 'resolved_fqdn',
+                    'exchange_last_seen', 'created_on',)
     list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn',
                        'exchange_last_seen', 'created_on', 'orion_id',)
@@ -469,11 +477,6 @@ class ExchangeDatabaseAdmin(ExchangeServerAdmin, admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """
         override to provide lookups for exchange_server field
-
-        :param db_field:
-        :type db_field:
-        :param request:
-        :type request:
         """
         if db_field.name == 'exchange_server':
             kwargs['queryset'] = ExchangeServer.active

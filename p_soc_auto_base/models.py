@@ -21,7 +21,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-class EnabledManager(models.Manager):
+# Managers only need to implement get_queryset
+class EnabledManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     Manager that only returns `active` objects.
     """
@@ -131,7 +132,7 @@ class BaseModel(models.Model):
     """
     Default manager.
 
-    Note first defined manager is always set as default, to ensure default is 
+    Note first defined manager is always set as default, to ensure default is
     'all objects' this manager should remain defined first.
     """
 
@@ -247,7 +248,7 @@ class Subscription(BaseModel):
     running on the :ref:`SOC Automation Server`.
     """
     subscription = models.CharField('subscription', max_length=128, unique=True,
-        db_index=True, blank=False, null=False)
+                                    db_index=True, blank=False, null=False)
     """
     string uniquely identifying a :class:`Subscription` instance
     """
@@ -259,14 +260,14 @@ class Subscription(BaseModel):
     """
 
     from_email = models.CharField('from', max_length=255, blank=True, null=True,
-        default=settings.DEFAULT_FROM_EMAIL)
+                                  default=settings.DEFAULT_FROM_EMAIL)
     """
     email address to be placed in the `FROM` email header; default will be
     picked from :attr:`p_soc_auto.settings.DEFAULT_FROM_EMAIL`
     """
 
     template_dir = models.CharField('email templates directory', max_length=255,
-        blank=False, null=False)
+                                    blank=False, null=False)
     """
     directory for `Templates
     <https://docs.djangoproject.com/en/2.2/topics/templates/>`_
@@ -275,7 +276,7 @@ class Subscription(BaseModel):
     """
 
     template_name = models.CharField('email template name', max_length=64,
-        blank=False, null=False)
+                                     blank=False, null=False)
     """
     the short name of the template file used to render this type of email
 
@@ -283,15 +284,16 @@ class Subscription(BaseModel):
     `django-templated-mail` package in `p_soc_auto.settings`.
     """
 
-    template_prefix = models.CharField('email template prefix', max_length=64,
-        blank=False, null=False, default='email/')
+    template_prefix = models.CharField(
+        'email template prefix', max_length=64, blank=False, null=False,
+        default='email/')
     """
     the subdirectory under :attr:`templatedir` where email templates are
     located
     """
 
-    email_subject = models.TextField('email subject fragment', blank=True,
-        null=True,
+    email_subject = models.TextField(
+        'email subject fragment', blank=True, null=True,
         help_text=('this is the conditional subject of the email template.'
                    ' it is normally just a fragment that will augmented'
                    ' by other variables'))
@@ -314,8 +316,8 @@ class Subscription(BaseModel):
     that includes a reference to it.
     """
 
-    alternate_email_subject = models.TextField('fallback email subject',
-        blank=True, null=True,
+    alternate_email_subject = models.TextField(
+        'fallback email subject', blank=True, null=True,
         help_text='this is the non conditional subject of the email template.')
     """
     an alternate value for the core of the email subject line
@@ -329,7 +331,8 @@ class Subscription(BaseModel):
     nothing to see here'.
     """
 
-    headers = models.TextField('data headers', blank=False, null=False,
+    headers = models.TextField(
+        'data headers', blank=False, null=False,
         default='common_name,expires_in,not_before,not_after')
     """
     a comma-separated list of field names to retrieve from the :attr:`data`
@@ -339,7 +342,8 @@ class Subscription(BaseModel):
     :attr:`data` `queryset` they will not be displayed.
     """
 
-    tags = models.TextField('tags', blank=True, null=True,
+    tags = models.TextField(
+        'tags', blank=True, null=True,
         help_text=('email classification tags placed on the subject line'
                    ' and in the email body'))
     """

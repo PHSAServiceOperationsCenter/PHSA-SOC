@@ -1,6 +1,21 @@
 """
+.. _base_apps:
+
+p_soc_auto_base.apps module
+---------------------------
+
+This module contains the `Django` application configuration for the base app.
+
+
+:module:    p_soc_auto.p_soc_auto_base.apps
+
+:copyright:
+
+    Copyright 2018 - 2020 Provincial Health Service Authority
+    of British Columbia
+
+:contact:    daniel.busto@phsa.ca
 """
-__updated__ = '2018_08_07'
 
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _

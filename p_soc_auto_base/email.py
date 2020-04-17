@@ -259,20 +259,6 @@ class Email:
 
         return headers
 
-    def _send(self):
-        try:
-            sent = self.email.send()
-        except SMTPConnectError as err:
-            LOG.exception(str(err))
-            raise err
-        except Exception as err:
-            LOG.exception(str(err))
-            raise err
-
-        LOG.debug('sent email with subject %s', self.email.subject)
-
-        return sent
-
     def _prepare_csv(self):
         """
         generate a comma-separated file with the values in the
@@ -339,6 +325,20 @@ class Email:
 
         LOG.debug('tags are %s', tags)
         return tags
+
+    def send(self):
+        try:
+            sent = self.email.send()
+        except SMTPConnectError as err:
+            LOG.exception(str(err))
+            raise err
+        except Exception as err:
+            LOG.exception(str(err))
+            raise err
+
+        LOG.debug('sent email with subject %s', self.email.subject)
+
+        return sent
 
     @classmethod
     def send_email(cls, data, subscription, add_csv=True, **extra_context):

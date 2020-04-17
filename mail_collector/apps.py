@@ -33,4 +33,5 @@ class MailCollectorConfig(AppConfig):
         documented solution for avoiding circular import errors when
         loading modules that use the django framework packages
         """
+        # pylint: disable=import-outside-toplevel, unused-import
         import mail_collector.signals

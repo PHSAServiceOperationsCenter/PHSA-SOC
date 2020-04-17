@@ -14,14 +14,10 @@ Query functions for the :ref:`Mail Collector Application`
 """
 import datetime
 
-from django.apps import apps
 from django.db.models import Max
 from django.db.models.query import QuerySet
 
 from citrus_borg.dynamic_preferences_registry import get_preference
-from citrus_borg.locutus.communication import GroupBy, _group_by
-from mail_collector.models import (
-    ExchangeServer, ExchangeDatabase, MailBotLogEvent, MailBotMessage,)
 from p_soc_auto_base.utils import (
     MomentOfTime, get_base_queryset,
     url_annotate as _url_annotate,

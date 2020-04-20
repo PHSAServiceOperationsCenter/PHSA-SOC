@@ -38,8 +38,6 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
-from p_soc_auto_base.models import Subscription
-
 LOG = getLogger(__name__)
 
 
@@ -697,26 +695,9 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription):
-    """
-    :returns: a :class:`p_soc_auto_base.models.Subscription` instance
-
-    :arg str subscription: the subscription value
-
-    :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't
-        exist.
-    """
-    try:
-        return Subscription.objects.get(subscription__iexact=subscription)
-    except Subscription.DoesNotExist:
-        error_msg = f'Subscription "{subscription}" does not exist.'
-        LOG.exception(error_msg)
-        raise Subscription.DoesNotExist(error_msg)
-
-
 def get_or_create_user(name="default"):
     """
-    Used to supply a default user when created default objects
+    Used to fetch user objects
 
     :arg str name: Name to use for the username. Default is "default".
 
@@ -724,3 +705,12 @@ def get_or_create_user(name="default"):
     """
     # return just the user, the created boolean is never used
     return get_user_model().objects.get_or_create(username=name)[0]
+
+
+def get_default_user_id():
+    """
+    Used to supply a default user when creating default objects
+
+    :return: id of the default user.
+    """
+    return get_or_create_user().id

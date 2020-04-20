@@ -22,6 +22,7 @@ from django.utils.translation import gettext_lazy as _
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.models import BaseModel
+from p_soc_auto_base.utils import get_or_create_user
 
 from .orion import OrionClient
 
@@ -238,7 +239,7 @@ class OrionBaseModel(BaseModel, models.Model):
                 '%s is not providing an Orion value mapping'
                 % cls._meta.label)
 
-        user = cls.get_or_create_user(settings.ORION_USER)
+        user = get_or_create_user(settings.ORION_USER)
         data = OrionClient.query(orion_query=cls.orion_query)
         return_dict['orion_rows'] = len(data)
         for data_item in data:

@@ -26,6 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode
 from p_soc_auto_base.models import BaseModel
+from p_soc_auto_base.utils import get_or_create_user
 
 from .lib import expires_in, has_expired, is_not_yet_valid
 
@@ -184,7 +185,7 @@ class SslCertificateIssuer(SslCertificateBase, models.Model):
         if ssl_certificate_issuer.exists():
             return ssl_certificate_issuer.get()
 
-        user = cls.get_or_create_user(username)
+        user = get_or_create_user(username)
         ssl_certificate_issuer = cls(
             common_name=ssl_issuer.get('commonName'),
             organization_name=ssl_issuer.get('organizationName'),
@@ -310,7 +311,7 @@ class SslCertificate(SslCertificateBase, models.Model):
             :class:`django.contrib.auth.models.User` instance doesn't exist,
             one will be created.
         """
-        user = cls.get_or_create_user(username)
+        user = get_or_create_user(username)
         issuer = SslCertificateIssuer.get_or_create(
             ssl_certificate.ssl_issuer, username)
 

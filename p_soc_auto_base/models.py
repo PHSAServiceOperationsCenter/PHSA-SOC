@@ -20,6 +20,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from p_soc_auto_base.utils import get_default_user_id
+
 
 # Managers only need to implement get_queryset
 class EnabledManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -96,37 +98,6 @@ class BaseModel(models.Model):
     always have a description/notes/details field in a
     :class:`Django model <django.db.models.Model>`.
     """
-
-    # TODO why is this here?
-    @classmethod
-    def get_or_create_user(cls, username):
-        """
-        get or create a user
-
-        If a user is created, they are not guaranteed to have any kind of
-        privileges and/or access permissions on the :ref:`SOC Automation
-        Server`.
-
-        When data is maintained using background processes, it is not
-        always obvious who the responsible user is.
-
-        By convention, the background process must announce the user
-        responsible for the data change and this method will make sure
-        that this user exists.
-
-        We are defining this method as a class method because we may have to
-        call it from places where we don't have access to a model instance.
-
-        :arg str username: the username to get or create
-
-        :returns: an instance of the :class:`django.contrib.auth.models.User`
-            model
-        """
-        user = get_user_model().objects.filter(username__iexact=username)
-        if not user.exists():
-            get_user_model().objects.create_user(username)
-
-        return user.get()
 
     objects = models.Manager()
     """

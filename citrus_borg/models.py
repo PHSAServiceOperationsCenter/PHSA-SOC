@@ -29,7 +29,7 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from orion_integration.models import OrionNode
 from orion_integration.orion import OrionClient
 from p_soc_auto_base.models import BaseModel
-from p_soc_auto_base.utils import get_uuid
+from p_soc_auto_base.utils import get_or_create_user, get_uuid
 
 
 LOG = getLogger(__name__)
@@ -323,7 +323,7 @@ class WinlogbeatHost(BaseModel, models.Model):
             if exch_last_seen:
                 winloghost.exchange_last_seen = exch_last_seen
         else:
-            user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+            user = get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(
                 host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
@@ -476,7 +476,7 @@ class KnownBrokeringDevice(BaseModel, models.Model):
             broker = broker.get()
             broker.last_seen = now()
         else:
-            user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
+            user = get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             broker = cls(
                 broker_name=borg.borg_message.broker, created_by=user,
                 updated_by=user, last_seen=now())

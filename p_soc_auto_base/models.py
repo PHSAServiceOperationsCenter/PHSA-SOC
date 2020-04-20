@@ -53,7 +53,7 @@ class BaseModel(models.Model):
     created_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,
         related_name='%(app_label)s_%(class)s_created_by_related',
-        verbose_name=_('created by'))
+        verbose_name=_('created by'), default=get_default_user_id)
     """
     capture a reference to the user responsible for creating the database row
 
@@ -66,7 +66,7 @@ class BaseModel(models.Model):
     updated_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,
         related_name='%(app_label)s_%(class)s_updated_by_related',
-        verbose_name=_('updated by'))
+        verbose_name=_('updated by'), default=get_default_user_id)
     """
     capture a reference to the user responsible for updating the database row
     """

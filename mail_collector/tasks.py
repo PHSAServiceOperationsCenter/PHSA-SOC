@@ -27,6 +27,7 @@ from citrus_borg.models import WinlogbeatHost
 from mail_collector import exceptions, models, lib, queries
 from p_soc_auto_base import utils as base_utils
 from p_soc_auto_base.email import Email
+from p_soc_auto_base.models import Subscription
 
 LOG = get_task_logger(__name__)
 
@@ -133,7 +134,7 @@ def raise_failed_event_by_mail(event_pk):
 
     """
     data = models.MailBotLogEvent.objects.filter(pk=event_pk)
-    subscription = base_utils.get_subscription('Exchange Client Error')
+    subscription = Subscription.get_subscription('Exchange Client Error')
 
     # let's cache some data to avoid evaluating the queryset multiple times
     data_extract = data.values(
@@ -244,7 +245,7 @@ def bring_out_your_dead(
     if level is None:
         level = get_preference('exchange__default_level')
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     if filter_pref is None:
         filter_pref = get_preference('exchange__default_error')
@@ -301,7 +302,7 @@ def report_mail_between_domains(only_fails=False, subscription=None):
     if subscription is None:
         subscription = 'Mail Verification Report'
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     queryset = models.MailBetweenDomains.active.filter(is_expired=False)
 
@@ -349,7 +350,7 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
     if level is None:
         level = get_preference('exchange__default_level')
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     if time_delta_pref is None:
         time_delta = get_preference('exchange__default_error')
@@ -446,7 +447,7 @@ def report_events_by_site(site, report_interval, report_level):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription('Exchange Send Receive By Site')
+    subscription = Subscription.get_subscription('Exchange Send Receive By Site')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
@@ -490,7 +491,7 @@ def report_failed_events_by_site(site, report_interval):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription(
+    subscription = Subscription.get_subscription(
         'Exchange Failed Send Receive By Site')
 
     data = queries.dead_bodies(
@@ -585,7 +586,7 @@ def report_events_by_bot(bot, report_interval, report_level):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription('Exchange Send Receive By Bot')
+    subscription = Subscription.get_subscription('Exchange Send Receive By Bot')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
@@ -628,7 +629,7 @@ def report_failed_events_by_bot(bot, report_interval):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription(
+    subscription = Subscription.get_subscription(
         'Exchange Failed Send Receive By Bot')
 
     data = queries.dead_bodies(
@@ -670,7 +671,7 @@ def raise_site_not_configured_for_bot():
 
     if Email.send_email(
             data=data,
-            subscription=base_utils.get_subscription('Exchange bot no site'),
+            subscription=Subscription.get_subscription('Exchange bot no site'),
             level=get_preference('exchange__server_error')):
         LOG.info('emailed alert for mis-configured Exchange bots')
 

@@ -35,7 +35,8 @@ from citrus_borg.models import (
 from p_soc_auto_base import utils as base_utils
 
 from p_soc_auto_base.email import Email
-
+from p_soc_auto_base.models import Subscription
+from p_soc_auto_base.utils import get_or_create_user
 
 LOG = getLogger(__name__)
 
@@ -81,8 +82,7 @@ def save_citrix_login_event(borg):
     except WindowsLog.DoesNotExist:
         reraise('Cannot match windows log info for event')
 
-    user = WinlogEvent.get_or_create_user(
-        get_preference('citrusborgcommon__service_user'))
+    user = get_or_create_user(get_preference('citrusborgcommon__service_user'))
 
     winlogevent = WinlogEvent(
         source_host=event_host,
@@ -276,7 +276,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription('Dead Citrix monitoring bots'),
+        subscription=Subscription.get_subscription('Dead Citrix monitoring bots'),
         time_delta=time_delta)
 
 
@@ -317,7 +317,7 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Dead Citrix monitoring bots'),
         time_delta=time_delta)
 
@@ -368,7 +368,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Dead Citrix client sites'),
         time_delta=time_delta)
 
@@ -409,7 +409,7 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Dead Citrix client sites'),
         time_delta=time_delta)
 
@@ -460,7 +460,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Missing Citrix farm hosts'),
         time_delta=time_delta)
 
@@ -497,7 +497,7 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Missing Citrix farm hosts'),
         time_delta=time_delta)
 
@@ -531,7 +531,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
     return Email.send_email(
         data=get_logins_by_event_state_borg_hour(
             now=base_utils.MomentOfTime.now(now), time_delta=time_delta),
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Citrix logon event summary'),
         time_delta=time_delta)
 
@@ -628,7 +628,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
         data=login_states_by_site_host_hour(
             now=now, time_delta=time_delta,
             site=site_host_args[0], host_name=site_host_args[1]),
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Citrix logon event and ux summary'),
         time_delta=time_delta,
         site=site_host_args[0], host_name=site_host_args[1])
@@ -733,7 +733,7 @@ def email_ux_alarm(
         return 0  # did not send email
 
     return Email.send_email(
-        data=data, subscription=base_utils.get_subscription('Citrix UX Alert'),
+        data=data, subscription=Subscription.get_subscription('Citrix UX Alert'),
         time_delta=time_delta, ux_alert_threshold=ux_alert_threshold,
         host_name=host, site=site)
 
@@ -751,7 +751,7 @@ def raise_citrix_slow_alert(event_id, threshold_secs):
     data = WinlogEvent.active.filter(pk=event_id)
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription('Citrix Slow Alert'),
+        subscription=Subscription.get_subscription('Citrix Slow Alert'),
         ux_alert_threshold=timezone.timedelta(seconds=threshold_secs))
 
 
@@ -797,7 +797,7 @@ def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
         )
 
     return Email.send_email(
-        data=data, subscription=base_utils.get_subscription(
+        data=data, subscription=Subscription.get_subscription(
             'Citrix logon alert'),
         time_delta=time_delta,
         failed_threshold=failed_threshold)
@@ -835,7 +835,7 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Citrix Failed Logins Report'),
         time_delta=time_delta)
 
@@ -902,7 +902,7 @@ def email_failed_ux_report(now=None, send_no_news=False,
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Citrix Failed UX Event Components Report'),
         time_delta=time_delta,
         ux_alert_threshold=ux_alert_threshold)
@@ -995,6 +995,6 @@ def email_failed_login_site_report(now, reporting_period, send_no_news, host):
 
     return Email.send_email(
         data=data,
-        subscription=base_utils.get_subscription(
+        subscription=Subscription.get_subscription(
             'Citrix Failed Logins per Site Report'),
         time_delta=reporting_period, site=site, host_name=host)

@@ -328,5 +328,23 @@ class Subscription(BaseModel):
     def __str__(self):
         return self.subscription
 
+    @staticmethod
+    def get_subscription(subscription):
+        """
+        :returns: a :class:`p_soc_auto_base.models.Subscription` instance
+
+        :arg str subscription: the subscription value
+
+        :raises: a :exc:`django.Model.DoesNotExist` exception if the model
+        doesn't
+            exist.
+        """
+        try:
+            return Subscription.objects.get(subscription__iexact=subscription)
+        except Subscription.DoesNotExist:
+            error_msg = f'Subscription "{subscription}" does not exist.'
+            LOG.exception(error_msg)
+            raise Subscription.DoesNotExist(error_msg)
+
     class Meta:
         app_label = 'p_soc_auto_base'

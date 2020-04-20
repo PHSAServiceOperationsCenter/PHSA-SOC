@@ -22,7 +22,6 @@ from celery.utils.log import get_task_logger
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.utils import get_subscription
 
 from .lib import expires_in, has_expired, is_not_yet_valid
 from .models import SslProbePort, SslCertificate
@@ -32,6 +31,7 @@ from .nmap import (
 
 
 LOG = get_task_logger(__name__)
+
 """
 fall-back logging object for this module
 

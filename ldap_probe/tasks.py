@@ -25,7 +25,8 @@ from citrus_borg.dynamic_preferences_registry import get_preference
 from ldap_probe.ad_probe import ADProbe
 from ldap_probe.models import LdapProbeLog
 from p_soc_auto_base import utils
-from p_soc_auto_base.utils import get_absolute_admin_change_url
+from p_soc_auto_base.utils import get_absolute_admin_change_url, \
+    get_or_create_user
 from p_soc_auto_base.email import Email
 
 LOG = get_task_logger(__name__)
@@ -281,8 +282,8 @@ def maintain_ad_orion_nodes():
         LOG.debug('did not find any unknown AD nodes in Orion')
         return
 
-    service_user = known_nodes_model.get_or_create_user(
-        username=get_preference('ldapprobe__service_user'))
+    service_user = get_or_create_user(
+        name=get_preference('ldapprobe__service_user'))
     ldap_bind_cred = apps.get_model('ldap_probe.ldapbindcred').default()
 
     for node in new_nodes:

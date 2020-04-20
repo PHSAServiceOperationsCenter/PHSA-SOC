@@ -434,7 +434,6 @@ class BaseADNode(BaseModel, models.Model):
 
             :exc:`ValueError` if the value of the `level` argument
             is not known to the system
-
         """
         if bucket is None:
             bucket = ADNodePerfBucket.default()

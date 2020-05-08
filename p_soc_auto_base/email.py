@@ -326,7 +326,7 @@ class Email:
         LOG.debug('tags are %s', tags)
         return tags
 
-    def send(self):
+    def _send(self):
         try:
             sent = self.email.send()
         except SMTPConnectError as err:

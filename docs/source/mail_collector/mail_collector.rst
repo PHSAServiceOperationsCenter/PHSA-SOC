@@ -1,11 +1,10 @@
 Mail Collector Application
 ==========================
 
-The :ref:`Mail Collector Application` is responsible for collecting Windows
-log events created by instances of the
-:ref:`Mail Borg Client Application` running on remote monitoring bots, and
-for generating alerts and warnings with regards to  email and Exchange services
-availability at remote sites.
+The Mail Collector Application is responsible for collecting Windows
+log events created by instances of the Mail Borg Client Application running on
+remote monitoring bots, and for generating alerts and warnings with regards to
+email and Exchange services availability at remote sites.
 
 The application will also generate periodic reports with regards to  email
 and Exchange services availability at remote sites.

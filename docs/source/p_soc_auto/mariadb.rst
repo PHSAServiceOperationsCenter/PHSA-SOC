@@ -36,9 +36,9 @@ For more information see the `MariaDB article on mysql_tzinfo_to_sql
 Resizing Database Tables
 ------------------------
 
-If a mistake is made, and a table is allowed to grow too large, you may have to resize the table,
-deleting rows will not automatically release the disk space (to protect against fragmentation).
-This can be achieved a number of ways, but the suggested method is as follows:
+If a table grows beyond its expected size, you may have to resize the table.
+Deleting rows will not automatically release disk space (to protect against fragmentation when the table regrows).
+Disk space can be reclaimed a number of ways, but the suggested method is as follows:
 
 1. Remove rows from the table to reduce the amount of data stored in it.
 2. Run ``mysqlcheck phsa_database <table_name> -u <username> -p --optimize``

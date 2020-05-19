@@ -27,6 +27,7 @@ from logging import getLogger
 import humanfriendly
 
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.core.exceptions import FieldError
 from django.conf import settings
 from django.db.models import F, Value, TextField, URLField
@@ -37,7 +38,7 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
-from ssl_cert_tracker.models import Subscription
+from p_soc_auto_base.models import Subscription
 
 LOG = getLogger(__name__)
 
@@ -691,7 +692,7 @@ def get_base_queryset(data_source, **base_filters):
 
 def get_subscription(subscription):
     """
-    :returns: a :class:`ssl_cert_tracker.models.Subscription` instance
+    :returns: a :class:`p_soc_auto_base.models.Subscription` instance
 
     :arg str subscription: the subscription value
 
@@ -704,3 +705,15 @@ def get_subscription(subscription):
         error_msg = f'Subscription "{subscription}" does not exist.'
         LOG.exception(error_msg)
         raise Subscription.DoesNotExist(error_msg)
+
+
+def get_or_create_user(name="default"):
+    """
+    Used to supply a default user when created default objects
+
+    :arg str name: Name to use for the username. Default is "default".
+
+    :return: Default user
+    """
+    # return just the user, the created boolean is never used
+    return get_user_model().objects.get_or_create(username=name)[0]

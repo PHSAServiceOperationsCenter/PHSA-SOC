@@ -304,13 +304,13 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     admin forms for exchange monitoring bots
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
-                    'exchange_client_config', 'resolved_fqdn', 'excgh_last_seen',
+                    'exchange_client_config', 'resolved_fqdn', 'exchange_last_seen',
                     'created_on',)
     list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn',
-                       'excgh_last_seen', 'created_on', 'orion_id',)
+                       'exchange_last_seen', 'created_on', 'orion_id',)
     list_filter = ('site__site', 'enabled',
-                   ('excgh_last_seen', DateTimeRangeFilter),)
+                   ('exchange_last_seen', DateTimeRangeFilter),)
     search_fields = ('site__site', 'host_name', 'ip_address',
                      'exchange_client_config__config_name',)
 

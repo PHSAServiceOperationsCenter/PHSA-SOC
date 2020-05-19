@@ -1,6 +1,11 @@
 WinlogBeat Service
 ==================
 
+:Note:
+
+        There is a version restriction for both Winlogbeat and Logstash. We
+        only support version 6.5.4 for both products.
+
 `Winlogbeat <https://www.elastic.co/products/beats/winlogbeat>`_ is a
 Windows service owned and developed by `Elastic
 <https://www.elastic.co/about/>`_.
@@ -23,6 +28,9 @@ MOP.
 
 Here is a sample (source-controlled) of the configuration file for
 `Winlogbeat <https://www.elastic.co/products/beats/winlogbeat>`_.
+The most important setting to be aware of is the address of the logstash server,
+under ``output.logstash``.
+
 
 .. literalinclude:: ../../../configs/winlogbeat/winlogbeat.yml
    :language: yaml

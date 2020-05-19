@@ -7,27 +7,9 @@ from django.db import migrations
 def add_beats(apps, schema_editor):
     timezone = pytz.timezone('America/Vancouver')
 
-    periodic_tasks = [
-        #         {
-        #             'name': ('Raise critical  alert for exchange client bots'),
-        #             'task': 'mail_collector.tasks.bring_out_your_dead',
-        #             'args': (
-        #                 '["mail_collector.mailhost","excgh_last_seen__lte",'
-        #                 '"Exchange Client Bots Not Seen"]'),
-        #             'kwargs': (
-        #                 '{"url_annotate": false,'
-        #                 '"level": "CRITICAL",'
-        #                 '"filter_pref": "exchange__bot_error","enabled": true}'),
-        #             'interval': {
-        #                 'every': 30,
-        #                 'period': 'minutes',
-        #             },
-        #         },
-    ]
+    periodic_tasks = []
 
     cron_tasks = [
-
-
         {
             'name': ('Exchange send receive by bot report'),
             'task': 'mail_collector.tasks.invoke_report_events_by_bot',
@@ -42,7 +24,6 @@ def add_beats(apps, schema_editor):
                 'timezone': timezone,
             },
         },
-
     ]
 
     CrontabSchedule = apps.get_model('django_celery_beat', 'CrontabSchedule')

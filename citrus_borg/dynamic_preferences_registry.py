@@ -1358,7 +1358,7 @@ class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
 class LdapErrorAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` error alerts
 
     :access_key: 'ldapprobe__ldap_error_subscription'
@@ -1376,7 +1376,7 @@ class LdapErrorAlertSubscription(StringPreference):
 class LdapErrorReportSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` error reports
 
     :access_key: 'ldapprobe__ldap_error_report_subscription'
@@ -1394,7 +1394,7 @@ class LdapErrorReportSubscription(StringPreference):
 class LdapNonOrionADNodesReportSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` reports about `AD` nodes not defined
     on the `Orion` server
 
@@ -1414,7 +1414,7 @@ class LdapNonOrionADNodesReportSubscription(StringPreference):
 class LdapOrionADNodesFQDNReportSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` reports about `AD` nodes defined
     on the `Orion` server with missing FQDN values
 
@@ -1434,7 +1434,7 @@ class LdapOrionADNodesFQDNReportSubscription(StringPreference):
 class LdapOrionADNodesDupesReportSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` reports about duplicate `AD` nodes defined
     on the `Orion` server
 
@@ -1454,7 +1454,7 @@ class LdapOrionADNodesDupesReportSubscription(StringPreference):
 class LdapPerfAlertSubscription(StringPreference):
     """
     Dynamic preferences class controlling the name of the
-    :class:`Email subscription <ssl_cert_tracker.models.Subscription>`
+    :class:`Email subscription <p_soc_auto_base.models.Subscription>`
     used for dispatching `LDAP` performance alerts
 
     :access_key: 'ldapprobe__ldap_perf_subscription'

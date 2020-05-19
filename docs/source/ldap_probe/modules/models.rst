@@ -36,14 +36,14 @@
    :show-inheritance:
    
 .. autoclass:: ldap_probe.models.NonOrionADNode
-   :members: remove_if_in_orion, report_nodes
+   :members: remove_if_in_orion
    :show-inheritance:
    
 .. autoclass:: ldap_probe.models.LdapProbeLog
-   :show-inheritance:
    :members: error_report, node, perf_alert, perf_warn, absolute_url,
        ad_node_orion_url, create_from_probe, node_is_enabled, node_perf_bucket,
        perf_err
+   :show-inheritance:
    
 .. autoclass:: ldap_probe.models.LdapProbeFullBindLog
    :show-inheritance:

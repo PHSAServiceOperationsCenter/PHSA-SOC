@@ -44,45 +44,12 @@ class OrionNodeIDError(ValueError):
 # pylint: disable=too-few-public-methods,no-self-use
 
 
-class BorgSiteNotSeenManager(models.Manager):
-    """
-    `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
-    class used in the :class:`BorgSiteNotSeen` model
-    """
-
-    def get_queryset(self):
-        """
-        override :meth:`django.db.models.Manager.get_queryset`
-
-        See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
-            """#modifying-a-manager-s-initial-queryset>`__
-        in the `Django` docs.
-
-        :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`BorgSite` instances that have not sent any events for the
-            period defined by
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
-
-        .. todo::
-
-            Extend
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
-            with a dynamic preference.
-
-        """
-        return super().get_queryset().\
-            exclude(winlogbeathost__last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
-
-
-class WinlogbeatHostNotSeenManager(models.Manager):
+class NotSeenManager(models.Manager):
     """
     `Custom manager
     <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
         """#custom-managers>`__
-    class used in the :class:`WinlogbeatHostNotSeen` model
+    class used in the 'NotSeen' models
     """
 
     def get_queryset(self):
@@ -95,8 +62,7 @@ class WinlogbeatHostNotSeenManager(models.Manager):
         in the `Django` docs.
 
         :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`WinlogbeatHost` instances that have not sent any events
-            for the period defined by
+            instances that have not sent any events for the period defined by
             :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
 
         .. todo::
@@ -106,43 +72,13 @@ class WinlogbeatHostNotSeenManager(models.Manager):
             with a dynamic preference.
 
         """
+        try:
+            exclude_str = self.model.last_seen_str
+        except AttributeError:
+            exclude_str = 'last_seen__gt'
         return super().get_queryset().\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
-
-
-class KnownBrokeringDeviceNotSeenManager(models.Manager):
-    """
-    `Custom manager
-    <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
-        """#custom-managers>`__
-    class used in the :class:`KnownBrokeringDeviceNotSeen` model
-    """
-
-    def get_queryset(self):
-        """
-        override :meth:`django.db.models.Manager.get_queryset`
-
-        See `Modifying a manager's initial QuerySet
-        <https://docs.djangoproject.com/en/2.2/topics/db/managers/"""\
-            """#modifying-a-manager-s-initial-queryset>`__
-        in the `Django` docs.
-
-        :returns: a :class:`django.db.models.query.QuerySet` with the
-            :class:`KnownBrokeringDevice` instances that have not sent any
-            events for the period defined by
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
-
-        .. todo::
-
-            Extend
-            :attr:`p_soc_auto.settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER`
-            with a dynamic preference.
-
-        """
-        return super().get_queryset().\
-            exclude(last_seen__gt=now() -
-                    settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER)
+            exclude(**{exclude_str:
+                       now() - settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER})
 
 
 class CitrixHostManager(models.Manager):
@@ -191,6 +127,8 @@ class BorgSite(BaseModel, models.Model):
         _('site name'), max_length=64, db_index=True, unique=True,
         blank=False, null=False)
 
+    last_seen_str = 'winlogbeathost__last_seen__gt'
+
     def __str__(self):
         return self.site
 
@@ -204,11 +142,11 @@ class BorgSiteNotSeen(BorgSite):
     """
     `Proxy model
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
-    for :class:`BorgSiteNotSeen`
+    for :class:`BorgSite`
 
-    See :class:`BorgSiteNotSeenManager`.
+    See :class:`NotSeenManager`.
     """
-    objects = BorgSiteNotSeenManager()
+    objects = NotSeenManager()
 
     class Meta:
         proxy = True
@@ -234,7 +172,7 @@ class WinlogbeatHost(BaseModel, models.Model):
         _('IP address'), protocol='IPv4', blank=True, null=True)
     last_seen = models.DateTimeField(
         _('Citrix bot last seen'), db_index=True, blank=True, null=True)
-    excgh_last_seen = models.DateTimeField(
+    exchange_last_seen = models.DateTimeField(
         _('Exchange client bot last seen'),
         db_index=True, blank=True, null=True)
     site = models.ForeignKey(
@@ -383,13 +321,13 @@ class WinlogbeatHost(BaseModel, models.Model):
             if last_seen:
                 winloghost.last_seen = last_seen
             if exch_last_seen:
-                winloghost.excgh_last_seen = exch_last_seen
+                winloghost.exchange_last_seen = exch_last_seen
         else:
             user = cls.get_or_create_user(settings.CITRUS_BORG_SERVICE_USER)
             winloghost = cls(
                 host_name=borg.source_host.host_name, last_seen=last_seen,
                 ip_address=borg.source_host.ip_address, created_by=user,
-                excgh_last_seen=exch_last_seen, updated_by=user)
+                exchange_last_seen=exch_last_seen, updated_by=user)
 
         winloghost.save()
         return winloghost
@@ -425,9 +363,9 @@ class WinlogbeatHostNotSeen(WinlogbeatHost):
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     for :class:`WinlogbeatHost`
 
-    See :class:`WinlogbeatHostNotSeenManager`.
+    See :class:`NotSeenManager`.
     """
-    objects = WinlogbeatHostNotSeenManager()
+    objects = NotSeenManager()
 
     class Meta:
         proxy = True
@@ -557,9 +495,9 @@ class KnownBrokeringDeviceNotSeen(KnownBrokeringDevice):
     <https://docs.djangoproject.com/en/2.2/topics/db/models/#proxy-models>`__
     for :class:`KnownBrokeringDeviceNotSeen`
 
-    See :class:`KnownBrokeringDeviceNotSeenManager`.
+    See :class:`NotSeenManager`.
     """
-    objects = KnownBrokeringDeviceNotSeenManager()
+    objects = NotSeenManager()
 
     class Meta:
         proxy = True

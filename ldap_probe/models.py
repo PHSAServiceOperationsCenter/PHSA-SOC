@@ -308,15 +308,10 @@ class BaseADNode(BaseModel, models.Model):
         :arg queryset: a :class:`django.db.models.query.QuerySet` based
             on one of the models inheriting from :class:`BaseADNode`
 
-            If `None`, one will be created by this method
+            Default is the active nodes of the class.
 
         :returns: the :class:`django.db.models.query.QuerySet` with the
             'orion_url' field included
-
-            :Note:
-
-                The :class:`django.db.models.query.QuerySet` is filtered
-                to return only `enabled` nodes
         """
         if queryset is None:
             queryset = cls.active
@@ -344,7 +339,7 @@ class BaseADNode(BaseModel, models.Model):
         return queryset.values()
 
     @classmethod
-    def annotate_probe_details(cls, probes_model_name, queryset):
+    def annotate_probe_details(cls, probes_model_name, queryset=None):
         """
         annotate a :class:`queryset <django.db.models.query.QuerySet>`
         based on classes inheriting from :class:`BaseADNode` model with
@@ -375,10 +370,12 @@ class BaseADNode(BaseModel, models.Model):
             against the node
 
         """
+        if queryset is None:
+            queryset = cls.active
         if 'node_dns' in [field.name for field in cls._meta.fields]:
-            url_filters = '/?ad_orion_node__isnull=True&ad_node__id__exact='
+            url_filters = '/?ad_node__id='
         else:
-            url_filters = '/?ad_node__isnull=True&ad_orion_node__id__exact='
+            url_filters = '/?ad_orion_node__id='
 
         return queryset.annotate(probes_url=Concat(
             Value(settings.SERVER_PROTO), Value('://'),
@@ -433,7 +430,7 @@ class BaseADNode(BaseModel, models.Model):
             * the moments used to filter the data in the report by time
 
             * the :attr:`subscription
-              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              <p_soc_auto_base.models.Subscription.subscription>` that will
               be used to deliver this report via email
 
             * the :class:`django.db.models.query.QuerySet` based on one
@@ -456,7 +453,7 @@ class BaseADNode(BaseModel, models.Model):
         """
         no_nodes = False
         if bucket is None:
-            bucket = ADNodePerfBucket.get_default()
+            bucket = ADNodePerfBucket.default()
         else:
             try:
                 bucket = ADNodePerfBucket.objects.get(name__iexact=bucket)
@@ -473,10 +470,8 @@ class BaseADNode(BaseModel, models.Model):
         if not queryset.exists():
             no_nodes = True
 
-        if level is None:
-            level = get_preference('commonalertargs__info_level')
-
-        if level == get_preference('commonalertargs__info_level'):
+        if (level is None
+                or level == get_preference('commonalertargs__info_level')):
 
             threshold = bucket.avg_warn_threshold
             if anon:
@@ -489,7 +484,6 @@ class BaseADNode(BaseModel, models.Model):
                     Q(average_extended_search_duration__gte=threshold))
 
         elif level == get_preference('commonalertargs__warn_level'):
-
             threshold = bucket.avg_err_threshold
             if anon:
                 perf_filter = (
@@ -501,7 +495,6 @@ class BaseADNode(BaseModel, models.Model):
                     Q(average_extended_search_duration__gte=threshold))
 
         elif level == get_preference('commonalertargs__error_level'):
-
             subscription = f'{subscription},err'
             threshold = bucket.alert_threshold
             if anon:
@@ -558,7 +551,7 @@ class BaseADNode(BaseModel, models.Model):
             * the moments used to filter the data in the report by time
 
             * the :attr:`subscription
-              <ssl_cert_tracker.models.Subscription.subscription>` that will
+              <p_soc_auto_base.models.Subscription.subscription>` that will
               be used to deliver this report via email
 
             * the :class:`django.db.models.query.QuerySet` based on one
@@ -749,7 +742,7 @@ class OrionADNode(BaseADNode, models.Model):
         """
         return cls.annotate_orion_url(
             cls.objects.filter(Q(node__node_dns__isnull=True) |
-                               Q(node__node_dns__iexact='')).values())
+                               Q(node__node_dns='')).values())
 
     @classmethod
     def report_duplicate_nodes(cls):
@@ -794,19 +787,6 @@ class NonOrionADNode(BaseADNode, models.Model):
             ' `RFC1123 <http://www.faqs.org/rfcs/rfc1123.html>`__,'
             ' section 2.1')
     )
-
-
-    @classmethod
-    def report_nodes(cls):
-        """
-        prepare report data for `AD` nodes that are not defined on the
-        `Orion` server
-
-        :returns: the :class:`django.db.models.query.QuerySet` based on
-              the :class:`NonOrionADNode` model
-
-        """
-        return cls.active.order_by('node_dns')
 
     def __str__(self):
         return self.node_dns
@@ -901,29 +881,21 @@ class LdapProbeLog(models.Model):
         default=False)
 
     @classmethod
-    def error_report(cls, **time_delta_args):
+    def error_report(cls, time_delta):
         """
         generate a :class:`django.db.models.query.QuerySet` object with
         the LDAP errors generated over the last $x minutes
 
-        :arg time_delta_args: optional named arguments that are used to
-            initialize a :class:`datetime.duration` object
+        :arg time_delta: a :class:`datetime.duration` object that determines how
+            far in the past to get failed LDAP probes from
 
-            If not present, the method will use the period defined by the
-            :class:`citrus_borg.dynamic_preferences_registry.LdapReportPeriod`
-            user preference
-
-        :returns:
-
-            * the moments used to filter the data in the report by time
-
-            * :class:`django.db.models.query.QuerySet` with the
+        :returns: a :class:`django.db.models.query.QuerySet` with the
               failed LDAP probes over the defined period
         """
         when_ad_orion_node = When(
             ad_orion_node__isnull=False,
             then=Case(
-                When(~Q(ad_orion_node__node__node_dns__iexact=''),
+                When(~Q(ad_orion_node__node__node_dns=''),
                      then=F('ad_orion_node__node__node_dns')),
                 default=F('ad_orion_node__node__ip_address'),
                 output_field=TextField()
@@ -951,15 +923,9 @@ class LdapProbeLog(models.Model):
         # applying :meth:`BaseADNode.get_node` to each row in
         # :class:`LdapProbeLog`.
 
-        if time_delta_args:
-            time_delta = timezone.timedelta(**time_delta_args)
-        else:
-            time_delta = get_preference('ldapprobe__ldap_reports_period')
-
         since = MomentOfTime.past(time_delta=time_delta)
-        now = timezone.now()
 
-        queryset = cls.objects.filter(failed=True, created_on__gte=since).\
+        return cls.objects.filter(failed=True, created_on__gte=since).\
             annotate(probe_url=Concat(
                 Value(settings.SERVER_PROTO), Value('://'),
                 Value(socket.getfqdn()), Value(':'),
@@ -968,8 +934,6 @@ class LdapProbeLog(models.Model):
                 Value('/change/'), output_field=TextField())).\
             annotate(domain_controller_fqdn=case_ad_node).\
             order_by('ad_node', '-created_on')
-
-        return now, time_delta, queryset
 
     def __str__(self):
         return f'LDAP probe {self.uuid} to {self.node}'
@@ -1090,8 +1054,7 @@ class LdapProbeLog(models.Model):
         <https://docs.python.org/3.6/library/functions.html#classmethod>`__
         that creates an instance of the :class:`LdapProbeLog`
 
-        :arg probe_data: the data returned by the LDAP probe
-        :type probe_data: :class:`ldap_probe.ad_probe.ADProbe`
+        :arg dict probe_data: the data returned by the LDAP probe
         """
         # Pop the ad_controller, because it is not a field of this model
         ad_controller = probe_data.pop('ad_controller')

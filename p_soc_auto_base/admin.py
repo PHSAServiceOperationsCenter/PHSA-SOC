@@ -27,6 +27,7 @@ from djqscsv import write_csv
 
 from citrus_borg.models import BorgSite
 from mail_collector.models import ExchangeConfiguration
+from p_soc_auto_base.models import Subscription
 
 admin.site.site_header = 'SOC Automation Server'
 admin.site.index_title = 'SOC Automation Server Administration'
@@ -230,3 +231,107 @@ class BaseAdmin(admin.ModelAdmin):
         obj.updated_by = request.user
 
         obj.save()
+
+@admin.register(Subscription)
+class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`p_soc_auto_base.models.Subscription` model
+    """
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """
+        override
+        :meth:`django.contrib.admin.ModelAdmin.formfield_for_foreignkey`
+
+        provide specialized drop-down values for `created_by` and `updated_by`.
+        """
+        if db_field.name in ['created_by', 'updated_by', ]:
+            kwargs['queryset'] = get_user_model().objects.\
+                filter(username=request.user.username)
+            kwargs['initial'] = kwargs['queryset'].get()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        """
+        override :meth:`django.contrib.admin.ModelAdmin.add_view`
+
+        pre-populate `created_by` and `updated_by` from the :attr:`user`
+        attribute of the `request` object.
+        """
+        data = request.GET.copy()
+        data['created_by'] = request.user
+        data['updated_by'] = request.user
+        request.GET = data
+
+        return super().add_view(
+            request, form_url=form_url, extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """
+        override :meth:`django.contrib.admin.ModelAdmin.change_view`
+
+        Pre-populate `updated_by` from the :attr:`user` attribute of the
+        `request` object.
+        """
+        data = request.GET.copy()
+        data['updated_by'] = request.user
+        request.GET = data
+
+        return super().change_view(
+            request, object_id, form_url=form_url, extra_context=extra_context)
+
+    def get_readonly_fields(self, request, obj=None):
+        """
+        override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
+
+        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        are always read only.
+
+        .. todo::
+
+            This method may be a duplicate and/or redundant.
+        """
+        if obj is not None:
+            return self.readonly_fields + \
+                ('created_by', 'created_on', 'updated_on')
+
+        return self.readonly_fields
+
+    def has_add_permission(self, request):
+        """
+        override :meth:`django.contrib.admin.has_add_permission`.
+
+        Only a `superuser
+        <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__
+        can create :class:`p_soc_auto_base.models.Subscription` instances using
+        this form
+        """
+        if request.user.is_superuser:
+            return True
+
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """
+        override :meth:`django.contrib.admin.has_delete_permission`
+
+        Only a `superuser
+        <https://docs.djangoproject.com/en/2.2/ref/contrib/auth/#django.contrib.auth.models.User.is_superuser>`__
+        can delete :class:`p_soc_auto_base.models.Subscription` instances using
+        this form
+        """
+        if request.user.is_superuser:
+            return True
+
+        return False
+
+    list_display = ['subscription', 'enabled', 'emails_list', 'template_dir',
+                    'template_name', 'template_prefix', 'updated_on',
+                    'updated_by']
+    list_editable = ['enabled', 'emails_list', 'template_dir',
+                     'template_name', 'template_prefix']
+    readonly_fields = ('created_on', 'updated_on', )
+    list_filter = ('enabled', )
+    search_fields = ('subscription', )

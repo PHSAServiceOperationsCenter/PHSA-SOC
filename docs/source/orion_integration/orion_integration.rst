@@ -1,7 +1,7 @@
 Orion Integration Application
 =============================
 
-The :ref:`Orion Integration Application` is responsible for extracting and
+The Orion Integration Application is responsible for extracting and
 caching information about `SolarWinds Orion
 <https://www.solarwinds.com/solutions/orion>`__ nodes and applications.
 

@@ -27,27 +27,18 @@ an ``uWSGI`` wrapper as shown by the source-controlled
 .. literalinclude:: ../../../configs/uwsgi/uwsgi-phsa-soc-app.service
    :language: cfg
 
-See :ref:`Using custom systemd services <monkey_with_systemd>` for details
-about making this file available to ``systemd``.
+See :ref:`Using custom systemd services <The phsa_celery_mail_collector.service file>`
+for details about making this file available to ``systemd``.
 
-To control the ``PHSA Service Operations Center uWSGI app`` service, one must
+To control the ``PHSA Service Operations Center uWSGI app`` service,
 use the `systemctl
 <https://www.freedesktop.org/software/systemd/man/systemctl.html#>`_
 command line utility.
 
-Under normal operations, we actually manipulate both the :ref:`NGINX server
-<NGINX details>`, and the ``PHSA Service Operations Center uWSGI app`` service
-at the same time
-
-.. code-block:: bash
-
-    [root@lvmsocq01 ~]# systemctl restart nginx;systemctl restart uwsgi-phsa-soc-app.service
-    [root@lvmsocq01 ~]#
-
 .. note::
 
     We are currently using a custom uwsgi executable. When setting up a
-    new system copy the uwsgi file located on lvmsocq01 and lvmsocq02 in /usr/bin.
+    new system copy the uwsgi file located on lvmsocq01 to /usr/bin.
 
 .. todo::
 

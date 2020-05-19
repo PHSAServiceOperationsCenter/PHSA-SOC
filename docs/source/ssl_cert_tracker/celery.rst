@@ -4,7 +4,7 @@ SSL Certificates Tracker Celery Details
 SSL Celery Queues
 -----------------
 
-See :ref:`Celery Queues` for details about `Celery` `queues` and `exchanges`.
+See :ref:`Celery Queues` for details about `Celery` queues and exchanges.
 
 The :ref:`SSL Certificate Tracker Application` uses:
 
@@ -18,10 +18,10 @@ SSL Celery Worker Configuration
 -------------------------------
 
 See :ref:`Celery Worker Configuration` for explanations about `Celery` `workers`.
-Also see :ref:`monkey_with_systemd` for details about interacting with `Celery`
-`worker` system services.
+Also see :ref:`The phsa_celery_mail_collector.service file` for details about
+interacting with Celery worker system services.
 
-All the configuration files for the `Celery` `workers` used by the :ref:`SSL
+All the configuration files for the `Celery` workers used by the :ref:`SSL
 Certificate Tracker Application` are under source control in the
 `configs/celery/` directory.
 

@@ -37,9 +37,9 @@ class MailHostManager(models.Manager):  # pylint: disable=too-few-public-methods
         an Exchange Monitoring Client running
 
         the filter is using an is not null lookup against the
-        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
+        :attr:`citrus_borg.models.WinlogbeatHost.exchange_last_seen`
         """
-        return super().get_queryset().exclude(excgh_last_seen__isnull=True)
+        return super().get_queryset().exclude(exchange_last_seen__isnull=True)
 
 
 class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
@@ -56,11 +56,11 @@ class MailSiteManager(models.Manager):  # pylint: disable=too-few-public-methods
         running an Exchange Monitoring Client
 
         the filter is using an is not null lookup against the
-        :attr:`citrus_borg.models.WinlogbeatHost.excgh_last_seen`
+        :attr:`citrus_borg.models.WinlogbeatHost.exchange_last_seen`
 
         """
         return super().get_queryset().filter(
-            winlogbeathost__excgh_last_seen__isnull=False).distinct()
+            winlogbeathost__exchange_last_seen__isnull=False).distinct()
 
 
 class DomainAccount(BaseModelWithDefaultInstance, models.Model):
@@ -92,37 +92,13 @@ class DomainAccount(BaseModelWithDefaultInstance, models.Model):
         * force the domain to upper case letters to respect the
           Windows conventions
 
-        * only one instance can be the default domain account. this is
-          tracked using :attr:`is_default`. this method is looking through
-          all the saved instances and raising an error if there already
-          is a default domain account
-
         :raises: :exc:`django.core.exceptions.ValidationError`
         """
         self.domain = self.domain.upper()
 
-        if not self.is_default:
-            return
-
-        if self._meta.model.objects.filter(is_default=True).\
-                exclude(pk=self.pk).exists():
-            raise ValidationError(
-                {'is_default': _('A default domain account already exists')})
+        super().clean()
 
         return
-
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        """
-        override :meth:`django.db.models.Model.save` to invoke
-        :meth:`django.db.models.Model.full_clean`. otherwise the
-        :meth:`clean` will not be invoked
-        """
-        try:
-            self.full_clean()
-        except ValidationError as error:
-            raise error
-
-        super().save(*args, **kwargs)
 
     class Meta:
         app_label = 'mail_collector'
@@ -259,13 +235,7 @@ class ExchangeConfiguration(BaseModelWithDefaultInstance, models.Model):
         override :meth:`django.db.models.Model.clean` to
         clean the instance data before saving it to the database
 
-        * force the domain to upper case letters to respect the
-          Windows conventions
-
-        * only one instance can be the default domain account. this is
-          tracked using :attr:`is_default`. this method is looking through
-          all the saved instances and raising an error if there already
-          is a default domain account
+        * remove line breaks from email subject
 
         :raises: :exc:`django.core.exceptions.ValidationError`
 
@@ -274,27 +244,7 @@ class ExchangeConfiguration(BaseModelWithDefaultInstance, models.Model):
             self.email_subject = self.email_subject.\
                 replace('\r\n', ' ').replace('\r', ' ').replace('\n', ' ')
 
-        if not self.is_default:
-            return
-
-        if self._meta.model.objects.filter(is_default=True).\
-                exclude(pk=self.pk).exists():
-            raise ValidationError(
-                {'is_default':
-                 _('A default exchange client configuration already exists')})
-
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
-        """
-        override :meth:`django.db.models.Model.save` to invoke
-        :meth:`django.db.models.Model.full_clean`. otherwise the
-        :meth:`clean` will not be invoked
-        """
-        try:
-            self.full_clean()
-        except ValidationError as error:
-            raise error
-
-        super().save(*args, **kwargs)
+        super().clean()
 
     class Meta:
         verbose_name = _('Exchange Monitoring Client Configuration')
@@ -313,8 +263,8 @@ class MailSite(BorgSite):
         proxy = True
         verbose_name = _('Exchange Monitoring Site')
         verbose_name_plural = _('Exchange Monitoring Sites')
-        get_latest_by = '-winlogbeathost__excgh_last_seen'
-        ordering = ['-winlogbeathost__excgh_last_seen', ]
+        get_latest_by = '-winlogbeathost__exchange_last_seen'
+        ordering = ['-winlogbeathost__exchange_last_seen', ]
 
 
 class MailHost(WinlogbeatHost):
@@ -329,8 +279,8 @@ class MailHost(WinlogbeatHost):
         proxy = True
         verbose_name = _('Exchange Monitoring Bot')
         verbose_name_plural = _('Exchange Monitoring Bots')
-        get_latest_by = '-excgh_last_seen'
-        ordering = ['-excgh_last_seen', ]
+        get_latest_by = '-exchange_last_seen'
+        ordering = ['-exchange_last_seen', ]
 
 
 class MailBotLogEvent(models.Model):
@@ -354,7 +304,7 @@ class MailBotLogEvent(models.Model):
     source_host = models.ForeignKey(
         'citrus_borg.WinlogbeatHost', db_index=True, blank=False, null=False,
         on_delete=models.PROTECT,
-        limit_choices_to={'excgh_last_seen__isnull': False},
+        limit_choices_to={'exchange_last_seen__isnull': False},
         verbose_name=_('Event Source Host'))
     event_status = models.CharField(
         _('Status'), max_length=16, db_index=True, blank=False, null=False,

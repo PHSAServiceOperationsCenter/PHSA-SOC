@@ -12,3 +12,4 @@ shared by all the other applications defined on the server.
    modules/models.rst
    modules/admin.rst
    modules/utils.rst
+   modules/tests.rst

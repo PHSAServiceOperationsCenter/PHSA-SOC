@@ -13,3 +13,4 @@ Citrus Borg Modules
    modules/dynamic_preferences.rst
    modules/models.rst
    modules/tasks.rst
+   modules/tests.rst

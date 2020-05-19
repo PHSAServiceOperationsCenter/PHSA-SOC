@@ -11,3 +11,4 @@ SSL Certificate Tracker Modules
    modules/ssl_models.rst
    modules/nmap.rst
    modules/ssl_tasks.rst
+   modules/tests.rst

@@ -1,7 +1,7 @@
 SSL Certificate Tracker Application
 ===================================
 
-The :ref:`SSL Certificate Tracker Application` is responsible for monitoring
+The SSL Certificate Tracker Application is responsible for monitoring
 expiration and trust for `SSL server certificates
 <https://en.wikipedia.org/wiki/Public_key_certificate#TLS/SSL_server_certificate>`_
 deployed on various `Cerner CST` network nodes.
@@ -11,7 +11,7 @@ The list of monitored network nodes is maintained by the `SolarWinds Orion
 Certificate Tracker Application` is aware of this list by way of the
 :ref:`Orion Integration Application`.
 
-Using a configurable schedule, the :ref:`SSL Certificate Tracker Application`
+Using a configurable schedule, the SSL Certificate Tracker Application
 executes `NMAP <https://nmap.org/>`_ scans for `SSL` certificates against each
 network node in the monitored list. Each `NMAP <https://nmap.org/>`_ scan runs
 independently and asynchronously. Data collected by the `NMAP

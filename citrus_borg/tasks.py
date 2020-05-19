@@ -14,7 +14,6 @@ used by the :ref:`Citrus Borg Application`.
 :contact:    daniel.busto@phsa.ca
 
 """
-from datetime import timedelta
 from logging import getLogger
 from smtplib import SMTPConnectError
 
@@ -246,7 +245,7 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
             """?q=send_no_news>`__
 
     This task used the subscription at `Dead Citrix monitoring bots
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Dead+Citrix+monitoring+bots>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -294,7 +293,7 @@ def email_dead_borgs_report(now=None, send_no_news=False, **dead_for):
             """?q=node_forgotten_after>`__.
 
     This task used the subscription at `Dead Citrix monitoring bots
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
     """?q=Dead+Citrix+monitoring+bots>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -336,7 +335,7 @@ def email_dead_sites_alert(now=None, send_no_news=None, **dead_for):
             """?q=dead_site_after>`__.
 
     This task used the subscription at `Dead Citrix client sites
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
     """?q=Dead+Citrix+client+sites>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -386,7 +385,7 @@ def email_dead_sites_report(now=None, send_no_news=False, **dead_for):
     """?q=node_forgotten_after>`__
 
     This task used the subscription at `Dead Citrix client sites
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
             """?q=Dead+Citrix+client+sites>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -428,7 +427,7 @@ def email_dead_servers_alert(now=None, send_no_news=None, **dead_for):
         """?q=node_forgotten_after>`__.
 
     This task used the subscription at `Missing Citrix farm hosts
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Missing+Citrix+farm+hosts>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -474,7 +473,7 @@ def email_dead_servers_report(now=None, send_no_news=False, **dead_for):
     This task is almost identical to :func:`email_dead_servers_alert`.
 
     This task used the subscription at `Missing Citrix farm hosts
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Missing+Citrix+farm+hosts>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)
@@ -517,7 +516,7 @@ def email_borg_login_summary_report(now=None, **dead_for):
         """?q=ignore_events_older_than>`__.
 
     This task used the subscription at `Citrix logon event summary
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Citrix+logon+event+summary>`__ to render the emails being sent.
     """
     if not dead_for:
@@ -619,7 +618,7 @@ def email_login_ux_summary(now, time_delta, site_host_args):
         calculating the data in the report
 
     This report used the subscription at `Citrix logon event and ux summary
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
     """?q=Citrix+logon+event+and+ux+summary>`__ to render the emails being sent.
     """
     return Email.send_email(
@@ -714,7 +713,7 @@ def email_ux_alarm(
     See the :func:`email_us_alarms` task for details about the other arguments.
 
     This alert used the subscription at `Citrix UX Alert
-    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+UX+Alert>`__.
+    <../../../admin/p_soc_auto_base/subscription/?q=Citrix+UX+Alert>`__.
     """
     now = base_utils.MomentOfTime.now(now)
 
@@ -770,7 +769,7 @@ def email_failed_login_alarm(now=None, failed_threshold=None, **dead_for):
     See the :func:`email_dead_borgs_alert` for details about other arguments.
 
     This alert used the subscription at `Citrix logon alert
-    <../../../admin/ssl_cert_tracker/subscription/?q=Citrix+logon+alert>`__.
+    <../../../admin/p_soc_auto_base/subscription/?q=Citrix+logon+alert>`__.
     """
     if failed_threshold is None:
         failed_threshold = get_preference(
@@ -811,7 +810,7 @@ def email_failed_logins_report(now=None, send_no_news=False, **dead_for):
     this task.
 
     This report uses the subscription at `Citrix Failed Logins Report
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Citrix+Failed+Logins+Report>`__.
     """
     if not dead_for:
@@ -867,7 +866,7 @@ def email_failed_ux_report(now=None, send_no_news=False,
 
     This report uses the subscription at
     `Citrix Failed UX Event Components Report
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
         """?q=Citrix+Failed+UX+Event+Components+Report>`__ to render the emails
     being sent.
     """
@@ -976,7 +975,7 @@ def email_failed_login_site_report(now, reporting_period, send_no_news, host):
         :func:`email_dead_borgs_alert` task
 
     This report uses the subscription at `Citrix Failed Logins per Report
-    <../../../admin/ssl_cert_tracker/subscription/"""\
+    <../../../admin/p_soc_auto_base/subscription/"""\
     """?q=Citrix+Failed+Logins+per+Report>`__ to render the emails being sent.
     """
     now = base_utils.MomentOfTime.now(now)

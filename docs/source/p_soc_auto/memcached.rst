@@ -11,7 +11,7 @@ is under source control. The path for this file is
 .. literalinclude:: ../../../configs/memcached/memcached
    :language: cfg
 
-Symlink or copy this file to the `memcached <https://memcached.org/>`__
+Create a link to this file from the `memcached <https://memcached.org/>`__
 environment file at :file:`/etc/sysconfig/memcached`.
 
 The :ref:`SOC Automation Server` is connecting to the `memcached

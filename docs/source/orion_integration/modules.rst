@@ -11,3 +11,4 @@ Orion Integration Application modules
    modules/models.rst
    modules/orion.rst
    modules/tasks.rst
+   modules/tests.rst

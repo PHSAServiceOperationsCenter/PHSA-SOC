@@ -5,15 +5,7 @@
 .. autoclass:: citrus_borg.models.OrionNodeIDError
    :show-inheritance:
    
-.. autoclass:: citrus_borg.models.BorgSiteNotSeenManager
-   :members: get_queryset
-   :show-inheritance:
-   
-.. autoclass:: citrus_borg.models.WinlogbeatHostNotSeenManager
-   :members: get_queryset
-   :show-inheritance:
-
-.. autoclass:: citrus_borg.models.KnownBrokeringDeviceNotSeenManager
+.. autoclass:: citrus_borg.models.NotSeenManager
    :members: get_queryset
    :show-inheritance:
    

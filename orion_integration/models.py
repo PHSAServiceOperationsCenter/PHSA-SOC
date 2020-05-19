@@ -27,8 +27,7 @@ from .orion import OrionClient
 
 
 LOG = logging.getLogger(__name__)
-
-# pylint:disable=R0903
+# pylint:disable=too-few-public-methods
 
 
 class OrionCernerCSTNodeManager(models.Manager):
@@ -183,9 +182,8 @@ class OrionBaseModel(BaseModel, models.Model):
 
         return False
 
-    # pylint:disable=R0914
     @classmethod
-    def update_or_create_from_orion(cls, username=settings.ORION_USER):
+    def update_or_create_from_orion(cls):
         """
         update or create instances of :class:`django.db.models.Model` classes
         inheriting from this class using data from the `Orion`  server
@@ -227,8 +225,9 @@ class OrionBaseModel(BaseModel, models.Model):
               during the `Orion` `REST` call
         """
         return_dict = dict(
-            status='pending', model=cls._meta.verbose_name, orion_rows=0,
-            updated_records=0, created_records=0, errored_records=0)
+            model=cls._meta.verbose_name, orion_rows=0, updated_records=0,
+            created_records=0, errored_records=0
+        )
         if cls.orion_query is None:
             raise OrionQueryError(
                 '%s is not providing a value for the Orion query'
@@ -236,12 +235,11 @@ class OrionBaseModel(BaseModel, models.Model):
 
         if not cls.orion_mappings:
             raise OrionMappingsError(
-                '%s is not providing a value for the Orion mappings'
+                '%s is not providing an Orion value mapping'
                 % cls._meta.label)
 
-        user = cls.get_or_create_user(username)
+        user = cls.get_or_create_user(settings.ORION_USER)
         data = OrionClient.query(orion_query=cls.orion_query)
-        return_dict['status'] = 'in progress'
         return_dict['orion_rows'] = len(data)
         for data_item in data:
             orion_mapping = dict()
@@ -280,13 +278,10 @@ class OrionBaseModel(BaseModel, models.Model):
 
             except Exception as error:
                 return_dict['errored_records'] += 1
-                print('%s when acquiring Orion object %s' %
-                      (str(error), orion_mapping))
-
-        return_dict['status'] = 'done'
+                LOG.error('%s when acquiring Orion object %s',
+                          str(error), orion_mapping)
 
         return return_dict
-    # pylint:enable=R0914
 
     class Meta:
         abstract = True
@@ -500,7 +495,7 @@ class OrionNode(OrionBaseModel, models.Model):
         _('Node Details URL'), blank=True, null=True)
 
     @classmethod
-    def update_or_create_from_orion(cls):  # pylint:disable=W0221
+    def update_or_create_from_orion(cls):
         """
         overrides the :meth:`OrionBaseModel.update_or_create_from_orion`
         method to make sure that the `Related objects
@@ -520,7 +515,7 @@ class OrionNode(OrionBaseModel, models.Model):
             result = OrionNodeCategory.update_or_create_from_orion()
             ret.append(result)
 
-        result = super(OrionNode, cls).update_or_create_from_orion()
+        result = super().update_or_create_from_orion()
         ret.append(result)
 
         return ret
@@ -675,7 +670,7 @@ class OrionAPMApplication(OrionBaseModel, models.Model):
             ' moment; boohoo'))
 
     @classmethod
-    def update_or_create_from_orion(cls):  # pylint:disable=W0221
+    def update_or_create_from_orion(cls):
         """
         overrides the :meth:`OrionBaseModel.update_or_create_from_orion`
         method to make sure that the `Related objects

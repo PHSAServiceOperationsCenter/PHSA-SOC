@@ -38,8 +38,6 @@ from django.urls.exceptions import NoReverseMatch
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
-from p_soc_auto_base.models import Subscription
-
 LOG = getLogger(__name__)
 
 
@@ -290,18 +288,22 @@ def url_annotate(queryset):
     the related :class:`Django admin <django.contrib.admin.ModelAdmin>` instance
 
     See `Reversing admin URLs
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#reversing-admin-urls>`_.
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/"""\
+        """"#reversing-admin-urls>`_.
 
     Note that this fail if the `Django Admin Site
-    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/#module-django.contrib.admin>`_
+    <https://docs.djangoproject.com/en/2.2/ref/contrib/admin/"""\
+        """#module-django.contrib.admin>`_
     is not enabled.
 
     This function uses the `Model _meta API
-    <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_
+    <https://docs.djangoproject.com/en/2.2/ref/models/meta/"""\
+        """#module-django.db.models.options>`_
     to extract the `name` of the `primary key` field, the `app_label` property,
     and the `model_name` property.
     It then uses the `Concat
-    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#concat>`_
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/"""\
+        """#concat>`_
     database function to calculate a field containing the value of the `URL`.
 
     :arg queryset: the :class:`<django.db.models.query.QuerySet>` object
@@ -340,11 +342,12 @@ def details_url_annotate(
 
     For example, we have a hosts and host events and host events linked via a
     :class:`Django Foreign Key
-    <django.db.models.ForeignKey>` field. This function will annotate each row in
-    the hosts `queryset` with the absolute `Django admin URL` to the related
+    <django.db.models.ForeignKey>` field. This function will annotate each row
+    in the hosts `queryset` with the absolute `Django admin URL` to the related
     host events like below::
 
-        http://10.2.50.35:8080/admin/citrus_borg/winlogevent/?source_host__host_name=bccss-t450s-02
+        http://10.2.50.35:8080/admin/citrus_borg/winlogevent/"""\
+            """?source_host__host_name=bccss-t450s-02
 
     :arg queryset: the initial :class:`Django queryset
         <django.db.models.query.QuerySet>`
@@ -352,13 +355,14 @@ def details_url_annotate(
     :arg str app_path: the `app_label` for the model with the details.
         If ``None``, the `app_label` is picked from the `queryset` using the
         `Model _meta API
-        <https://docs.djangoproject.com/en/2.2/ref/models/meta/#module-django.db.models.options>`_.
-        This is only useful if the master and the details models are defined in the
-        same `Django application`.
+        <https://docs.djangoproject.com/en/2.2/ref/models/meta/"""\
+        """#module-django.db.models.options>`_.
+        This is only useful if the master and the details models are defined in
+        the same `Django application`.
 
-    :arg str model_path: the `model_name` property of the `Django model` with the
-        details. If ``None``, it will be picked from the `queryset` using the
-        `Model _meta API`. This, however, is of very little use, since there are
+    :arg str model_path: the `model_name` property of the `Django model` with
+        the details. If ``None``, it will be picked from the `queryset` using
+        the `Model _meta API`. This is of very little use, since there are
         very few realistic data models where the master and the details are in
         the same `Django model`.
 
@@ -412,7 +416,8 @@ def remove_duplicates(sequence=None):
     remove duplicates from a sequence
 
     We are not using the `set(list)` approach because that one only works with
-    :class:`list <list>`. this approach will also work with :class:`strings <str>`.
+    :class:`list <list>`. this approach will also work with
+    :class:`strings <str>`.
 
     :arg sequence: the sequence that may be containing duplicates
 
@@ -465,8 +470,8 @@ def get_pk_list(queryset, pk_field_name='id'):
     :arg queryset: the `queryset`
     :type queryset: :class:`django.db.models.query.QuerySet`
 
-    :arg str pk_field_name: the name of the primary key field; in `Django` primary
-        keys are by default using the name 'id'.
+    :arg str pk_field_name: the name of the primary key field; in `Django`
+        primary keys are by default using the name 'id'.
 
     """
     return list(queryset.values_list(pk_field_name, flat=True))
@@ -502,7 +507,8 @@ class MomentOfTime:
     :meth:`datetime.dateime.now` method but sometimes we need something else.
 
     Note that this class uses the `django.utils.timezone
-    <https://docs.djangoproject.com/en/2.2/ref/utils/#module-django.utils.timezone>`__
+    <https://docs.djangoproject.com/en/2.2/ref/utils/"""\
+        """#module-django.utils.timezone>`__
     module instead of the `Python datetime
     <https://docs.python.org/3/library/datetime.html#module-datetime>`_ module.
     Therefore, it should not be used outside `Django applications`.
@@ -544,9 +550,9 @@ class MomentOfTime:
         for verifying or calculating a :class:`django.utils.timezone.timedelta`
         object
 
-        :returns: a proper :class:`datetime.timedelta` object. if the time_delta argument
-            is not provided, use the :class:`kw_time_delta dictionary <dict>` to
-            create a :class:`datetime.timedelta` object
+        :returns: a proper :class:`datetime.timedelta` object. if the time_delta
+            argument is not provided, use the :class:`kw_time_delta dictionary
+            <dict>` to create a :class:`datetime.timedelta` object
 
         :arg `datetime.timedelta` time_delta: if this argument is provided, the
             static method will return it untouched
@@ -557,7 +563,6 @@ class MomentOfTime:
             """#datetime.timedelta>`__.
 
         :raises:
-
             :exc:`TypeError` when it cannot return a :class:`datetime.timedelta`
 
         """
@@ -690,26 +695,9 @@ def get_base_queryset(data_source, **base_filters):
     return queryset
 
 
-def get_subscription(subscription):
-    """
-    :returns: a :class:`p_soc_auto_base.models.Subscription` instance
-
-    :arg str subscription: the subscription value
-
-    :raises: a :exc:`django.Model.DoesNotExist` exception if the model doesn't \
-    exist.
-    """
-    try:
-        return Subscription.objects.get(subscription__iexact=subscription)
-    except Subscription.DoesNotExist:
-        error_msg = f'Subscription "{subscription}" does not exist.'
-        LOG.exception(error_msg)
-        raise Subscription.DoesNotExist(error_msg)
-
-
 def get_or_create_user(name="default"):
     """
-    Used to supply a default user when created default objects
+    Used to fetch user objects
 
     :arg str name: Name to use for the username. Default is "default".
 
@@ -717,3 +705,12 @@ def get_or_create_user(name="default"):
     """
     # return just the user, the created boolean is never used
     return get_user_model().objects.get_or_create(username=name)[0]
+
+
+def get_default_user_id():
+    """
+    Used to supply a default user when creating default objects
+
+    :return: id of the default user.
+    """
+    return get_or_create_user().id

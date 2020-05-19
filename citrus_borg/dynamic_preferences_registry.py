@@ -47,44 +47,44 @@ from dynamic_preferences.types import (
 )
 
 
-citrus_borg_common = Section(
+CITRUS_BORG_COMMON = Section(
     'citrusborgcommon', verbose_name=_('citrus borg common settings').title())
 
-citrus_borg_events = Section(
+CITRUS_BORG_EVENTS = Section(
     'citrusborgevents', verbose_name=_('citrus borg event settings').title())
 
-citrus_borg_node = Section(
+CITRUS_BORG_NODE = Section(
     'citrusborgnode', verbose_name=_('Citrus Borg Node settings').title())
 
-citrus_borg_ux = Section(
+CITRUS_BORG_UX = Section(
     'citrusborgux',
     verbose_name=_('Citrus Borg User Experience settings').title())
 
-citrus_borg_logon = Section(
+CITRUS_BORG_LOGON = Section(
     'citrusborglogon',
     verbose_name=_('Citrus Borg Citrix Logon settings').title())
 
-orion_server_conn = Section(
+ORION_SERVER_CONN = Section(
     'orionserverconn',
     verbose_name=_('Orion Server Connection Settings').title())
 
-orion_filters = Section(
+ORION_FILTERS = Section(
     'orionfilters',
     verbose_name=_('Filters used for Orion REST queries').title())
 
-orion_probe_defaults = Section(
+ORION_PROBE_DEFAULTS = Section(
     'orionprobe',
     verbose_name=_('Filters used for Orion data probes').title())
 
-email_prefs = Section('emailprefs', verbose_name=_(
+EMAIL_PREFS = Section('emailprefs', verbose_name=_(
     'Email preferences').title())
 
-exchange = Section('exchange',
+EXCHANGE = Section('exchange',
                    verbose_name=_(
                        'Options for the PHSA Service Operations Center'
                        ' Exchange Monitoring Application'))
 
-ldap_probe = Section('ldapprobe',
+LDAP_PROBE = Section('ldapprobe',
                      verbose_name=_(
                          'Options for the PHSA Service Operations Center'
                          ' Active Directory Services Monitoring Application'))
@@ -93,7 +93,7 @@ dynamic user preferences section for the :ref:`Active Directory Services
 Monitoring Application`
 """
 
-common_alert_args = Section(
+COMMON_ALERT_ARGS = Section(
     'commonalertargs',
     verbose_name=_(
         'Common Args for Alerts Raised by the PHSA'
@@ -102,6 +102,11 @@ common_alert_args = Section(
 dynamic user preferences section for preferences common to all applications
 in the :ref:`SOC Automation Project`
 """
+
+
+# The way dynamic preferences are set-up in Django we need to have these data
+# classes without public methods
+# pylint: disable=too-few-public-methods
 
 
 @global_preferences_registry.register
@@ -121,7 +126,7 @@ class AlertArgsErrorLevel(StringPreference):
         dynamic preferences.
 
     """
-    section = common_alert_args
+    section = COMMON_ALERT_ARGS
     name = 'error_level'
     default = 'ERROR'
     """default setting value"""
@@ -142,7 +147,7 @@ class AlertArgsWarnLevel(StringPreference):
     :access_key: 'commonalertargs__warn_level'
 
     """
-    section = common_alert_args
+    section = COMMON_ALERT_ARGS
     name = 'warn_level'
     default = 'WARNING'
     """default setting value"""
@@ -163,7 +168,7 @@ class AlertArgsInfoLevel(StringPreference):
     :access_key: 'commonalertargs__info_level'
 
     """
-    section = common_alert_args
+    section = COMMON_ALERT_ARGS
     name = 'info_level'
     default = 'INFO'
     """default setting value"""
@@ -184,7 +189,7 @@ class AlertArgsCriticalLevel(StringPreference):
     :access_key: 'commonalertargs__crit_level'
 
     """
-    section = common_alert_args
+    section = COMMON_ALERT_ARGS
     name = 'crit_level'
     default = 'CRITICAL'
     """default setting value"""
@@ -202,7 +207,7 @@ class ExchangeExpireEvents(DurationPreference):
 
     :access_key: 'exchange__expire_events`
     """
-    section = exchange
+    section = EXCHANGE
     name = 'expire_events'
     default = timezone.timedelta(hours=36)
     """default setting value"""
@@ -219,7 +224,7 @@ class ExchangeReportingInterval(DurationPreference):
 
     :access_key: 'exchange__report_interval'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'report_interval'
     default = timezone.timedelta(hours=12)
     """default value for this dynamic preference"""
@@ -236,7 +241,7 @@ class ExchangeReportErrorLevel(StringPreference):
 
     :access_key: 'exchange__report_level'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'report_level'
     default = 'INFO'
     """default value for this dynamic preference"""
@@ -257,7 +262,7 @@ class ExchangeDeleteExpired(BooleanPreference):
 
     :access_key: `exchange__delete_expired`
     """
-    section = exchange
+    section = EXCHANGE
     name = 'delete_expired'
     default = True
     """default value for this dynamic preference"""
@@ -276,7 +281,7 @@ class ExchangeSendEmptyAlerts(BooleanPreference):
 
     :access_key: 'exchange__empty_alerts'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'empty_alerts'
     default = False
     """default value for this dynamic preference"""
@@ -296,7 +301,7 @@ class ExchangeDefaultErrorLevel(StringPreference):
 
     :access_key: 'exchange__default_level`
     """
-    section = exchange
+    section = EXCHANGE
     name = 'default_level'
     default = 'WARNING'
     """default value for this dynamic preference"""
@@ -314,7 +319,7 @@ class ExchangeEventSource(StringPreference):
 
     :access_key: 'exchange__source'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'source'
     default = 'BorgExchangeMonitor'
     """default value for this dynamic preference"""
@@ -334,7 +339,7 @@ class ExchangeServerWarn(DurationPreference):
 
     :access_key: 'exchange__server_warn'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'server_warn'
     default = timezone.timedelta(hours=2)
     """default value for this dynamic preference"""
@@ -355,7 +360,7 @@ class ExchangeServerError(DurationPreference):
 
     :access_key: 'exchange__server_error'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'server_error'
     default = timezone.timedelta(hours=6)
     """default value for this dynamic preference"""
@@ -376,7 +381,7 @@ class ExchangeDeadBotWarn(DurationPreference):
 
     :access_key: 'exchange__bot_warn'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'bot_warn'
     default = timezone.timedelta(hours=2)
     """default value for this dynamic preference"""
@@ -397,7 +402,7 @@ class ExchangeNilDuration(DurationPreference):
     :access_key: 'exchange__nil_duration'
 
     """
-    section = exchange
+    section = EXCHANGE
     name = 'nil_duration'
     default = timezone.timedelta(hours=0)
     """default value for this dynamic preference"""
@@ -419,7 +424,7 @@ class ExchangeDeadBotError(DurationPreference):
 
     :access_key: 'exchange__bot_error'
     """
-    section = exchange
+    section = EXCHANGE
     name = 'bot_error'
     default = timezone.timedelta(hours=6)
     """default value for this dynamic preference"""
@@ -441,7 +446,7 @@ class ExchangeDefaultError(DurationPreference):
     :access_key: 'exchange__bot_error'
 
     """
-    section = exchange
+    section = EXCHANGE
     name = 'default_error'
     default = timezone.timedelta(hours=2)
     """default value for this dynamic preference"""
@@ -462,7 +467,7 @@ class CitrusBorgEventSource(StringPreference):
 
     :access_key: 'citrusborgevents__source'
     """
-    section = citrus_borg_events
+    section = CITRUS_BORG_EVENTS
     name = 'source'
     default = 'ControlUp Logon Monitor'
     """default value for this dynamic preference"""
@@ -484,7 +489,7 @@ class EmailFromWhenDebug(StringPreference):
 
     :access_key: 'emailprefs__from_email'
     """
-    section = email_prefs
+    section = EMAIL_PREFS
     name = 'from_email'
     default = 'daniel.busto@phsa.ca'
     """default value for this dynamic preference"""
@@ -504,7 +509,7 @@ class EmailToWhenDebug(StringPreference):
 
     :access_key: 'emailprefs__to_emails'
     """
-    section = email_prefs
+    section = EMAIL_PREFS
     name = 'to_emails'
     default = 'daniel.busto@phsa.ca,james.reilly@phsa.ca'
     """default value for this dynamic preference"""
@@ -523,7 +528,7 @@ class OrionProbeCSTOnly(BooleanPreference):
 
     :access_key: 'orionprobe__cerner_cst'
     """
-    section = orion_probe_defaults
+    section = ORION_PROBE_DEFAULTS
     name = 'cerner_cst'
     default = True
     """default value for this dynamic preference"""
@@ -542,7 +547,7 @@ class OrionProbeKnownSslOnly(BooleanPreference):
 
     :access_key: 'orionprobe__orion_ssl'
     """
-    section = orion_probe_defaults
+    section = ORION_PROBE_DEFAULTS
     name = 'orion_ssl'
     default = False
     """default value for this dynamic preference"""
@@ -563,7 +568,7 @@ class OrionProbeServersOnly(BooleanPreference):
 
     :access_key: 'orionprobe__servers_only'
     """
-    section = orion_probe_defaults
+    section = ORION_PROBE_DEFAULTS
     name = 'servers_only'
     default = True
     """default value for this dynamic preference"""
@@ -582,7 +587,7 @@ class OrionCernerCSTFilter(StringPreference):
 
     :access_key: 'orionfilters__cerner_cst'
     """
-    section = orion_filters
+    section = ORION_FILTERS
     name = 'cerner_cst'
     default = 'Cerner-CST'
     """default value for this dynamic preference"""
@@ -601,7 +606,7 @@ class OrionDomainControllerNodeFilter(StringPreference):
 
     :access_key: 'orionfilters__domaincontroller'
     """
-    section = orion_filters
+    section = ORION_FILTERS
     name = 'domaincontroller'
     default = 'DomainController'
     """default value for this dynamic preference"""
@@ -621,7 +626,7 @@ class OrionServerNodesFilter(StringPreference):
 
     :access_key: 'orionfilters__server_node'
     """
-    section = orion_filters
+    section = ORION_FILTERS
     name = 'server_node'
     default = 'server'
     """default value for this dynamic preference"""
@@ -640,7 +645,7 @@ class OrionAppSslFilter(StringPreference):
 
     :access_key: 'orionfilters__ssl_app'
     """
-    section = orion_filters
+    section = ORION_FILTERS
     name = 'ssl_app'
     default = 'ssl'
     """default value for this dynamic preference"""
@@ -661,7 +666,7 @@ class OrionServerUrl(LongStringPreference):
 
     :access_key: 'orionserverconn__orion_server_url'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_server_url'
     default = settings.ORION_ENTITY_URL
     """default value for this dynamic preference"""
@@ -681,7 +686,7 @@ class OrionServerRestUrl(LongStringPreference):
 
     :access_key: 'orionserverconn__orion_rest_url'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_rest_url'
     default = settings.ORION_URL
     """default value for this dynamic preference"""
@@ -697,7 +702,7 @@ class OrionServer(StringPreference):
 
     :access_key: 'orionserverconn__orion_hostname'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_hostname'
     default = settings.ORION_HOSTNAME
     """default value for this dynamic preference"""
@@ -714,7 +719,7 @@ class OrionServerUser(StringPreference):
 
     :access_key: 'orionserverconn__orion_user'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_user'
     default = settings.ORION_USER
     """default value for this dynamic preference"""
@@ -731,7 +736,7 @@ class OrionServerPassword(StringPreference):
 
     :access_key: 'orionserverconn__orion_password'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_password'
     default = settings.ORION_PASSWORD
     """default value for this dynamic preference"""
@@ -749,7 +754,7 @@ class OrionServerAcceptUnsignedCertificate(BooleanPreference):
 
     :access_key: 'orionserverconn__orion_verify_ssl_cert'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_verify_ssl_cert'
     default = settings.ORION_VERIFY_SSL_CERT
     """default value for this dynamic preference"""
@@ -766,7 +771,7 @@ class OrionServerConnectionTimeout(FloatPreference):
 
     :access_key: 'orionserverconn__orion_conn_timeout'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_conn_timeout'
     default = settings.ORION_TIMEOUT[0]
     """default value for this dynamic preference"""
@@ -783,7 +788,7 @@ class OrionServerReadTimeout(FloatPreference):
 
     :access_key: 'orionserverconn__orion_read_timeout'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_read_timeout'
     default = settings.ORION_TIMEOUT[1]
     """default value for this dynamic preference"""
@@ -800,7 +805,7 @@ class OrionServerRetry(IntPreference):
 
     :access_key: 'orionserverconn__orion_retry'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_retry'
     default = settings.ORION_RETRY
     """default value for this dynamic preference"""
@@ -817,7 +822,7 @@ class OrionServerRetryBackoff(FloatPreference):
 
     :access_key: 'orionserverconn__orion_backoff_factor'
     """
-    section = orion_server_conn
+    section = ORION_SERVER_CONN
     name = 'orion_backoff_factor'
     default = settings.ORION_BACKOFF_FACTOR
     """default value for this dynamic preference"""
@@ -840,7 +845,7 @@ class ServiceUser(StringPreference):
 
     :access_key: 'citrusborgcommon__service_user'
     """
-    section = citrus_borg_common
+    section = CITRUS_BORG_COMMON
     name = 'service_user'
     default = settings.CITRUS_BORG_SERVICE_USER
     """default value for this dynamic preference"""
@@ -862,7 +867,7 @@ class SendNoNews(BooleanPreference):
 
     :access_key: 'citrusborgcommon__send_no_news'
     """
-    section = citrus_borg_common
+    section = CITRUS_BORG_COMMON
     name = 'send_no_news'
     default = settings.CITRUS_BORG_NO_NEWS_IS_GOOD_NEWS
     """default value for this dynamic preference"""
@@ -889,7 +894,7 @@ class DeadAfter(DurationPreference):
 
     :access_key: 'citrusborgcommon__dead_after'
     """
-    section = citrus_borg_common
+    section = CITRUS_BORG_COMMON
     name = 'dead_after'
     default = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
     """default value for this dynamic preference"""
@@ -912,7 +917,7 @@ class IgnoreEvents(DurationPreference):
 
     :access_key: 'citrusborgevents__ignore_events_older_than'
     """
-    section = citrus_borg_events
+    section = CITRUS_BORG_EVENTS
     name = 'ignore_events_older_than'
     default = settings.CITRUS_BORG_IGNORE_EVENTS_OLDER_THAN
     """default value for this dynamic preference"""
@@ -931,7 +936,7 @@ class ExpireEvents(DurationPreference):
 
     :access_key: 'citrusborgevents__expire_events_older_than'
     """
-    section = citrus_borg_events
+    section = CITRUS_BORG_EVENTS
     name = 'expire_events_older_than'
     default = settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER
     """default value for this dynamic preference"""
@@ -950,7 +955,7 @@ class DeleteExpireEvents(BooleanPreference):
 
     :access_key: 'citrusborgevents__delete_expired_events'
     """
-    section = citrus_borg_events
+    section = CITRUS_BORG_EVENTS
     name = 'delete_expired_events'
     default = settings.CITRUS_BORG_DELETE_EXPIRED
     """default value for this dynamic preference"""
@@ -967,7 +972,7 @@ class UxAlertThreshold(DurationPreference):
 
     :access_key: 'citrusborgux__ux_alert_threshold'
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'ux_alert_threshold'
     default = settings.CITRUS_BORG_UX_ALERT_THRESHOLD
     """default value for this dynamic preference"""
@@ -989,7 +994,7 @@ class UxAlertInterval(DurationPreference):
 
     :access_key: 'citrusbirgux__ux_alert_interval'
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'ux_alert_interval'
     default = settings.CITRUS_BORG_UX_ALERT_INTERVAL
     """default value for this dynamic preference"""
@@ -1010,7 +1015,7 @@ class UxReportingPeriod(DurationPreference):
 
     :access_key: 'citrusborgux__ux_reporting_period'
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'ux_reporting_period'
     default = settings.CITRUS_BORG_SITE_UX_REPORTING_PERIOD
     """default value for this dynamic preference"""
@@ -1031,7 +1036,7 @@ class ClusterEventIds(StringPreference):
 
     :access_key: 'citrusborgux__cluster_event_ids
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'cluster_event_ids'
     default = '1006,1007,1016,1017'
     required = True
@@ -1051,7 +1056,7 @@ class ClusterLength(DurationPreference):
 
     :access_key: 'citrusborgux__cluster_length
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'cluster_length'
     default = timezone.timedelta(minutes=5)
     required = True
@@ -1071,7 +1076,7 @@ class ClusterSize(IntPreference):
 
     :access_key: 'citrusborgux__cluster_size
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'cluster_size'
     default = 5
     required = True
@@ -1090,7 +1095,7 @@ class BackoffTime(DurationPreference):
 
     :access_key: 'citrusborgux__backoff_time
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'backoff_time'
     default = timezone.timedelta(hours=1)
     required = True
@@ -1111,7 +1116,7 @@ class BackoffLimit(IntPreference):
 
     :access_key: 'citrusborgux__backoff_limit
     """
-    section = citrus_borg_ux
+    section = CITRUS_BORG_UX
     name = 'backoff_limit'
     default = 3
     required = True
@@ -1133,7 +1138,7 @@ class NodeForgottenAfter(DurationPreference):
 
     :access_key: 'citruxborgnode__node_forgotten_after'
     """
-    section = citrus_borg_node
+    section = CITRUS_BORG_NODE
     name = 'node_forgotten_after'
     default = settings.CITRUS_BORG_NOT_FORGOTTEN_UNTIL_AFTER
     """default value for this dynamic preference"""
@@ -1154,7 +1159,7 @@ class BotAlertAfter(DurationPreference):
 
     :access_key: 'citrusborgnode__dead_bot_after'
     """
-    section = citrus_borg_node
+    section = CITRUS_BORG_NODE
     name = 'dead_bot_after'
     default = settings.CITRUS_BORG_DEAD_BOT_AFTER
     """default value for this dynamic preference"""
@@ -1175,7 +1180,7 @@ class SiteAlertAfter(DurationPreference):
 
     :access_key: 'citrusborgnode__dead_site_after'
     """
-    section = citrus_borg_node
+    section = CITRUS_BORG_NODE
     name = 'dead_site_after'
     default = settings.CITRUS_BORG_DEAD_SITE_AFTER
     """default value for this dynamic preference"""
@@ -1194,7 +1199,7 @@ class SessionHostAlertAfter(DurationPreference):
     Dynamic preferences class used for storing the threshold for alerts about
     `Citrix` session hosts not servicing requests
     """
-    section = citrus_borg_node
+    section = CITRUS_BORG_NODE
     name = 'dead_session_host_after'
     default = settings.CITRUS_BORG_DEAD_BROKER_AFTER
     """default value for this dynamic preference"""
@@ -1217,7 +1222,7 @@ class FailedLogonAlertInterval(DurationPreference):
 
     :access_key: 'citrusborglogon__logon_alert_after'
     """
-    section = citrus_borg_logon
+    section = CITRUS_BORG_LOGON
     name = 'logon_alert_after'
     default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_INTERVAL
     """default value for this dynamic preference"""
@@ -1241,7 +1246,7 @@ class FailedLogonAlertThreshold(IntPreference):
 
     :access_key: 'citrusborglogon__logon_alert_threshold'
     """
-    section = citrus_borg_logon
+    section = CITRUS_BORG_LOGON
     name = 'logon_alert_threshold'
     required = True
     default = settings.CITRUS_BORG_FAILED_LOGON_ALERT_THRESHOLD
@@ -1262,7 +1267,7 @@ class LogonReportsInterval(DurationPreference):
 
     :access_key: 'citrusborglogon__logon_report_period'
     """
-    section = citrus_borg_logon
+    section = CITRUS_BORG_LOGON
     name = 'logon_report_period'
     default = settings.CITRUS_BORG_FAILED_LOGONS_PERIOD
     """default value for this dynamic preference"""
@@ -1286,7 +1291,7 @@ class LdapSearchBaseDNDefault(StringPreference):
 
     :access_key: 'ldapprobe__search_dn_default'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'search_dn_default'
     default = 'dc=vch,dc=ca'
     """default value for this dynamic preference"""
@@ -1308,7 +1313,7 @@ class LdapServiceUser(StringPreference):
 
     :access_key: 'ldapprobe__service_user'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'service_user'
     default = 'ldap_probe_service_user'
     """default value for this dynamic preference"""
@@ -1327,7 +1332,7 @@ class LdapExpireProbeLogEntries(DurationPreference):
 
     :access_key: 'ldapprobe__ldap_expire_after'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_expire_after'
     default = settings.CITRUS_BORG_EVENTS_EXPIRE_AFTER
     """default value for this dynamic preference"""
@@ -1345,7 +1350,7 @@ class LdapDeleteExpiredProbeLogEntries(BooleanPreference):
 
     :access_key: 'ldapprobe__ldap_delete_expired'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_delete_expired'
     default = settings.CITRUS_BORG_DELETE_EXPIRED
     """default value for this dynamic preference"""
@@ -1363,7 +1368,7 @@ class LdapErrorAlertSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_error_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_error_subscription'
     default = 'LDAP: Error alerts subscription'
     """default value for this dynamic preference"""
@@ -1381,7 +1386,7 @@ class LdapErrorReportSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_error_report_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_error_report_subscription'
     default = 'LDAP: Error report'
     """default value for this dynamic preference"""
@@ -1400,7 +1405,7 @@ class LdapNonOrionADNodesReportSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_non_orion_ad_nodes_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_non_orion_ad_nodes_subscription'
     default = 'LDAP: non Orion AD nodes'
     """default value for this dynamic preference"""
@@ -1420,7 +1425,7 @@ class LdapOrionADNodesFQDNReportSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_orion_fqdn_ad_nodes_subscription'
     default = 'LDAP: Orion FQDN AD nodes'
     """default value for this dynamic preference"""
@@ -1440,7 +1445,7 @@ class LdapOrionADNodesDupesReportSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_orion_dupes_ad_nodes_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_orion_dupes_ad_nodes_subscription'
     default = 'LDAP: Duplicate Orion AD nodes'
     """default value for this dynamic preference"""
@@ -1459,7 +1464,7 @@ class LdapPerfAlertSubscription(StringPreference):
 
     :access_key: 'ldapprobe__ldap_perf_subscription'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_subscription'
     default = 'LDAP: Performance alerts subscription'
     """default value for this dynamic preference"""
@@ -1482,7 +1487,7 @@ class LdapPerfRaiseMinorAlerts(BooleanPreference):
 
     :access_key: 'ldapprobe__ldap_perf_raise_all'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_raise_all'
     default = False
     """default value for this dynamic preference"""
@@ -1501,7 +1506,7 @@ class LdapPerfDegradationReportGoodNews(BooleanPreference):
 
     :access_key: 'ldapprobe__ldap_perf_send_good_news'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_send_good_news'
     default = False
     """default value for this dynamic preference"""
@@ -1520,7 +1525,7 @@ class LdapPerfNeverExceedThreshold(DecimalPreference):
 
     :access_key: 'ldapprobe__ldap_perf_err'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_err'
     default = decimal.Decimal('1.000')
     """default value for this dynamic preference"""
@@ -1545,7 +1550,7 @@ class LdapPerfAlertThreshold(DecimalPreference):
         and :class:`LdapPerfNeverExceedThreshold` are not following the
         usual practice.
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_alert'
     default = decimal.Decimal('0.750')
     """default value for this dynamic preference"""
@@ -1563,7 +1568,7 @@ class LdapPerfWarnThreshold(DecimalPreference):
 
     :access_key: 'ldapprobe__ldap_perf_warn'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_perf_warn'
     default = decimal.Decimal('0.500')
     """default value for this dynamic preference"""
@@ -1581,7 +1586,7 @@ class LdapReportPeriod(DurationPreference):
 
     :access_key: 'ldapprobe__ldap_reports_period'
     """
-    section = ldap_probe
+    section = LDAP_PROBE
     name = 'ldap_reports_period'
     default = timezone.timedelta(hours=1)
     """default value for this dynamic preference"""

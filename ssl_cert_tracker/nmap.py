@@ -26,9 +26,9 @@ import csv
 import logging
 import socket
 
-from dateutil import parser
-
 from django.conf import settings
+
+from dateutil import parser
 
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser
@@ -474,6 +474,9 @@ def probe_for_state(dns_list=None):
 
 
 def write_csv(file_name, source, fieldnames):
+    """
+    write data to a csv file
+    """
     with open(file_name, 'w', newline='') as csv_file:
         csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
 
@@ -492,9 +495,6 @@ def probe_for_certs(dns_list=None, port_list=None):
 
     """
     field_names = ['dns', 'port', 'common_name', 'not_before', 'expires_on']
-    """
-    header row for the csv file
-    """
 
     if dns_list is None:
         dns_list = get_dns_list('certs.csv')
@@ -513,7 +513,6 @@ def probe_for_certs(dns_list=None, port_list=None):
     for dns in dns_list:
         for port in port_list:
             try:
-
                 cert = SslProbe(dns, port)
 
                 # oh, look.... this dns serves a certificate

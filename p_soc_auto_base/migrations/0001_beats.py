@@ -395,6 +395,7 @@ INTERVAL_TASKS = {
 
 
 class Migration(migrations.Migration):
+
     replaces = [
         ('citrus_borg', '0009_prepare_task_scheddules'),
         ('citrus_borg', '0014_add_failed_login_tasks'),
@@ -424,6 +425,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
+        ('p_soc_auto_base', '0006_subscription'),
         ('django_celery_beat', '0011_auto_20190508_0153'),
     ]
 

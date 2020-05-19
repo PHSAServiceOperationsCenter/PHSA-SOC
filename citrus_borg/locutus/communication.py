@@ -93,13 +93,15 @@ def get_dead_bots(now=None, time_delta=None):
 
         By default, this is the dynamic preference
         `Bot not seen alert threshold
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_bot_after>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=dead_bot_after>`__
 
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model
 
         The :class:`django.db.models.query.QuerySet` is `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with the arguments defining the interval.
 
     :raises: :exc:`TypeError` if the function arguments are not of the expected
@@ -137,7 +139,8 @@ def get_dead_brokers(now=None, time_delta=None):
 
     * The default value for `time_delta` is the dynamic preference
       `Session host not seen alert threshold
-      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_session_host_after>`__
+      <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=dead_session_host_after>`__
     """
     key_for_event = 'xml_broker'
     obj_class = KnownBrokeringDevice
@@ -165,7 +168,8 @@ def get_dead_sites(now=None, time_delta=None):
 
     * The default value for `time_delta` argument is the dynamic preference
       `Site not seen alert threshold
-      <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_site_after>`__
+      <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=dead_site_after>`__
 
     """
     key_for_event = 'source_host__site'
@@ -194,7 +198,8 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
     :arg datetime.timedelta time_delta: the time interval to consider
         By default, this will be retrieved from the dynamic preference
         `Dead if not seen for more than
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=dead_after>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=dead_after>`__
 
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model
@@ -258,7 +263,8 @@ def raise_ux_alarm(
 
         By default, this will be retrieved from the dynamic preference
         `Alert monitoring interval for citrix events
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_interval>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ux_alert_interval>`__
 
     :arg str site: filter the :class:`django.db.models.query.QuerySet` by
         `site` using the value of this argument if not `None`
@@ -275,13 +281,15 @@ def raise_ux_alarm(
 
         By default, this will be retrieved from the dynamic preference
         `Maximum acceptable response time for citrix events
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ux_alert_threshold>`__
 
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model
 
         The :class:`django.db.models.query.QuerySet`  is `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with the value of the `ux_alert_threshold` argument
 
     :Note:
@@ -461,7 +469,8 @@ def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
     :class:`citrus_borg.models.WinlogbeatHost` model that is `annotated
     <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
     with statistical `aggregations
-    <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__
+    <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/"""\
+        """#aggregation>`__
     extracted from the :class:`citrus_borg.models.WinlogEvent` model
 
     :arg datetime.datetime now: the initial moment
@@ -473,7 +482,8 @@ def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
 
         By default, this will be retrieved from the dynamic preference
         `Ignore events created older than
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ignore_events_older_than>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ignore_events_older_than>`__
         but it most cases this argument needs to be specified when invoking
         this function
 
@@ -512,7 +522,8 @@ def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
         sequence; default is :attr:`GroupBy.HOUR`
 
         Note this will affect `aggregations
-        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__.
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/"""\
+        """#aggregation>`__.
         Normally, `aggregations` are calculated for the interval defined by the
         `now` and `time_delta` arguments but when this argument is present,
         the `aggregations` will be calculated for the time sequence value
@@ -605,9 +616,11 @@ def _group_by(queryset, group_field='winlogevent__created_on',
     sequence and `annotate` it with the time value
 
     See `Trunc
-    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#trunc>`__
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/"""\
+        """#trunc>`__
     and `TimeField truncation
-    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/#timefield-truncation>`__
+    <https://docs.djangoproject.com/en/2.2/ref/models/database-functions/"""\
+        """"#timefield-truncation>`__
     in the `Django` docs.
 
     The resulting `queryset` will look something like this:
@@ -663,9 +676,11 @@ def login_states_by_site_host_hour(
     """
     :returns: a :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with all the `aggregations
-        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/#aggregation>`__
+        <https://docs.djangoproject.com/en/2.2/topics/db/aggregation/"""\
+        """#aggregation>`__
         extracted from the :class:`citrus_borg.models.WinlogEvent` model
         calculated on a per hour basis for the interval defined by the
         `now` and `time_delta` arguments
@@ -679,7 +694,8 @@ def login_states_by_site_host_hour(
 
         By default, this will be retrieved from the dynamic preference
         `Ignore events created older than
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ignore_events_older_than>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ignore_events_older_than>`__
 
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
@@ -716,7 +732,8 @@ def raise_failed_logins_alarm(
         The alert information is returned via a
         :class:`django.db.models.query.QuerySet` based on the
         :class:`citrus_borg.models.WinlogbeatHost` model and `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with the data for the failed events extracted from the
         :class:`citrus_borg.models.WinlogEvent` model, and with the alert
         evaluation parameters (threshold and period)
@@ -730,17 +747,19 @@ def raise_failed_logins_alarm(
 
         By default, this will be retrieved from the dynamic preference
         `Logon alert after
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_after>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=logon_alert_after>`__
 
     :arg int failed_threshold: the number of failed logons that will trigger the
         alert
 
         By default, this will be retrieved from the dynamic preference
         `Failed logon events count alert threshold
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_alert_threshold>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=logon_alert_threshold>`__
 
-    :raises: :exc:`TypeError` if any of the function arguments do not satisfy type
-        requirements
+    :raises: :exc:`TypeError` if any of the function arguments do not satisfy
+        type requirements
 
     """
     if now is None:
@@ -789,8 +808,9 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         The :class:`django.db.models.query.QuerySet` is based on the
         :class:`citrus_borg.models.WinlogbeatHost` model and on the
         :class:`citrus_borg.models.WinlogEvent` model and is `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
-        with the event counts (`failed` events and `successful` events)
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__ with the event counts (`failed` events and
+        `successful` events)
 
     :arg datetime.datetime now: the initial moment
 
@@ -801,7 +821,8 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
 
         By default, this will be retrieved from the dynamic preference
         `Logon reporting period
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=logon_report_period>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=logon_report_period>`__
 
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
@@ -838,14 +859,15 @@ def get_failed_ux_events(
         now=None, time_delta=None, site=None, host_name=None,
         ux_alert_threshold=None):
     """
-    :returns: a :class:`django.db.models.query.QuerySet` containing detailed data
-        about `ControlUp` logon events with timings that do not satisfy user
-        response time requirements
+    :returns: a :class:`django.db.models.query.QuerySet` containing detailed
+        data about `ControlUp` logon events with timings that do not satisfy
+        user response time requirements
 
         The :class:`django.db.models.query.QuerySet` is based on the
         :class:`citrus_borg.models.WinlogbeatHost` model and on the
         :class:`citrus_borg.models.WinlogEvent` model and is `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with the event timing stats
 
     :arg datetime.datetime now: the initial moment
@@ -857,7 +879,8 @@ def get_failed_ux_events(
 
         By default, this will be retrieved from the dynamic preference
         `User experience reporting period
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_reporting_period>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ux_reporting_period>`__
 
     :arg str site: if present, filter the data that will be returned by `site`,
         otherwise return data for all known sites
@@ -880,7 +903,8 @@ def get_failed_ux_events(
 
         By default, this will be retrieved from the dynamic preference
         `User experience alert threshold
-        <../../../admin/dynamic_preferences/globalpreferencemodel/?q=ux_alert_threshold>`__
+        <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
+            """?q=ux_alert_threshold>`__
 
     :raises: :exc:`TypeError` if the `now` argument, the `time_delta` or the
         `ux_alert_threshold` arguments do not satisfy type requirements

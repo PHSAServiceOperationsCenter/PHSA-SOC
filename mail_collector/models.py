@@ -14,7 +14,6 @@
 
 """
 from django.core import validators
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -97,8 +96,6 @@ class DomainAccount(BaseModelWithDefaultInstance, models.Model):
         self.domain = self.domain.upper()
 
         super().clean()
-
-        return
 
     class Meta:
         app_label = 'mail_collector'
@@ -381,7 +378,7 @@ class MailBotMessage(models.Model):
         get_latest_by = '-event__event_registered_on'
 
 
-class ExchangeServer(models.Model):
+class ExchangeServer(BaseModel, models.Model):
     """
     Model for the exchange servers being monitored
 
@@ -404,8 +401,6 @@ class ExchangeServer(models.Model):
     last_updated = models.DateTimeField(
         _('Last Updated'), db_index=True, blank=False, null=False,
         auto_now=True)
-    enabled = models.BooleanField(
-        _('Enabled'), db_index=True, blank=False, null=False, default=True)
     last_updated_from_node_id = models.BigIntegerField(
         _('Orion Node Id'), db_index=True, blank=False, null=False,
         default=0,
@@ -457,7 +452,7 @@ class ExchangeDatabase(models.Model):
         get_latest_by = '-last_access'
 
 
-class MailBetweenDomains(models.Model):
+class MailBetweenDomains(BaseModel, models.Model):
     """
     Track user side email functionality between specific email domains for each
     site
@@ -477,8 +472,6 @@ class MailBetweenDomains(models.Model):
     is_expired = models.BooleanField(
         _('event has expired'), db_index=True, blank=False, null=False,
         default=False)
-    enabled = models.BooleanField(
-        _('Enabled'), db_index=True, blank=False, null=False, default=True)
     last_verified = models.DateTimeField(
         _('Last Verified'), db_index=True, blank=False, null=False)
     status = models.CharField(

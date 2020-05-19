@@ -10,11 +10,11 @@ This module contains tests for the :ref:`Mail Collector Application`.
 
 :contact:    daniel.busto@phsa.ca
 """
-from mail_collector.models import DomainAccount, ExchangeConfiguration
-from p_soc_auto_base.test_lib import UserTestCase
-
 from hypothesis import given
 from hypothesis.strategies import text, characters
+
+from mail_collector.models import DomainAccount, ExchangeConfiguration
+from p_soc_auto_base.test_lib import UserTestCase
 
 
 # TODO tests for all proxymanagers? (is this just testing Django?)

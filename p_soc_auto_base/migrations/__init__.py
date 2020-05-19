@@ -29,7 +29,7 @@ def create_subscription(apps, subscription_dict):
     :param apps: Django apps instance.
     :param subscription_dict: arguments to set up a subscription, as a dict.
     """
-    subscription_model = apps.get_model('ssl_cert_tracker', 'Subscription')
+    subscription_model = apps.get_model('p_soc_auto_base', 'Subscription')
 
     user = get_or_create_user()
 

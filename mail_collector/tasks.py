@@ -27,6 +27,7 @@ from citrus_borg.models import WinlogbeatHost
 from mail_collector import exceptions, models, lib, queries
 from p_soc_auto_base import utils as base_utils
 from p_soc_auto_base.email import Email
+from p_soc_auto_base.models import Subscription
 
 LOG = get_task_logger(__name__)
 
@@ -133,7 +134,7 @@ def raise_failed_event_by_mail(event_pk):
 
     """
     data = models.MailBotLogEvent.objects.filter(pk=event_pk)
-    subscription = base_utils.get_subscription('Exchange Client Error')
+    subscription = Subscription.get_subscription('Exchange Client Error')
 
     # let's cache some data to avoid evaluating the queryset multiple times
     data_extract = data.values(
@@ -154,41 +155,16 @@ def raise_failed_event_by_mail(event_pk):
 
 
 @shared_task(queue='mail_collector')
-def expire_events(moment=None):
+def expire_events():
     """
     mark events as expired. also delete them if so configured
 
     expired events are deleted based on the value of the
     :class:`citrus_borg.dynamic_preferences_registry.ExchangeDeleteExpired`
     dynamic settings
-
-    :arg `datetime.datetime` moment:
-
-        the cutoff moment; all rows older than this will be expired.
-        default: ``None``. when ``None`` it will be calculated based on the
-        value of the
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeExpireEvents`
-        dynamic setting relative to the moment returned by
-        :meth:`datetime.datetime.now`
-
-    .. todo::
-
-        Argument type is not suitable for celery tasks. How does one
-        pass a datetime from a celery beat task? This need to change to
-        something that can be passed in as a string of some sorts (or a
-        dictionary of basic types).
-
     """
-    if moment is None:
-        moment = base_utils.MomentOfTime.past(
-            time_delta=get_preference('exchange__expire_events'))
-
-    if not isinstance(moment, timezone.datetime):
-        error = TypeError(
-            'Invalid object type %s, was expecting datetime'
-            % type(moment))
-        LOG.error(error)
-        raise error
+    moment = base_utils.MomentOfTime.past(
+        time_delta=get_preference('exchange__expire_events'))
 
     count_expired = models.MailBotLogEvent.objects.filter(
         event_registered_on__lte=moment).update(is_expired=True)
@@ -219,8 +195,6 @@ def bring_out_your_dead(
     :ref:`Mail Collector Application` entities that have been in an
     abnormal state for a given duration measured going back from the
     current moment
-
-    .. todo:: see `<https://trello.com/c/vav94p7e>`_
 
     :arg str data_source: the reference to a
         :class:`django.db.models.Model` in the form of 'app_label.model_name'
@@ -271,7 +245,7 @@ def bring_out_your_dead(
     if level is None:
         level = get_preference('exchange__default_level')
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     if filter_pref is None:
         filter_pref = get_preference('exchange__default_error')
@@ -328,7 +302,7 @@ def report_mail_between_domains(only_fails=False, subscription=None):
     if subscription is None:
         subscription = 'Mail Verification Report'
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     queryset = models.MailBetweenDomains.active.filter(is_expired=False)
 
@@ -356,18 +330,18 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
         :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
         dynamic setting
 
-        *    if there are alerts, this task will return the result of the email
-             send op
+        *  if there are alerts, this task will return the result of the email
+           send op
 
-        *    otherwise the task will check the value of the
-             :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
-             dynamic setting.
+        *  otherwise the task will check the value of the
+           :class:`citrus_borg.dynamic_preferences_registry.ExchangeEmptyAlerts`
+           dynamic setting.
 
-             *    if the value is ``False``, the task will not send any emails
-                  and it will return this information
+             *  if the value is ``False``, the task will not send any emails
+                and it will return this information
 
-             *    otherwise the task will send an email saying that there are
-                  no alerts and return the result of the email send op
+             *  otherwise the task will send an email saying that there are
+                no alerts and return the result of the email send op
     :rtype: str
 
     :raises: :exc:`Exception` if an exception was thrown while sending the alert
@@ -376,7 +350,7 @@ def dead_mail_sites(subscription, time_delta_pref=None, level=None):
     if level is None:
         level = get_preference('exchange__default_level')
 
-    subscription = base_utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
 
     if time_delta_pref is None:
         time_delta = get_preference('exchange__default_error')
@@ -419,7 +393,8 @@ def invoke_report_events_by_site(report_interval=None, report_level=None):
     :arg str report_level: similar to a log level, defaults to ``None``
 
         when ``None``, the value is picked from
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+        :class:`citrus_borg.dynamic_preferences_registry."""\
+            """ExchangeDefaultErrorLevel`
 
 
     :returns: the sites for which the report tasks have been invoked
@@ -472,7 +447,7 @@ def report_events_by_site(site, report_interval, report_level):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription('Exchange Send Receive By Site')
+    subscription = Subscription.get_subscription('Exchange Send Receive By Site')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
@@ -516,7 +491,7 @@ def report_failed_events_by_site(site, report_interval):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription(
+    subscription = Subscription.get_subscription(
         'Exchange Failed Send Receive By Site')
 
     data = queries.dead_bodies(
@@ -557,7 +532,8 @@ def invoke_report_events_by_bot(report_interval=None, report_level=None):
     :arg str report_level: similar to a log level, defaults to ``None``
 
         when ``None``, the value is picked from
-        :class:`citrus_borg.dynamic_preferences_registry.ExchangeDefaultErrorLevel`
+        :class:`citrus_borg.dynamic_preferences_registry"""\
+        """.ExchangeDefaultErrorLevel`
 
 
     :returns: the bots for which the report tasks have been invoked
@@ -610,7 +586,7 @@ def report_events_by_bot(bot, report_interval, report_level):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription('Exchange Send Receive By Bot')
+    subscription = Subscription.get_subscription('Exchange Send Receive By Bot')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',
@@ -653,7 +629,7 @@ def report_failed_events_by_bot(bot, report_interval):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = base_utils.get_subscription(
+    subscription = Subscription.get_subscription(
         'Exchange Failed Send Receive By Bot')
 
     data = queries.dead_bodies(
@@ -695,7 +671,7 @@ def raise_site_not_configured_for_bot():
 
     if Email.send_email(
             data=data,
-            subscription=base_utils.get_subscription('Exchange bot no site'),
+            subscription=Subscription.get_subscription('Exchange bot no site'),
             level=get_preference('exchange__server_error')):
         LOG.info('emailed alert for mis-configured Exchange bots')
 

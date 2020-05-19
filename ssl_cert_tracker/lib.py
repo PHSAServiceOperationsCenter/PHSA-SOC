@@ -53,12 +53,14 @@ CASE_EXPIRED = When(not_after__lt=timezone.now(), then=Value(State.EXPIRED))
 """
 a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
-See `Django Conditional Expressions <https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
-for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
+See `Django Conditional Expressions <https://docs.djangoproject.com/en/"""\
+    """2.2/ref/models/conditional-expressions/#conditional-expressions>`__
+for detail about :class:`django.db.models.Case` and
+:class:`django.db.models.When`.
 
 In this particular case, if the value of
-:attr:`ssl_cert_tracker.models.SslCertificate.not_after` is less than the current
-moment, the `SSL` certificate is expired.
+:attr:`ssl_cert_tracker.models.SslCertificate.not_after` is less than the
+current  moment, the `SSL` certificate is expired.
 """
 
 
@@ -68,8 +70,10 @@ CASE_NOT_YET_VALID = When(not_before__gt=timezone.now(),
 a representation of an SQL WHEN snippet using :class:`django.db.models.When`
 
 See `Django Conditional Expressions
-<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
-for detail about :class:`django.db.models.Case` and :class:`django.db.models.When`.
+<https://docs.djangoproject.com/en/2.2/ref/models/"""\
+    """conditional-expressions/#conditional-expressions>`__
+for detail about :class:`django.db.models.Case` and
+:class:`django.db.models.When`.
 
 In this particular case, if the value of
 :attr:`ssl_cert_tracker.models.SslCertificate.not_before` is greater than the
@@ -83,19 +87,20 @@ STATE_FIELD = Case(
 a representation of an SQL CASE snippet using the SQL WHEN snippets from above
 
 See `Django Conditional Expressions
-<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/#conditional-expressions>`__
-for detail about :class:`django.db.models.When` and :class:`django.db.models.When`.
+<https://docs.djangoproject.com/en/2.2/ref/models/conditional-expressions/"""\
+    """"#conditional-expressions>`__
+for detail about :class:`django.db.models.When` and
+:class:`django.db.models.When`.
 
 In this particular case, we are tracking the `STATE` of the
-:class:`ssl_cert_tracker.models.SslCertificate` instance with regards to validity
-and expiration dates. The possible cases are:
+:class:`ssl_cert_tracker.models.SslCertificate` instance with regards to
+validity and expiration dates. The possible cases are:
 
 * :attr:`State.NOT_YET_VALID` (not yet valid)
 
 * :attr:`State.VALID` (the default state)
 
 * :attr:`State.EXPIRED`
-
 """
 
 
@@ -106,7 +111,8 @@ class DateDiff(Func):  # pylint: disable=abstract-method
     <https://mariadb.com/kb/en/library/datediff/>`__
 
     See `Func() expressions
-    <https://docs.djangoproject.com/en/2.2/ref/models/expressions/#func-expressions>`__
+    <https://docs.djangoproject.com/en/2.2/ref/models/expressions/"""\
+        """#func-expressions>`__
     in the `Django` docs for more details about wrappers for functions provided
     by the database server.
 
@@ -134,7 +140,8 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
         field that highlights the `untrusted` state of each `SSL` certificate.
 
         Observe the  `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         `alert_body` field used as an argument for the
         :meth:`django.db.models.query.QuerySet.annotate` method of the
         :class:`django.db.models.query.QuerySet`.
@@ -142,13 +149,9 @@ def is_not_trusted(app_label='ssl_cert_tracker', model_name='sslcertificate'):
     :rtype: :class:`django.db.models.query.QuerySet`
 
     The arguments for this function have not been hard-coded because we want to
-    be able to reuse the function even if :mod:`ssl_cert_tracker.models` changes.
-
-    :arg str app_label:
-
-    :arg str model_name:
-
-    """
+    be able to reuse the function even if :mod:`ssl_cert_tracker.models`
+    changes.
+   """
     return get_ssl_base_queryset(app_label, model_name).\
         filter(issuer__is_trusted=False).\
         annotate(alert_body=Value('Untrusted SSL Certificate',
@@ -162,25 +165,18 @@ def get_ssl_base_queryset(app_label, model_name, url_annotate=True,
 
         a :class:`django.db.models.query.QuerySet` based on the
         :class:`ssl_cert_tracker.models.SslCertificate` and `annotated
-        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+        <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#annotate>`__
         with the absolute path of the `URL` for the
-        :class:`Django admin <django.contrib.admin.ModelAdmin>` instance based on
-        the related entry in :class:`ssl_cert_tracker.models.SslCertificateIssuer`
+        :class:`Django admin <django.contrib.admin.ModelAdmin>` instance based
+        on the related entry in
+        :class:`ssl_cert_tracker.models.SslCertificateIssuer`
 
         The annotation is present in a field named `url_issuer`.
 
     This function cannot be abstracted to generate annotations for one or more
     foreign key fields  because the `annotation` names cannot be passed as
     variables
-
-    :arg str app_label:
-
-    :arg str model_name:
-
-    :arg bool url_annotate:
-
-    :arg bool issuer_url_annotate:
-
     """
     queryset = utils.get_base_queryset(f'{app_label}.{model_name}',
                                        enabled=True)
@@ -211,32 +207,30 @@ def expires_in(app_label='ssl_cert_tracker', model_name='sslcertificate',
         a :class:`django.db.models.query.QuerySet` based on the
         :class:`ssl_cert_tracker.models.SslCertificate`
 
-        The :class:`django.db.models.query.QuerySet` returned by this function is:
+        The :class:`django.db.models.query.QuerySet` returned by this function
+        is:
 
         * `filtered
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+        """#filter>`__
           to show only the :attr:`State.VALID` `SSL` certificates
 
-        * optionally `filtered
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
-          for the interval before the `SSL` certificates will expire
+        * optionally filtered for the interval before the `SSL` certificates
+          will expire
 
           Note that the parameter for this filter is measured in `days` and
           cannot be smaller than 2.
 
-          If this `filter
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
-          is applied, the :class:`django.db.models.query.QuerySet` will be
-          `annotated
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
-          with the value of the parameter in a field named `expires_in_less_than`,
-          and with a field named `alert_body` that contains a corresponding
-          alert message
+          If this filter is applied, the
+          :class:`django.db.models.query.QuerySet` will be `annotated
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+          """#annotate>`__ with the value of the parameter in a field named
+          `expires_in_less_than`, and with a field named `alert_body` that
+          contains a corresponding alert message
 
-        * `annotated
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
-          with the :attr:`STATE_FIELD` in a field named `state`, and a
-          :class:`django.db.models.BigIntegerField` field named `expires_in_x_days`
+        * annotated with the :attr:`STATE_FIELD` in a field named `state`, and a
+          :class:`django.db.models.BigIntegerField` field named
+          `expires_in_x_days`
 
         * ordered ascending on the `expires_in_x_days` field
 
@@ -291,21 +285,18 @@ def has_expired(app_label='ssl_cert_tracker', model_name='sslcertificate'):
         function is:
 
         * `filtered
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+          """#filter>`__
           to show only the :attr:`State.EXPIRED` `SSL` certificates
 
         * `annotated
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+          """"#annotate>`__
           with the :attr:`STATE_FIELD` in a field named `state`, and a
           :class:`django.db.models.BigIntegerField` field named
           `has_expired_x_days_ago`
 
         * ordered descending on the `has_expired_x_days_ago` field
-
-    :arg str app_label:
-
-    :arg str model_name:
-
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.EXPIRED).\
@@ -331,24 +322,22 @@ def is_not_yet_valid(
         a :class:`django.db.models.query.QuerySet` based on the
         :class:`ssl_cert_tracker.models.SslCertificate`
 
-        The :class:`django.db.models.query.QuerySet` returned by this function is:
+        The :class:`django.db.models.query.QuerySet` returned by this function
+        is:
 
         * `filtered
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#filter>`__
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+          """#filter>`__
           to show only the :attr:`State.NOT_YET_VALID` `SSL` certificates
 
         * `annotated
-          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/#annotate>`__
+          <https://docs.djangoproject.com/en/2.2/ref/models/querysets/"""\
+          """#annotate>`__
           with the :attr:`STATE_FIELD` in a field named `state`, and a
           :class:`django.db.models.BigIntegerField` field named
           'will_become_valid_in_x_days'
 
         * ordered descending on the 'will_become_valid_in_x_days' field
-
-    :arg str app_label:
-
-    :arg str model_name:
-
     """
     queryset = get_ssl_base_queryset(app_label, model_name).\
         annotate(state=STATE_FIELD).filter(state=State.NOT_YET_VALID).\
@@ -371,12 +360,13 @@ class NoDataEmailError(Exception):
     Custom :exc:`Exception` class
 
     Raise this exception if one tries to create an instance of :class:`Email`
-    with a :attr:`Email.data` attribute of :class:`NoneType` (:attr:`data` is ``None``).
+    with a :attr:`Email.data` attribute of :class:`NoneType` (:attr:`data` is
+    ``None``).
 
     The expectation is that :attr:`Email.data` is a
-    :class:`django.db.models.query.QuerySet` and the :class:`Email` class can handle
-    empty `QuerySet` objects. This exception prevents invoking the :class:`Email`
-    class without a `data` argument in the constructor.
+    :class:`django.db.models.query.QuerySet` and the :class:`Email` class can
+    handle empty `QuerySet` objects. This exception prevents invoking the
+    :class:`Email` class without a `data` argument in the constructor.
     """
 
 

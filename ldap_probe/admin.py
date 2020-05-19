@@ -49,6 +49,10 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    # The way the admin framework works requires the functions be defined this
+    # way, despite not using self.
+    # pylint: disable=no-self-use
+
     def show_avg_warn_threshold(self, obj):
         """
         show :attr:`ldap_probe.models.ADNodePerfBucket.avg_warn_threshold`
@@ -88,6 +92,7 @@ class LdapProbeBaseAdmin(base_admin.BaseAdmin, admin.ModelAdmin):
     show_alert_threshold.short_description = _(
         'Response Time Alert')
 
+    # pylint: enable=no-self-use
 
 @admin.register(models.ADNodePerfBucket)
 class AdNodePerfBucketAdmin(LdapProbeBaseAdmin, admin.ModelAdmin):
@@ -269,6 +274,10 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
     that inherit from :class:`ldap_probe.models.LdapProbeLog`
     """
 
+    search_fields = ('ad_node__node_dns', 'ad_orion_node__node__node_dns',
+                     'ad_orion_node__node__node_caption',
+                     'ad_orion_node__node__ip_address',)
+
     def has_add_permission(self, request):
         """
         :class:`ldap_probe.models.LdapProbeLog` instances are created
@@ -310,9 +319,6 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
         ('ad_orion_node', admin.RelatedOnlyFieldListFilter),
         ('created_on', DateTimeRangeFilter),
     )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address',)
 
 
 @admin.register(models.LdapProbeFullBindLog)
@@ -328,9 +334,6 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter), )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address', )
 
 
 @admin.register(models.LdapProbeAnonBindLog)
@@ -347,9 +350,6 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                     admin.RelatedOnlyFieldListFilter),
                    ('created_on', DateTimeRangeFilter),
                    'ad_orion_node__performance_bucket__name', )
-    search_fields = ('ad_node', 'ad_orion_node__node__node_dns',
-                     'ad_orion_node__node__node_caption',
-                     'ad_orion_node__node__ip_address',)
 
 
 @admin.register(models.LdapCredError)

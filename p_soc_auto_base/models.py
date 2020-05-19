@@ -20,8 +20,11 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from p_soc_auto_base.utils import get_default_user_id
 
-class EnabledManager(models.Manager):
+
+# Managers only need to implement get_queryset
+class EnabledManager(models.Manager):  # pylint: disable=too-few-public-methods
     """
     Manager that only returns `active` objects.
     """
@@ -50,7 +53,7 @@ class BaseModel(models.Model):
     created_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,
         related_name='%(app_label)s_%(class)s_created_by_related',
-        verbose_name=_('created by'))
+        verbose_name=_('created by'), default=get_default_user_id)
     """
     capture a reference to the user responsible for creating the database row
 
@@ -63,7 +66,7 @@ class BaseModel(models.Model):
     updated_by = models.ForeignKey(
         get_user_model(), on_delete=models.PROTECT,
         related_name='%(app_label)s_%(class)s_updated_by_related',
-        verbose_name=_('updated by'))
+        verbose_name=_('updated by'), default=get_default_user_id)
     """
     capture a reference to the user responsible for updating the database row
     """
@@ -96,41 +99,11 @@ class BaseModel(models.Model):
     :class:`Django model <django.db.models.Model>`.
     """
 
-    @classmethod
-    def get_or_create_user(cls, username):
-        """
-        get or create a user
-
-        If a user is created, they are not guaranteed to have any kind of
-        privileges and/or access permissions on the :ref:`SOC Automation
-        Server`.
-
-        When data is maintained using background processes, it is not
-        always obvious who the responsible user is.
-
-        By convention, the background process must announce the user
-        responsible for the data change and this method will make sure
-        that this user exists.
-
-        We are defining this method as a class method because we may have to
-        call it from places where we don't have access to a model instance.
-
-        :arg str username: the username to get or create
-
-        :returns: an instance of the :class:`django.contrib.auth.models.User`
-            model
-        """
-        user = get_user_model().objects.filter(username__iexact=username)
-        if not user.exists():
-            get_user_model().objects.create_user(username)
-
-        return user.get()
-
     objects = models.Manager()
     """
     Default manager.
 
-    Note first defined manager is always set as default, to ensure default is 
+    Note first defined manager is always set as default, to ensure default is
     'all objects' this manager should remain defined first.
     """
 
@@ -246,7 +219,7 @@ class Subscription(BaseModel):
     running on the :ref:`SOC Automation Server`.
     """
     subscription = models.CharField('subscription', max_length=128, unique=True,
-        db_index=True, blank=False, null=False)
+                                    db_index=True, blank=False, null=False)
     """
     string uniquely identifying a :class:`Subscription` instance
     """
@@ -258,14 +231,14 @@ class Subscription(BaseModel):
     """
 
     from_email = models.CharField('from', max_length=255, blank=True, null=True,
-        default=settings.DEFAULT_FROM_EMAIL)
+                                  default=settings.DEFAULT_FROM_EMAIL)
     """
     email address to be placed in the `FROM` email header; default will be
     picked from :attr:`p_soc_auto.settings.DEFAULT_FROM_EMAIL`
     """
 
     template_dir = models.CharField('email templates directory', max_length=255,
-        blank=False, null=False)
+                                    blank=False, null=False)
     """
     directory for `Templates
     <https://docs.djangoproject.com/en/2.2/topics/templates/>`_
@@ -274,7 +247,7 @@ class Subscription(BaseModel):
     """
 
     template_name = models.CharField('email template name', max_length=64,
-        blank=False, null=False)
+                                     blank=False, null=False)
     """
     the short name of the template file used to render this type of email
 
@@ -282,15 +255,16 @@ class Subscription(BaseModel):
     `django-templated-mail` package in `p_soc_auto.settings`.
     """
 
-    template_prefix = models.CharField('email template prefix', max_length=64,
-        blank=False, null=False, default='email/')
+    template_prefix = models.CharField(
+        'email template prefix', max_length=64, blank=False, null=False,
+        default='email/')
     """
     the subdirectory under :attr:`templatedir` where email templates are
     located
     """
 
-    email_subject = models.TextField('email subject fragment', blank=True,
-        null=True,
+    email_subject = models.TextField(
+        'email subject fragment', blank=True, null=True,
         help_text=('this is the conditional subject of the email template.'
                    ' it is normally just a fragment that will augmented'
                    ' by other variables'))
@@ -313,8 +287,8 @@ class Subscription(BaseModel):
     that includes a reference to it.
     """
 
-    alternate_email_subject = models.TextField('fallback email subject',
-        blank=True, null=True,
+    alternate_email_subject = models.TextField(
+        'fallback email subject', blank=True, null=True,
         help_text='this is the non conditional subject of the email template.')
     """
     an alternate value for the core of the email subject line
@@ -328,7 +302,8 @@ class Subscription(BaseModel):
     nothing to see here'.
     """
 
-    headers = models.TextField('data headers', blank=False, null=False,
+    headers = models.TextField(
+        'data headers', blank=False, null=False,
         default='common_name,expires_in,not_before,not_after')
     """
     a comma-separated list of field names to retrieve from the :attr:`data`
@@ -338,7 +313,8 @@ class Subscription(BaseModel):
     :attr:`data` `queryset` they will not be displayed.
     """
 
-    tags = models.TextField('tags', blank=True, null=True,
+    tags = models.TextField(
+        'tags', blank=True, null=True,
         help_text=('email classification tags placed on the subject line'
                    ' and in the email body'))
     """
@@ -351,6 +327,24 @@ class Subscription(BaseModel):
 
     def __str__(self):
         return self.subscription
+
+    @staticmethod
+    def get_subscription(subscription):
+        """
+        :returns: a :class:`p_soc_auto_base.models.Subscription` instance
+
+        :arg str subscription: the subscription value
+
+        :raises: a :exc:`django.Model.DoesNotExist` exception if the model
+        doesn't
+            exist.
+        """
+        try:
+            return Subscription.objects.get(subscription__iexact=subscription)
+        except Subscription.DoesNotExist:
+            error_msg = f'Subscription "{subscription}" does not exist.'
+            LOG.exception(error_msg)
+            raise Subscription.DoesNotExist(error_msg)
 
     class Meta:
         app_label = 'p_soc_auto_base'

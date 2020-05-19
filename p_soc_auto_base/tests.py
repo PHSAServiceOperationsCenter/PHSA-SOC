@@ -17,8 +17,8 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from mail_collector.models import DomainAccount
-from p_soc_auto_base.models import BaseModel
 from p_soc_auto_base.test_lib import UserTestCase
+from p_soc_auto_base.utils import get_or_create_user
 
 
 class BaseModelTest(TestCase):
@@ -27,10 +27,10 @@ class BaseModelTest(TestCase):
     """
     def test_getorcreateuser(self):
         """
-        Tests tha getorcreateuser does create a user.
+        Tests that getorcreateuser does create a user.
         :return:
         """
-        test_user = BaseModel.get_or_create_user('testuser')
+        test_user = get_or_create_user('testuser')
         self.assertTrue(
             get_user_model().objects.filter(username='testuser').exists())
         test_user.delete()

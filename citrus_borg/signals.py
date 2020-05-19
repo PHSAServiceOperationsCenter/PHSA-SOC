@@ -15,7 +15,6 @@ for the :ref:`Citrus Borg Application`.
 """
 from logging import getLogger
 
-from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -25,7 +24,8 @@ from citrus_borg.dynamic_preferences_registry import (get_preference,
 from citrus_borg.models import EventCluster, WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.utils import get_subscription
+from p_soc_auto_base.models import Subscription
+from p_soc_auto_base.utils import get_or_create_user
 
 LOG = getLogger(__name__)
 
@@ -82,10 +82,7 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
     LOG.debug('there have been %d failures recently', recent_failures_count)
 
     if recent_failures_count >= get_preference('citrusborgux__cluster_size'):
-        # TODO replace this with get_or_create_user when the automated testing
-        #      branch is merged (or possibly set it to the default?)
-        default_user = \
-            get_user_model().objects.get_or_create(username='default')[0]
+        default_user = get_or_create_user()
 
         new_cluster = EventCluster(
             created_by=default_user, updated_by=default_user
@@ -101,7 +98,7 @@ def failure_cluster_check(sender, instance, *args, **kwargs):
                  if cluster.end_time > timezone.now()
                  - get_preference('citrusborgux__backoff_time')])
                 <= get_preference('citrusborgux__backoff_limit')):
-            Email.send_email(None, get_subscription('Citrix Cluster Alert'),
+            Email.send_email(None, Subscription.get_subscription('Citrix Cluster Alert'),
                              False, start_time=new_cluster.start_time,
                              end_time=new_cluster.end_time.astimezone(
                                  timezone.get_current_timezone()).time(),

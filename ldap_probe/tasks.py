@@ -28,6 +28,7 @@ from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url, \
     get_or_create_user
 from p_soc_auto_base.email import Email
+from p_soc_auto_base.models import Subscription
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
@@ -319,7 +320,7 @@ def raise_ldap_probe_failed_alert(instance_pk=None, subscription=None):
 
     return _raise_ldap_alert(
         instance_pk=instance_pk,
-        subscription=utils.get_subscription(subscription),
+        subscription=Subscription.get_subscription(subscription),
         level=get_preference('commonalertargs__error_level'))
 
 
@@ -344,7 +345,7 @@ def raise_ldap_probe_perf_err(instance_pk=None, subscription=None):
 
     return _raise_ldap_alert(
         instance_pk=instance_pk,
-        subscription=utils.get_subscription(subscription),
+        subscription=Subscription.get_subscription(subscription),
         level=get_preference('commonalertargs__error_level'))
 
 
@@ -369,7 +370,7 @@ def raise_ldap_probe_perf_alert(instance_pk=None, subscription=None):
 
     return _raise_ldap_alert(
         instance_pk=instance_pk,
-        subscription=utils.get_subscription(subscription),
+        subscription=Subscription.get_subscription(subscription),
         level=get_preference('commonalertargs__warn_level'))
 
 
@@ -394,7 +395,7 @@ def raise_ldap_probe_perf_warn(instance_pk=None, subscription=None):
 
     return _raise_ldap_alert(
         instance_pk=instance_pk,
-        subscription=utils.get_subscription(subscription),
+        subscription=Subscription.get_subscription(subscription),
         level=get_preference('commonalertargs__info_level'))
 
 
@@ -419,7 +420,7 @@ def dispatch_bad_fqdn_reports():
             str(error))
         raise error
 
-    subscription = utils.get_subscription(
+    subscription = Subscription.get_subscription(
         get_preference('ldapprobe__ldap_orion_fqdn_ad_nodes_subscription'))
 
     info_level = get_preference('commonalertargs__info_level')
@@ -453,7 +454,7 @@ def dispatch_dupe_nodes_reports():
                       ' error %s', str(error))
         raise error
 
-    subscription = utils.get_subscription(
+    subscription = Subscription.get_subscription(
         get_preference('ldapprobe__ldap_orion_dupes_ad_nodes_subscription'))
 
     info_level = get_preference('commonalertargs__info_level')
@@ -490,7 +491,7 @@ def dispatch_non_orion_ad_nodes_report():
                       str(error))
         raise error
 
-    subscription = utils.get_subscription(
+    subscription = Subscription.get_subscription(
         get_preference('ldapprobe__ldap_non_orion_ad_nodes_subscription'))
 
     warn_level = get_preference('commonalertargs__warn_level')
@@ -541,7 +542,7 @@ def dispatch_ldap_error_report(**time_delta_args):
              ' raises error %s'), time_delta_args, error)
         raise error
 
-    subscription = utils.get_subscription(
+    subscription = Subscription.get_subscription(
         get_preference('ldapprobe__ldap_error_report_subscription'))
 
     error_level = get_preference('commonalertargs__error_level')
@@ -749,7 +750,7 @@ def dispatch_ldap_perf_report(
         LOG.info('there is no performance degradation for %s', bucket)
         return
 
-    subscription = utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
     threshold = utils.show_milliseconds(threshold)
@@ -822,7 +823,7 @@ def dispatch_ldap_report(data_source, anon, perf_filter, **time_delta_args):
             data_source, anon, perf_filter, time_delta_args, str(error))
         raise error
 
-    subscription = utils.get_subscription(subscription)
+    subscription = Subscription.get_subscription(subscription)
     full = 'full bind' in subscription.subscription.lower()
     orion = 'non orion' not in subscription.subscription.lower()
 

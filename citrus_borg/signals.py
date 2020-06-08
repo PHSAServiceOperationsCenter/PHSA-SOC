@@ -23,6 +23,7 @@ from citrus_borg.dynamic_preferences_registry import (get_preference,
                                                       get_int_list_preference)
 from citrus_borg.models import EventCluster, WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
+from orion_flash.orion.api import DestSwis
 from p_soc_auto_base.email import Email
 from p_soc_auto_base.models import Subscription
 from p_soc_auto_base.utils import get_or_create_user
@@ -56,6 +57,34 @@ def invoke_raise_citrix_slow_alert(sender, instance, *args, **kwargs):
     if any(timing > threshold for timing in alertable_timings):
         LOG.info('Slowdown on %s', instance.source_host.host_name)
         raise_citrix_slow_alert.delay(instance.id, threshold.total_seconds())
+
+
+@receiver(post_save, sender=WinlogEvent)
+def orion_update_citrix_error(sender, instance, *args, **kwargs):
+    """
+    When an event id is received that indicates a ControlUp encountered an error
+    we update a custom property on the Orion server to indicate the value
+    received. Also updates the property when a success is received, if an error
+    was received previously.
+    """
+    failure_ids = get_int_list_preference('citrusborgux__cluster_event_ids')
+    dst_swis = DestSwis()
+
+    ip = instance.source_host.ip_address
+    e_id = instance.event_id
+
+    if e_id in failure_ids:
+        dst_swis.update_node_custom_props(ip, ControlUpEventID=e_id)
+        return
+
+    try:
+        last_id = WinlogEvent.active.filter(
+            source_host__ip_address__iexact=ip).latest().event_id
+    except WinlogEvent.DoesNotExist:
+        last_id = None
+
+    if last_id in failure_ids:
+        dst_swis.clear_custom_prop(ip, 'ControlUpEventID')
 
 
 @receiver(post_save, sender=WinlogEvent)

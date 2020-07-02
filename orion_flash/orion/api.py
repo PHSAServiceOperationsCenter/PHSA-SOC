@@ -26,13 +26,11 @@ from django.conf import settings
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 
-from .qv import (
-    ALL_CUSTOM_PROPS_QUERY, FILTERED_CUSTOM_PROPS_QUERY,
-    CUSTOM_PROPS_VALS_VERB,
-    CUSTOM_PROPS_VALS_INVOKE_ARGS, VALUES_FOR_CUSTOM_PROP_QUERY,
-    NODE_PROPS_QUERY, NODE_URI_QUERY, NODE_URI_BY_NAME_QUERY,
-    NODE_CUSTOM_PROPS_QUERY,
-)
+from .qv import (ALL_CUSTOM_PROPS_QUERY, FILTERED_CUSTOM_PROPS_QUERY,
+                 CUSTOM_PROPS_VALS_VERB, CUSTOM_PROPS_VALS_INVOKE_ARGS,
+                 NODE_URI_BY_DNS_QUERY, VALUES_FOR_CUSTOM_PROP_QUERY,
+                 NODE_PROPS_QUERY, NODE_URI_QUERY, NODE_URI_BY_NAME_QUERY,
+                 NODE_CUSTOM_PROPS_QUERY, )
 
 
 LOG = logging.getLogger(__name__)
@@ -227,15 +225,30 @@ class DestSwis(SourceSwis):
 
             LOG.info('updated %s with %s', uri, src_props)
 
+    # TODO rewrite with an array of functions and while not uri loop.
     def update_node_custom_props(self, node_identifier, **props):
+        uri = None
+
         try:
             uri = self._node_uri_by_ip(node_identifier)
         except IndexError:
+            pass
+
+        if not uri:
             try:
                 uri = self._node_uri_by_name(node_identifier)
             except IndexError:
-                raise ValueError(f'update_node_custom_props must be called with '
-                           f'an IP address, or node name. Got {node_identifier}')
+                pass
+
+        if not uri:
+            try:
+                uri = self._node_uri_by_dns(node_identifier)
+            except IndexError:
+                pass
+
+        if not uri:
+            raise ValueError(f'update_node_custom_props must be called with '
+                       f'an IP address, or node name. Got {node_identifier}')
         self.orion_connection.update(uri=f'{uri}/CustomProperties', **props)
         LOG.info('Updated %s with %s.', node_identifier, props)
 
@@ -258,6 +271,9 @@ class DestSwis(SourceSwis):
     def _node_uri_by_name(self, name):
         return self.query(query=NODE_URI_BY_NAME_QUERY,
                           name=name)[0].get('Uri')
+
+    def _node_uri_by_dns(self, dns):
+        return self.query(query=NODE_URI_BY_DNS_QUERY, dns=dns)[0].get('Uri')
 
     @property
     def ipaddresses(self):

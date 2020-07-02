@@ -55,6 +55,11 @@ NODE_URI_BY_NAME_QUERY = (
     'SELECT Uri '
     'FROM Orion.Nodes '
     'WHERE Caption=@name')
+NODE_URI_BY_DNS_QUERY = (
+    'SELECT Uri '
+    'FROM Orion.Nodes(nolock=true) '
+    'WHERE ToLower(DNS)=@dns'
+)
 ALL_NODES_IPADDRESS_QUERY = ('SELECT IPAddress FROM Orion.Nodes')
 NODE_CUSTOM_PROPS_QUERY = (
     'SELECT ons.NodeID, ons.IPAddress,'

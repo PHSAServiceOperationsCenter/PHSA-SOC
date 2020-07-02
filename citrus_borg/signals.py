@@ -71,10 +71,11 @@ def orion_update_citrix_error(sender, instance, *args, **kwargs):
     dst_swis = DestSwis()
 
     ip = instance.source_host.ip_address
+    fqdn = instance.source_host.resolved_fqdn
     e_id = instance.event_id
 
     if e_id in failure_ids:
-        dst_swis.update_node_custom_props(ip, ControlUpEventID=e_id)
+        dst_swis.update_node_custom_props(fqdn, ControlUpEventID=e_id)
         return
 
     try:

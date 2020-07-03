@@ -70,7 +70,6 @@ def orion_update_citrix_error(sender, instance, *args, **kwargs):
     failure_ids = get_int_list_preference('citrusborgux__cluster_event_ids')
     dst_swis = DestSwis()
 
-    ip = instance.source_host.ip_address
     fqdn = instance.source_host.resolved_fqdn
     e_id = instance.event_id
 
@@ -80,12 +79,12 @@ def orion_update_citrix_error(sender, instance, *args, **kwargs):
 
     try:
         last_id = WinlogEvent.active.filter(
-            source_host__ip_address__iexact=ip).latest().event_id
+            source_host__resolved_fqdn__iexact=fqdn).latest().event_id
     except WinlogEvent.DoesNotExist:
         last_id = None
 
     if last_id in failure_ids:
-        dst_swis.clear_custom_prop(ip, 'ControlUpEventID')
+        dst_swis.clear_custom_prop(fqdn, 'ControlUpEventID')
 
 
 @receiver(post_save, sender=WinlogEvent)

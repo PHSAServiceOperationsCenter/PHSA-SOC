@@ -13,16 +13,32 @@ This module contains the `Django admin` classes for the
 :contact:    daniel.busto@phsa.ca
 
 """
+import logging
+
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from rangefilter.filter import DateTimeRangeFilter
 
 from mail_collector.models import ExchangeConfiguration
+from orion_flash.orion.api import DestSwis
 from p_soc_auto_base.admin import BaseAdmin
 from .models import (AllowedEventSource, BorgSite, BorgSiteNotSeen, CitrixHost,
                      EventCluster, KnownBrokeringDevice,
                      KnownBrokeringDeviceNotSeen, WinlogEvent,
                      WinlogbeatHostNotSeen)
+
+LOG = logging.getLogger(__name__)
+
+
+def clear_controlup_error_id_on_orion(madmin, request, queryset):
+    dest_swis = DestSwis()
+    for host in queryset:
+        LOG.info('Clearing Control Up Event ID for %s', host)
+        dest_swis.clear_custom_prop(host.resolved_fqdn, 'ControlUpEventID')
+
+
+clear_controlup_error_id_on_orion.short_description =\
+    'Remove ControlUp Event Id from Orion'
 
 
 class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
@@ -275,6 +291,7 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
                    ('last_seen', DateTimeRangeFilter), 'site__site', )
     search_fields = ('site__site', 'host_name', 'ip_address',
                      'exchange_client_config__config_name',)
+    actions = [clear_controlup_error_id_on_orion]
 
     def has_add_permission(self, request):  # @UnusedVariable
         """

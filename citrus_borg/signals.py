@@ -80,7 +80,7 @@ def orion_update_citrix_error(sender, instance, *args, **kwargs):
 
     try:
         last_id = WinlogEvent.active.filter(
-            source_host__ip_address__iexact=ip).latest().event_id
+            source_host__ip_address__iexact=ip)[1].event_id
     except WinlogEvent.DoesNotExist:
         last_id = None
 

@@ -216,9 +216,13 @@ class SslCertificate(SslCertificateBase, models.Model):
 
     """
     orion_id = models.BigIntegerField(
-        _('orion node identifier'), blank=False, null=False, db_index=True,
+        _('orion node identifier'), db_index=True, null=True, blank=True,
         help_text=_('Orion Node unique identifier  on the Orion server'
                     ' used to show the node in the Orion web console'))
+    external_node_id= models.BigIntegerField(_('orion node identifier'),
+        db_index=True, null=True, blank=True,
+        help_text=_('External node id, from the ExternalSslNode table'
+                    ' used to link to the node in the web console'))
     port = models.ForeignKey(
         SslProbePort, db_index=True, blank=False, null=False,
         verbose_name=_('TCP port'), on_delete=models.PROTECT)
@@ -252,7 +256,8 @@ class SslCertificate(SslCertificateBase, models.Model):
             self.common_name, self.organization_name, self.country_name)
 
     @classmethod
-    def create_or_update(cls, orion_id, ssl_certificate,
+    def create_or_update(cls, ssl_certificate, orion_id=None,
+                         external_id=None,
                          username=settings.NMAP_SERVICE_USER):
         """
         create or update a :class:`SslCertificate` instance
@@ -315,8 +320,16 @@ class SslCertificate(SslCertificateBase, models.Model):
         issuer = SslCertificateIssuer.get_or_create(
             ssl_certificate.ssl_issuer, username)
 
-        ssl_obj = cls._meta.model.objects.filter(
-            orion_id=orion_id, port__port=ssl_certificate.port)
+        if orion_id:
+            node_id = {'orion_id': orion_id}
+        elif external_id:
+            node_id = {'external_node_id': external_id}
+        else:
+            raise ValueError(
+                "Id for the node the Certificate came from was not supplied.")
+
+        ssl_obj = cls._meta.model.objects.filter(**node_id,
+            port__port=ssl_certificate.port)
 
         if ssl_obj.exists():
             ssl_obj = ssl_obj.get()
@@ -352,7 +365,8 @@ class SslCertificate(SslCertificateBase, models.Model):
             organization_name=ssl_certificate.ssl_subject.get(
                 'organizationName'),
             country_name=ssl_certificate.ssl_subject.get('countryName'),
-            orion_id=orion_id, port=port, issuer=issuer,
+            orion_id=orion_id, external_node_id=external_id, port=port,
+            issuer=issuer,
             hostnames=ssl_certificate.hostnames,
             not_before=ssl_certificate.ssl_not_before,
             not_after=ssl_certificate.ssl_not_after,
@@ -380,6 +394,13 @@ class SslCertificate(SslCertificateBase, models.Model):
                 reverse('admin:orion_integration_orionnode_change',
                         args=(orion_node.id,)),
                 orion_node.node_caption)
+
+        external_node = ExternalSslNode.active.filter(id=self.external_node_id)
+        if external_node.exists():
+            external_node = external_node.get()
+            return '<a href="%s">%s on django</>' % (
+                reverse('admin:ssl_cert_tracker_externalsslnode_change',
+                        args=(self.external_node_id,)), external_node.address)
 
         return 'acquired outside the Orion infrastructure'
 
@@ -468,3 +489,17 @@ class SslNotYetValid(SslCertificate):
         proxy = True
         verbose_name = 'SSL Certificate: not yet valid'
         verbose_name_plural = 'SSL Certificates: not yet valid'
+
+
+class ExternalSslNode(BaseModel):
+    """
+    :class:`django.db.models.Model` class representing servers we monitor for
+    SSL Certificates that are not in our internal network.
+    """
+    address = models.CharField(
+        _('address of the SSL node'), db_index=True,
+        max_length=256, blank=False, null=False)
+
+    class Meta:
+        verbose_name = 'External node monitored for SSL certificates'
+        verbose_name_plural = 'External nodes monitored for SSL certificates'

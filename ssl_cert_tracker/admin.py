@@ -23,10 +23,9 @@ from rangefilter.filter import DateTimeRangeFilter
 
 from p_soc_auto_base.admin import BaseAdmin
 
-from .models import (
-    SslExpiresIn, SslHasExpired, SslNotYetValid, SslCertificate,
-    SslCertificateIssuer, SslProbePort,
-)
+from .models import (ExternalSslNode, SslExpiresIn, SslHasExpired,
+                     SslNotYetValid, SslCertificate, SslCertificateIssuer,
+                     SslProbePort, )
 
 
 class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
@@ -317,3 +316,12 @@ class SslNotYetValidAdmin(SslCertificateAdmin):
         """
         return obj.will_become_valid_in_x_days
     valid_in_days.short_description = 'will become valid in X days'
+
+
+@admin.register(ExternalSslNode)
+class ExternalSslNodeAdmin(admin.ModelAdmin):
+    """
+    :class:`django.contrib.admin.ModelAdmin` class for the
+    :class:`ssl_cert_tracker.models.ExternalSslNode` model
+    """
+    list_display = ['address']

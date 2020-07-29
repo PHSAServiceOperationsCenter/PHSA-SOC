@@ -626,5 +626,5 @@ class WinlogEvent(BaseModel, models.Model):
         app_label = 'citrus_borg'
         verbose_name = _('Citrix Bot Windows Log Event')
         verbose_name_plural = _('Citrix Bot Windows Log Events')
-        get_latest_by = '-created_on'
+        get_latest_by = 'created_on'
         ordering = ['-created_on']

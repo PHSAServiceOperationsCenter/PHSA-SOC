@@ -1,0 +1,26 @@
+{% block subject %}
+{{ tags }} {{ level }}: {{ item.host }}, SFTP failure
+{% endblock %}
+
+{% block html %}
+<h3>
+Failure Details
+</h3>
+{% for item in data %}
+<div><p>
+While attempting to upload a file to the SFTP server at {{ item.host }} the following error
+was encountered: {{ item.errors }}
+</p></div>
+{% endfor %}
+
+{% if email_uuid %}
+<div>
+<p>You can view this email online at
+<a href="{{ source_host_name }}{% url 'templated_email:show_email' uuid=email_uuid %}">
+{{email_uuid}}</a>
+</p></div>
+{% endif %}
+
+{% include './footer.email' %}
+
+{% endblock %}

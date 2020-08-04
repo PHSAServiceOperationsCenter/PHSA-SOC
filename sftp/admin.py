@@ -24,3 +24,4 @@ class SFTPUploadAdmin(BaseAdmin, admin.ModelAdmin):
     :class:`SFTPUploadLog` model
     """
     list_display = ['created_on', 'host', 'errors', ]
+    list_filter = ['host', 'errors']

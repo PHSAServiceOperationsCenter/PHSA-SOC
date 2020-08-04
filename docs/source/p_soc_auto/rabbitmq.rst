@@ -113,6 +113,10 @@ restart the ``celery workers``.
     [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_mail_collector.service
     [root@lvmsocq01 rabbit@lvmsocq01]# 
 
+.. note::
+    This procedure may wipe out the logstash message handling. You must follow the steps below to ensure message process
+    continues as expected.
+
 Restoring the RabbitMQ publish/consume manual configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

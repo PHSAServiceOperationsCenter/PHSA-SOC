@@ -14,10 +14,10 @@ Celery tasks for the :ref:`SSL Certificate Tracker Application`
 :contact:    daniel.busto@phsa.ca
 
 """
+import logging
 from smtplib import SMTPConnectError
 
 from celery import shared_task, group
-from celery.utils.log import get_task_logger
 
 from orion_integration.lib import OrionSslNode
 from orion_integration.models import OrionNode
@@ -25,13 +25,13 @@ from p_soc_auto_base.email import Email
 from p_soc_auto_base.models import Subscription
 
 from .lib import expires_in, has_expired, is_not_yet_valid
-from .models import SslProbePort, SslCertificate
+from .models import ExternalSslNode, SslProbePort, SslCertificate
 from .nmap import (
     SslProbe, NmapError, NmapHostDownError, NmapNotAnSslNodeError,
 )
 
 
-LOG = get_task_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 """
 fall-back logging object for this module
@@ -133,7 +133,7 @@ def email_invalid_ssl_report():
 
 
 @shared_task(task_serializer='pickle', rate_limit='5/s', queue='shared')
-def get_ssl_for_node(orion_node):
+def get_ssl_for_node(address, orion_id=None, external_id=None):
     """
     task that spawns separate :func:`get_ssl_for_node_port` tasks for each
     network port to be probed on a given :class:`Orion node
@@ -151,19 +151,19 @@ def get_ssl_for_node(orion_node):
     """
     ssl_ports = SslProbePort.active.all()
 
-    group(get_ssl_for_node_port.
-          s(orion_node, ssl_port).
-          set(serializer='pickle') for ssl_port in ssl_ports)()
+    LOG.info('looking for SSL certificates for the node at %s, ports %s',
+             address, ', '.join(
+            [str(port) for port in ssl_ports.values_list('port', flat=True)]))
 
-    LOG.info('looking for SSL certificates on Orion node %s (%s), ports %s',
-             orion_node.node_caption, orion_node.ip_address,
-             ', '.join(str(ssl_ports.values_list('port', flat=True))))
+    group(get_ssl_for_node_port.
+          s(address, ssl_port, orion_id=orion_id, external_id=external_id).
+          set(serializer='pickle') for ssl_port in ssl_ports)()
 
 
 @shared_task(task_serializer='pickle', rate_limit='2/s', queue='nmap',
              autoretry_for=(NmapError, NmapHostDownError),
              max_retries=3, retry_backoff=True)
-def get_ssl_for_node_port(orion_node, port):
+def get_ssl_for_node_port(address, port, orion_id=None, external_id=None):
     """
     this task is a wrapper around an :class:`ssl_cert_tracker.nmap.SslProbe`
     `NMAP <https://nmap.org/>`__ `SSL
@@ -179,17 +179,26 @@ def get_ssl_for_node_port(orion_node, port):
         created or updated
     :rtype: str
     """
+    LOG.info('Trying to get certificate at %s:%s', address, port)
+
     try:
-        ssl_certificate = SslProbe(orion_node.ip_address, port)
+        ssl_certificate = SslProbe(address, port)
     except NmapNotAnSslNodeError:
         LOG.warning('there is no SSL certificate on %s:%s',
-                    orion_node.ip_address, port)
+                    address, port)
         return
+    except Exception as e:
+        LOG.warning('Unexpected error while trying to get cert for %s:%s: %s',
+                    address, port, e)
 
     LOG.debug('nmap returned %s', ssl_certificate.summary)
 
-    created, ssl_obj = SslCertificate.create_or_update(orion_node.orion_id,
-                                                       ssl_certificate)
+    try:
+        created, ssl_obj = SslCertificate.create_or_update(ssl_certificate,
+                                                           orion_id=orion_id,
+                                                           external_id=external_id)
+    except Exception as e:
+        LOG.info('OOPS: %s', e)
 
     if created:
         LOG.info('SSL certificate %s on %s, port %s has been created at %s',
@@ -279,12 +288,22 @@ def get_ssl_nodes():
         <orion_integration.models.OrionNode>` that will be inspected
     :rtype: str
     """
+    external_nodes = ExternalSslNode.active.all()
+
+    LOG.info('looking for SSL certificates on %s external nodes',
+             len(external_nodes))
+
+    LOG.info('%s', external_nodes)
+    group(get_ssl_for_node.s(e_node.address, external_id=e_node.id).set(
+        serializer='pickle') for e_node in external_nodes)()
+
     orion_nodes = OrionSslNode.nodes().all()
     if not orion_nodes:
         raise OrionDataError(
             'there are no Orion nodes available for SSL nmap probing')
 
-    group(get_ssl_for_node.s(orion_node).set(serializer='pickle') for
-          orion_node in orion_nodes)()
-
     LOG.info('looking for SSL certificates on %s Orion nodes', len(orion_nodes))
+
+    group(get_ssl_for_node.s(
+        orion_node.ip_address, orion_node.orion_id).set(serializer='pickle') for
+          orion_node in orion_nodes)()

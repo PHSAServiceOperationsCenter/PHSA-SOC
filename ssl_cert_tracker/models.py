@@ -4,7 +4,7 @@ ssl_cert_tracker.models
 
 This module contains the :class:`models <django.db.models.Model>` and
 :class:`model managers <django.db.models.Manager>` used by the
-:ref:`SSL Certificate Tracker Application`.
+:ref:`SSL Certificate Tracker Application`
 
 :copyright:
 
@@ -38,8 +38,7 @@ from .lib import expires_in, has_expired, is_not_yet_valid
 
 class ExpiresIn(models.Manager):
     """
-    `Custom manager
-<https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
+    `Custom manager <https://docs.djangoproject.com/en/2.2/topics/db/managers/#custom-managers>`_
     class used in the :class:`SslExpiresIn` model
     """
 

@@ -1,8 +1,8 @@
 """
 .. _base_apps:
 
-p_soc_auto_base.apps module
----------------------------
+sftp.apps
+---------
 
 This module contains the `Django` application configuration for sftp.
 

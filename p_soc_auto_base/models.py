@@ -331,13 +331,12 @@ class Subscription(BaseModel):
     @staticmethod
     def get_subscription(subscription):
         """
-        :returns: a :class:`p_soc_auto_base.models.Subscription` instance
-
         :arg str subscription: the subscription value
 
+        :return: a :class:`p_soc_auto_base.models.Subscription` instance
+
         :raises: a :exc:`django.Model.DoesNotExist` exception if the model
-        doesn't
-            exist.
+                 doesn't exist.
         """
         try:
             return Subscription.objects.get(subscription__iexact=subscription)

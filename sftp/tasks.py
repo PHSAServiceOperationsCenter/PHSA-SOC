@@ -4,7 +4,7 @@ sftp.tasks
 
 This module contains the `Celery tasks
 <https://docs.celeryproject.org/en/latest/userguide/tasks.html>`__
-used by the :ref:`SFTP Application`.
+used by the :ref:`SFTP monitoring application`.
 
 :copyright:
     Copyright 2018 Provincial Health Service Authority
@@ -30,6 +30,13 @@ LOG = logging.getLogger(__name__)
 
 @shared_task(queue='sftp')  # TODO is this actually necessary?
 def upload_sftp_file(sftp_path, file, host):  # TODO what should be passed in here?
+    '''
+    Uploads a file using sftp to test if the server is available.
+
+    :param sftp_path: where the file is stored on the SFTP server
+    :param file: path to the file to be uploaded
+    :param host: address for the server we are connecting to
+    '''
     cnopts = pysftp.CnOpts()
     # TODO log message if can't get host names keys
 

@@ -1,7 +1,8 @@
 """
 .. sftp.models:
 
-Django models for the sftp app
+Django models for the :ref:`SFTP monitoring application`
+--------------------------------------------------------
 
 :copyright:
 
@@ -20,7 +21,7 @@ from p_soc_auto_base.utils import get_uuid
 class SFTPUploadLog(models.Model):
     """
     :class:`django.db.models.Model` class used for storing SFTP test
-    information
+           information
     """
     uuid = models.UUIDField(_('UUID'), unique=True, db_index=True, blank=False,
                             null=False, default=get_uuid)

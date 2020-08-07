@@ -1,6 +1,8 @@
 """
 .. sftp_admin:
 
+`Django Admin` classes for the :ref:`SFTP monitoring application`
+-----------------------------------------------------------------
 :module:    sftp.admin
 
 :copyright:

@@ -39,7 +39,7 @@ SOC Automation Server Infrastructure
    p_soc_auto/p_soc_auto.rst
    p_soc_auto_base/p_soc_auto_base.rst
    p_soc_auto_base/email_services.rst
-   ssl_cert_tracker/subscriptions.rst
+   p_soc_auto_base/subscriptions.rst
    
 SOC Automation Server Applications
 ----------------------------------
@@ -52,6 +52,7 @@ SOC Automation Server Applications
    ldap_probe/ldap_probe.rst
    mail_collector/mail_collector.rst
    orion_integration/orion_integration.rst
+   sftp/sftp.rst
    ssl_cert_tracker/ssl_cert_tracker.rst
 
    

@@ -41,23 +41,23 @@ class CustomIndexDashboard(Dashboard):
                     _('Citrix Remote Monitoring'), collapsible=True,
                     css_classes=('collapse closed',),
                     models=('citrus_borg.models.*',)),
-                modules.ModelList(
-                    _('Exchange Remote Monitoring'), collapsible=True,
-                    css_classes=('collapse closed',),
+                modules.ModelList(_('Exchange Remote Monitoring'),
+                    collapsible=True, css_classes=('collapse closed',),
                     models=('mail_collector.models.*',)),
-                modules.ModelList(
-                    _('AD Controllers Monitoring'), collapsible=True,
-                    css_classes=('collapse closed',),
+                modules.ModelList(_('AD Controllers Monitoring'),
+                    collapsible=True, css_classes=('collapse closed',),
                     models=('ldap_probe.models.*',)),
-                modules.ModelList(
-                    _('SSL Certificates Tracker'), collapsible=True,
+                modules.ModelList(_('SSL Certificates Tracker'),
+                    collapsible=True, css_classes=('collapse closed',),
+                    models=('ssl_cert_tracker.models.*',), ),
+                modules.ModelList(_('Orion Integration'), collapsible=True,
                     css_classes=('collapse closed',),
-                    models=('ssl_cert_tracker.models.*',),
-                    exclude=('p_soc_auto_base.models.Subscription',)),
-                modules.ModelList(
-                    _('Orion Integration'), collapsible=True,
-                    css_classes=('collapse closed',),
-                    models=('orion_integration.models.*',)), ]))
+                    models=('orion_integration.models.*',)),
+                modules.ModelList(_('SFTP'), collapsible=True,
+                    css_classes=('collapse closed',), models=('sftp.models.*',),
+                                  ),
+
+            ]))
 
         self.children.append(modules.Group(
             _('Administration'), column=2, collapsible=True,

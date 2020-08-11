@@ -33,7 +33,7 @@ The workflow for rendering an email message is as follows:
 Email template sample
 ---------------------
 
-.. literalinclude:: ../../../ssl_cert_tracker/templates/email/mail_events_by_bot.email
+.. literalinclude:: ../../../p_soc_auto_base/templates/email/mail_events_by_bot.email
    :language: django
    
 This particular template is used by the `Exchange Failed Send Receive By Bot
@@ -43,14 +43,14 @@ subscription.
 The Subscription model
 ----------------------
 
-.. autoclass:: ssl_cert_tracker.models.Subscription
+.. autoclass:: p_soc_auto_base.models.Subscription
    :members:
    :no-show-inheritance:
    
 The Subscription `Django admin` interface
 -----------------------------------------
 
-.. autoclass:: ssl_cert_tracker.admin.SubscriptionAdmin
+.. autoclass:: p_soc_auto_base.admin.SubscriptionAdmin
    :members: formfield_for_foreignkey, add_view, change_view, get_readonly_fields,
        has_add_permission, has_delete_permission
        

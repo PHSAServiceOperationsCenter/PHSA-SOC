@@ -32,6 +32,8 @@ function. For example:
 :contact:    daniel.busto@phsa.ca
 
 """
+# TODO move to base
+
 import decimal
 
 from django.conf import settings
@@ -75,6 +77,10 @@ ORION_FILTERS = Section(
 ORION_PROBE_DEFAULTS = Section(
     'orionprobe',
     verbose_name=_('Filters used for Orion data probes').title())
+
+SFTP_DEFAULTS = Section(
+    'sftp',
+    verbose_name=_('Settings used to interact with the sftp server').title())
 
 EMAIL_PREFS = Section('emailprefs', verbose_name=_(
     'Email preferences').title())
@@ -1594,6 +1600,34 @@ class LdapReportPeriod(DurationPreference):
     verbose_name = _(
         'Time interval to use when generating LDAP reports').title()
     """verbose name for this dynamic preference"""
+
+
+@global_preferences_registry.register
+class SFTPAccount(StringPreference):
+    """
+    Dynamic preferences class for the user used to login for sftp tests
+
+    :access_key: 'sftp__username'
+    """
+    section = SFTP_DEFAULTS
+    name = 'username'
+    default = 'LoginPI25'
+    required = True
+    verbose_name = _('The user that is used to login into SFTP server.')
+
+
+@global_preferences_registry.register
+class SFTPPassword(StringPreference):
+    """
+    Dynamic preferences class for the password used to login for sftp tests
+
+    :access_key: 'sftp__password'
+    """
+    section = SFTP_DEFAULTS
+    name = 'password'
+    default = 'LoginPI1!'
+    required = True
+    verbose_name = _('The password that is used to login into SFTP server.')
 
 
 def get_preference(key):

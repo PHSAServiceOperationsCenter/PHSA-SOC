@@ -218,10 +218,11 @@ class SslCertificate(SslCertificateBase, models.Model):
         _('orion node identifier'), db_index=True, null=True, blank=True,
         help_text=_('Orion Node unique identifier  on the Orion server'
                     ' used to show the node in the Orion web console'))
-    external_node_id= models.BigIntegerField(_('orion node identifier'),
-        db_index=True, null=True, blank=True,
+    external_node_id = models.BigIntegerField(
+        _('orion node identifier'), db_index=True, null=True, blank=True,
         help_text=_('External node id, from the ExternalSslNode table'
-                    ' used to link to the node in the web console'))
+                    ' used to link to the node in the web console')
+    )
     port = models.ForeignKey(
         SslProbePort, db_index=True, blank=False, null=False,
         verbose_name=_('TCP port'), on_delete=models.PROTECT)
@@ -327,8 +328,9 @@ class SslCertificate(SslCertificateBase, models.Model):
             raise ValueError(
                 "Id for the node the Certificate came from was not supplied.")
 
-        ssl_obj = cls._meta.model.objects.filter(**node_id,
-            port__port=ssl_certificate.port)
+        ssl_obj = cls._meta.model.objects.filter(
+            **node_id, port__port=ssl_certificate.port
+        )
 
         if ssl_obj.exists():
             ssl_obj = ssl_obj.get()

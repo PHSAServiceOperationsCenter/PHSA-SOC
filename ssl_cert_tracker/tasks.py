@@ -153,7 +153,9 @@ def get_ssl_for_node(address, orion_id=None, external_id=None):
 
     LOG.info('looking for SSL certificates for the node at %s, ports %s',
              address, ', '.join(
-            [str(port) for port in ssl_ports.values_list('port', flat=True)]))
+                 [str(port)
+                  for port in ssl_ports.values_list('port', flat=True)]
+             ))
 
     group(get_ssl_for_node_port.
           s(address, ssl_port, orion_id=orion_id, external_id=external_id).
@@ -187,18 +189,20 @@ def get_ssl_for_node_port(address, port, orion_id=None, external_id=None):
         LOG.warning('there is no SSL certificate on %s:%s',
                     address, port)
         return
-    except Exception as e:
+    except Exception as exc:  # pylint: disable=broad-except
+        # Catch all unexpected exceptions so they will show up in our logs
         LOG.warning('Unexpected error while trying to get cert for %s:%s: %s',
-                    address, port, e)
+                    address, port, exc)
 
     LOG.debug('nmap returned %s', ssl_certificate.summary)
 
     try:
-        created, ssl_obj = SslCertificate.create_or_update(ssl_certificate,
-                                                           orion_id=orion_id,
-                                                           external_id=external_id)
-    except Exception as e:
-        LOG.info('OOPS: %s', e)
+        created, ssl_obj = SslCertificate.create_or_update(
+            ssl_certificate, orion_id=orion_id, external_id=external_id
+        )
+    except Exception as exc:  # pylint: disable=broad-except
+        # Catch all unexpected exceptions so they will show up in our logs
+        LOG.info('%s', exc)
 
     if created:
         LOG.info('SSL certificate %s on %s, port %s has been created at %s',

@@ -26,6 +26,8 @@ class SFTPUploadLog(models.Model):
     uuid = models.UUIDField(_('UUID'), unique=True, db_index=True, blank=False,
                             null=False, default=get_uuid)
     errors = models.TextField(_('Errors'), blank=True, null=True)
-    created_on = models.DateTimeField(_('created on'), db_index=True,
-        auto_now_add=True, help_text=_('object creation time stamp'))
+    created_on = models.DateTimeField(
+        _('created on'), db_index=True, auto_now_add=True,
+        help_text=_('object creation time stamp')
+    )
     host = models.TextField(_('Host'), blank=False, null=False)

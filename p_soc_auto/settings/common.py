@@ -123,8 +123,14 @@ LOGGING = {
             'class':     'logging.FileHandler',
             'filename':  os.path.join(LOG_DIR, 'warning.log'),
             'formatter': 'verbose',
+        }, 'sftp_log': {
+            'level': 'DEBUG',
+            'class':     'logging.FileHandler',
+            'filename':  os.path.join(LOG_DIR, 'sftp.log'),
+            'formatter': 'verbose',
         }
-    }, 'loggers':  {
+    },
+    'loggers':  {
         'django': {
             'handlers': ['django_log', 'warning_log'],
             'level': 'INFO',
@@ -162,6 +168,10 @@ LOGGING = {
             'handlers':  ['ldap_probe_log', 'console', 'warning_log'],
             'level':     'DEBUG',
             'propagate': True,
+        }, 'sftp':        {
+            'handlers':  ['sftp_log', 'console', 'warning_log'],
+            'level':     'DEBUG',
+            'propagate': True,
         },
     },
 }
@@ -181,6 +191,7 @@ memcached connection configuration
 
 # Application definition
 INSTALLED_APPS = [
+    'sftp.apps.SftpConfig',
     'ldap_probe.apps.LdapProbeConfig',
     'mail_collector.apps.MailCollectorConfig',
     'orion_integration.apps.OrionIntegrationConfig',

@@ -14,9 +14,9 @@ used by the :ref:`SFTP monitoring application`.
 """
 import logging
 
-import pysftp
 from celery import shared_task
 from paramiko import SSHException
+import pysftp
 from pysftp import ConnectionException
 
 from citrus_borg.dynamic_preferences_registry import get_preference
@@ -28,8 +28,8 @@ LOG = logging.getLogger(__name__)
 """default :class:`logger.Logging` instance for this module"""
 
 
-@shared_task(queue='sftp')  # TODO is this actually necessary?
-def upload_sftp_file(sftp_path, file, host):  # TODO what should be passed in here?
+@shared_task(queue='sftp')
+def upload_sftp_file(sftp_path, file, host):
     '''
     Uploads a file using sftp to test if the server is available.
 
@@ -42,7 +42,7 @@ def upload_sftp_file(sftp_path, file, host):  # TODO what should be passed in he
 
     hostkeys = None
 
-    if cnopts.hostkeys.lookup(host) == None:
+    if cnopts.hostkeys.lookup(host) is None:
         LOG.info("New host - will accept any host key")
         # Backup loaded .ssh/known_hosts file
         hostkeys = cnopts.hostkeys
@@ -66,18 +66,21 @@ def upload_sftp_file(sftp_path, file, host):  # TODO what should be passed in he
                 try:
                     sftp.put(file)  	  # upload file to sftp_folder on remote
                     LOG.info('File %s successfully uploaded to %s', file, host)
-                except Exception as e:
-                    LOG.warning('SFTP put failed, %s', e)
-                    error = e
-    except SSHException as e:
-        LOG.warning('SSH failed: %s', e)
-        error = e
-    except ConnectionException as e:
-        LOG.warning('SFTP failed, could not connect to %s:%s', e[0], e[1])
-        error = e
-    except Exception as e:
-        LOG.warning('Unexpected error encountered: %s %s', type(e), e)
-        error = e
+                except Exception as exc:  # pylint: disable=broad-except
+                    # Catch all unexpected exceptions
+                    # so they will show up in our logs
+                    LOG.warning('SFTP put failed, %s', exc)
+                    error = exc
+    except SSHException as exc:
+        LOG.warning('SSH failed: %s', exc)
+        error = exc
+    except ConnectionException as exc:
+        LOG.warning('SFTP failed, could not connect to %s:%s', exc[0], exc[1])
+        error = exc
+    except Exception as exc:  # pylint: disable=broad-except
+        # Catch all unexpected exceptions so they will show up in our logs
+        LOG.warning('Unexpected error encountered: %s %s', type(exc), exc)
+        error = exc
 
     upload_log = SFTPUploadLog(errors=error, host=host)
     upload_log.save()

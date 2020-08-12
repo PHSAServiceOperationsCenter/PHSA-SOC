@@ -47,7 +47,7 @@ class SslCertificateTest(TestCase):
 
         self.assertTrue(
             SslCertificate.create_or_update(
-                3253, ssl_data(
+                ssl_data(
                     {}, 443, {}, 'hosts', '2000-01-01 00:00',
-                    '2000-01-01 00:00', 'pem', *fakes)
+                    '2000-01-01 00:00', 'pem', *fakes), orion_id=3253
             )[0])

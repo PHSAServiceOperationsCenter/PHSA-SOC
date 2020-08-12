@@ -224,3 +224,12 @@ class EventClusterTest(UserTestCase):
         test that end time is the latest time recorded in the cluster
         """
         self.assertEqual(self.cluster.end_time, self.times[-1])
+
+
+def save_winlogevent(event_id=0):
+    host = WinlogbeatHost.objects.first()
+    source = AllowedEventSource.objects.first()
+    log = WindowsLog.objects.first()
+
+    WinlogEvent.objects.create(source_host=host, record_number=0,
+        event_source=source, windows_log=log, event_id=event_id)

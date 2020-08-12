@@ -305,7 +305,7 @@ LD031147 = {
     'id': 'a06d5df7-2f52-4d0e-8b6e-4bf958ac0b1a'
 }
 
-HOSTS = [LD038075, BCCSST450S04, LD031147]
+HOSTS = [LD038075, BCCSST450S04]
 
 
 def generate_failure():

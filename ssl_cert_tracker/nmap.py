@@ -464,7 +464,8 @@ def probe_for_state(dns_list=None):
             print(dns, 'open ports: ', ', '.join(
                 [str(service.port) for service in probe.host.services]))
 
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
+            # Catch all unexpected exceptions so they will show up in our logs
             hosts_down.append(dict(dns=dns, err=str(err)))
             print('!!!', dns, str(err))
 
@@ -525,7 +526,9 @@ def probe_for_certs(dns_list=None, port_list=None):
                     expires_on=cert.ssl_not_after))
                 print('found', cert.ssl_subject.get(
                     'commonName'), ': ', str(port), ', ', cert.ssl_not_after)
-            except Exception as error:
+            except Exception as error:  # pylint: disable=broad-except
+                # Catch all unexpected exceptions
+                # so they will show up in our logs
                 print(f'{dns}, {port}, {error}')
                 dns_errors.append(dict(dns=dns, port=str(port), err=str(error)))
 

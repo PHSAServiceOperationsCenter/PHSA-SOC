@@ -248,7 +248,8 @@ class DestSwis(SourceSwis):
 
         if not uri:
             raise ValueError(f'update_node_custom_props must be called with '
-                       f'an IP address, or node name. Got {node_identifier}')
+                             f'an IP address, dns, or node name. '
+                             f'Got {node_identifier}')
         self.orion_connection.update(uri=f'{uri}/CustomProperties', **props)
         LOG.info('Updated %s with %s.', node_identifier, props)
 

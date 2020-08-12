@@ -64,8 +64,6 @@ def serialize_custom_json(obj):
 
     return _
 
-# pylint:disable=R0903
-
 
 class OrionClient:
     """
@@ -79,7 +77,7 @@ class OrionClient:
         """
         query the `Orion` server
 
-        :arg str query: the query string
+        :arg str orion_query: the query string
         :arg dict params: the query params
 
         :returns: the data that matches the query
@@ -87,17 +85,15 @@ class OrionClient:
 
         """
 
-        # need to configure the SESSION object here because the
-        # user configurable settings will not work if used at the
-        # module level
+        # need to configure the SESSION object here because the user
+        # configurable settings will not work if used at the module level
         SESSION.auth = (get_preference('orionserverconn__orion_user'),
                         get_preference('orionserverconn__orion_password'))
         SESSION.verify = get_preference(
             'orionserverconn__orion_verify_ssl_cert')
 
         response = SESSION.post(
-            '{}/Query'.format(
-                get_preference('orionserverconn__orion_rest_url')),
+            f'{get_preference("orionserverconn__orion_rest_url")}/Query',
             data=json.dumps(
                 dict(query=orion_query, parameters=params),
                 default=serialize_custom_json),

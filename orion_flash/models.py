@@ -425,7 +425,7 @@ class BaseCitrusBorgAlert(models.Model):
     @property
     def alert_template(self):
         """
-        just to respect the principles of OOD and keep the hounds at bay
+        Method stub. Each CitrisBorgAlert must define their own template.
         """
         raise NotImplementedError('must be defined by the subclass')
 

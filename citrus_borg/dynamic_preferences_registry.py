@@ -1611,7 +1611,7 @@ class SFTPAccount(StringPreference):
     """
     section = SFTP_DEFAULTS
     name = 'username'
-    default = 'LoginPI25'
+    default = 'LoginPI25@vch.ca'
     required = True
     verbose_name = _('The user that is used to login into SFTP server.')
 

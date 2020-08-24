@@ -442,6 +442,7 @@ class SslCertificate(SslCertificateBase, models.Model):
         verbose_name = _('SSL Certificate')
         verbose_name_plural = _('SSL Certificates')
         unique_together = (('orion_id', 'port'),)
+        get_latest_by = 'last_seen'
 
 
 class SslExpiresIn(SslCertificate):

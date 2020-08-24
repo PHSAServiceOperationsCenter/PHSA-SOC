@@ -45,3 +45,14 @@ def delete_emails(**age):
 
     LOG.info('Deleted %s emails created earlier than %s.', count_deleted,
              older_than.isoformat())
+
+
+@shared_task(queue='shared')
+def check_app_activity():
+    # TODO offload these checks to the individual projects but call from here
+    certificate_checks = len(
+        SslCertificate.active.filter(last_seen__gt=now - one_day)
+    )
+    ldap_probes = len(
+        LdapProbeLog.objects.filter(created_on__gt=now - one_day)
+    )

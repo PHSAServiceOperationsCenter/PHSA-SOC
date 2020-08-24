@@ -1,5 +1,5 @@
 {% block subject %}
-{{ tags }} {{ level }}: {{ item.host }}, SFTP failure
+{{ tags }} {{ level }}: SFTP failure on {{ host }}
 {% endblock %}
 
 {% block html %}

@@ -14,17 +14,17 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='adnodeperfbucket',
             name='alert_threshold',
-            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models._get_default_alert_threshold, help_text='If the AD services response time for any probe is worse than this value, raise an immediate alert.', max_digits=4, verbose_name='Alert Response Time Threshold'),
+            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models.ADNodePerfBucket._get_default_alert_threshold, help_text='If the AD services response time for any probe is worse than this value, raise an immediate alert.', max_digits=4, verbose_name='Alert Response Time Threshold'),
         ),
         migrations.AlterField(
             model_name='adnodeperfbucket',
             name='avg_err_threshold',
-            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models._get_default_err_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation errors report.', max_digits=4, verbose_name='Error Response Time Threshold'),
+            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models.ADNodePerfBucket._get_default_err_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation errors report.', max_digits=4, verbose_name='Error Response Time Threshold'),
         ),
         migrations.AlterField(
             model_name='adnodeperfbucket',
             name='avg_warn_threshold',
-            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models._get_default_warn_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation warnings report.', max_digits=4, verbose_name='Warning Response Time Threshold'),
+            field=models.DecimalField(db_index=True, decimal_places=3, default=ldap_probe.models.ADNodePerfBucket._get_default_warn_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation warnings report.', max_digits=4, verbose_name='Warning Response Time Threshold'),
         ),
         migrations.AlterField(
             model_name='adnodeperfbucket',

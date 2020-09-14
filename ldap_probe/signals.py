@@ -17,7 +17,10 @@ for the :ref:`Active Directory Services Monitoring Application`.
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from ldap_probe import models, tasks
+from ldap_probe import ldap_probe_log, tasks
+
+from orion_flash.orion.api import DestSwis
+
 
 # pylint: disable=unused-argument
 
@@ -39,7 +42,7 @@ def invoke_raise_ldap_failed_alert(sender, instance, *args, **kwargs):
     tasks.raise_ldap_probe_failed_alert.delay(instance.id)
 
 
-@receiver(post_save, sender=models.LdapProbeLog)
+@receiver(post_save, sender=ldap_probe_log.LdapProbeLog)
 def invoke_raise_ldap_perf_alert(sender, instance, *args, **kwargs):
     """
     evaluate whether the :class:`ldap_probe.models.LdapProbeLog` instance

@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('domain', models.CharField(db_index=True, max_length=15, validators=[django.core.validators.RegexValidator(re.compile('^[-a-zA-Z0-9_]+\\Z'), "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens.", 'invalid')], verbose_name='windows domain')),
                 ('username', models.CharField(db_index=True, max_length=64, validators=[django.core.validators.RegexValidator(re.compile('^[-a-zA-Z0-9_]+\\Z'), "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens.", 'invalid')], verbose_name='domain username')),
                 ('password', models.CharField(max_length=64, verbose_name='password')),
-                ('ldap_search_base', models.CharField(default=ldap_probe.models._get_default_ldap_search_base, max_length=128, verbose_name='DN search base')),
+                ('ldap_search_base', models.CharField(default=ldap_probe.models.LDAPBindCred._get_default_ldap_search_base, max_length=128, verbose_name='DN search base')),
                 ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_ldapbindcred_created_by_related', to=settings.AUTH_USER_MODEL, verbose_name='created by')),
                 ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_ldapbindcred_updated_by_related', to=settings.AUTH_USER_MODEL, verbose_name='updated by')),
             ],

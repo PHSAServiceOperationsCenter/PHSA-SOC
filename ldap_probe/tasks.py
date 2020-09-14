@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from ldap_probe.ad_probe import ADProbe
-from ldap_probe.models import LdapProbeLog
+from ldap_probe.ldap_probe_log import LdapProbeLog
 from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url, \
     get_or_create_user

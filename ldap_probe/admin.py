@@ -19,7 +19,7 @@ from django.forms.widgets import PasswordInput
 from django.utils.translation import gettext_lazy as _
 from rangefilter.filter import DateTimeRangeFilter
 
-from ldap_probe import models
+from ldap_probe import ldap_probe_log, models
 from p_soc_auto_base import admin as base_admin, utils
 
 
@@ -307,7 +307,7 @@ class LdapProbeLogAdminBase(admin.ModelAdmin):
         return [field.name for field in self.model._meta.fields]
 
 
-@admin.register(models.LdapProbeLogFailed)
+@admin.register(ldap_probe_log.LdapProbeLogFailed)
 class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
@@ -321,7 +321,7 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     )
 
 
-@admin.register(models.LdapProbeFullBindLog)
+@admin.register(ldap_probe_log.LdapProbeFullBindLog)
 class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the
@@ -336,7 +336,7 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
                    ('created_on', DateTimeRangeFilter), )
 
 
-@admin.register(models.LdapProbeAnonBindLog)
+@admin.register(ldap_probe_log.LdapProbeAnonBindLog)
 class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     :class:`django.contrib.admin.ModelAdmin` class for the

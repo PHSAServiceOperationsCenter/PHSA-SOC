@@ -22,8 +22,8 @@ from django.utils import timezone
 from hypothesis import given
 from hypothesis.strategies import text, characters
 
-from ldap_probe.models import LDAPBindCred, NonOrionADNode, OrionADNode, \
-    LdapProbeLog
+from ldap_probe.models import LDAPBindCred, NonOrionADNode, OrionADNode
+from ldap_probe.ldap_probe_log import LdapProbeLog
 from orion_integration.models import OrionNode, OrionNodeCategory
 from p_soc_auto_base.test_lib import UserTestCase
 

@@ -284,9 +284,9 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'exchange_client_config', 'resolved_fqdn', 'last_seen',
                     'created_on',)
-    list_editable = ('site', 'enabled', 'exchange_client_config',)
-    readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn', 'last_seen',
-                       'created_on', 'orion_id',)
+    list_editable = ('site', 'enabled', 'exchange_client_config', 'ip_address')
+    readonly_fields = ('host_name', 'resolved_fqdn', 'last_seen', 'created_on',
+                       'orion_id',)
     list_filter = ('enabled', 'exchange_client_config__is_default',
                    ('last_seen', DateTimeRangeFilter), 'site__site', )
     search_fields = ('site__site', 'host_name', 'ip_address',

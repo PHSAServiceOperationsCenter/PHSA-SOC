@@ -23,9 +23,7 @@ from orion_flash.orion.api import DestSwis
 
 
 # pylint: disable=unused-argument
-
-
-@receiver(post_save, sender=models.LdapProbeLog)
+@receiver(post_save, sender=ldap_probe_log.LdapProbeLog)
 def invoke_raise_ldap_failed_alert(sender, instance, *args, **kwargs):
     """
     evaluate whether the :class:`ldap_probe.models.LdapProbeLog` instance

@@ -1,0 +1,10 @@
+{% block subject %}
+{{ tags }} ERROR: {{app_name}} inactive for {{hours}} hours
+{% endblock %}
+
+{% block html %}
+
+{{app_name}} has not reported any activity on SOC Automation server {{machine}} for the past {{hours}} hours.
+
+{% include './footer.email' %}
+{% endblock %}

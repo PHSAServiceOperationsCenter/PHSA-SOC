@@ -1,0 +1,26 @@
+{% block subject %}
+{{ tags }}App Activity Summary
+{% endblock %}
+
+{% block html %}
+
+This email includes the app activity on the SOC Automation server {{machine}} for the past {{hours}} hours.
+
+<div><p>
+<table style="border: 1px solid black;">
+<tr align="left" valign="center">
+<th><strong>App Activity Description</strong></th>
+<th><strong>Times Executed</strong></th>
+</tr>
+{% for pair in activity_pairs %}
+    <tr align="left" valign="center">
+    {% for value in pair %}
+        <td style="border: 1px solid black;">{{value}}</td>
+    {% endfor %}
+    </tr>
+{% endfor %}
+</table>
+</p></div>
+
+{% include './footer.email' %}
+{% endblock %}

@@ -14,12 +14,17 @@ have a more specific location to be.
 :contact:    daniel.busto@phsa.ca
 
 """
+import socket
+from datetime import timedelta
 from logging import getLogger
 
 from celery import shared_task
 from django.apps import apps
+from django.utils import timezone
 
 from p_soc_auto_base import utils
+from p_soc_auto_base.email import Email
+from p_soc_auto_base.models import Subscription
 
 LOG = getLogger(__name__)
 
@@ -47,12 +52,24 @@ def delete_emails(**age):
              older_than.isoformat())
 
 
+#TODO allow passing in now
 @shared_task(queue='shared')
-def check_app_activity():
+def check_app_activity(hours, *app_pairs):
     # TODO offload these checks to the individual projects but call from here
-    certificate_checks = len(
-        SslCertificate.active.filter(last_seen__gt=now - one_day)
-    )
-    ldap_probes = len(
-        LdapProbeLog.objects.filter(created_on__gt=now - one_day)
-    )
+    now = timezone.now()
+    delta = timedelta(hours=hours)
+    activity_pairs = []
+    for app in app_pairs:
+        model = apps.get_model(app['model'])
+        check = {f'{app["column"]}__gt': now - delta}
+        activity_pairs.append([app['name'], len(model.objects.filter(**check))])
+
+    Email.send_email(None, Subscription.get_subscription('App Activity Update'),
+                     activity_pairs=activity_pairs,
+                     machine=socket.gethostname(), hours=hours)
+
+    for pair in activity_pairs:
+        if pair[1] == 0:
+            Email.send_email(
+                None, Subscription.get_subscription('No Activity'),
+                app_name=pair[0], hours=hours)

@@ -249,6 +249,7 @@ def verify_ssl_for_node_port(cert_node_port_tuple):
         LOG.info('Deleted orphan SSL certificate on %s:%s. Orion node with id'
                  ' %s does not exist', cert_node_port_tuple[1], port,
                  cert_node_port_tuple[1])
+        return
 
     try:
         _ = SslProbe(ip_address, port)

@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     APP_TASK = ({'name': 'Check App Activity',
                  'task': 'p_soc_auto_base.tasks.check_app_activity',
-                 'args': '[24, {"name":"SSL Certificate Checks", "model":"ssl_cert_tracker.SslCertificate", "column":"last_seen"}, {"name":"LDAP Probes", "model":"ldap_probe.LdapProbeLog", "column":"created_on"}}]',},
+                 'args': '[24, {"name":"SSL Certificate Checks", "model":"ssl_cert_tracker.SslCertificate", "column":"last_seen"}, {"name":"LDAP Probes", "model":"ldap_probe.LdapProbeLog", "column":"created_on"}]',},
                 {'every': 24, 'period': 'hours', },)
 
     dependencies = [

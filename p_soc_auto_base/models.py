@@ -14,6 +14,8 @@ Abstract base model classes
 """
 __updated__ = '2018_08_08'
 
+from logging import getLogger
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -22,6 +24,8 @@ from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.utils import get_default_user_id
 
+
+LOG = getLogger(__name__)
 
 # Managers only need to implement get_queryset
 class EnabledManager(models.Manager):  # pylint: disable=too-few-public-methods

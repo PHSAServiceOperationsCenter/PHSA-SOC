@@ -22,12 +22,16 @@ from pysftp import ConnectionException
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.email import Email
 from p_soc_auto_base.models import Subscription
+from p_soc_auto_base import utils
 from sftp.models import SFTPUploadLog
+
+from django.apps import apps
 
 LOG = logging.getLogger(__name__)
 """default :class:`logger.Logging` instance for this module"""
 
 
+#TODO make sure this is added to app activity list
 @shared_task(queue='sftp')
 def upload_sftp_file(sftp_path, file, host):
     '''
@@ -88,3 +92,26 @@ def upload_sftp_file(sftp_path, file, host):
         data = SFTPUploadLog.objects.filter(uuid=upload_log.uuid)
         Email.send_email(data, Subscription.get_subscription('SFTP Alert'),
                          False, host=host)
+
+
+@shared_task(queue='data_prune')
+def delete_sftp_results(**age):
+    """
+    Deletes SFTP upload logs older than the inputted age
+
+    :arg age: named arguments that can be used for creating a
+        :class:`datetime.timedelta` object
+
+        See `Python docs for timedelta objects
+        <https://docs.python.org/3.6/library/datetime.html#timedelta
+        -objects>`__
+    """
+    sftp_model = apps.get_model('sftp.SFTPUploadLog')
+
+    older_than = utils.MomentOfTime.past(**age)
+
+    count_deleted = sftp_model.objects.filter(created_on__lte=older_than)\
+        .delete()
+
+    LOG.info('Deleted %s sftp logs created earlier than %s.', count_deleted,
+             older_than.isoformat())

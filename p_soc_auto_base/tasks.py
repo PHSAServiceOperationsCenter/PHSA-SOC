@@ -59,13 +59,29 @@ def check_app_activity(hours, *app_pairs):
     now = timezone.now()
     delta = timedelta(hours=hours)
     activity_pairs = []
+
     for app in app_pairs:
         model = apps.get_model(app['model'])
+
+        try:
+            latest = model.objects.latest()
+        except model.DoesNotExist:
+            latest_time = None
+        else:
+            latest_time = getattr(latest, app['column'])
+
         check = {f'{app["column"]}__gt': now - delta}
-        activity_pairs.append([app['name'], len(model.objects.filter(**check))])
+        count = len(model.objects.filter(**check))
+
+        activity_pairs.append([app['name'], count, latest_time])
+
+    def get_name(pair_array):
+        return pair_array[0]
+
+    sorted_pairs = sorted(activity_pairs, key=get_name)
 
     Email.send_email(None, Subscription.get_subscription('App Activity Update'),
-                     activity_pairs=activity_pairs,
+                     activity_pairs=sorted_pairs,
                      machine=socket.gethostname(), hours=hours)
 
     for pair in activity_pairs:

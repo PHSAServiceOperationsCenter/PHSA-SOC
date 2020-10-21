@@ -279,6 +279,7 @@ class LdapProbeLog(models.Model):
         verbose_name = _('AD service probe')
         verbose_name_plural = _('AD service probes')
         ordering = ('-created_on', )
+        get_latest_by = 'created_on'
 
 
 class LdapProbeLogFailed(LdapProbeLog):

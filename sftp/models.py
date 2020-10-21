@@ -31,3 +31,9 @@ class SFTPUploadLog(models.Model):
         help_text=_('object creation time stamp')
     )
     host = models.TextField(_('Host'), blank=False, null=False)
+
+    class Meta:
+        app_label = 'sftp'
+        verbose_name = _('SFTP Upload Log')
+        get_latest_by = 'created_on'
+        ordering = ['-created_on']

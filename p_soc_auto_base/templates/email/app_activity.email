@@ -11,6 +11,7 @@ This email includes the app activity on the SOC Automation server {{machine}} fo
 <tr align="left" valign="center">
 <th><strong>App Activity Description</strong></th>
 <th><strong>Times Executed</strong></th>
+<th><strong>Last Run</strong></th>
 </tr>
 {% for pair in activity_pairs %}
     <tr align="left" valign="center">

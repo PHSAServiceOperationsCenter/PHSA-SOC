@@ -20,7 +20,7 @@ Click==7.0
 colorama==0.4.1
 configloader==1.0.1
 contextlib2==0.5.5
-cryptography==2.8
+cryptography==3.2
 decorator==4.4.1
 defusedxml==0.6.0
 dill==0.3.1.1

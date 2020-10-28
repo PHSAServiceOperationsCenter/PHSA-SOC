@@ -24,6 +24,27 @@ from orion_flash.orion.api import DestSwis
 
 # pylint: disable=unused-argument
 @receiver(post_save, sender=ldap_probe_log.LdapProbeLog)
+def set_ldap_test_status_in_orion(sender, instance, *args, **kwargs):
+    """
+    Send ldap test errors to orion.
+
+    :param instance: the ldap probe being processed
+    """
+    dst_swis = DestSwis()
+
+    if not instance.ad_orion_node:
+        return
+
+    node_identifier = instance.ad_orion_node.get_node()
+    if instance.failed:
+        dst_swis.update_node_custom_props(node_identifier,
+                                          LdapTestFailureMessage=
+                                          f'Error: {instance.errors}')
+    else:
+        dst_swis.clear_custom_prop(node_identifier, 'LdapTestFailureMessage')
+
+
+@receiver(post_save, sender=ldap_probe_log.LdapProbeLog)
 def invoke_raise_ldap_failed_alert(sender, instance, *args, **kwargs):
     """
     evaluate whether the :class:`ldap_probe.models.LdapProbeLog` instance

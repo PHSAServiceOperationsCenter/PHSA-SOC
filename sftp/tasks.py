@@ -33,14 +33,15 @@ LOG = logging.getLogger(__name__)
 
 #TODO make sure this is added to app activity list
 @shared_task(queue='sftp')
-def upload_sftp_file(sftp_path, file, host):
+def upload_sftp_file(file, upload_name, host):
     '''
     Uploads a file using sftp to test if the server is available.
 
-    :param sftp_path: where the file is stored on the SFTP server
     :param file: path to the file to be uploaded
+    :param upload_name: location for the file to be uplaoded to
     :param host: address for the server we are connecting to
     '''
+    error = ''
     cnopts = pysftp.CnOpts()
     # TODO log message if can't get host names keys
 
@@ -65,16 +66,19 @@ def upload_sftp_file(sftp_path, file, host):
                 hostkeys.add(host, sftp.remote_server_key.get_name(),
                              sftp.remote_server_key)
                 hostkeys.save(pysftp.helpers.known_hosts())
-            with sftp.cd(sftp_path):  # temporarily chdir to sftp_path
-                error = ''
-                try:
-                    sftp.put(file)  	  # upload file to sftp_folder on remote
-                    LOG.info('File %s successfully uploaded to %s', file, host)
-                except Exception as exc:  # pylint: disable=broad-except
-                    # Catch all unexpected exceptions
-                    # so they will show up in our logs
-                    LOG.warning('SFTP put failed, %s', exc)
-                    error = exc
+            try:
+                sftp.put(file, upload_name)  	  # upload file to sftp_folder on remote
+                LOG.info('File %s successfully uploaded to %s on %s',
+                         file, upload_name, host)
+            except Exception as exc:  # pylint: disable=broad-except
+                # Catch all unexpected exceptions
+                # so they will show up in our logs
+                LOG.warning('SFTP put failed, %s', exc)
+                error = exc
+            else:
+                sftp.remove(upload_name)
+                LOG.info('File %s successfully removed from %s',
+                         upload_name, host)
     except SSHException as exc:
         LOG.warning('SSH failed: %s', exc)
         error = exc

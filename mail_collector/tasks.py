@@ -16,7 +16,8 @@ Celery Tasks for the :ref:`Mail Collector Application`
 from smtplib import SMTPConnectError
 
 from celery import shared_task, group
-from celery.utils.log import get_task_logger
+
+from logging import getLogger
 
 from django.db.models import Q
 from django.utils import timezone
@@ -29,7 +30,7 @@ from p_soc_auto_base import utils as base_utils
 from p_soc_auto_base.email import Email
 from p_soc_auto_base.models import Subscription
 
-LOG = get_task_logger(__name__)
+LOG = getLogger(__name__)
 
 
 @shared_task(queue='mail_collector', rate_limit='5/s')
@@ -58,6 +59,7 @@ def store_mail_data(body):
         :class:`mail_collector.models.MailBotMessage` instance cannot be saved
 
     """
+    LOG.info("Storing %s as mail data.", body)
     try:
         exchange_borg = parse_citrix_login_event(body)
     except Exception as error:
@@ -86,15 +88,6 @@ def store_mail_data(body):
         event_body=event_data.event_body,
         event_exception=event_data.event_exception)
     event.save()
-
-    if event.event_status == 'FAIL':
-        try:
-            raise_failed_event_by_mail.apply_async(
-                kwargs={'event_pk': event.pk})
-        except Exception as error:
-            # log and swallow the exception because we need to finish
-            # processing this event if it comes with a mail message
-            LOG.exception(error)
 
     if exchange_borg.mail_borg_message[1]:
         mail_data = exchange_borg.mail_borg_message[1]
@@ -447,7 +440,8 @@ def report_events_by_site(site, report_interval, report_level):
         :exc:`Exception` if an exception was thrown while sending the alert
 
     """
-    subscription = Subscription.get_subscription('Exchange Send Receive By Site')
+    subscription = Subscription.get_subscription(
+        'Exchange Send Receive By Site')
 
     data = queries.dead_bodies(
         data_source='mail_collector.mailbotmessage',

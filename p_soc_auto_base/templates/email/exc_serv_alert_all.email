@@ -1,13 +1,13 @@
 {% load timedelta_filter %}
 
 {% block subject %}
-{{ tags }} {{ level }} {{ email_subject }} {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ tags }} {{ level }} {{ email_subject }} {{ time_delta | timedelta:"{minutes_total} minutes" }}
 {% endblock %}
 
 {% block html %}
 {% if data %}
 <h3>
-{{ email_subject }} {{ time_delta | timedelta:"{hours_total} hours" }}
+{{ email_subject }} {{ time_delta | timedelta:"{minutes_total} minutes" }}
 </h3>
 <div><p>
 <table style="border: 1px solid black;">
@@ -35,7 +35,7 @@
 {% endif %}
 {% elif not data %}
 <div><h3>
-{{ alternate_email_subject }} {{ time_delta|timedelta:"{hours_total} Hours" }}
+{{ alternate_email_subject }} {{ time_delta|timedelta:"{minutes_total} Minutes" }}
 </h3></div>
 {% endif %}
 

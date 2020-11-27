@@ -23,7 +23,6 @@ from orion_flash.orion.api import DestSwis
 
 
 # pylint: disable=unused-argument
-@receiver(post_save, sender=ldap_probe_log.LdapProbeLog)
 def set_ldap_test_status_in_orion(sender, instance, *args, **kwargs):
     """
     Send ldap test errors to orion.

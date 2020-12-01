@@ -71,14 +71,18 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
     :returns: a :class:`str` with the data that was updated or ``None``
 
     """
+    LOG.info('Updating mail_between_domains')
     if not sender.objects.filter(
             mail_message_identifier__exact=instance.mail_message_identifier).\
             count() == 2:
         # we don't have a quorum, go away
+        LOG.info("Message %s does not have a pair.", instance)
         return
 
     if instance.event.event_type != 'receive':
         # only received event have all the info that we need. skip others
+        LOG.info("Received a %s event, no further action taken.",
+                 instance.event.event_type)
         return
 
     try:
@@ -118,7 +122,8 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
     verified_mail.last_updated_from_node_id = last_updated_from_node_id
     verified_mail.save()
 
-    LOG.info('%s: %s->%s, %s', verified_mail.site, verified_mail.from_domain,
+    LOG.info('Verified mail updated %s: %s->%s, %s',
+             verified_mail.site, verified_mail.from_domain,
              verified_mail.to_domain, verified_mail.status)
 
 
@@ -138,16 +143,20 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
         # only interested in successful connections
         return None
 
-    exchange_server = instance.mail_account.split('-')[1]
+    LOG.info('Updating exchange entities')
+    exchange_server_name = instance.mail_account.split('-')[1]
 
     try:
         exchange_server = ExchangeServer.objects.get(
-            exchange_server=exchange_server)
+            exchange_server=exchange_server_name)
     except ExchangeServer.DoesNotExist:
         exchange_server = ExchangeServer(exchange_server=exchange_server)
 
     exchange_server.last_connection = instance.event_registered_on
     exchange_server.save()
+
+    LOG.info('Updated last connection for %s to %s',
+             exchange_server_name, str(instance.event_registered_on))
 
     return exchange_server
 
@@ -179,6 +188,8 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     if instance.event.event_status != 'PASS' \
             or instance.event.event_type not in ['send', 'receive']:
         return None
+
+    LOG.info('Updating exchange entities.')
 
     exchange_server, database = instance.event.mail_account.split('-')[1:3]
     database = database.split('@')[0]

@@ -317,6 +317,7 @@ def load_config(current_base_config=None):
             config['exchange_client_config']['max_wait_receive'])
 
     else:
+        config = {}
         try:
             config = get_config_from_file()
             config['load_status'] = (
@@ -325,8 +326,10 @@ def load_config(current_base_config=None):
         except Exception as file_err:
             config['load_status'] = (
                 'Cannot load a configuration.'
-                ' Server error: %s. Local error: %s' % (str(err),
+                ' Server error: %s. Local error: %s' % (str(config_err),
                                                         str(file_err)))
+            config['exchange_client_config'] = {}
+            config['site'] = {}
 
     if from_server:
         dump_config_to_file(config)

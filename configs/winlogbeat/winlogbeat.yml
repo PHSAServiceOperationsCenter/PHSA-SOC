@@ -22,20 +22,8 @@ winlogbeat.event_logs:
 
 setup.template.settings:
   index.number_of_shards: 3
-  #index.codec: best_compression
-  #_source.enabled: false
 
 #================================ Outputs =====================================
-
-#-------------------------- Elasticsearch output ------------------------------
-#output.elasticsearch:
-  # Array of hosts to connect to.
-#  hosts: ["localhost:9200"]
-
-  # Optional protocol and basic auth credentials.
-  #protocol: "https"
-  #username: "elastic"
-  #password: "changeme"
 
 #----------------------------- Logstash output --------------------------------
 output.logstash:

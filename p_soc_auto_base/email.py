@@ -366,4 +366,4 @@ class Email:
 
         :returns: '1' if the email message was sent, and '0' if not
         """
-        cls(data, subscription, add_csv, **extra_context)._send()
+        return cls(data, subscription, add_csv, **extra_context)._send()

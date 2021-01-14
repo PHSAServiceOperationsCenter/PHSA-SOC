@@ -2,7 +2,8 @@
 
 from django.db import migrations, models
 
-import ldap_probe
+from ldap_probe.models import _get_default_alert_threshold, \
+    _get_default_err_threshold, _get_default_warn_threshold
 
 
 class Migration(migrations.Migration):
@@ -21,7 +22,7 @@ class Migration(migrations.Migration):
             model_name='adnodeperfbucket',
             name='alert_threshold',
             field=models.DecimalField(db_index=True, decimal_places=4,
-                                      default=ldap_probe.models.ADNodePerfBucket._get_default_alert_threshold,
+                                      default=_get_default_alert_threshold,
                                       help_text='If the AD services response '
                                                 'time for any probe is worse '
                                                 'than this value, raise an '
@@ -33,7 +34,7 @@ class Migration(migrations.Migration):
             model_name='adnodeperfbucket',
             name='avg_err_threshold',
             field=models.DecimalField(db_index=True, decimal_places=4,
-                                      default=ldap_probe.models.ADNodePerfBucket._get_default_err_threshold,
+                                      default=_get_default_err_threshold,
                                       help_text='If the average AD services '
                                                 'response time is worse than '
                                                 'this value, include this '
@@ -47,7 +48,7 @@ class Migration(migrations.Migration):
             model_name='adnodeperfbucket',
             name='avg_warn_threshold',
             field=models.DecimalField(db_index=True, decimal_places=4,
-                                      default=ldap_probe.models.ADNodePerfBucket._get_default_warn_threshold,
+                                      default=_get_default_warn_threshold,
                                       help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation warnings report.',
                                       max_digits=6,
                                       verbose_name='Warning Response Time Threshold'), ),

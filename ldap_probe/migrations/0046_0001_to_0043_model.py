@@ -8,6 +8,8 @@ import ldap_probe.models
 import p_soc_auto_base.utils
 import re
 
+from ldap_probe.models import _get_default_ldap_search_base, _get_default_alert_threshold, _get_default_warn_threshold, _get_default_err_threshold
+
 
 class Migration(migrations.Migration):
     replaces = [
@@ -46,9 +48,9 @@ class Migration(migrations.Migration):
                 ('notes', models.TextField(blank=True, null=True, verbose_name='notes')),
                 ('is_default', models.BooleanField(db_index=True, default=False, help_text='If set, then this row will be preferred by the application. Note there can only be one default row in the table.', verbose_name='Default Instance')),
                 ('name', models.CharField(db_index=True, help_text='A descriptive name to help determine which nodes should be included in the bucket.', max_length=253, unique=True, verbose_name='Bucket name')),
-                ('avg_warn_threshold', models.DecimalField(db_index=True, decimal_places=4, default=ldap_probe.models.ADNodePerfBucket._get_default_warn_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation warnings report.', max_digits=6, verbose_name='Warning Response Time Threshold')),
-                ('avg_err_threshold', models.DecimalField(db_index=True, decimal_places=4, default=ldap_probe.models.ADNodePerfBucket._get_default_err_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation errors report.', max_digits=6, verbose_name='Error Response Time Threshold')),
-                ('alert_threshold', models.DecimalField(db_index=True, decimal_places=4, default=ldap_probe.models.ADNodePerfBucket._get_default_alert_threshold, help_text='If the AD services response time for any probe is worse than this value, raise an immediate alert.', max_digits=6, verbose_name='Alert Response Time Threshold')),
+                ('avg_warn_threshold', models.DecimalField(db_index=True, decimal_places=4, default=_get_default_warn_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation warnings report.', max_digits=6, verbose_name='Warning Response Time Threshold')),
+                ('avg_err_threshold', models.DecimalField(db_index=True, decimal_places=4, default=_get_default_err_threshold, help_text='If the average AD services response time is worse than this value, include this node in the periodic performance degradation errors report.', max_digits=6, verbose_name='Error Response Time Threshold')),
+                ('alert_threshold', models.DecimalField(db_index=True, decimal_places=4, default=_get_default_alert_threshold, help_text='If the AD services response time for any probe is worse than this value, raise an immediate alert.', max_digits=6, verbose_name='Alert Response Time Threshold')),
                 ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_adnodeperfbucket_created_by_related', to=settings.AUTH_USER_MODEL, verbose_name='created by')),
                 ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_adnodeperfbucket_updated_by_related', to=settings.AUTH_USER_MODEL, verbose_name='updated by')),
             ],
@@ -69,7 +71,7 @@ class Migration(migrations.Migration):
                 ('domain', models.CharField(db_index=True, max_length=15, validators=[django.core.validators.RegexValidator(re.compile('^[-a-zA-Z0-9_]+\\Z'), "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens.", 'invalid')], verbose_name='windows domain')),
                 ('username', models.CharField(db_index=True, max_length=64, validators=[django.core.validators.RegexValidator(re.compile('^[-a-zA-Z0-9_]+\\Z'), "Enter a valid 'slug' consisting of letters, numbers, underscores or hyphens.", 'invalid')], verbose_name='domain username')),
                 ('password', models.CharField(max_length=64, verbose_name='password')),
-                ('ldap_search_base', models.CharField(default=ldap_probe.models.LDAPBindCred._get_default_ldap_search_base, max_length=128, verbose_name='DN search base')),
+                ('ldap_search_base', models.CharField(default=_get_default_ldap_search_base, max_length=128, verbose_name='DN search base')),
                 ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_ldapbindcred_created_by_related', to=settings.AUTH_USER_MODEL, verbose_name='created by')),
                 ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ldap_probe_ldapbindcred_updated_by_related', to=settings.AUTH_USER_MODEL, verbose_name='updated by')),
             ],

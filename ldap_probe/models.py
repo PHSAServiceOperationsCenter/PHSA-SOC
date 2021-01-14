@@ -35,6 +35,10 @@ from p_soc_auto_base.utils import MomentOfTime
 LOG = logging.getLogger(__name__)
 
 
+def _get_default_ldap_search_base():
+    return get_preference('ldapprobe__search_dn_default')
+
+
 class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
     """
     :class:`django.db.models.Model` class used for storing credentials used
@@ -43,11 +47,6 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
     `LDAP Bind Credentials Set fields
     <../../../admin/doc/models/ldap_probe.ldapbindcred>`__
     """
-
-    @staticmethod
-    def _get_default_ldap_search_base():
-        return get_preference('ldapprobe__search_dn_default')
-
     domain = models.CharField(
         _('windows domain'),
         max_length=15, db_index=True, blank=False, null=False,
@@ -74,6 +73,18 @@ class LDAPBindCred(BaseModelWithDefaultInstance, models.Model):
         verbose_name_plural = _('LDAP Bind Credentials Sets')
 
 
+def _get_default_alert_threshold():
+    return get_preference('ldapprobe__ldap_perf_err')
+
+
+def _get_default_warn_threshold():
+    return get_preference('ldapprobe__ldap_perf_warn')
+
+
+def _get_default_err_threshold():
+    return get_preference('ldapprobe__ldap_perf_alert')
+
+
 class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     """
     :class:`django.db.models.Model` class used for storing acceptable
@@ -82,18 +93,6 @@ class ADNodePerfBucket(BaseModelWithDefaultInstance, models.Model):
     `Performance Group for ADS Nodes fields
     <../../../admin/doc/models/ldap_probe.adnodeperfbucket>`__
     """
-
-    @staticmethod
-    def _get_default_alert_threshold():
-        return get_preference('ldapprobe__ldap_perf_err')
-
-    @staticmethod
-    def _get_default_warn_threshold():
-        return get_preference('ldapprobe__ldap_perf_warn')
-
-    @staticmethod
-    def _get_default_err_threshold():
-        return get_preference('ldapprobe__ldap_perf_alert')
 
     name = models.CharField(
         _('Bucket name'), max_length=253, db_index=True, unique=True,

@@ -31,8 +31,8 @@ This module uses the `celery-message-consumer
 
 """
 import json
+from logging import getLogger
 
-from celery.utils.log import get_task_logger
 from event_consumer import message_handler
 
 from citrus_borg.dynamic_preferences_registry import get_list_preference
@@ -41,19 +41,7 @@ from mail_collector.tasks import store_mail_data
 from .models import AllowedEventSource
 from .tasks import process_citrix_login
 
-LOG = get_task_logger(__name__)
-"""
-:class:`logging.Logger` instance used in this module
-
-.. todo::
-
-    The way this attribute is initialized means that log messages from this
-    module will be scattered amongst various celery log files. Maybe it would
-    make sense to use a dedicated hard-coded `Django` logger. This way when we
-    want to keep track of incoming events, we will not have to chase through
-    tens of log files.
-
-"""
+LOG = getLogger(__name__)
 
 
 @message_handler('logstash', exchange='default')

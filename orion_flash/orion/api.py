@@ -225,28 +225,18 @@ class DestSwis(SourceSwis):
 
             LOG.info('updated %s with %s', uri, src_props)
 
-    # TODO rewrite with an array of functions and while not uri loop.
     def update_node_custom_props(self, node_identifier, **props):
         uri = None
 
-        try:
-            uri = self._node_uri_by_ip(node_identifier)
-        except IndexError:
-            pass
-
-        if not uri:
+        for node_getter in [self._node_uri_by_ip, self._node_uri_by_name,
+                            self._node_uri_by_dns]:
             try:
-                uri = self._node_uri_by_name(node_identifier)
+                uri = node_getter(node_identifier)
             except IndexError:
-                pass
+                continue
 
-        if not uri:
-            try:
-                uri = self._node_uri_by_dns(node_identifier)
-            except IndexError:
-                pass
-
-        if not uri:
+            break  # We got the URI so we can stop looping
+        else:
             raise ValueError(f'update_node_custom_props must be called with '
                              f'an IP address, dns, or node name. '
                              f'Got {node_identifier}')

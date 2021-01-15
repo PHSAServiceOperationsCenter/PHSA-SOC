@@ -21,6 +21,8 @@ from mail_collector.models import (
 )
 
 
+# Serializers don't require methods, they are data classes.
+# pylint: disable=too-few-public-methods
 class DomainAccountSerializer(serializers.ModelSerializer):
     """
     Serializer for :class:`mail_collector.models.DomainAccount`

@@ -59,7 +59,8 @@ def store_mail_data(body):
         :class:`mail_collector.models.MailBotMessage` instance cannot be saved
 
     """
-    LOG.info("Storing %s as mail data.", body)
+    LOG.debug("Storing %s as mail data.", body)
+
     try:
         exchange_borg = parse_citrix_login_event(body)
     except Exception as error:
@@ -89,9 +90,11 @@ def store_mail_data(body):
         event_exception=event_data.event_exception)
     event.save()
 
+    LOG.info("Mail data %s", exchange_borg.mail_borg_message[1])
+
     if exchange_borg.mail_borg_message[1]:
         mail_data = exchange_borg.mail_borg_message[1]
-        event = models.MailBotMessage(
+        message = models.MailBotMessage(
             event=event,
             mail_message_identifier=mail_data.mail_message_identifier,
             sent_from=mail_data.sent_from, sent_to=mail_data.sent_to,
@@ -100,13 +103,13 @@ def store_mail_data(body):
             mail_message_created=mail_data.mail_message_created,
             mail_message_sent=mail_data.mail_message_sent,
             mail_message_received=mail_data.mail_message_received)
-        event.save()
+        message.save()
 
         LOG.info('created exchange monitoring event from email message %s',
-                 event.mail_message_identifier)
+                 message.mail_message_identifier)
         return
 
-    LOG.warning('created exchange monitoring event %s', event.uuid)
+    LOG.info('created exchange monitoring event %s', event.uuid)
 
 
 @shared_task(queue='mail_collector', rate_limit='3/s', max_retries=3,

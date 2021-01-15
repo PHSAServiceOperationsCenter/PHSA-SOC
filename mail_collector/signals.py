@@ -72,17 +72,17 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     """
     LOG.info('Updating mail_between_domains')
-    if not sender.objects.filter(
-            mail_message_identifier__exact=instance.mail_message_identifier).\
-            count() == 2:
-        # we don't have a quorum, go away
-        LOG.info("Message %s does not have a pair.", instance)
-        return
-
     if instance.event.event_type != 'receive':
         # only received event have all the info that we need. skip others
         LOG.info("Received a %s event, no further action taken.",
                  instance.event.event_type)
+        return
+
+    if not sender.objects.filter(
+            mail_message_identifier__exact=instance.mail_message_identifier).\
+            filter(event__event_type__exact='send').exists():
+        LOG.info("Message %s does not match a sent message in our database.",
+                 instance)
         return
 
     try:
@@ -96,9 +96,11 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     if not instance.received_by:
         # the receive event is incomplete thus it failed, bail
+        LOG.info("Message %s does not have a received by.", instance)
         return
 
-    to_domain = instance.received_by.split('@')[1]
+    # There should only be a single email in a received message
+    to_domain = instance.received_by[0].split('@')[1]
 
     last_updated_from_node_id = instance.event.source_host.orion_id
 
@@ -139,8 +141,12 @@ def update_exchange_entities_from_event(sender, instance, *args, **kwargs):
     :returns: the updated :class:`mail_collector.models.ExchangeServer`
         instance
     """
-    if instance.event_status != 'PASS' or instance.event_type != 'connection':
-        # only interested in successful connections
+    if instance.event_status != 'PASS' or instance.event_type != 'connection' \
+            or '-' not in instance.mail_account:
+        # only interested in successful connections for server specific accounts
+        # these accounts are formatted z-[server]-[database]
+        # other accounts are used to send messages, but supply no info about
+        # specific servers
         return None
 
     LOG.info('Updating exchange entities')
@@ -187,13 +193,22 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     """
     if instance.event.event_status != 'PASS' \
             or instance.event.event_type not in ['send', 'receive']:
+        LOG.info("Not updating exchange entities for event with status %s and type %s",
+                 instance.event.event_status, instance.event.event_type)
         return None
 
-    LOG.info('Updating exchange entities.')
+    if instance.event.event_type == 'send':
+        account_str = instance.sent_from
+    else:
+        #receive
+        account_str = instance.received_by[0]
 
-    exchange_server, database = instance.event.mail_account.split('-')[1:3]
+    exchange_server, database = account_str.split('-')[1:3]
     database = database.split('@')[0]
     last_updated_from_node_id = instance.event.source_host.orion_id
+
+    LOG.info('Updating exchange entities. Server %s database %s',
+             exchange_server, database)
 
     try:
         exchange_server = ExchangeServer.objects.get(
@@ -207,6 +222,8 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
     if instance.event.event_type == 'send':
         exchange_server.last_send = instance.event.event_registered_on
         exchange_server.save()
+
+        LOG.info("Event was a send, not updating database")
 
         return exchange_server, instance.event.event_type
 

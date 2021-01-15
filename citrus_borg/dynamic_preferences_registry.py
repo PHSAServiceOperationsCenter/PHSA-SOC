@@ -32,7 +32,7 @@ function. For example:
 :contact:    daniel.busto@phsa.ca
 
 """
-# TODO move to base
+# TODO move each section to its own file
 
 import decimal
 

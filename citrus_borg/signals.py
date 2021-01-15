@@ -77,7 +77,7 @@ def orion_update_citrix_error(sender, instance, *args, **kwargs):
     LOG.debug('Incoming event id: %s', e_id)
 
     LOG.debug('Latest event id: %s', WinlogEvent.active.filter(
-            source_host__ip_address__iexact=ip).latest().event_id)
+        source_host__ip_address__iexact=ip).latest().event_id)
 
     if e_id in failure_ids:
         dst_swis.update_node_custom_props(fqdn, ControlUpEventID=e_id)

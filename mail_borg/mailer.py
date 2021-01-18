@@ -21,16 +21,6 @@ message on an Exchange server*. A ``receive`` is more or less the equivalent
 of *we are accessing an artifact that looks like an email message on an
 Exchange server*.
 
-.. note::
-
-    We have made a conscious effort to avoid using list comprehensions because
-    of how exceptions need to be handled in this module.
-
-    Specifically, if there is a problem with a list item, we want to log the
-    problem and continue processing. That is not supported with list
-    comprehensions; if an exception occurs, processing will be stopped even if
-    we catch the error.
-
 Most members of this module make use of an attribute named
 ``config``. This attribute is the Python representation of the structure
 described in the :ref:`borg_client_config`.
@@ -185,23 +175,6 @@ class _Logger:
         )
 
 
-def _get_account(config):
-    """
-    :arg config:
-
-        a :class:`dictionary <dict>` that matches the structure described in
-        :ref:`borg_client_config` (or the relevant portions thereof)
-
-        As used in the :ref:`Mail Borg Client Application`, the ``config``
-        argument is provided via an :attr:`WitnessMessages.config` instance
-        attribute
-
-    :returns: a ``DOMAIN\\username`` account representation
-    :rtype: :class:`str`
-    """
-    return '{}\\{}'.format(config.get('domain'), config.get('username'))
-
-
 def validate_email_to_ascii(email_address, **config):
     """
     this function is using the `python-email-validator
@@ -280,140 +253,9 @@ def validate_email_to_ascii(email_address, **config):
         return None
 
     if config.get('force_ascii_email'):
-        return email_dict.get('email_ascii')
+        return email_dict.ascii_email
 
-    return email_dict.get('email')
-
-
-def get_accounts(**config):
-    """
-    get a list of working Exchange accounts
-
-    This function expects that each Exchange account is described by the
-    ``config`` argument as shown in the ``JSON`` snippet below.
-
-    A full representation of the structure of the ``config`` argument as
-    used in the :ref:`Mail Borg Client Application` is available in the
-    :ref:`borg_client_config` section.
-
-    .. code-block:: json
-
-        {
-            "smtp_address":"z-spexcm001-db01001@phsa.ca",
-            "domain_account":
-                {
-                    "domain":"PHSABC",
-                    "username":"svc_SOCmailbox",
-                    "password":"goodluckwiththat"
-                },
-                "exchange_autodiscover":true,
-                "autodiscover_server":null
-        }
-
-    :arg dict config:
-
-       a :class:`dictionary <dict>` that matches the structure described in
-       :ref:`borg_client_config` (or the relevant portions thereof)
-
-       As used in the :ref:`Mail Borg Client Application`, the ``config``
-       argument is provided via an :attr:`WitnessMessages.config` instance
-       attribute
-
-    :returns:
-        :class:`list` of :class:`exchangelib.Account` objects
-        An :class:`exchangelib.Account` object is only created if this
-        module was able to connect to the EWS end point using the provided
-        credentials.
-
-        If an Exchange account entry in the ``config`` argument cannot be used
-        to create a valid :class:`exchangelib.Account` instance, an error
-        will be logged and there will be no matching entry in the return.
-
-        If none of the Exchange account entries in the ``config`` argument can
-        be used to create a valid :class:`exchangelib.Account` instance,
-        an error will be logged and the function will return ``None``
-    """
-    if not config:
-        config = load_config()
-
-    logger = _Logger()
-
-    accounts = []
-
-    exchange_accounts = config.get('exchange_client_config').\
-        get('exchange_accounts')
-    for exchange_account in exchange_accounts:
-        if not validate_email_to_ascii(
-                exchange_account.get('smtp_address'), **config):
-            continue
-
-        credentials = Credentials(
-            username='{}\\{}'.format(
-                exchange_account.get('domain_account').get('domain'),
-                exchange_account.get('domain_account').get('username')),
-            password=exchange_account.get('domain_account').get('password')
-        )
-
-        try:
-
-            if exchange_account.get('exchange_autodiscover', True):
-                exc_config = Configuration(
-                    credentials=credentials, retry_policy=FaultTolerance()
-                )
-
-                accounts.append(Account(
-                    primary_smtp_address=exchange_account.get('smtp_address'),
-                    config=exc_config, autodiscover=True, access_type=DELEGATE)
-                )
-
-            else:
-                exc_config = Configuration(
-                    server=exchange_account.get('autodiscover_server'),
-                    credentials=credentials, retry_policy=FaultTolerance()
-                )
-
-                accounts.append(Account(
-                    primary_smtp_address=exchange_account.get('smtp_address'),
-                    config=exc_config, autodiscover=False,
-                    access_type=DELEGATE)
-                )
-
-            logger.info(
-                dict(type='connection', status='PASS',
-                     wm_id=config.get('wm_id'),
-                     message='connected to exchange',
-                     account='{}\\{}, {}'.format(
-                         exchange_account.get('domain_account').get('domain'),
-                         exchange_account.get(
-                             'domain_account').get('username'),
-                         exchange_account.get('smtp_address')))
-            )
-
-        except Exception as error:
-            logger.err(
-                dict(type='connection', status='FAIL',
-                     wm_id=config.get('wm_id'),
-                     message='cannot connect to exchange',
-                     account='{}\\{}, {}'.format(
-                         exchange_account.get('domain_account').get('domain'),
-                         exchange_account.get(
-                             'domain_account').get('username'),
-                         exchange_account.get('smtp_address')),
-                     exeption=str(error))
-            )
-
-    if not accounts:
-        logger.err(
-            dict(type='configuration', status='FAIL',
-                 wm_id=config.get('wm_id'),
-                 account=None,
-                 message=(
-                     'no valid exchange account found in config for bot %s'
-                     % config.get('host_name')))
-        )
-        return None
-
-    return accounts
+    return email_dict.email
 
 
 WitnessMessage = collections.namedtuple(
@@ -430,8 +272,8 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     Class that encapsulates all the functionality required to execute
     an Exchange verification operation once
 
-    An Exchange verification operation consists of sending a message to self
-    for each Exchange account listed in the ``config`` attribute.
+    An Exchange verification operation consists of sending a message to 
+    each Exchange account listed in the ``config`` attribute.
     The verification itself has three components that must all be successful
 
     * connecting successfully to the Exchange server
@@ -464,14 +306,14 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     client is running and ``$host`` is the name of the bot as returned by the
     :meth:`socket.gethostname` method.
 
-    This class builds a separate `exchangelib.Message` for each Exchange
-    account defined in the ``config`` argument. See :func:`get_accounts` for
-    details about the representation of Exchange accounts.
+    This class builds a single `exchangelib.Message` with each Exchange
+    account defined in the ``config`` argument as recipients. 
+    See :func:`get_accounts` for details about the representation of 
+    Exchange accounts.
 
-    The :meth:`send` method will send all the messages so created and the
-    :meth:`verify_receive` will look for the sent messages in the receiving
-    ``inbox``. The :meth:`verify_receive` will also invoke the
-    :meth:`send` method when the :attr:`_sent` is ``False``.
+    The :meth:`send` method will send the message so created and the
+    :meth:`verify_receive` will look for a forwarded copy of the message
+    in the receiving ``inbox`` for each address.
     """
 
     def __init__(
@@ -501,9 +343,6 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
             If this argument is not provided, the constructor will invoke the
             :func:`mail_borg.configuration.load_config` function.
         """
-        self._sent = False
-        """state variable for the send op"""
-
         self._abort = False
         """
         state variable for an abort
@@ -525,8 +364,8 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
             datetime.now(tz=get_localzone())
         )
 
-        self.messages = []
-        """the `list` of messages that are part of the Exchange check op"""
+        self.message = None
+        """the message that are is part of the Exchange check op"""
 
         self.update_window_queue = console_logger
         """
@@ -538,7 +377,7 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
         """logging attribute"""
 
         if accounts is None:
-            accounts = get_accounts(logger=self.logger, **config)
+            accounts = self.get_accounts()
 
         if not accounts:
             self._abort = True
@@ -562,10 +401,10 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
         the `list` of `exchangelib.Account` instances
         """
 
-        if not self.accounts:
-            # stop wasting time
-            self._abort = True
-            return
+        self.sender = self.parse_account_config(config.get('exchange_client_config').\
+                                                        get('sender_account'))
+        self.receiver =self.parse_account_config(config.get('exchange_client_config').\
+                                                        get('receiver_account'))                                            
 
         self.witness_emails = []
         """
@@ -580,24 +419,165 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
                     validate_email_to_ascii(
                         witness_address, logger=self.logger, **config))
 
-        for account in self.accounts:
-            message_uuid = str(uuid4())
-            message_body = 'message_group_id: {}, message_id: {}'.\
-                format(self.config.get('wm_id'), message_uuid)
-            self.messages.append(
-                WitnessMessage(
-                    message_uuid=message_uuid,
-                    message=Message(
-                        account=account,
-                        subject='{} {}'.format(
-                            self._set_subject(), message_body),
-                        body=message_body,
-                        to_recipients=[
-                            account.primary_smtp_address],
-                        cc_recipients=self.witness_emails),
-                    account_for_message=account
-                )
+        
+        message_uuid = str(uuid4())
+        message_body = 'message_group_id: {}, message_id: {}'.\
+            format(self.config.get('wm_id'), message_uuid)
+        message = Message(
+                    account=self.sender,
+                    subject='{} {}'.format(
+                        self._set_subject(), message_body),
+                    body=message_body,
+                    to_recipients=[
+                        account.primary_smtp_address
+                        for account in self.accounts],
+                    cc_recipients=self.witness_emails)
+        self.message = WitnessMessage(message_uuid=message_uuid,
+                                      message=message,
+                                      account_for_message=self.sender)
+            
+
+    def get_accounts(self):
+        """
+        get a list of working Exchange accounts
+
+        This function expects that each Exchange account is described by the
+        ``config`` argument as shown in the ``JSON`` snippet below.
+
+        A full representation of the structure of the ``config`` argument as
+        used in the :ref:`Mail Borg Client Application` is available in the
+        :ref:`borg_client_config` section.
+
+        .. code-block:: json
+
+            {
+                "smtp_address":"z-spexcm001-db01001@phsa.ca",
+                "domain_account":
+                    {
+                        "domain":"PHSABC",fre
+                        "username":"svc_SOCmailbox",
+                        "password":"goodluckwiththat"
+                    },
+                    "exchange_autodiscover":true,
+                    "autodiscover_server":null
+            }
+
+        :arg dict config:
+
+           a :class:`dictionary <dict>` that matches the structure described in
+           :ref:`borg_client_config` (or the relevant portions thereof)
+
+           As used in the :ref:`Mail Borg Client Application`, the ``config``
+           argument is provided via an :attr:`WitnessMessages.config` instance
+           attribute
+
+        :returns:
+            :class:`list` of :class:`exchangelib.Account` objects
+            An :class:`exchangelib.Account` object is only created if this
+            module was able to connect to the EWS end point using the provided
+            credentials.
+
+            If an Exchange account entry in the ``config`` argument cannot be used
+            to create a valid :class:`exchangelib.Account` instance, an error
+            will be logged and there will be no matching entry in the return.
+
+            If none of the Exchange account entries in the ``config`` argument can
+            be used to create a valid :class:`exchangelib.Account` instance,
+            an error will be logged and the function will return ``None``
+        """
+        exchange_accounts = self.config.get('exchange_client_config').\
+            get('exchange_accounts')
+            
+        accounts = [self.parse_account_config(account) for account in exchange_accounts]  
+
+        if not accounts:
+            logger.err(
+                dict(type='configuration', status='FAIL',
+                     wm_id=self.config.get('wm_id'),
+                     account=None,
+                     message=(
+                         'no valid exchange account found in config for bot %s'
+                         % self.config.get('host_name')))
             )
+            return None
+
+        return accounts
+
+    def parse_account_config(self, account_defn):
+        """
+        Produce an `exchangelib.Account` object from our configuration
+        
+        :arg dict account_defn: 
+            A dictionary which contains a definition of a 
+            smtp account, which includes an smtp_address string,
+            domain_account dictionary, exchange_autodiscover boolean, 
+            autodiscover_server string (if autodiscover is false).
+            
+        :returns:
+            The `exchangelib.Account` described by the input, or None
+            if the input is malformed.
+        """
+        if not validate_email_to_ascii(
+                    account_defn.get('smtp_address')):
+                return
+
+        credentials = Credentials(
+            username='{}\\{}'.format(
+                account_defn.get('domain_account').get('domain'),
+                account_defn.get('domain_account').get('username')),
+            password=account_defn.get('domain_account').get('password')
+        )
+
+        try:
+
+            if account_defn.get('exchange_autodiscover', True):
+                exc_config = Configuration(
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
+                account = Account(
+                    primary_smtp_address=account_defn.get('smtp_address'),
+                    config=exc_config, autodiscover=True, access_type=DELEGATE
+                )
+
+            else:
+                exc_config = Configuration(
+                    server=account_defn.get('autodiscover_server'),
+                    credentials=credentials, retry_policy=FaultTolerance()
+                )
+
+                account = Account(
+                    primary_smtp_address=account_defn.get('smtp_address'),
+                    config=exc_config, autodiscover=False,
+                    access_type=DELEGATE
+                )
+
+            self.logger.info(
+                dict(type='connection', status='PASS',
+                     wm_id=self.config.get('wm_id'),
+                     message='connected to exchange',
+                     account='{}\\{}, {}'.format(
+                         account_defn.get('domain_account').get('domain'),
+                         account_defn.get(
+                             'domain_account').get('username'),
+                         account_defn.get('smtp_address')))
+            )
+
+        except Exception as error:
+            self.logger.err(
+                dict(type='connection', status='FAIL',
+                     wm_id=self.config.get('wm_id'),
+                     message='cannot connect to exchange',
+                     account='{}\\{}, {}'.format(
+                         account_defn.get('domain_account').get('domain'),
+                         account_defn.get(
+                             'domain_account').get('username'),
+                         account_defn.get('smtp_address')),
+                     exeption=str(error))
+            )
+            return
+        
+        return account
 
     def _set_subject(self):
         """
@@ -620,15 +600,9 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     def send(self, min_wait_receive=None, step_wait_receive=None,
              max_wait_receive=None):
         """
-        loop through the Exchange messages in the :attr:`messages` instance
-        attribute and send out each message
-
-        If there are no messages, log an error.
-
-        If sending a particular message raises an error,
-        log it, drop the message from the list of messages under the
-        :attr:`messages` instance attribute, and keep sending the rest of
-        the messages.
+        Send the message as constructed in the constructor.
+        
+        If sending raises an error log it.
 
         This method uses a pattern known as `retry with exponential back-off
         and circuit breaker
@@ -690,7 +664,7 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
 
             return 'mail check abort'
 
-        if not self.messages:
+        if not self.message:
             self.logger.err(
                 dict(type='create', status='FAIL',
                      wm_id=self.config.get('wm_id'),
@@ -700,44 +674,29 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
                          ' config of bot %s' % self.config.get('host_name')))
             )
             return 'nothing to send'
+        
+        msg_dict = dict(type='send', status='PASS',
+                     wm_id=self.config.get('wm_id'),
+                     account=self.message.account_for_message.
+                     primary_smtp_address,
+                     message='monitoring message sent',
+                     message_uuid=str(self.message.message_uuid),
+                     from_email=self.message.
+                     account_for_message.primary_smtp_address,
+                     to_emails=', '.join([email for email in
+                                          self.message.message.to_recipients]))
+        try:
+            send_message(self.message)
 
-        # we need to purge the messages that we cannot send, thus
-        messages = self.messages
-        for message in messages:
-            try:
-                send_message(message)
+            self.logger.info(msg_dict)
 
-                self.logger.info(
-                    dict(type='send', status='PASS',
-                         wm_id=self.config.get('wm_id'),
-                         account=message.account_for_message.
-                         primary_smtp_address,
-                         message='monitoring message sent',
-                         message_uuid=str(message.message_uuid),
-                         from_email=message.
-                         account_for_message.primary_smtp_address,
-                         to_emails=', '.join([r.email_address for r in
-                                              message.message.to_recipients]))
-                )
+        except Exception as error:
+            msg_dict['status']='FAIL'
+            msg_dict['exception']=str(error)
+            msg_dict['message']='monitoring message failure'
+            self.logger.err(msg_dict)
 
-            except Exception as error:
-                self.logger.err(
-                    dict(type='send', status='FAIL',
-                         wm_id=self.config.get('wm_id'),
-                         account=message.account_for_message.
-                         primary_smtp_address,
-                         message='cannot send message',
-                         message_uuid=str(message.message_uuid),
-                         from_email=message.
-                         account_for_message.primary_smtp_address,
-                         to_emails=', '.join([r.email_address for r in
-                                              message.message.to_recipients]),
-                         exception=str(error))
-                )
-
-                self.messages.remove(message)
-
-        self._sent = True
+            raise error
 
         return 'sent'
 
@@ -755,7 +714,7 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
 
             * if not found log an error:
               cannot communicate from ``message.account.smtp_address``
-              to ``account.inbox.smtp_adddress``
+              to ``account.inbox.smtp_address``
 
         This method uses a pattern known as `retry with exponential back-off
         and circuit breaker
@@ -801,134 +760,65 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
             custom exception to be raised in case a message is not found
             """
 
-        @retry((ErrorTooManyObjectsOpened, ErrorMessageNotFound),
-               delay=int(min_wait_receive), max_delay=int(max_wait_receive),
-               backoff=int(step_wait_receive))
-        def get_from_inbox(message):
-            """
-            look for the message in the destination inbox
-
-            In case of failure, retry if the failure was one of
-            :exc:`exchangelib.ErrorMessageNotFound` or
-            :exc:`exchangelib.ErrorTooManyObjectsOpened`. The latter is
-            typical of cases when the Exchange server is throttling
-            connections.
-
-            The retry operation follows the pattern below:
-
-            * apply the minimal delay
-
-            * try; if it worked, return
-
-            * multiply the current delay by the back-off factor
-
-            * wait for the current delay and try
-
-            * if the current delay has reached the maximum delay, give up
-            """
-            found_message = message.account_for_message.inbox.filter(
-                subject__icontains=str(message.message_uuid))
-
-            if found_message.exists():
-                return found_message.get()
-
-            raise ErrorMessageNotFound()
-
-        if self._abort:
-            if self.update_window_queue:
-                self.update_window_queue.put_nowait(('abort',))
-
-            return 'mail check abort'
-
-        if not self._sent:
-            self.send()
+        self.send()
 
         time.sleep(min_wait_receive)
-        for message in self.messages:
 
-            try:
-                found_message = get_from_inbox(message)
-            except ErrorTooManyObjectsOpened as error:
-                self.logger.err(
-                    dict(type='receive', status='FAIL',
-                         wm_id=self.config.get('wm_id'),
-                         account=message.account_for_message.
-                         primary_smtp_address,
-                         message=(
-                             'too many objects opened on the server,'
-                             ' please increase the Check Receive Timeout'
-                             ' value'),
-                         message_uuid=str(message.message_uuid),
-                         exception=str(error),
-                         from_email=message.
-                         account_for_message.primary_smtp_address,
-                         to_emails=', '.join(
-                             [r.email_address for r in
-                              message.message.to_recipients]))
-                )
-                continue
-            except ErrorMessageNotFound:
-                found_message = None
-            except Exception as error:
-                self.logger.err(dict(type='receive', status='FAIL',
-                                     wm_id=self.config.get('wm_id'),
-                                     account=message.
-                                     account_for_message.primary_smtp_address,
-                                     message=(
-                                         'unexpected error while checking for'
-                                         ' message received'),
-                                     message_uuid=str(message.message_uuid),
-                                     exception=str(error),
-                                     from_email=message.
-                                     account_for_message.primary_smtp_address,
-                                     to_emails=', '.join(
-                                         [r.email_address for r in
-                                          message.message.to_recipients]))
-                                )
-                continue
+        #TODO clean up this logging.
+        msg_dict = dict(type='receive', status='FAIL',
+                     wm_id=self.config.get('wm_id'),
+                     account=self.message.account_for_message.
+                     primary_smtp_address,
+                     message_uuid=str(self.message.message_uuid),
+                     from_email = self.message.account_for_message.primary_smtp_address,
+                     to_emails=', '.join(
+                         [r.email_address for r in
+                          self.message.message.to_recipients]))
 
-            if found_message:
-                self.logger.info(
-                    dict(type='receive', status='PASS',
-                         wm_id=self.config.get('wm_id'),
-                         account=message.account_for_message.
-                         primary_smtp_address,
-                         message='message received',
-                         message_uuid=str(message.message_uuid),
-                         from_address=found_message.author.
-                         email_address,
-                         to_addresses=', '.join(
-                             [mailbox.email_address for
-                                      mailbox in found_message.to_recipients]),
-                         created=str(found_message.datetime_created),
-                         sent=str(found_message.datetime_sent),
-                         received=str(found_message.datetime_received),
-                         from_email=message.
-                         account_for_message.primary_smtp_address,
-                         to_emails=', '.join(
-                             [r.email_address for r in
-                              message.message.to_recipients]))
-                )
+        #make a copy of self.accounts so we can delete accounts as we receive the message from them.
+        self.unseen_recipients = [r for r in self.accounts] 
 
-                if not self.config.get('exchange_client_config').get('debug'):
-                    found_message.delete()
+        @retry((ErrorTooManyObjectsOpened, ErrorMessageNotFound),
+           delay=int(min_wait_receive), max_delay=int(max_wait_receive),
+           backoff=int(step_wait_receive))
+        def check_inbox():
+            msgs = self.receiver.inbox.filter(subject__icontains=str(self.message.message_uuid))
+            
+            to_remove = [account for account in self.unseen_recipients 
+                         if account.primary_smtp_address 
+                         in [msg.sender.email_address for msg in msgs]]
+            
+            for msg in msgs.all():
+                msg_dict['to_emails'] = [msg.sender.email_address]  # the msg was sent to this address before being forwarded back.
+                msg_dict['to_addresses'] = [msg.sender.email_address]
+                msg_dict['from_address'] = msg.author.email_address
+                msg_dict['status'] = 'PASS'
+                msg_dict['message'] = 'message recieved'
+                msg_dict['created'] = str(msg.datetime_created)
+                msg_dict['sent'] = str(msg.datetime_sent)
+                msg_dict['received'] = str(msg.datetime_received)
+                
+                self.logger.info(msg_dict)
+            
+            self.unseen_recipients = [r for r in self.unseen_recipients if r not in to_remove]
 
-                continue
-
-            else:
-                self.logger.err(
-                    dict(type='receive', status='FAIL',
-                         wm_id=self.config.get('wm_id'),
-                         account=message.account_for_message.
-                         primary_smtp_address,
-                         message='message received',
-                         message_uuid=str(message.message_uuid),
-                         from_email=message.
-                         account_for_message.primary_smtp_address,
-                         to_emails=', '.join(
-                             [r.email_address for r in
-                              message.message.to_recipients]))
-                )
+            if self.unseen_recipients:
+                raise ErrorMessageNotFound #force retry if we haven't see the message delivered to each mailbox)
+                
+        check_inbox()
+        
+        for r in self.unseen_recipients:
+            msg_dict['to_emails'] = [r]  # the msg was sent to this address before being forwarded back.
+            msg_dict['from_address'] = None
+            msg_dict['status'] = 'FAIL'
+            msg_dict['message'] = 'message not seen'
+            msg_dict['created'] = None
+            msg_dict['sent'] = None
+            msg_dict['received'] = None
+            
+            self.logger.err(msg_dict)
+            
+        self.unseen_recipients = None
 
         if self.update_window_queue:
             self.update_window_queue.put_nowait(('control',))

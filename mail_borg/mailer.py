@@ -21,16 +21,6 @@ message on an Exchange server*. A ``receive`` is more or less the equivalent
 of *we are accessing an artifact that looks like an email message on an
 Exchange server*.
 
-.. note::
-
-    We have made a conscious effort to avoid using list comprehensions because
-    of how exceptions need to be handled in this module.
-
-    Specifically, if there is a problem with a list item, we want to log the
-    problem and continue processing. That is not supported with list
-    comprehensions; if an exception occurs, processing will be stopped even if
-    we catch the error.
-
 Most members of this module make use of an attribute named
 ``config``. This attribute is the Python representation of the structure
 described in the :ref:`borg_client_config`.
@@ -282,8 +272,8 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     Class that encapsulates all the functionality required to execute
     an Exchange verification operation once
 
-    An Exchange verification operation consists of sending a message to self
-    for each Exchange account listed in the ``config`` attribute.
+    An Exchange verification operation consists of sending a message to 
+    each Exchange account listed in the ``config`` attribute.
     The verification itself has three components that must all be successful
 
     * connecting successfully to the Exchange server
@@ -316,14 +306,14 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     client is running and ``$host`` is the name of the bot as returned by the
     :meth:`socket.gethostname` method.
 
-    This class builds a separate `exchangelib.Message` for each Exchange
-    account defined in the ``config`` argument. See :func:`get_accounts` for
-    details about the representation of Exchange accounts.
+    This class builds a single `exchangelib.Message` with each Exchange
+    account defined in the ``config`` argument as recipients. 
+    See :func:`get_accounts` for details about the representation of 
+    Exchange accounts.
 
-    The :meth:`send` method will send all the messages so created and the
-    :meth:`verify_receive` will look for the sent messages in the receiving
-    ``inbox``. The :meth:`verify_receive` will also invoke the
-    :meth:`send` method when the :attr:`_sent` is ``False``.
+    The :meth:`send` method will send the message so created and the
+    :meth:`verify_receive` will look for a forwarded copy of the message
+    in the receiving ``inbox`` for each address.
     """
 
     def __init__(
@@ -610,15 +600,9 @@ class WitnessMessages:  # pylint: disable=too-many-instance-attributes
     def send(self, min_wait_receive=None, step_wait_receive=None,
              max_wait_receive=None):
         """
-        loop through the Exchange messages in the :attr:`messages` instance
-        attribute and send out each message
-
-        If there are no messages, log an error.
-
-        If sending a particular message raises an error,
-        log it, drop the message from the list of messages under the
-        :attr:`messages` instance attribute, and keep sending the rest of
-        the messages.
+        Send the message as constructed in the constructor.
+        
+        If sending raises an error log it.
 
         This method uses a pattern known as `retry with exponential back-off
         and circuit breaker

@@ -7,6 +7,12 @@ The *SOC Automation Project* is a multi-component IT system used by the
 All the components, whether off the shelf, or developed in house, can be
 readily scaled horizontally via virtualization or containerization.
 
+How-tos for deploying this system as well as MOPs for responding to
+notifications from this system are maintained by SOC staff. These can be
+found on the SOC wiki. Co-ordination between developers and
+administrative resources is required to ensure these documents are
+updated for any changes, or new features.
+
 .. todo::
 
     We need to migrate the access point from `HTTP

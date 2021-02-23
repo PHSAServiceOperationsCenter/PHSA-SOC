@@ -477,7 +477,7 @@ class BaseADNode(BaseModel, models.Model):
         if anon:
             probes_model_name = 'ldapprobeanonbindlog'
             ldapprobelog_filter = {
-                'ldapprobelog__created_on__gte': since_moment,
+                'ldapprobelog__created__gte': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': True,
             }
 
@@ -486,7 +486,7 @@ class BaseADNode(BaseModel, models.Model):
         else:
             probes_model_name = 'ldapprobefullbindlog'
             ldapprobelog_filter = {
-                'ldapprobelog__created_on__gte': since_moment,
+                'ldapprobelog__created__gte': since_moment,
                 'ldapprobelog__elapsed_bind__isnull': False,
             }
 

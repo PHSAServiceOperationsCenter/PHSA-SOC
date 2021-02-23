@@ -97,12 +97,12 @@ class SSLCertTrackerBaseAdmin(BaseAdmin, admin.ModelAdmin):
         """
         override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`.
 
-        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        Make sure that the 'created_by', 'created', and 'updated_on' fields
         are always read only.
         """
         if obj is not None:
             return self.readonly_fields + \
-                ('created_by', 'created_on', 'updated_on')
+                ('created_by', 'created', 'updated_on')
 
         return self.readonly_fields
 
@@ -156,7 +156,7 @@ class SslCertificateAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
         }, ),
         ('History (+/-)', {
             'classes': ('grp-collapse grp-closed', ),
-            'fields': (('created_on', 'created_by', ),
+            'fields': (('created', 'created_by', ),
                        ('updated_on', 'updated_by', ),),
         }, ),
     )
@@ -202,7 +202,7 @@ class SslCertificateIssuerAdmin(SSLCertTrackerBaseAdmin, admin.ModelAdmin):
         }, ),
         ('History (+/-)', {
             'classes': ('grp-collapse grp-closed', ),
-            'fields': (('created_on', 'created_by', ),
+            'fields': (('created', 'created_by', ),
                        ('updated_on', 'updated_by', ),),
         }, ),
     )
@@ -229,7 +229,7 @@ class SslProbePortAdmin(admin.ModelAdmin):
     list_display = ['port', 'enabled', 'updated_on', 'updated_by', ]
     list_edit = ['enabled', ]
     list_filter = ('enabled', ('updated_on', DateTimeRangeFilter),)
-    readonly_fields = ('created_on', 'updated_on')
+    readonly_fields = ('created', 'updated_on')
 
     fieldsets = (
         ('Identification', {
@@ -242,7 +242,7 @@ class SslProbePortAdmin(admin.ModelAdmin):
         }, ),
         ('History (+/-)', {
             'classes': ('grp-collapse grp-closed', ),
-            'fields': (('created_on', 'created_by', ),
+            'fields': (('created', 'created_by', ),
                        ('updated_on', 'updated_by', ),),
         }, ),
     )

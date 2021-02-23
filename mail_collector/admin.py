@@ -69,7 +69,7 @@ class DomainAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     list_filter = ('enabled', 'domain')
     search_fields = ('domain', 'username')
     readonly_fields = ('show_account', 'created_by',
-                       'updated_by', 'created_on', 'updated_on')
+                       'updated_by', 'created', 'updated_on')
 
     def show_account(self, obj):  # pylint: disable=no-self-use
         """
@@ -99,7 +99,7 @@ class ExchangeAccountAdmin(MailConfigAdminBase, admin.ModelAdmin):
     search_fields = ('smtp_address', 'domain_account__domain',
                      'domain_account__username')
     readonly_fields = ('created_by',
-                       'updated_by', 'created_on', 'updated_on')
+                       'updated_by', 'created', 'updated_on')
 
 
 @admin.register(WitnessEmail)
@@ -113,7 +113,7 @@ class WitnessEmailAdmin(MailConfigAdminBase, admin.ModelAdmin):
     list_filter = ('enabled', )
     search_fields = ('smtp_address', )
     readonly_fields = ('created_by',
-                       'updated_by', 'created_on', 'updated_on')
+                       'updated_by', 'created', 'updated_on')
 
 
 @admin.register(ExchangeConfiguration)
@@ -133,7 +133,7 @@ class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
                      'check_mx_timeout', 'email_subject',)
     list_filter = ('enabled', 'is_default')
     search_fields = ('config_name',)
-    readonly_fields = ('created_by', 'updated_by', 'created_on', 'updated_on',
+    readonly_fields = ('created_by', 'updated_by', 'created', 'updated_on',
                        'count_exchange_accounts', 'count_witnesses', )
     filter_horizontal = ('exchange_accounts', 'witness_addresses')
 
@@ -170,7 +170,7 @@ class ExchangeConfigurationAdmin(MailConfigAdminBase, admin.ModelAdmin):
         }, ),
         ('History (+/-)', {
             'classes': ('grp-collapse grp-closed', ),
-            'fields': (('created_on', 'created_by', ),
+            'fields': (('created', 'created_by', ),
                        ('updated_on', 'updated_by', ),),
         }, ),
     )
@@ -313,10 +313,10 @@ class MailHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'exchange_client_config', 'resolved_fqdn',
-                    'exchange_last_seen', 'created_on',)
+                    'exchange_last_seen', 'created',)
     list_editable = ('site', 'enabled', 'exchange_client_config',)
     readonly_fields = ('host_name', 'ip_address', 'resolved_fqdn',
-                       'exchange_last_seen', 'created_on', 'orion_id',)
+                       'exchange_last_seen', 'created', 'orion_id',)
     list_filter = ('site__site', 'enabled',
                    ('exchange_last_seen', DateTimeRangeFilter),)
     search_fields = ('site__site', 'host_name', 'ip_address',

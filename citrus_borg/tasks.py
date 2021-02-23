@@ -35,7 +35,7 @@ from citrus_borg.models import (
 from p_soc_auto_base import utils as base_utils
 
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.models import Subscription
+from p_soc_auto_base.models import DeletionLog, Subscription
 from p_soc_auto_base.utils import get_or_create_user
 
 LOG = getLogger(__name__)
@@ -140,43 +140,6 @@ def get_orion_ids():
     LOG.info('refreshing orion ids for %s citrix bots', len(citrus_borg_pks))
 
 
-@shared_task(queue='citrus_borg')
-def expire_events():
-    """
-    task that marks :class:`citrus_borg.models.WinlogEvent` instances as
-    expired; it will also delete `expired` instances if so configured
-
-    This task is configured by:
-
-    * `Mark Events As Expired If Older Than
-      <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
-        """?q=expire_events_older_than>`__
-
-       This preference is defined by
-       :class:`citrus_borg.dynamic_preferences_registry.ExpireEvents`
-
-    * `Delete Expired Events
-      <../../../admin/dynamic_preferences/globalpreferencemodel/"""\
-        """?q=delete_expired_events>`__
-
-       The preference is defined by
-       :class:`citrus_borg.dynamic_preferences_registry.DeleteExpireEvents`
-    """
-    expire_threshold = get_preference('citrusborgevents__expire_events'
-                                      '_older_than')
-    expired = WinlogEvent.objects.filter(
-        created_on__lt=timezone.now() - expire_threshold
-    ).update(is_expired=True)
-
-    if get_preference('citrusborgevents__delete_expired_events'):
-        WinlogEvent.objects.filter(is_expired=True).all().delete()
-        LOG.info('deleted %s events accumulated over the last %s', expired,
-                 expire_threshold)
-    else:
-        LOG.info('expired %s events accumulated over the last %s', expired,
-                 expire_threshold)
-
-
 @shared_task(queue='borg_chat', rate_limit='3/s', max_retries=3,
              retry_backoff=True, autoretry_for=(SMTPConnectError,))
 def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
@@ -276,7 +239,8 @@ def email_dead_borgs_alert(now=None, send_no_news=None, **dead_for):
 
     return Email.send_email(
         data=data,
-        subscription=Subscription.get_subscription('Dead Citrix monitoring bots'),
+        subscription=Subscription.get_subscription(
+            'Dead Citrix monitoring bots'),
         time_delta=time_delta)
 
 

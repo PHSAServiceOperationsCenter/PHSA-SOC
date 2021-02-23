@@ -195,12 +195,12 @@ class BaseAdmin(admin.ModelAdmin):
         """
         override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
-        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        Make sure that the 'created_by', 'created', and 'updated_on' fields
         are always read only.
         """
         if obj is not None:
             return self.readonly_fields + \
-                ('created_by', 'created_on', 'updated_on')
+                ('created_by', 'created', 'updated_on')
 
         return self.readonly_fields
 
@@ -286,7 +286,7 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
         """
         override :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`
 
-        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        Make sure that the 'created_by', 'created', and 'updated_on' fields
         are always read only.
 
         .. todo::
@@ -295,7 +295,7 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
         """
         if obj is not None:
             return self.readonly_fields + \
-                ('created_by', 'created_on', 'updated_on')
+                ('created_by', 'created', 'updated_on')
 
         return self.readonly_fields
 
@@ -332,6 +332,6 @@ class SubscriptionAdmin(BaseAdmin, admin.ModelAdmin):
                     'updated_by']
     list_editable = ['enabled', 'emails_list', 'template_dir',
                      'template_name', 'template_prefix']
-    readonly_fields = ('created_on', 'updated_on', )
+    readonly_fields = ('created', 'updated_on', )
     list_filter = ('enabled', )
     search_fields = ('subscription', )

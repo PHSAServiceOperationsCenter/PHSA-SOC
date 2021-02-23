@@ -74,7 +74,7 @@ class LdapProbeLog(models.Model):
         _('AD controller response'), blank=True, null=True)
     errors = models.TextField(
         _('Errors'), blank=True, null=True)
-    created_on = models.DateTimeField(
+    created = models.DateTimeField(
         _('created on'), db_index=True, auto_now_add=True,
         help_text=_('object creation time stamp'))
     is_expired = models.BooleanField(
@@ -129,7 +129,7 @@ class LdapProbeLog(models.Model):
 
         since = MomentOfTime.past(time_delta=time_delta)
 
-        return cls.objects.filter(failed=True, created_on__gte=since).\
+        return cls.objects.filter(failed=True, created__gte=since).\
             annotate(probe_url=Concat(
                 Value(settings.SERVER_PROTO), Value('://'),
                 Value(socket.getfqdn()), Value(':'),
@@ -137,7 +137,7 @@ class LdapProbeLog(models.Model):
                 Value('/admin/ldap_probe/ldapprobelogfailed/'), F('id'),
                 Value('/change/'), output_field=TextField())).\
             annotate(domain_controller_fqdn=case_ad_node).\
-            order_by('ad_node', '-created_on')
+            order_by('ad_node', '-created')
 
     def __str__(self):
         return f'LDAP probe {self.uuid} to {self.node}'
@@ -278,8 +278,8 @@ class LdapProbeLog(models.Model):
         app_label = 'ldap_probe'
         verbose_name = _('AD service probe')
         verbose_name_plural = _('AD service probes')
-        ordering = ('-created_on', )
-        get_latest_by = 'created_on'
+        ordering = ('-created', )
+        get_latest_by = 'created'
 
 
 class LdapProbeLogFailed(LdapProbeLog):

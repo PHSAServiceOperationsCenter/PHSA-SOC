@@ -67,7 +67,7 @@ def _get_dead_objects(now, obj_class, obj_name, key_for_event, time_pref=None,
     if not isinstance(now, datetime.datetime):
         raise TypeError('%s type invalid for %s' % (type(now), now))
 
-    live = set(WinlogEvent.objects.filter(created_on__gt=now - time_delta)
+    live = set(WinlogEvent.objects.filter(created__gt=now - time_delta)
                .values_list(f'{key_for_event}__{obj_name}', flat=True))
     all_objs = set(obj_class.active.values_list(obj_name, flat=True))
 
@@ -218,8 +218,8 @@ def get_logins_by_event_state_borg_hour(now=None, time_delta=None):
             '%s type invalid for %s' % (type(time_delta), time_delta))
 
     return WinlogbeatHost.objects.\
-        filter(winlogevent__created_on__gt=now - time_delta).\
-        annotate(hour=TruncHour('winlogevent__created_on')).values('hour').\
+        filter(winlogevent__created__gt=now - time_delta).\
+        annotate(hour=TruncHour('winlogevent__created')).values('hour').\
         annotate(
             failed_events=Count(
                 'winlogevent__event_state',
@@ -571,7 +571,7 @@ def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
         raise TypeError(f'{type(time_delta)} type invalid for time_delta')
 
     queryset = WinlogbeatHost.objects.\
-        filter(winlogevent__created_on__gt=now - time_delta)
+        filter(winlogevent__created__gt=now - time_delta)
 
     if site:
         queryset = queryset.filter(site__site__iexact=site)
@@ -609,7 +609,7 @@ def _by_site_host_hour(now=None, time_delta=None, site=None, host_name=None,
     return queryset
 
 
-def _group_by(queryset, group_field='winlogevent__created_on',
+def _group_by(queryset, group_field='winlogevent__created',
               group_by=GroupBy.HOUR):
     """
     group the rows in a :class:`django.db.models.query.QuerySet` by a time
@@ -640,7 +640,7 @@ def _group_by(queryset, group_field='winlogevent__created_on',
         :class:`django.db.models.DateTimeField` or a
         :class:`django.db.models.TimeField` field
 
-        Default is 'winlogevent__created_on'.
+        Default is 'winlogevent__created'.
 
     :arg group_by: group the data to be returned by a time
         sequence; default is :attr:`GroupBy.HOUR`
@@ -785,7 +785,7 @@ def raise_failed_logins_alarm(
                                         failed_threshold))
 
     return WinlogbeatHost.active.\
-        filter(winlogevent__created_on__gt=now - time_delta).\
+        filter(winlogevent__created__gt=now - time_delta).\
         annotate(
             failed_events=Count(
                 'winlogevent__event_state',
@@ -850,7 +850,7 @@ def get_failed_events(now=None, time_delta=None, site=None, host_name=None):
         include_event_counts=True, include_ux_stats=False,
         group_by=GroupBy.NONE)
 
-    queryset = queryset.order_by('-winlogevent__created_on')
+    queryset = queryset.order_by('-winlogevent__created')
 
     return queryset
 
@@ -925,6 +925,6 @@ def get_failed_ux_events(
         include_event_counts=False, include_ux_stats=True,
         group_by=GroupBy.NONE)
 
-    queryset = queryset.order_by('-winlogevent__created_on')
+    queryset = queryset.order_by('-winlogevent__created')
 
     return queryset

@@ -74,7 +74,7 @@ class BaseModel(models.Model):
     """
     capture a reference to the user responsible for updating the database row
     """
-    created_on = models.DateTimeField(
+    created = models.DateTimeField(
         _('created on'), db_index=True, auto_now_add=True,
         help_text=_('object creation time stamp'))
     """
@@ -351,3 +351,13 @@ class Subscription(BaseModel):
 
     class Meta:
         app_label = 'p_soc_auto_base'
+
+
+class DeletionLog(BaseModel):
+    model_name = models.CharField('Model name', max_length=255,
+                                  blank=False, null=False)
+    records_deleted = models.PositiveIntegerField('Number of deleted records',
+                                                  blank=False, null=False)
+
+    class Meta:
+        get_latest_by = 'created'

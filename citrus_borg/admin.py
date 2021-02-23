@@ -104,12 +104,12 @@ class CitrusBorgBaseAdmin(BaseAdmin, admin.ModelAdmin):
         override
         :meth:`django.contrib.admin.ModelAdmin.get_readonly_fields`.
 
-        Make sure that the 'created_by', 'created_on', and 'updated_on' fields
+        Make sure that the 'created_by', 'created', and 'updated_on' fields
         are always read only.
         """
         if obj is not None:
             return self.readonly_fields + \
-                ('created_by', 'created_on', 'updated_on')
+                ('created_by', 'created', 'updated_on')
 
         return self.readonly_fields
 
@@ -261,10 +261,10 @@ class KnownBrokeringDeviceAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         """
         return False
 
-    list_display = ('broker_name', 'enabled', 'last_seen', 'created_on',)
+    list_display = ('broker_name', 'enabled', 'last_seen', 'created',)
     list_editable = ('enabled',)
     list_filter = ('enabled',)
-    readonly_fields = ('broker_name', 'last_seen', 'created_on',)
+    readonly_fields = ('broker_name', 'last_seen', 'created',)
 
 
 @admin.register(KnownBrokeringDeviceNotSeen)
@@ -283,9 +283,9 @@ class WinlogbeatHostAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     """
     list_display = ('host_name', 'ip_address', 'orion_id', 'enabled', 'site',
                     'exchange_client_config', 'resolved_fqdn', 'last_seen',
-                    'created_on',)
+                    'created',)
     list_editable = ('site', 'enabled', 'exchange_client_config', 'ip_address')
-    readonly_fields = ('host_name', 'resolved_fqdn', 'last_seen', 'created_on',
+    readonly_fields = ('host_name', 'resolved_fqdn', 'last_seen', 'created',
                        'orion_id',)
     list_filter = ('enabled', 'exchange_client_config__is_default',
                    ('last_seen', DateTimeRangeFilter), 'site__site', )
@@ -342,7 +342,7 @@ class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
         'uuid', 'is_expired', 'event_state', 'source_host', 'xml_broker',
         'event_test_result', 'storefront_connection_duration',
         'receiver_startup_duration', 'connection_achieved_duration',
-        'logon_achieved_duration', 'logoff_achieved_duration', 'created_on',
+        'logon_achieved_duration', 'logoff_achieved_duration', 'created',
     )
     list_editable = ('is_expired',)
     readonly_fields = (
@@ -355,5 +355,5 @@ class WinlogEventAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
     list_filter = ('event_state', 'source_host__host_name',
                    'source_host__site__site',
                    'xml_broker__broker_name',
-                   ('created_on', DateTimeRangeFilter),
+                   ('created', DateTimeRangeFilter),
                    'is_expired',)

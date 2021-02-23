@@ -113,7 +113,8 @@ def email_expired_ssl_report():
 
     """
     return Email.send_email(
-        data=has_expired(), subscription=Subscription.get_subscription('Expired SSl Report'),
+        data=has_expired(),
+        subscription=Subscription.get_subscription('Expired SSl Report'),
         expired=True)
 
 
@@ -128,7 +129,8 @@ def email_invalid_ssl_report():
     """
     return Email.send_email(
         data=is_not_yet_valid(),
-        subscription=Subscription.get_subscription(subscription='Invalid SSl Report'),
+        subscription=Subscription.get_subscription(
+            subscription='Invalid SSl Report'),
         invalid=True)
 
 
@@ -207,7 +209,7 @@ def get_ssl_for_node_port(address, port, orion_id=None, external_id=None):
     if created:
         LOG.info('SSL certificate %s on %s, port %s has been created at %s',
                  ssl_certificate.ssl_subject, ssl_certificate.hostnames,
-                 ssl_certificate.port, ssl_obj.created_on)
+                 ssl_certificate.port, ssl_obj.created)
         return
 
     LOG.info('SSL certificate %s on %s, port %s last seen at %s',

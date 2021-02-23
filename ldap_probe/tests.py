@@ -321,7 +321,7 @@ class LdapProbeLogTest(UserTestCase):
         """
         test old logs are not included in error report
         """
-        log = LdapProbeLog.objects.create(ad_node=self.node, created_on=0)
+        log = LdapProbeLog.objects.create(ad_node=self.node, created=0)
         self.assertNotIn(log, LdapProbeLog.error_report(self.test_delta))
 
     def test_error_report_includes_failed_logs(self):

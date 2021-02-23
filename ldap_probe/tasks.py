@@ -28,7 +28,7 @@ from p_soc_auto_base import utils
 from p_soc_auto_base.utils import get_absolute_admin_change_url, \
     get_or_create_user
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.models import Subscription
+from p_soc_auto_base.models import DeletionLog, Subscription
 
 LOG = get_task_logger(__name__)
 """default :class:`logger.Logging` instance for this module"""
@@ -120,7 +120,7 @@ def expire_entries(data_source=None, **age):
     specific date and time
 
     The assumption is that the :class:`model <django.db.models.Model>`
-    defined by the data_source argument has a field named `created_on`
+    defined by the data_source argument has a field named `created`
     and a field named `is_expired`.
 
     :arg str data_source: the name of a :class:`model
@@ -146,7 +146,7 @@ def expire_entries(data_source=None, **age):
 
         :exc:`AttributeError` if the
             :class:`django.db.models.Model` resolved from the `data_source`
-            argument doesn't have both a `created_on` attribute and an
+            argument doesn't have both a `created` attribute and an
             `is_expired` attribute
 
     """
@@ -159,10 +159,10 @@ def expire_entries(data_source=None, **age):
     except utils.UnknownDataTargetError as error:
         raise error
 
-    if not hasattr(data_source, 'created_on'):
+    if not hasattr(data_source, 'created'):
         raise AttributeError(
             f'Cannot do age tracking in the {data_source._meta.model_name}.'
-            ' It does not have a created_on field')
+            ' It does not have a created field')
 
     if not hasattr(data_source, 'is_expired'):
         raise AttributeError(
@@ -175,7 +175,7 @@ def expire_entries(data_source=None, **age):
     else:
         older_than = utils.MomentOfTime.past(**age)
 
-    count_expired = data_source.objects.filter(created_on__lte=older_than).\
+    count_expired = data_source.objects.filter(created__lte=older_than).\
         update(is_expired=True)
 
     LOG.info('Marked %s %s rows created earlier than %s as expired.',
@@ -238,6 +238,8 @@ def delete_expired_entries(data_source=None):
             ' It does not have an is_expired field')
 
     count_deleted = data_source.objects.filter(is_expired=True).all().delete()
+
+    DeletionLog(model_name=str(data_source), records_deleted=count_deleted[0]).save()
 
     LOG.info('Deleted %s expired rows from %s',
              count_deleted, data_source._meta.verbose_name)
@@ -889,7 +891,7 @@ def _raise_ldap_alert(subscription, level, instance_pk):
         ret = Email.send_email(
             data=data, subscription=subscription, add_csv=False,
             level=level, node=ldap_probe.node, errors=ldap_probe.errors,
-            created_on=ldap_probe.created_on,
+            created=ldap_probe.created,
             probe_url=ldap_probe.absolute_url,
             orion_url=ldap_probe.ad_node_orion_url,
             # TODO why doesn't this have its own function?

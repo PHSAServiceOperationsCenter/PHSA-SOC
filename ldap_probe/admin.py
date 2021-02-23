@@ -313,11 +313,11 @@ class LdapProbeLogFailedAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`ldap_probe.models.LdapProbeFailed`
     """
-    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors', 'created_on')
+    list_display = ('uuid', 'ad_orion_node', 'ad_node', 'errors', 'created')
     list_filter = (
         ('ad_node', admin.RelatedOnlyFieldListFilter),
         ('ad_orion_node', admin.RelatedOnlyFieldListFilter),
-        ('created_on', DateTimeRangeFilter),
+        ('created', DateTimeRangeFilter),
     )
 
 
@@ -329,11 +329,11 @@ class LdapProbeFullBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
                     'elapsed_initialize', 'elapsed_bind', 'elapsed_search_ext',
-                    'created_on', )
+                    'created', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
-                   ('created_on', DateTimeRangeFilter), )
+                   ('created', DateTimeRangeFilter), )
 
 
 @admin.register(ldap_probe_log.LdapProbeAnonBindLog)
@@ -344,11 +344,11 @@ class LdapProbeAnonBindLogAdmin(LdapProbeLogAdminBase, admin.ModelAdmin):
     """
     list_display = ('uuid', 'ad_orion_node', 'ad_node', 'failed',
                     'elapsed_initialize', 'elapsed_anon_bind',
-                    'elapsed_read_root', 'created_on', )
+                    'elapsed_read_root', 'created', )
     list_filter = (('ad_node', admin.RelatedOnlyFieldListFilter),
                    ('ad_orion_node',
                     admin.RelatedOnlyFieldListFilter),
-                   ('created_on', DateTimeRangeFilter),
+                   ('created', DateTimeRangeFilter),
                    'ad_orion_node__performance_bucket__name', )
 
 

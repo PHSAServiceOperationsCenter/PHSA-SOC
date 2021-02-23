@@ -101,11 +101,11 @@ class OrionCernerCSTNodeAdmin(OrionBaseAdmin, admin.ModelAdmin):
     :class:`OrionCernerCSTNode` model
     """
     list_display = ['node_caption', 'enabled', 'orion_id',
-                    'ip_address', 'category', 'machine_type', 'created_on',
+                    'ip_address', 'category', 'machine_type', 'created',
                     'updated_on', 'not_seen_since', 'program_application',
                     'program_application_type', 'site', 'region']
     list_editable = ['enabled']
-    list_filter = ['category__category', ('created_on', DateRangeFilter),
+    list_filter = ['category__category', ('created', DateRangeFilter),
                    ('updated_on', DateRangeFilter),
                    ('not_seen_since', DateRangeFilter),
                    'program_application',
@@ -138,10 +138,10 @@ class OrionNodeCategoryAdmin(OrionBaseAdmin, admin.ModelAdmin):
     :class:`OrionNodeCategory` model
     """
     list_display = ['category', 'enabled', 'orion_id',
-                    'created_on',
+                    'created',
                     'updated_on', 'not_seen_since', ]
     list_editable = ['enabled']
-    list_filter = [('created_on', DateRangeFilter),
+    list_filter = [('created', DateRangeFilter),
                    ('updated_on', DateRangeFilter),
                    ('not_seen_since', DateRangeFilter), ]
 
@@ -153,11 +153,11 @@ class OrionAPMApplicationAdmin(OrionBaseAdmin, admin.ModelAdmin):
     :class:`OrionAPMApplication` model
     """
     list_display = ['application_name', 'enabled', 'orion_id',
-                    'node', 'full_name', 'created_on',
+                    'node', 'full_name', 'created',
                     'updated_on', 'not_seen_since', 'status']
     list_editable = ['enabled']
     list_filter = ['node__site', 'node__category__category', 'status',
-                   ('created_on', DateRangeFilter),
+                   ('created', DateRangeFilter),
                    ('updated_on', DateRangeFilter),
                    ('not_seen_since', DateRangeFilter)]
     search_fields = ['application_name', 'full_name']

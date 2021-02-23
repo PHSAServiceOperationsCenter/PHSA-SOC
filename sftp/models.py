@@ -15,25 +15,19 @@ Django models for the :ref:`SFTP monitoring application`
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from p_soc_auto_base.utils import get_uuid
+from p_soc_auto_base.models import BaseModel
 
 
-class SFTPUploadLog(models.Model):
+class SFTPUploadLog(BaseModel):
     """
     :class:`django.db.models.Model` class used for storing SFTP test
            information
     """
-    uuid = models.UUIDField(_('UUID'), unique=True, db_index=True, blank=False,
-                            null=False, default=get_uuid)
     errors = models.TextField(_('Errors'), blank=True, null=True)
-    created_on = models.DateTimeField(
-        _('created on'), db_index=True, auto_now_add=True,
-        help_text=_('object creation time stamp')
-    )
     host = models.TextField(_('Host'), blank=False, null=False)
 
     class Meta:
         app_label = 'sftp'
         verbose_name = _('SFTP Upload Log')
-        get_latest_by = 'created_on'
-        ordering = ['-created_on']
+        get_latest_by = 'created'
+        ordering = ['-created']

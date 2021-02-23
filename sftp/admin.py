@@ -25,5 +25,5 @@ class SFTPUploadAdmin(BaseAdmin, admin.ModelAdmin):
     :class:`django.contrib.admin.ModelAdmin` class for the
     :class:`SFTPUploadLog` model
     """
-    list_display = ['created_on', 'host', 'errors', ]
+    list_display = ['created', 'host', 'errors', ]
     list_filter = ['host', 'errors']

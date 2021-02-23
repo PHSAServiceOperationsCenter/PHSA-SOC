@@ -555,7 +555,7 @@ class WinlogEvent(BaseModel, models.Model):
         'uuid', 'source_host__host_name', 'source_host__site__site',
         'record_number', 'event_state', 'storefront_connection_duration',
         'receiver_startup_duration', 'connection_achieved_duration',
-        'logon_achieved_duration', 'logoff_achieved_duration', 'created_on']
+        'logon_achieved_duration', 'logoff_achieved_duration', 'created']
     """
     use these fields when exporting the data in this model to csv
     """
@@ -626,5 +626,5 @@ class WinlogEvent(BaseModel, models.Model):
         app_label = 'citrus_borg'
         verbose_name = _('Citrix Bot Windows Log Event')
         verbose_name_plural = _('Citrix Bot Windows Log Events')
-        get_latest_by = 'created_on'
-        ordering = ['-created_on']
+        get_latest_by = 'created'
+        ordering = ['-created']

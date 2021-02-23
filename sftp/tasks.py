@@ -21,7 +21,7 @@ from pysftp import ConnectionException
 
 from citrus_borg.dynamic_preferences_registry import get_preference
 from p_soc_auto_base.email import Email
-from p_soc_auto_base.models import Subscription
+from p_soc_auto_base.models import DeletionLog, Subscription
 from p_soc_auto_base import utils
 from sftp.models import SFTPUploadLog
 
@@ -115,8 +115,10 @@ def delete_sftp_results(**age):
 
     older_than = utils.MomentOfTime.past(**age)
 
-    count_deleted = sftp_model.objects.filter(created_on__lte=older_than)\
+    count_deleted = sftp_model.objects.filter(created__lte=older_than)\
         .delete()
+
+    DeletionLog(model_name=str(sftp_model), records_deleted=count_deleted[0]).save()
 
     LOG.info('Deleted %s sftp logs created earlier than %s.', count_deleted,
              older_than.isoformat())

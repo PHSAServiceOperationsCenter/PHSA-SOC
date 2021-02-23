@@ -526,6 +526,7 @@ class OrionNode(OrionBaseModel, models.Model):
 
     class Meta:
         app_label = 'orion_integration'
+        get_latest_by = 'updated_on'
         verbose_name = _('Orion Node')
         verbose_name_plural = _('Orion Nodes')
 

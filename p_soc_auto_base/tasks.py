@@ -100,9 +100,9 @@ def check_app_activity(hours, *app_pairs):
         except model.DoesNotExist:
             latest_time = None
         else:
-            latest_time = getattr(latest, app['column'])
+            latest_time = getattr(latest, model._meta.get_latest_by)
 
-        check = {f'{app["column"]}__gt': now - delta}
+        check = {f'{model._meta.get_latest_by}__gt': now - delta}
         count = len(model.objects.filter(**check))
 
         activity_pairs.append([app['name'], count, latest_time])

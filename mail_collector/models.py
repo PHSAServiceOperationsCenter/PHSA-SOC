@@ -340,7 +340,7 @@ class MailBotLogEvent(models.Model):
         verbose_name = _('Mail Monitoring Event')
         verbose_name_plural = _('Mail Monitoring Events')
         ordering = ['-event_group_id', 'mail_account', 'event_type_sort']
-        get_latest_by = '-event_registered_on'
+        get_latest_by = 'event_registered_on'
 
 
 class MailBotMessage(models.Model):

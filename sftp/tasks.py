@@ -94,7 +94,7 @@ def upload_sftp_file(file, upload_name, host):
     upload_log = SFTPUploadLog(errors=error, host=host)
     upload_log.save()
     if error:
-        data = SFTPUploadLog.objects.filter(uuid=upload_log.uuid)
+        data = SFTPUploadLog.objects.filter(id=upload_log.id)
         Email.send_email(data, Subscription.get_subscription('SFTP Alert'),
                          False, host=host)
 

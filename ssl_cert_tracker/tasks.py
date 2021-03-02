@@ -252,6 +252,9 @@ def verify_ssl_for_node_port(cert_node_port_tuple):
                  ' %s does not exist', cert_node_port_tuple[1], port,
                  cert_node_port_tuple[1])
         return
+    except Exception as exc:
+        LOG.warning('%s', exc)
+        raise
 
     try:
         _ = SslProbe(ip_address, port)

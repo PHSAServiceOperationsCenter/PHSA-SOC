@@ -197,51 +197,52 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
                  instance.event.event_status, instance.event.event_type)
         return None
 
-    if instance.event.event_type == 'send':
-        account_str = instance.sent_from
-    else:
-        #receive
-        account_str = instance.received_by[0]
+    updated_resources = []
 
-    exchange_server, database = account_str.split('-')[1:3]
-    database = database.split('@')[0]
-    last_updated_from_node_id = instance.event.source_host.orion_id
+    for account_str in instance.received_by:
+        exchange_server, database = account_str.split('-')[1:3]
+        database = database.split('@')[0]
+        last_updated_from_node_id = instance.event.source_host.orion_id
 
-    LOG.info('Updating exchange entities. Server %s database %s',
-             exchange_server, database)
+        LOG.info('Updating exchange entities. Server %s database %s',
+                 exchange_server, database)
 
-    try:
-        exchange_server = ExchangeServer.objects.get(
-            exchange_server=exchange_server)
-    except ExchangeServer.DoesNotExist:
-        exchange_server = ExchangeServer(exchange_server=exchange_server)
-        exchange_server.save()
+        try:
+            exchange_server = ExchangeServer.objects.get(
+                exchange_server=exchange_server)
+        except ExchangeServer.DoesNotExist:
+            exchange_server = ExchangeServer(exchange_server=exchange_server)
+            exchange_server.save()
 
-    exchange_server.last_updated_from_node_id = last_updated_from_node_id
+        exchange_server.last_updated_from_node_id = last_updated_from_node_id
 
-    if instance.event.event_type == 'send':
+        if instance.event.event_type == 'send':
+            exchange_server.last_inbox_access = instance.event.event_registered_on
+            exchange_server.save()
+
+            LOG.info("Event was a send, not updating database")
+
+            updated_resources.append(exchange_server)
+
+            continue
+
         exchange_server.last_send = instance.event.event_registered_on
         exchange_server.save()
 
-        LOG.info("Event was a send, not updating database")
+        try:
+            database = ExchangeDatabase.objects.get(
+                database=database)
+            database.last_access = instance.event.event_registered_on
+        except ExchangeDatabase.DoesNotExist:
+            database = ExchangeDatabase(
+                database=database, exchange_server=exchange_server,
+                last_access=instance.event.event_registered_on)
 
-        return exchange_server, instance.event.event_type
+        database.last_updated_from_node_id = last_updated_from_node_id
+        database.save()
 
-    exchange_server.last_inbox_access = instance.event.event_registered_on
-    exchange_server.save()
+        updated_resources.append(database)
 
-    try:
-        database = ExchangeDatabase.objects.get(
-            database=database)
-        database.last_access = instance.event.event_registered_on
-    except ExchangeDatabase.DoesNotExist:
-        database = ExchangeDatabase(
-            database=database, exchange_server=exchange_server,
-            last_access=instance.event.event_registered_on)
-
-    database.last_updated_from_node_id = last_updated_from_node_id
-    database.save()
-
-    return database, instance.event.event_type
+    return updated_resources, instance.event.event_type
 
 # pylint: enable=unused-argument

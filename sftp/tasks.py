@@ -84,16 +84,18 @@ def upload_sftp_file(file, upload_name, host):
         LOG.warning('SSH failed: %s', exc)
         error = exc
     except ConnectionException as exc:
-        LOG.warning('SFTP failed, could not connect to %s:%s', exc[0], exc[1])
+        LOG.warning('SFTP failed, could not connect to %s: %s', host, exc)
         error = exc
     except Exception as exc:  # pylint: disable=broad-except
         # Catch all unexpected exceptions so they will show up in our logs
         LOG.warning('Unexpected error encountered: %s %s', type(exc), exc)
         error = exc
 
+    LOG.debug('creating upload log')
     upload_log = SFTPUploadLog(errors=error, host=host)
     upload_log.save()
     if error:
+        LOG.debug('Sending failure email')
         data = SFTPUploadLog.objects.filter(id=upload_log.id)
         Email.send_email(data, Subscription.get_subscription('SFTP Alert'),
                          False, host=host)

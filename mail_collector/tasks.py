@@ -98,8 +98,6 @@ def store_mail_data(body):
             event=event,
             mail_message_identifier=mail_data.mail_message_identifier,
             sent_from=mail_data.sent_from, sent_to=mail_data.sent_to,
-            received_from=mail_data.received_from,
-            received_by=mail_data.received_by,
             mail_message_created=mail_data.mail_message_created,
             mail_message_sent=mail_data.mail_message_sent,
             mail_message_received=mail_data.mail_message_received)

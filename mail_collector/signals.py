@@ -94,13 +94,13 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
     from_domain = instance.sent_from.split('@')[1]
 
-    if not instance.received_by:
+    if not instance.sent_to:
         # the receive event is incomplete thus it failed, bail
         LOG.info("Message %s does not have a received by.", instance)
         return
 
     # There should only be a single email in a received message
-    to_domain = instance.received_by[0].split('@')[1]
+    to_domain = instance.sent_to[0].split('@')[1]
 
     last_updated_from_node_id = instance.event.source_host.orion_id
 
@@ -199,7 +199,10 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
 
     updated_resources = []
 
-    for account_str in instance.received_by:
+    LOG.debug('sent to is %s', instance.sent_to)
+
+    for account_str in instance.sent_to:
+        LOG.debug('account string is %s', account_str)
         exchange_server, database = account_str.split('-')[1:3]
         database = database.split('@')[0]
         last_updated_from_node_id = instance.event.source_host.orion_id

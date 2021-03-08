@@ -344,7 +344,7 @@ class MailBotMessageAdmin(MailBotAdmin, admin.ModelAdmin):
     readonly_fields = ('event_uuid', 'event_group_id', 'event_type',
                        'event_status', 'mail_message_identifier', 'show_site',
                        'event_message', 'source_host', 'event_body',
-                       'sent_from', 'sent_to', 'received_from', 'received_by',
+                       'sent_from', 'sent_to',
                        'mail_message_created', 'mail_message_sent',
                        'mail_message_received', 'mail_account',
                        'sent_from', 'sent_to', 'event_registered_on')

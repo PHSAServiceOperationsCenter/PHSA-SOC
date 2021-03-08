@@ -355,8 +355,6 @@ class MailBotMessage(models.Model):
         blank=False, null=False)
     sent_from = models.TextField(_('Sent From'), blank=True, null=True)
     sent_to = models.TextField(_('Sent To'), blank=True, null=True)
-    received_from = models.TextField(_('Received From'), blank=True, null=True)
-    received_by = models.TextField(_('Received By'), blank=True, null=True)
     mail_message_created = models.DateTimeField(
         _('Created'), db_index=True, blank=True, null=True)
     mail_message_sent = models.DateTimeField(
@@ -395,6 +393,7 @@ class ExchangeServer(BaseModel, models.Model):
     last_send = models.DateTimeField(
         _('Last Send'), db_index=True, blank=True, null=True,
         help_text=_('Last time a message was send via this server'))
+    # TODO does this name make sense anymore?
     last_inbox_access = models.DateTimeField(
         _('Last Inbox Access'), db_index=True, blank=True, null=True,
         help_text=_('Can also be considered as last received'))

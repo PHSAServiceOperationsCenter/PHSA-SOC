@@ -458,7 +458,7 @@ def parse_exchange_message(message):
     ExchangeMessage = collections.namedtuple(
         'ExchangeMessage',
         ['sent_from', 'sent_to',
-         'mail_message_identifier', 'received_from', 'received_by',
+         'mail_message_identifier',
          'mail_message_created', 'mail_message_sent', 'mail_message_received']
     )
 
@@ -478,8 +478,6 @@ def parse_exchange_message(message):
             sent_from=message.get('from_email'),
             sent_to=message.get('to_emails'),
             mail_message_identifier=message.get('message_uuid'),
-            received_from=message.get('from_address'),
-            received_by=message.get('to_addresses'),
             mail_message_created=_parse_datetime(message.get('created')),
             mail_message_sent=_parse_datetime(message.get('sent')),
             mail_message_received=_parse_datetime(message.get('received')))

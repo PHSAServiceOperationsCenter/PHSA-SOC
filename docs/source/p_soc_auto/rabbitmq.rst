@@ -73,45 +73,33 @@ restart the ``celery workers``.
 
 .. code-block:: bash
 
-    steodore@lvmsocq01:~$ sudo su -
-    Last login: Fri Sep 20 09:59:14 PDT 2019 on pts/0
-    [root@lvmsocq01 ~]# cd /var/lib/rabbitmq/mnesia/rabbit\@lvmsocq01
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl stop rabbitmq-server
-    [root@lvmsocq01 rabbit@lvmsocq01]# rm -rf *
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl start rabbitmq-server
-    [root@lvmsocq01 rabbit@lvmsocq01]# 
+    cd /var/lib/rabbitmq/mnesia/rabbit\@lvmsocq01
+    systemctl stop rabbitmq-server
+    rm -rf *
+    systemctl start rabbitmq-server
 
 * restart the *Logstash* server:
 
 .. code-block:: bash
 
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart logstash
-    [root@lvmsocq01 rabbit@lvmsocq01]# 
+     systemctl restart logstash
+     
 
 * restart the ``SOC Automation server``:
 
 .. code-block:: bash
 
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl  restart nginx
-    [root@lvmsocq01 rabbit@lvmsocq01]# 
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart uwsgi-phsa-soc-app.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# 
+     systemctl restart nginx
+     
+     systemctl restart uwsgi-phsa-soc-app.service
+     
     
-* restart the ``SOC Automation celery workers``:
+* restart the ``SOC Automation celery workers`` using the "restart_celery_services" command, which is an alias for:
 
 .. code-block:: bash
 
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_borg_chat.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_citrus_borg.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_ssl.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_shared.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_orion.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_nmap.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_beat.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_flower.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# systemctl restart phsa_celery_mail_collector.service
-    [root@lvmsocq01 rabbit@lvmsocq01]# 
+     find /etc/systemd/system -name '\''phsa_celery*.service'\'' -exec basename {} \; | xargs sudo systemctl restart'
+     
 
 .. note::
     This procedure may wipe out the logstash message handling. You must follow the steps below to ensure message process

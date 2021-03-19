@@ -45,7 +45,7 @@ django-template-check==0.3.1
 django-templated-email==2.3.0
 django-timedeltatemplatefilter==0.1.2
 django-timezone-field==3.1
-djangorestframework==3.10.3
+djangorestframework==3.11.2
 dnspython==1.16.0
 docutils==0.15.2
 durations==0.3.3

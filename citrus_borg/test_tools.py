@@ -1,7 +1,7 @@
 from time import sleep
 
 from citrus_borg.tasks import process_citrix_login
-from citrus_borg.dynamic_preferences_registry import get_int_list_preference
+from citrus_borg.preferences import get_int_list_preference
 
 from random import choice
 from datetime import datetime, timezone

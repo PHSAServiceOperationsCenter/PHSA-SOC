@@ -24,7 +24,7 @@ from django.utils import timezone
 from djqscsv import write_csv
 from templated_email import get_templated_mail
 
-from citrus_borg.dynamic_preferences_registry import get_preference, \
+from citrus_borg.preferences import get_preference, \
     get_list_preference
 
 LOG = getLogger(__name__)

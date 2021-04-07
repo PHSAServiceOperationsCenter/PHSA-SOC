@@ -19,7 +19,7 @@ from paramiko import SSHException
 import pysftp
 from pysftp import ConnectionException
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 from p_soc_auto_base.email import Email
 from p_soc_auto_base.models import DeletionLog, Subscription
 from p_soc_auto_base import utils

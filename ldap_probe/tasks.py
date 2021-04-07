@@ -21,7 +21,7 @@ from celery.utils.log import get_task_logger
 from django.apps import apps
 from django.utils import timezone
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 from ldap_probe.ad_probe import ADProbe
 from ldap_probe.ldap_probe_log import LdapProbeLog
 from p_soc_auto_base import utils

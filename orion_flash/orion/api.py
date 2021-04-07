@@ -24,7 +24,7 @@ from orionsdk import SwisClient
 
 from django.conf import settings
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 
 from .qv import (ALL_CUSTOM_PROPS_QUERY, FILTERED_CUSTOM_PROPS_QUERY,
                  CUSTOM_PROPS_VALS_VERB, CUSTOM_PROPS_VALS_INVOKE_ARGS,

@@ -19,8 +19,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from citrus_borg.dynamic_preferences_registry import (get_preference,
-                                                      get_int_list_preference)
+from citrus_borg.preferences import (get_preference,
+                                     get_int_list_preference)
 from citrus_borg.models import EventCluster, WinlogEvent
 from citrus_borg.tasks import raise_citrix_slow_alert
 from orion_flash.orion.api import DestSwis

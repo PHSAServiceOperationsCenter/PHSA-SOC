@@ -35,7 +35,7 @@ from logging import getLogger
 
 from event_consumer import message_handler
 
-from citrus_borg.dynamic_preferences_registry import get_list_preference
+from citrus_borg.preferences import get_list_preference
 from mail_collector.tasks import store_mail_data
 
 from .models import AllowedEventSource

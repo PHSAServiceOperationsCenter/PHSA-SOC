@@ -17,7 +17,7 @@ import datetime
 from django.db.models import Max
 from django.db.models.query import QuerySet
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 from p_soc_auto_base.utils import (
     MomentOfTime, get_base_queryset,
     url_annotate as _url_annotate,

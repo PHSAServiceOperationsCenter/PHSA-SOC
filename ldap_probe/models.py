@@ -27,7 +27,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 from p_soc_auto_base.models import BaseModel, BaseModelWithDefaultInstance
 from p_soc_auto_base.utils import MomentOfTime
 

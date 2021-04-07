@@ -12,7 +12,7 @@ Application`.
 
 :contact:    daniel.busto@phsa.ca
 """
-from citrus_borg.dynamic_preferences_registry import get_preference
+from citrus_borg.preferences import get_preference
 
 from .models import OrionNode, OrionCernerCSTNode
 

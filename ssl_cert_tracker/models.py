@@ -20,6 +20,7 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import classproperty
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -248,6 +249,11 @@ class SslCertificate(SslCertificateBase, models.Model):
         _('primary key sha1 fingerprint'), blank=False, null=False)
     last_seen = models.DateTimeField(
         _('last seen'), db_index=True, blank=False, null=False)
+
+    @classproperty
+    def gen_func_name(self):
+        return 'get_ssl_nodes'
+
 
     def __str__(self):
         return (

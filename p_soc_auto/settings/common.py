@@ -203,9 +203,9 @@ INSTALLED_APPS = [
     'templated_email', 'timedeltatemplatefilter', 'dynamic_preferences',
     'grappelli.dashboard', 'grappelli', 'django.contrib.admin',
     'django.contrib.admindocs', 'django.contrib.auth',
-    'django.contrib.contenttypes', 'django.contrib.sessions',
-    'django.contrib.messages', 'django.contrib.staticfiles',
-    'django_celery_beat',
+    'django.contrib.contenttypes', 'django.contrib.humanize',
+    'django.contrib.sessions', 'django.contrib.messages',
+    'django.contrib.staticfiles', 'django_celery_beat',
 ]
 
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware',

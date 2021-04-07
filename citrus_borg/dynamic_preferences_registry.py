@@ -1630,6 +1630,38 @@ class SFTPPassword(StringPreference):
     verbose_name = _('The password that is used to login into SFTP server.')
 
 
+@global_preferences_registry.register
+class ExternalTaskPeriod(StringPreference):
+    """
+    Dynamic preference to store the period that is too long a gap between
+    running tasks that are not controlled by celery
+
+    :access_key: 'commonalertargs__external_task_period'
+    """
+    section = COMMON_ALERT_ARGS
+    name = 'external_task_period'
+    default = 'minutes'
+    required = True
+    verbose_name = _('The expected longest wait between instances of events '
+                     'whose period is set externally (to the django app).')
+
+
+@global_preferences_registry.register
+class ExternalTaskEvery(IntPreference):
+    """
+    Dynamic preference to store the number of peridos that is too long a gap
+    between running tasks that are not controlled by celery
+
+    :access_key: 'commonalertargs__external_task_every'
+    """
+    section = COMMON_ALERT_ARGS
+    name = 'external_task_every'
+    default = 10
+    required = True
+    verbose_name = _('The expected longest wait between instances of events '
+                     'whose period is set externally (to the django app).')
+
+
 def get_preference(key):
     """
     get the current value of a dynamic preference

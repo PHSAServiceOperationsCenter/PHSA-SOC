@@ -12,11 +12,12 @@ This email includes the app activity on the SOC Automation server {{machine}} fo
 <th><strong>App Activity Description</strong></th>
 <th><strong>Times Executed</strong></th>
 <th><strong>Last Run</strong></th>
+<th><strong>Run Schedule</strong></th>
 </tr>
-{% for pair in activity_pairs %}
-    <tr align="left" valign="center">
-    {% for value in pair %}
-        <td style="border: 1px solid black;">{{value}}</td>
+{% for activity in activity_pairs %}
+    <tr align="left" valign="center" {% if activity.is_due %} bgcolor="red" style="color: white" {% endif %} >
+    {% for desc, value in activity.items %}
+        {% if desc != 'is_due' %}<td style="border: 1px solid black;">{{value}}</td>{% endif %}
     {% endfor %}
     </tr>
 {% endfor %}

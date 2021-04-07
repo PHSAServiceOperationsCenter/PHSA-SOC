@@ -19,8 +19,10 @@ from datetime import timedelta
 from logging import getLogger
 
 from celery import group, shared_task
+from citrus_borg.dynamic_preferences_registry import get_preference
 from django.apps import apps
 from django.utils import timezone
+from django_celery_beat.models import PeriodicTask
 
 from p_soc_auto_base import utils
 from p_soc_auto_base.email import Email
@@ -86,14 +88,15 @@ def delete_emails(**age):
 
 #TODO allow passing in now
 @shared_task(queue='shared')
-def check_app_activity(hours, *app_pairs):
+def check_app_activity(hours, *apps_to_monitor):
     # TODO offload these checks to the individual projects but call from here
     now = timezone.now()
     delta = timedelta(hours=hours)
     activity_pairs = []
 
-    for app in app_pairs:
-        model = apps.get_model(app['model'])
+    for app in apps_to_monitor:
+        print(app)
+        model = apps.get_model(app)
 
         try:
             latest = model.objects.latest()
@@ -105,10 +108,51 @@ def check_app_activity(hours, *app_pairs):
         check = {f'{model._meta.get_latest_by}__gt': now - delta}
         count = len(model.objects.filter(**check))
 
-        activity_pairs.append([app['name'], count, latest_time])
+        try:
+            gen_tasks = PeriodicTask.objects.filter(task__contains=model.gen_func_name) #, enabled=True) For testing don't check if enabled
+            if gen_tasks.count() != 1:
+                raise Exception(f'Found {gen_tasks.count()} tasks. Cannot provide schedule if there is not a single cannonical task.')
+            cannonical_task = gen_tasks.first()
+            # only one of the schedules can be set so using or here is fine
+            schedule_wrapper = (cannonical_task.interval
+                               or cannonical_task.crontab
+                               or cannonical_task.solar
+                               or cannonical_task.clocked)
+        except AttributeError:
+            # couldn't find the generator in registry, no schedule to find
+            schedule_wrapper = None
+
+        # TODO do some sort of thing to set is_due when there is no schedule
+        is_due = not latest_time
+
+        if latest_time:
+            if not schedule_wrapper:
+                delta = get_external_task_schedule()
+                is_due = latest_time < timezone.now() - delta
+            else:
+                is_due = schedule_wrapper.schedule.is_due(latest_time)
+
+        activity_pairs.append({
+            'is_due': is_due,
+            'model': model._meta.verbose_name,
+            'count': count,
+            'latest': latest_time,
+            'schedule': schedule_wrapper or "Set externally"
+        })
+
+        if is_due:
+            if schedule_wrapper:
+                schedule_str = schedule_wrapper.schedule.run_every
+            else:
+                schedule_str = get_external_task_schedule()
+
+            schedule_str = timezone.now() - schedule_str
+
+            Email.send_email(None, Subscription.get_subscription('No Activity'),
+                app_name=model._meta.verbose_name, schedule=schedule_str)
 
     def get_name(pair_array):
-        return pair_array[0]
+        return pair_array['model']
 
     sorted_pairs = sorted(activity_pairs, key=get_name)
 
@@ -116,8 +160,7 @@ def check_app_activity(hours, *app_pairs):
                      activity_pairs=sorted_pairs,
                      machine=socket.gethostname(), hours=hours)
 
-    for pair in activity_pairs:
-        if pair[1] == 0:
-            Email.send_email(
-                None, Subscription.get_subscription('No Activity'),
-                app_name=pair[0], hours=hours)
+
+def get_external_task_schedule():
+    return timedelta(**{get_preference('commonalertargs__external_task_period'):
+                        get_preference('commonalertargs__external_task_every')})

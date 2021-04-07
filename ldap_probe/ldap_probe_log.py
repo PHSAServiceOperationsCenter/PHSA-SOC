@@ -20,6 +20,7 @@ from django.db import models
 from django.db.models import (
     Case, When, F, Value, TextField, Q)
 from django.db.models.functions import Concat
+from django.utils.decorators import classproperty
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
@@ -83,6 +84,10 @@ class LdapProbeLog(models.Model):
     failed = models.BooleanField(
         _('Probe failed'), db_index=True, blank=False, null=False,
         default=False)
+
+    @classproperty
+    def gen_func_name(self):
+        return 'bootstrap_ad_probes'
 
     @classmethod
     def error_report(cls, time_delta):

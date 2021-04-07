@@ -13,6 +13,7 @@ Django models for the :ref:`SFTP monitoring application`
 """
 
 from django.db import models
+from django.utils.decorators import classproperty
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.models import BaseModel
@@ -25,6 +26,10 @@ class SFTPUploadLog(BaseModel):
     """
     errors = models.TextField(_('Errors'), blank=True, null=True)
     host = models.TextField(_('Host'), blank=False, null=False)
+
+    @classproperty
+    def gen_func_name(self):
+        return 'upload_sftp_file'
 
     class Meta:
         app_label = 'sftp'

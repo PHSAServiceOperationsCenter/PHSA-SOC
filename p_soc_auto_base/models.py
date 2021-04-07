@@ -20,6 +20,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.decorators import classproperty
 from django.utils.translation import gettext_lazy as _
 
 from p_soc_auto_base.utils import get_default_user_id
@@ -358,6 +359,10 @@ class DeletionLog(BaseModel):
                                   blank=False, null=False)
     records_deleted = models.PositiveIntegerField('Number of deleted records',
                                                   blank=False, null=False)
+
+    @classproperty
+    def gen_func_name(self):
+        return 'group_deletions' #wanted to import this function so that it would give a good error but can't because it would be circular
 
     class Meta:
         get_latest_by = 'created'

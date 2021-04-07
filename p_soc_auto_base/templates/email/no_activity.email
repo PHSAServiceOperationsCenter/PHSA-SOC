@@ -1,10 +1,12 @@
+{% load humanize %}
 {% block subject %}
-{{ tags }} ERROR: {{app_name}} inactive for {{hours}} hours
+{{ tags }} ERROR: {{app_name}} inactive for {{schedule}}
 {% endblock %}
 
 {% block html %}
 
-{{app_name}} has not reported any activity on SOC Automation server {{machine}} for the past {{hours}} hours.
+{{app_name}} has not reported any activity on SOC Automation server {{machine}} since {{schedule|naturaltime}}, during which
+it was expected to run at least one task.
 
 {% include './footer.email' %}
 {% endblock %}

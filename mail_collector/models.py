@@ -392,7 +392,7 @@ class ExchangeServer(BaseModel, models.Model):
             'Last time an account connected successfully to this server'))
     last_send = models.DateTimeField(
         _('Last Send'), db_index=True, blank=True, null=True,
-        help_text=_('Last time a message was send via this server'))
+        help_text=_('Last time a message was sent via this server'))
     # TODO does this name make sense anymore?
     last_inbox_access = models.DateTimeField(
         _('Last Inbox Access'), db_index=True, blank=True, null=True,
@@ -417,7 +417,7 @@ class ExchangeServer(BaseModel, models.Model):
         get_latest_by = '-last_updated'
 
 
-class ExchangeDatabase(models.Model):
+class ExchangeDatabase(BaseModel, models.Model):
     """
     Model for exchange database instances
 

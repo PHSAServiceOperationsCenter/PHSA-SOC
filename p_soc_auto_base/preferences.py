@@ -21,6 +21,11 @@ function. For example:
 
     In [3]:
 
+Running manage.py will complain that only the preferences in this file are
+registered, but that is incorrect. The other preferences simply have not been
+registered when the check with the database is made, but are registered later.
+So far there is no known way to correct his mistaken error message.
+
 :copyright:
 
     Copyright 2021 Provincial Health Service Authority

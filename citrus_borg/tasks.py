@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from celery import shared_task, group
 
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 from citrus_borg.locutus.assimilation import parse_citrix_login_event
 from citrus_borg.locutus.communication import (
     get_dead_bots, get_dead_brokers, get_dead_sites,

@@ -17,7 +17,7 @@ from citrus_borg.locutus.communication import (
     get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,
     raise_ux_alarm, GroupBy,
 )
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 from p_soc_auto_base import utils as base_utils
 
 

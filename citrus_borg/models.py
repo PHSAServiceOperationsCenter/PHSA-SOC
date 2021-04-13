@@ -25,7 +25,7 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 from orion_integration.models import OrionNode
 from orion_integration.orion import OrionClient
 from p_soc_auto_base.models import BaseModel

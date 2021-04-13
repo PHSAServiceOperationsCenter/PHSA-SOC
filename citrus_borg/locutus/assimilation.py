@@ -142,7 +142,7 @@ import socket
 
 from django.utils.dateparse import parse_duration, parse_datetime
 
-from citrus_borg.preferences import get_list_preference
+from p_soc_auto_base.preferences import get_list_preference
 
 LOG = getLogger(__name__)
 

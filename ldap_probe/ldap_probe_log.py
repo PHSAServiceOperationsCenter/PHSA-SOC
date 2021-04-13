@@ -24,9 +24,10 @@ from django.utils.decorators import classproperty
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from citrus_borg.preferences import get_preference
-from ldap_probe.managers import LdapProbeLogAnonBindManager, \
-    LdapProbeLogFailedManager, LdapProbeLogFullBindManager
+from p_soc_auto_base.preferences import get_preference
+from ldap_probe.managers import (
+    LdapProbeLogAnonBindManager, LdapProbeLogFailedManager,
+    LdapProbeLogFullBindManager)
 from ldap_probe.models import NonOrionADNode, OrionADNode
 from p_soc_auto_base.utils import (
     MomentOfTime, get_uuid, get_absolute_admin_change_url)

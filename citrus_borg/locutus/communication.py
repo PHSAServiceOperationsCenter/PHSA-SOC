@@ -31,7 +31,7 @@ from dynamic_preferences.exceptions import NotFoundInRegistry
 from citrus_borg.models import (
     WinlogEvent, WinlogbeatHost, KnownBrokeringDevice, BorgSite,
 )
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 
 
 class GroupBy(Enum):

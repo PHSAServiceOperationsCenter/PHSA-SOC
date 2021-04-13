@@ -19,7 +19,7 @@ from datetime import timedelta
 from logging import getLogger
 
 from celery import group, shared_task
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 from django.apps import apps
 from django.utils import timezone
 from django_celery_beat.models import PeriodicTask

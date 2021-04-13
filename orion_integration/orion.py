@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 
 from requests import Session, urllib3
 
-from citrus_borg.preferences import get_preference
+from p_soc_auto_base.preferences import get_preference
 
 SESSION = Session()
 """

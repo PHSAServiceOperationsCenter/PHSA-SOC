@@ -803,7 +803,7 @@ exposed by
 
 DYNAMIC_PREFERENCES = {
     'MANAGER_ATTRIBUTE':            'preferences',
-    'REGISTRY_MODULE':              'dynamic_preferences_registry',
+    'REGISTRY_MODULE':              'preferences',
     'ADMIN_ENABLE_CHANGELIST_FORM': True,
     'SECTION_KEY_SEPARATOR':        '__',
     'ENABLE_CACHE':                 True,

@@ -608,7 +608,7 @@ EMAIL_HOST_PASSWORD = ''
 
 # ===========================================================================
 
-DEFAULT_FROM_EMAIL = 'TSCST-Support@hssbc.ca'
+DEFAULT_FROM_EMAIL = 'no-reply@phsa.ca'
 """
 default address used in the ``FROM:`` field for emails originating on the
 :ref:`SOC Automation Server`

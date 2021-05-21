@@ -220,7 +220,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
         exchange_server.last_updated_from_node_id = last_updated_from_node_id
 
         if instance.event.event_type == 'send':
-            exchange_server.last_inbox_access = instance.event.event_registered_on
+            exchange_server.last_send = instance.event.event_registered_on
             exchange_server.save()
 
             LOG.info("Event was a send, not updating database")
@@ -229,7 +229,7 @@ def update_exchange_entities_from_message(sender, instance, *args, **kwargs):
 
             continue
 
-        exchange_server.last_send = instance.event.event_registered_on
+        exchange_server.last_inbox_access = instance.event.event_registered_on
         exchange_server.save()
 
         try:

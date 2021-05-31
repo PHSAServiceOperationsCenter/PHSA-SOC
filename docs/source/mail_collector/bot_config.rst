@@ -110,9 +110,9 @@ models defined in the :ref:`Citrus Borg Application`.
 
 .. uml::
    :caption: Exchange client configuration data model
-   
+
     scale 1080*1920
-    
+
     package "mail_collector" <<Rectangle>> {
         
         abstract class BaseEmail {

@@ -1,7 +1,5 @@
 """
-.. _base_apps:
-
-sftp.apps
+.. sftp.apps
 ---------
 
 This module contains the `Django` application configuration for sftp.

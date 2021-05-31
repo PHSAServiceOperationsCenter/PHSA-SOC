@@ -3,26 +3,18 @@ SOC Automation Server
 
 The :ref:`SOC Automation Server` is a `Django <https://www.djangoproject.com/>`_
 application server running with a `MariaDB <https://mariadb.org/>`_ database.
-See :ref:`MariaDB Details` for more usage information on the `MariaDB
-<https://mariadb.org/>`_ database server.
-
-The :ref:`SOC Automation Server` is exposed to the network by an `NGINX server
+It is exposed to the network by an `NGINX server
 <https://nginx.org/en/download.html>`_ over `uWSGI
 <https://uwsgi-docs.readthedocs.io/en/latest/>`_.
-See :ref:`NGINX Details` for more usage information about the `NGINX server
-<https://nginx.org/en/download.html>`_.
-See :ref:`uWSGI Details` for more usage information about the  `uWSGI
-<https://uwsgi-docs.readthedocs.io/en/latest/>`_ layer.
-
 The :ref:`SOC Automation Server` supports asynchronous task execution via
-`Celery <http://www.celeryproject.org/>`_.
-See :ref:`Celery Details` for more usage information about `Celery
-<http://www.celeryproject.org/>`_.
+`Celery <http://www.celeryproject.org/>`_, and content caching via `memcached
+<https://memcached.org/>`_.
 
-The :ref:`SOC Automation Server` supports content caching via `memcached
-<https://memcached.org/>`_.
-See :ref:`Memcached Details` for more usage information about `memcached
-<https://memcached.org/>`_.
+For more details see:
+* :ref:`MariaDB Details`
+* :ref:`NGINX Details`
+* :ref:`uWSGI Details`
+* :ref:`Celery Details`
 
 Off the shelf components are installed using the normal facilities provided
 by the operating system of the :ref:`SOC Automation Server` host.

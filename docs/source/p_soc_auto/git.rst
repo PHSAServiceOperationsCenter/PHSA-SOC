@@ -30,12 +30,16 @@ Commit Process
 --------------
 
 1. Sanity test code locally.
-2. Deploy code on test server and sure it runs correctly. It may be necessary to wait overnight to allow scheduled processes to run.
-3. Run Pylint and Bandit on modified files, and make changes as appropriate (create comments for suggested changes that are being ignored, either explaining why they are inappropriate [eg modifying functions inherited from Django whose arguments are not used in our code] or a TODO explaining the problem and [if possible] potential solutions)
-4. Open a pull request via GitHub and assign reviewers (or get code re-reviewed if modifying code in response to feedback).
-5. Respond to reviewer comments, modifying code and returning to step one as necessary.
-6. Code will be merged as per above.
+2. Run Pylint and Bandit on modified files, and make changes as appropriate (create comments for ignored suggestions, either explaining why they are inappropriate or a TODO explaining the problem and potential solutions)
+3. Take a snapshot of database on the production server. `mysqldump phsa_database -u phsa_db_user -p > snapshot[date].sql`
+4. Copy database snapshot onto the test server and copy into database, by dropping all the database rows and then running `mysql phsa_database -u phsa_db_user -p < snapshot[date].sql`
+5. Deploy code to test server, by pulling the development branch.
+6. Run the Django migrations to update database: `python manage.py migrate` (from the base project directory)
+7. Restart the necessary services, at minumum run `restart_celery_services`. It may be necessary to wait overnight to allow scheduled processes to run and verify results.
+8. Open a pull request to the next version branch via GitHub and assign reviewers (or get code re-reviewed if modifying code in response to feedback).
+9. Respond to reviewer comments, modifying code and returning to step one as necessary.
+10. Code will be merged as per above.
 
 .. todo ::
 
-    Set up automated tests. Would be a step between 1 and 2.
+    Set up automated tests to be run on development machine. Would be a step between 1 and 2.

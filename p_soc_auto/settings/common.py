@@ -328,8 +328,8 @@ default network address for the `SolarWinds Orion server
 <https://www.solarwinds.com/solutions/orion>`__
 
 This variable is exposed by the 
-:attr:`citrus_borg.dynamic_preferences_registry.OrionServer.default`
-attribute of the :class:`citrus_borg.dynamic_preferences_registry.OrionServer`
+:attr:`orion_integration.preferences.OrionServer.default`
+attribute of the :class:`orion_integration.preferences.OrionServer`
 dynamic preference.
 
 We recommend that the `SolarWinds Orion server
@@ -337,17 +337,15 @@ We recommend that the `SolarWinds Orion server
 from the `Orion Server Host Name or IP Address
 <../../../admin/dynamic_preferences/globalpreferencemodel/?q=orion_hostname&o=2>`__
 page and be accessed using the
-:func:`citrus_borg.dynamic_preferences_registry.get_preference`
+:func:`p_soc_auto_base.preferences.get_preference`
 function as below:
 
 .. ipython::
 
-    In [1]: from citrus_borg.dynamic_preferences_registry import get_preference
+    In [1]: from p_soc_auto_base.preferences import get_preference
 
     In [2]: get_preference('orionserverconn__orion_hostname')
     Out[2]: 'orion.vch.ca'
-
-    In [3]:
 
 """
 

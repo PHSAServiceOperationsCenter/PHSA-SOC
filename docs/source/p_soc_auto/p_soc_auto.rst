@@ -13,6 +13,21 @@ found on the SOC wiki. Co-ordination between developers and
 administrative resources is required to ensure these documents are
 updated for any changes, or new features.
 
+Monitored Systems
+-----------------
+
+The following systems are monitored by the SOC Automation Server:
+
+* `Citrix <https://www.citrix.com/>`_
+* `LDAP <https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol>`_
+* `Exchange (email) <https://en.wikipedia.org/wiki/Microsoft_Exchange_Server>`_ [currently disabled]
+* `SFTP <https://en.wikipedia.org/wiki/SSH_File_Transfer_Protocol>`_
+* `SSL Certificates <https://en.wikipedia.org/wiki/Certificate_authority>`_
+
+Citrix and Exchange tests are run from remote bots, the other systems are tested
+by scripts that run locally on the SOC Automation Server (but connect to other
+machines on the PHSA network as part of the tests).
+
 .. todo::
 
     We need to migrate the access point from `HTTP
@@ -41,4 +56,3 @@ updated for any changes, or new features.
    logstash.rst
    winlogbeat.rst
    modules.rst
-

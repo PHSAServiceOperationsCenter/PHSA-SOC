@@ -1,4 +1,4 @@
-.. automodule:: citrus_borg.dynamic_preferences_registry
+.. automodule:: citrus_borg.preferences
    :members:
    :undoc-members:
    :show-inheritance:

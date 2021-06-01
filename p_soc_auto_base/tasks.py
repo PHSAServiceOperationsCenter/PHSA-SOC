@@ -109,9 +109,9 @@ def check_app_activity(hours, *apps_to_monitor):
         count = len(model.objects.filter(**check))
 
         try:
-            gen_tasks = PeriodicTask.objects.filter(task__contains=model.gen_func_name) #, enabled=True) For testing don't check if enabled
+            gen_tasks = PeriodicTask.objects.filter(task__contains=model.gen_func_name, enabled=True)
             if gen_tasks.count() != 1:
-                raise Exception(f'Found {gen_tasks.count()} tasks. Cannot provide schedule if there is not a single cannonical task.')
+                raise Exception(f'Found {gen_tasks.count()} tasks for {model.gen_func_name}. Cannot provide schedule if there is not a single cannonical task.')
             cannonical_task = gen_tasks.first()
             # only one of the schedules can be set so using or here is fine
             schedule_wrapper = (cannonical_task.interval

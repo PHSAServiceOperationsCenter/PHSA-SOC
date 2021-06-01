@@ -12,3 +12,4 @@ Orion Integration Application modules
    modules/orion.rst
    modules/tasks.rst
    modules/tests.rst
+   modules/preferences.rst

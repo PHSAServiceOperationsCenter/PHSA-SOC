@@ -12,3 +12,4 @@ Active Directory Services Monitoring Application Modules
    modules/signals.rst
    modules/tasks.rst
    modules/tests.rst
+   modules/preferences.rst

@@ -16,3 +16,4 @@ Mail Collector Modules
    modules/signals.rst
    modules/tasks.rst
    modules/tests.rst
+   modules/preferences.rst

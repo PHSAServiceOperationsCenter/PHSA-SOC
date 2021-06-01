@@ -13,3 +13,4 @@ shared by all the other applications defined on the server.
    modules/admin.rst
    modules/utils.rst
    modules/tests.rst
+   modules/preferences.rst

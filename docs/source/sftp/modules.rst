@@ -9,3 +9,4 @@ SFTP Modules
    modules/apps.rst
    modules/models.rst
    modules/tasks.rst
+   modules/preferences.rst

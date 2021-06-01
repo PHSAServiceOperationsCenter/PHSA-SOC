@@ -124,9 +124,9 @@ def check_app_activity(hours, *apps_to_monitor):
         if latest_time:
             if not schedule_wrapper:
                 delta = get_external_task_schedule()
-                is_due = latest_time < now - delta
             else:
-                is_due = schedule_wrapper.schedule.is_due(latest_time)
+                delta = schedule_wrapper.schedule.run_every
+            is_due = latest_time < now - delta
 
         activity_pairs.append({
             'is_due': is_due,

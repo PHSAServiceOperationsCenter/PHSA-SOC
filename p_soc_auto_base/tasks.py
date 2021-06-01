@@ -109,15 +109,16 @@ def check_app_activity(hours, *apps_to_monitor):
         try:
             gen_tasks = PeriodicTask.objects.filter(task__contains=model.gen_func_name, enabled=True)
             if gen_tasks.count() != 1:
-                raise Exception(f'Found {gen_tasks.count()} tasks for {model.gen_func_name}. Cannot provide schedule if there is not a single cannonical task.')
-            cannonical_task = gen_tasks.first()
+                LOG.warn(f'Found {gen_tasks.count()} tasks for {model.gen_func_name}. Assuming the first is the canonical task.')
+            canonical_task = gen_tasks.first()
             # only one of the schedules can be set so using or here is fine
-            schedule_wrapper = (cannonical_task.interval
-                               or cannonical_task.crontab
-                               or cannonical_task.solar
-                               or cannonical_task.clocked)
+            schedule_wrapper = (canonical_task.interval
+                               or canonical_task.crontab
+                               or canonical_task.solar
+                               or canonical_task.clocked)
         except AttributeError:
             # couldn't find the generator in registry, no schedule to find
+            LOG.info(f'No generator found for {model}.')
             schedule_wrapper = None
 
         # TODO do some sort of thing to set is_due when there is no schedule

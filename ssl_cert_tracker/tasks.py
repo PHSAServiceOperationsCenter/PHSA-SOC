@@ -11,8 +11,6 @@ Celery tasks for the :ref:`SSL Certificate Tracker Application`
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import logging
 from smtplib import SMTPConnectError

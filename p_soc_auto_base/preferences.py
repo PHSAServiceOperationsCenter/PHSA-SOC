@@ -12,26 +12,24 @@ of the ``verbose_name`` attribute of the class.
 To access the value of a given dynamic setting, use the :func:`get_preference`
 function. For example:
 
-.. ipython::
+.. python::
+    from citrus_borg.dynamic_preferences_registry import get_preference
 
-    In [1]: from citrus_borg.dynamic_preferences_registry import get_preference
+    get_preference('exchange__report_interval')
+    datetime.timedelta(1, 43200)
 
-    In [2]: get_preference('exchange__report_interval')
-    Out[2]: datetime.timedelta(1, 43200)
-
-    In [3]:
 
 Running manage.py will complain that only the preferences in this file are
 registered, but that is incorrect. The other preferences simply have not been
 registered when the check with the database is made, but are registered later.
-So far there is no known way to correct his mistaken error message.
+Surpressing this mistaken error message is an open issue.
 
 :copyright:
 
     Copyright 2021 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
+
 
 """
 

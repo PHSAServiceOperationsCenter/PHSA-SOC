@@ -18,7 +18,6 @@ For the full list of settings and their values, see
     Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 
 import os

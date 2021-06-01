@@ -11,8 +11,6 @@ used by the :ref:`Active Directory Services Monitoring Application`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from smtplib import SMTPConnectError
 

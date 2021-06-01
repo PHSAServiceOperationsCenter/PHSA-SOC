@@ -1,4 +1,6 @@
 """
+.. _citrus_signals
+
 citrix_borg.signals
 -------------------
 
@@ -11,7 +13,6 @@ for the :ref:`Citrus Borg Application`.
     Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from logging import getLogger
 

@@ -10,8 +10,6 @@ functions and methods for the orion package
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import logging
 import requests

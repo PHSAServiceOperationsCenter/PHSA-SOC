@@ -11,8 +11,6 @@ Communication Module
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 This module contains database functions for the :ref:`Citrus Borg Application`.
 
 """

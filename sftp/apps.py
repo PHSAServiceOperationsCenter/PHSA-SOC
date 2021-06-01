@@ -1,6 +1,6 @@
 """
 .. sftp.apps
----------
+------------
 
 This module contains the `Django` application configuration for sftp.
 
@@ -12,7 +12,6 @@ This module contains the `Django` application configuration for sftp.
     Copyright 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 
 from django.apps import AppConfig

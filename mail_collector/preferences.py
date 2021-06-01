@@ -11,7 +11,6 @@ See p_soc_auto_base.preferences for more info.
     Copyright 2021 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from django.utils import timezone
 from django.utils.html import format_html

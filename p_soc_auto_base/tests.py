@@ -10,7 +10,6 @@ This module contains tests for functionality shared across the
     Copyright 2020 - Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError

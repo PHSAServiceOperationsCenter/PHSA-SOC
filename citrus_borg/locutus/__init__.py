@@ -1,7 +1,7 @@
 """
 .. _locutus:
 
-library package for the citrux_borg application
+library package for the citrus_borg application
 
 :package:     locutus
 
@@ -10,7 +10,5 @@ library package for the citrux_borg application
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
-
-:contact:    daniel.busto@phsa.ca
 
 """

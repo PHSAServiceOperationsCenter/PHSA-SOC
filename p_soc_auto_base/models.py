@@ -8,8 +8,6 @@ Django models for the base app
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 Abstract base model classes
 """
 __updated__ = '2018_08_08'

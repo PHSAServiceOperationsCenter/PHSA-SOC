@@ -11,8 +11,6 @@ Consumers Module
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 This module contains functions and classes that allow a `Django Celery
 <https://docs.celeryproject.org/en/latest/django/first-steps-with-django"""\
 """.html#using-celery-with-django>`__

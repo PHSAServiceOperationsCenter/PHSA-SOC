@@ -1,4 +1,6 @@
 """
+.. _citrus_admin
+
 citrus_borg.admin
 -----------------
 
@@ -9,8 +11,6 @@ This module contains the `Django admin` classes for the
 
     Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
-
-:contact:    daniel.busto@phsa.ca
 
 """
 import logging

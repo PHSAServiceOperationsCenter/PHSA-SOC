@@ -11,8 +11,6 @@ have a more specific location to be.
     Copyright 2020- Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import socket
 from datetime import timedelta

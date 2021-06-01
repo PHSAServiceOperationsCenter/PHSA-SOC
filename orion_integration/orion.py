@@ -9,8 +9,6 @@ This module provides the `HTTP(S)` client for the `Orion REST API`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import json
 import decimal

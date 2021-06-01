@@ -8,7 +8,6 @@ This module contains tests for the :ref:`Mail Collector Application`.
     Copyright 2020 - Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from hypothesis import given
 from hypothesis.strategies import text, characters

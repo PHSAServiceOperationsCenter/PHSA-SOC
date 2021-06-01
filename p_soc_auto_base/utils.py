@@ -8,8 +8,6 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 :update:    Nov. 7, 2019
 
 This module contains utility `Python` classes and functions used by the

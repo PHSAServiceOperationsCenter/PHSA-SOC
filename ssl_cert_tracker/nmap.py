@@ -19,8 +19,6 @@ the `libnmap` package is available at
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import csv
 import logging

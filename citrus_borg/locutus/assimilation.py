@@ -11,8 +11,6 @@ Assimilation Module
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 This module contains Functions for parsing `Windows` log events delivered via
 `AMQP <https://www.amqp.org/>`__ messages to `Python
 <https://docs.python.org/3.6/index.html>`__ data structures.

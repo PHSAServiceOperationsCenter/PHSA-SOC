@@ -10,8 +10,6 @@ queries and verbs for Orion SDK
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 ALL_CUSTOM_PROPS_QUERY = (
     'SELECT Table, Field, DataType, MaxLength, StorageMethod,'

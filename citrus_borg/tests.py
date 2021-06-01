@@ -9,7 +9,7 @@ This module contains tests for the :ref:`Citrus Borg Application`.
     Copyright 2020 - Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
+
 """
 import collections
 

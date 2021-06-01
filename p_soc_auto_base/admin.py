@@ -8,8 +8,6 @@
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 `django.contrib.admin` objects to be reused across the :ref:`SOC Automation
 Server` apps
 

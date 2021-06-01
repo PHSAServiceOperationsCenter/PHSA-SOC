@@ -10,8 +10,6 @@ api module for the orion_flash app
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from citrus_borg.locutus.communication import (
     get_dead_bots as _get_dead_bots, raise_failed_logins_alarm,

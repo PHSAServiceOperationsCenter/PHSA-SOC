@@ -1,4 +1,6 @@
 """
+_citrus_preferences
+
 citrus_borg.dynamic_preferences_registry
 ----------------------------------------
 
@@ -10,8 +12,6 @@ See p_soc_auto_base.preferences for more info.
 
     Copyright 2019 Provincial Health Service Authority
     of British Columbia
-
-:contact:    daniel.busto@phsa.ca
 
 """
 from django.conf import settings

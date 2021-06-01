@@ -10,7 +10,6 @@ This module contains the `Django admin` classes for the
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from django.contrib import admin
 from django.contrib.auth import get_user_model

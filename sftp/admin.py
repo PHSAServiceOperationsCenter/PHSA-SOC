@@ -9,8 +9,6 @@
 
     Copyright 2020 Provincial Health Service Authority of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 
 from django.contrib import admin

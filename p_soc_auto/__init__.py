@@ -11,8 +11,6 @@ for the :ref:`SOC Automation Project`
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from .celery import app as celery_app
 

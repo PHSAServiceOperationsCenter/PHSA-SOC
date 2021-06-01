@@ -9,8 +9,6 @@ This module contains the code related to logging ldap probes.
     Copyright 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 import logging
 import socket

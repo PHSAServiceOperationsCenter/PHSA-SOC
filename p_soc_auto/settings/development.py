@@ -9,8 +9,6 @@ Development only Django settings for the :ref:`SOC Automation Server`
     Copyright 2018 - 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from p_soc_auto.settings.common import *
 

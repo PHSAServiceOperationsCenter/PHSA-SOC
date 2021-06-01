@@ -1,4 +1,6 @@
 """
+.. _citrus_models
+
 citrus_borg.models
 ------------------
 
@@ -10,8 +12,6 @@ This module contains the :class:`models <django.db.models.Model>` and
 
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
-
-:contact:    daniel.busto@phsa.ca
 
 """
 import socket

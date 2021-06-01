@@ -13,7 +13,6 @@ application to send email alerts.
 
     Copyright 2020- Provincial Health Service Authority of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from logging import getLogger
 from smtplib import SMTPConnectError

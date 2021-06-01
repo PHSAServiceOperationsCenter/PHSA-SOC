@@ -11,8 +11,6 @@ classes for the :ref:`Active Directory Services Monitoring Application`.
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from django.contrib import admin
 from django.forms.widgets import PasswordInput

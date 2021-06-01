@@ -1,4 +1,6 @@
 """
+_ldap_signals:
+
 ldap_probe.signals
 ------------------
 
@@ -10,8 +12,6 @@ for the :ref:`Active Directory Services Monitoring Application`.
 
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
-
-:contact:    daniel.busto@phsa.ca
 
 """
 from django.db.models.signals import post_save

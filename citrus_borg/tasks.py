@@ -1,4 +1,6 @@
 """
+.. _citrus_tasks
+
 citrus_borg.tasks
 -----------------
 
@@ -10,7 +12,6 @@ used by the :ref:`Citrus Borg Application`.
     Copyright 2018 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
 """
 from logging import getLogger
 from smtplib import SMTPConnectError

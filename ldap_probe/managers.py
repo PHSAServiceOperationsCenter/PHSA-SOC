@@ -10,8 +10,6 @@ This module contains the :class:`django.db.models.Manager` managers for the
     Copyright 2020 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 """
 from django.db import models
 

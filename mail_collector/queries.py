@@ -8,9 +8,8 @@
     Copyright 2018 - 2019 Provincial Health Service Authority
     of British Columbia
 
-:contact:    daniel.busto@phsa.ca
-
 Query functions for the :ref:`Mail Collector Application`
+
 """
 import datetime
 

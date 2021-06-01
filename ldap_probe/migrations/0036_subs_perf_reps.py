@@ -132,10 +132,6 @@ def add_subscriptions(apps, schema_editor):
                 'node_dns,maximum_bind_duration,'
                 'maximum_extended_search_duration,orion_url,probes_url'),
         },
-
-
-
-
     ]
 
     subscription_model = apps.get_model('ssl_cert_tracker', 'subscription')

@@ -93,7 +93,7 @@ def check_app_activity(hours, *apps_to_monitor):
     activity_pairs = []
 
     for app in apps_to_monitor:
-        print(app)
+        LOG.info(f'Getting data for {app}.')
         model = apps.get_model(app)
 
         try:
@@ -111,11 +111,8 @@ def check_app_activity(hours, *apps_to_monitor):
             if gen_tasks.count() != 1:
                 LOG.warn(f'Found {gen_tasks.count()} tasks for {model.gen_func_name}. Assuming the first is the canonical task.')
             canonical_task = gen_tasks.first()
-            # only one of the schedules can be set so using or here is fine
-            schedule_wrapper = (canonical_task.interval
-                               or canonical_task.crontab
-                               or canonical_task.solar
-                               or canonical_task.clocked)
+            # TODO expand to work with non-interval tasks.
+            schedule_wrapper = canonical_task.interval
         except AttributeError:
             # couldn't find the generator in registry, no schedule to find
             LOG.info(f'No generator found for {model}.')
@@ -127,7 +124,7 @@ def check_app_activity(hours, *apps_to_monitor):
         if latest_time:
             if not schedule_wrapper:
                 delta = get_external_task_schedule()
-                is_due = latest_time < timezone.now() - delta
+                is_due = latest_time < now - delta
             else:
                 is_due = schedule_wrapper.schedule.is_due(latest_time)
 
@@ -145,7 +142,7 @@ def check_app_activity(hours, *apps_to_monitor):
             else:
                 schedule_str = get_external_task_schedule()
 
-            schedule_str = timezone.now() - schedule_str
+            schedule_str = now - schedule_str
 
             Email.send_email(None, Subscription.get_subscription('No Activity'),
                 app_name=model._meta.verbose_name, schedule=schedule_str)

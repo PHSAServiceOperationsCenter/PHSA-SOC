@@ -89,7 +89,7 @@ def delete_emails(**age):
 def check_app_activity(hours, *apps_to_monitor):
     # TODO offload these checks to the individual projects but call from here
     now = timezone.now()
-    delta = timedelta(hours=hours)
+    since = now - timedelta(hours=hours)
     activity_pairs = []
 
     for app in apps_to_monitor:
@@ -103,7 +103,7 @@ def check_app_activity(hours, *apps_to_monitor):
         else:
             latest_time = getattr(latest, model._meta.get_latest_by)
 
-        check = {f'{model._meta.get_latest_by}__gt': now - delta}
+        check = {f'{model._meta.get_latest_by}__gt': since}
         count = len(model.objects.filter(**check))
 
         try:
@@ -118,15 +118,15 @@ def check_app_activity(hours, *apps_to_monitor):
             LOG.info(f'No generator found for {model}.')
             schedule_wrapper = None
 
-        # TODO do some sort of thing to set is_due when there is no schedule
-        is_due = not latest_time
+        if not schedule_wrapper:
+            delta = get_external_task_schedule()
+        else:
+            delta = schedule_wrapper.schedule.run_every
+        scheduled_since = now - delta
 
+        is_due = not latest_time
         if latest_time:
-            if not schedule_wrapper:
-                delta = get_external_task_schedule()
-            else:
-                delta = schedule_wrapper.schedule.run_every
-            is_due = latest_time < now - delta
+            is_due = latest_time < scheduled_since
 
         activity_pairs.append({
             'is_due': is_due,
@@ -137,15 +137,8 @@ def check_app_activity(hours, *apps_to_monitor):
         })
 
         if is_due:
-            if schedule_wrapper:
-                schedule_str = schedule_wrapper.schedule.run_every
-            else:
-                schedule_str = get_external_task_schedule()
-
-            schedule_str = now - schedule_str
-
             Email.send_email(None, Subscription.get_subscription('No Activity'),
-                app_name=model._meta.verbose_name, schedule=schedule_str)
+                app_name=model._meta.verbose_name, schedule=scheduled_since)
 
     def get_name(pair_array):
         return pair_array['model']

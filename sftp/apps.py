@@ -1,16 +1,11 @@
 """
-.. sftp.apps
-------------
+.. sftp_apps:
 
 This module contains the `Django` application configuration for sftp.
 
+:module: p_soc_auto.sftp.apps
 
-:module:    p_soc_auto.sftp.apps
-
-:copyright:
-
-    Copyright 2020 Provincial Health Service Authority
-    of British Columbia
+:copyright: Copyright 2020 Provincial Health Service Authority of British Columbia
 
 """
 

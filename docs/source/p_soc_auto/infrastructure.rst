@@ -6,8 +6,10 @@ This includes the web front-end, the database, background processes, and storing
 There are laptops running data collection software at various sites we are interested in monitoring.
 See the appropriate application's page for more information.
 
-For testing we currently have lvmsocq02, which is updated with a database dump from lvmsoq01,
-and then the next release candidate version is pulled from git to test before deploying to prod.
+For testing we have lvmsocq02. To prepare for testing a database dump is copied from lvmsoq01,
+and the next release candidate version is pulled using git.
+
+.. note:: Remember to migrate the changes to the Django database schema before running the new version of the code.
 
 For development we have two machines, lvmsocdev01 and lvmsocdev03.
 
@@ -31,12 +33,9 @@ For development we have two machines, lvmsocdev01 and lvmsocdev03.
         component logstash
         component rabbitmq
         package Django {
-            component Ingestion
-            note right
-                Begins at citrus_borg.consumers.process_win_event
-            end note
-            component "Server-Based Monitoring" as SBM
-            component "Interval Checks" as DBM
+            component "WinEvent Consumers" as Ingestion
+            component "Locally Run Monitoring Scripts" as SBM
+            component "Periodic Database Checks" as DBM
         }
         database soc_database
 
@@ -44,16 +43,12 @@ For development we have two machines, lvmsocdev01 and lvmsocdev03.
         rabbitmq -> Ingestion
     }
 
-    node email
-    node Orion
+    node Alerts {
+        node email
+        node Orion
+    }
 
     winlogbeat -> logstash
-    Ingestion -> soc_database
-    SBM -> soc_database
+    Django <--> soc_database
     soc_database -> DBM
-    Ingestion -> email
-    Ingestion -> Orion
-    DBM -> email
-    DBM -> Orion
-    SBM -> email
-    SBM -> Orion
+    Django -> Alerts

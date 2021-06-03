@@ -129,14 +129,14 @@ The heaviest tasks for this application are related to functionality described
 in :ref:`Mail Collector Data Collection`.
 
 Under steady-state, with the current default configuration, each
-:ref:`Mail Borg Client Application` instance will send 294 events spread
+`Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ instance will send 294 events spread
 over a period of approximately 20 minutes every hour
 to the :ref:`Mail Collector Application` and each event will trigger a
 separate instance of the :meth:`mail_collector.tasks.store_mail_data` task.
 
 This translates to a load of 0.25 tasks/sec for each bot that runs a
-:ref:`Mail Borg Client Application` instance. The worst case scenario will
-assume that all bots are running a :ref:`Mail Borg Client Application`
+`Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ instance. The worst case scenario will
+assume that all bots are running a `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__
 instance and that all mail check operations will execute at the same time.
 There are currently 14 active bots and the load under the worst case scenarion
 will be 3.43 tasks/sec.

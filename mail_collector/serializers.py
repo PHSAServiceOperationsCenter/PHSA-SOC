@@ -113,7 +113,7 @@ class MailSiteSerializer(serializers.ModelSerializer):
 class BotConfigSerializer(serializers.ModelSerializer):
     """
     Serializer used for passing the main configuration required for running
-    an instance of the :ref:`Mail Borg Client Application` on a remote
+    an instance of the `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_ on a remote
     monitoring bot
 
     It combines information from

@@ -18,8 +18,3 @@ SSL Certificate Tracker Dynamic Preferences
   Same as above but for the originating email address
  
   Defined in :class:`ssl_cert_tracker.preferences.EmailFromWhenDebug`
-
-.. automodule:: ssl_cert_tracker.preferences
-   :members:
-   :undoc-members:
-   :show-inheritance:

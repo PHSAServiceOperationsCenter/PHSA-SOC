@@ -18,7 +18,7 @@ Alerts for remote monitoring bots
 ---------------------------------
 
 If a remote bot known to have a running instance of the 
-:ref:`Mail Borg Client Application` has not been sending specific Windows log
+`Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ has not been sending specific Windows log
 events to the :ref:`Mail Collector Application` over a given evaluation period,
 an alert will be raised.
   
@@ -269,7 +269,7 @@ This can happen in either of the following cases:
   
   However, even when this is the first time the bot is running, it will still
   query the server for the main configuration needed by the
-  :ref:`Mail Borg Client Application` instance. The server will return a special
+  `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ instance. The server will return a special
   `Host doesn't exist <../../../admin/mail_collector/mailhost/?q=host.not.exist>`_ 
   configuration. When this configuration is used, the bot information will
   be created on the server but without valid ``Site`` information.

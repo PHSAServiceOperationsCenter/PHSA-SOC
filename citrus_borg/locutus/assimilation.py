@@ -18,7 +18,7 @@ This module contains Functions for parsing `Windows` log events delivered via
 `Windows` log events processed by the functions in this module are created by
 the `ControlUp Logon Simulator
 <https://www.controlup.com/products/logon-simulator/>`__
-or by the :ref:`Mail Borg Client Application`.
+or by the `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_.
 
 :Note:
 
@@ -45,7 +45,7 @@ function.
 We are converting the message to a `JSON` structure in the
 :func:`citrus_borg.consumers.process_win_event` function.
 
-`Windows` log events produced by the :ref:`Mail Borg Client Application` are
+`Windows` log events produced by the `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_ are
 very similar to the message below.
 
 The most relevant parts of a `Windows` log event as far as we are concerned are
@@ -439,8 +439,8 @@ def parse_exchange_message(message):
         information is generated for all `Mail Borg` events.
 
         The `ExchangeMessage` object is the second member of the :class:`tuple`
-        and it represents events associated not only with the :ref:`Mail Borg
-        Client Application` operations but also with specific `Exchange`
+        and it represents events associated not only with the
+        `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_ operations but also with specific `Exchange`
         messages. Such events are only created when sending and receiving
         `Exchange` messages. The `ExchangeMessage` object has the following
         properties: `sent_from`, `sent_to`, `mail_message_identifier`,

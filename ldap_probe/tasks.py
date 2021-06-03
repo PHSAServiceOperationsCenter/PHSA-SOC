@@ -45,7 +45,7 @@ def probe_ad_controller(ad_model, ad_pk):
         AD controller  node information
 
     :returns: the return of
-        :meth:`ldap_probe.models.LdapProbeLog.create_from_probe`
+        :meth:`ldap_probe.ldap_porbe_log.LdapProbeLog.create_from_probe`
 
     :raises: :exc:`TypeError` if ad_pk is not an integer.
     """

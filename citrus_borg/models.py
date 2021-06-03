@@ -1,6 +1,4 @@
 """
-.. _citrus_models
-
 citrus_borg.models
 ------------------
 

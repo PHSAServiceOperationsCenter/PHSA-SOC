@@ -40,8 +40,8 @@ If a table grows beyond its expected size, you may have to resize the table.
 Deleting rows will not automatically release disk space (to protect against fragmentation when the table regrows).
 Disk space can be reclaimed a number of ways, but the suggested method is as follows:
 
-1. Remove rows from the table to reduce the amount of data stored in it.
-2. Run ``mysqlcheck phsa_database <table_name> -u <username> -p --optimize``
+#. Remove rows from the table to reduce the amount of data stored in it.
+#. Run ``mysqlcheck phsa_database <table_name> -u <username> -p --optimize``
 
 MariaDB security
 ----------------
@@ -54,7 +54,7 @@ for details.
 MariaDB scaling
 ---------------
 
-This is going to be a complicated animal. *Django* doesn't support `MariaDB Galera Clusters
+This is going to be complicated. *Django* doesn't support `MariaDB Galera Clusters
 <https://mariadb.com/kb/en/library/documentation/replication/galera-cluster/configuring-mariadb-galera-cluster/>`_
 explicitly.
 

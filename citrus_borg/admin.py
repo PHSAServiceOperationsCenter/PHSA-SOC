@@ -1,6 +1,4 @@
 """
-.. _citrus_admin
-
 citrus_borg.admin
 -----------------
 
@@ -161,7 +159,7 @@ class BorgSiteAdmin(CitrusBorgBaseAdmin, admin.ModelAdmin):
 
         Warns the user to allocate at least one
         :class:`citrus_borg.models.WinlogbeatHost` instance pointing to a
-        remote host running the :ref:`Mail Borg Client Application`.
+        remote host running the `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_.
 
         """
         first_bot = obj.winlogbeathost_set.\

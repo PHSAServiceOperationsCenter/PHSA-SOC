@@ -55,7 +55,7 @@ def update_mail_between_domains(sender, instance, *args, **kwargs):
 
         This functionality is absolutely dependent on the convention
         described above. This convention is under our control since
-        it is implemented via the :ref:`Mail Borg Client Application`.
+        it is implemented via the `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_.
         Please do not mess with success.
 
     The from domain is extracted from the

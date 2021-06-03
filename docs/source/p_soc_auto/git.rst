@@ -29,16 +29,16 @@ to the issue describing the bug that the branch is addressing.
 Commit Process
 --------------
 
-1. Sanity test code locally.
-2. Run Pylint and Bandit on modified files, and make changes as appropriate (create comments for ignored suggestions, either explaining why they are inappropriate or a TODO explaining the problem and potential solutions)
-3. Take a snapshot of database on the production server. `mysqldump phsa_database -u phsa_db_user -p > snapshot[date].sql`
-4. Copy database snapshot onto the test server and copy into database, by dropping all the database rows and then running `mysql phsa_database -u phsa_db_user -p < snapshot[date].sql`
-5. Deploy code to test server, by pulling the development branch.
-6. Run the Django migrations to update database: `python manage.py migrate` (from the base project directory)
-7. Restart the necessary services, at minumum run `restart_celery_services`. It may be necessary to wait overnight to allow scheduled processes to run and verify results.
-8. Open a pull request to the next version branch via GitHub and assign reviewers (or get code re-reviewed if modifying code in response to feedback).
-9. Respond to reviewer comments, modifying code and returning to step one as necessary.
-10. Code will be merged as per above.
+#. Sanity test code locally.
+#. Run Pylint and Bandit on modified files, and make changes as appropriate (create comments for ignored suggestions, either explaining why they are inappropriate or a TODO explaining the problem and potential solutions)
+#. Take a snapshot of database on the production server. `mysqldump phsa_database -u phsa_db_user -p > snapshot[date].sql`
+#. Copy database snapshot onto the test server and copy into database, by dropping all the database rows and then running `mysql phsa_database -u phsa_db_user -p < snapshot[date].sql`
+#. Deploy code to test server, by pulling the development branch.
+#. Run the Django migrations to update database: `python manage.py migrate` (from the base project directory)
+#. Restart the necessary services, at minumum run `restart_celery_services`. It may be necessary to wait overnight to allow scheduled processes to run and verify results.
+#. Open a pull request to the next version branch via GitHub and assign reviewers (or get code re-reviewed if modifying code in response to feedback).
+#. Respond to reviewer comments, modifying code and returning to step one as necessary.
+#. Code will be merged as per above.
 
 .. todo ::
 

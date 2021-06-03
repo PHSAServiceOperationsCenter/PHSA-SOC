@@ -48,7 +48,7 @@ to email and Exchange service availability at remote sites.
 
 The application is also capable of analyzing the availability of all and/or
 various Exchange servers and Exchange databases based on the configurations
-made available to the :ref:`Mail Borg Client Application` instances. 
+made available to the `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ instances. 
 
 This application is also responsible for providing main configurations for 
 instances of the ``Mail Borg Client Application`` running on remote

@@ -1,6 +1,4 @@
 """
-.. _apps:
-
 django apps module for the mail_collector app
 
 :module:    p_soc_auto.mail_collector.apps

@@ -25,8 +25,7 @@ The SOC Automation project provides the following facilities:
 
 * **Alert Integration with the Current Monitoring Infrastructure**:
   The team is currently planning and developing integrating alerts/data generated
-  by the SOC automation components with other monitoring platforms, including Orion,
-  and Power BI.
+  by the SOC automation components with other monitoring platforms, including Orion.
 
  
 SOC Automation Server Infrastructure
@@ -54,16 +53,6 @@ SOC Automation Server Applications
    orion_integration/orion_integration.rst
    sftp/sftp.rst
    ssl_cert_tracker/ssl_cert_tracker.rst
-
-   
-SOC Automation Client Applications
-----------------------------------
-
-.. toctree::
-   :maxdepth: 2
-   :caption: SOC Automation Client Applications:
-
-   mail_borg/mail_borg.rst
    
 
 Indices and tables

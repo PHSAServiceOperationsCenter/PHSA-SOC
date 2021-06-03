@@ -16,7 +16,7 @@ Custom :exc:`Exception` classes for the :ref:`Mail Collector Application`
 class BadEventDataError(Exception):
     """
     Raised when the event data collected from the
-    :ref:`Mail Borg Client Application` cannot be processed
+    `Mail Borg Client Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`_ cannot be processed
     """
 
 

@@ -46,6 +46,7 @@ machines on the PHSA network as part of the tests).
    
    socauto.rst
    infrastructure.rst
+   setup.rst
    git.rst
    memcached.rst
    nginx.rst

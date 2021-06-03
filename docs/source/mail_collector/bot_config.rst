@@ -1,14 +1,14 @@
 .. _borg_remote_config:
 
-Remote Configurations for :ref:`Mail Borg Client Application` instances
-=======================================================================
+Remote Configurations for the Mail Collector Application
+========================================================
 
-While the :ref:`Mail Borg Client Application` can use fully local configurations,
+While the `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ can use fully local configurations,
 it is designed to pull its main configuration from the automation server.
 
 Within the :ref:`Mail Collector Application` there are some components that
 are responsible for defining, editing, maintaining, and delivering
-configuration data to a :ref:`Mail Borg Client Application` instance upon
+configuration data to a `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ instance upon
 request.
 
 .. _borg_client_config:
@@ -97,7 +97,7 @@ main configuration from the server but:
      config from server`` button
 
 * The ``site`` key in the sample above will be empty. The
-  :ref:`Mail Borg Client Application` will populate this key with the value
+  `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ will populate this key with the value
   ``{'site': 'site.not.seen'}``
 
 Data structure

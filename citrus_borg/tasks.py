@@ -1,6 +1,4 @@
 """
-.. _citrus_tasks
-
 citrus_borg.tasks
 -----------------
 

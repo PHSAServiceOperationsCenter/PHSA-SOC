@@ -12,8 +12,9 @@ of the ``verbose_name`` attribute of the class.
 To access the value of a given dynamic setting, use the :func:`get_preference`
 function. For example:
 
-.. python::
-    from citrus_borg.dynamic_preferences_registry import get_preference
+.. code-block:: python
+
+    from p_soc_auto_base.preferences import get_preference
 
     get_preference('exchange__report_interval')
     datetime.timedelta(1, 43200)

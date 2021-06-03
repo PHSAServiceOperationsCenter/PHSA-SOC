@@ -4,7 +4,7 @@ Mail Collector Data Collection
 Data Collection
 ---------------
 
-Instances of the :ref:`Mail Borg Client Application` running on monitoring
+Instances of the `Mail Collector Application <https://github.com/PHSAServiceOperationsCenter/MailBorg>`__ running on monitoring
 bots located at remote sites are generating data about Exchange services
 availability for each remote site in the form of Windows event log entries.
 The Windows events thus generated are collected via a chain composed of

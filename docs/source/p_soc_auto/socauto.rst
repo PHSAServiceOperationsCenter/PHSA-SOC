@@ -11,6 +11,7 @@ The :ref:`SOC Automation Server` supports asynchronous task execution via
 <https://memcached.org/>`_.
 
 For more details see:
+
 * :ref:`MariaDB Details`
 * :ref:`NGINX Details`
 * :ref:`uWSGI Details`
@@ -29,7 +30,7 @@ See the :mod:`Django settings <p_soc_auto.settings>` for a detailed description
 of the configuration used by the :ref:`SOC Automation Server`.
 
 By default the application runs with the settings in ``p_soc_auto.settings.development``.
-To set up a server to run in production one must run ``systemctl edit uwsgi-phsa-soc-app`` as root.
+To set up a server for production one must run ``systemctl edit uwsgi-phsa-soc-app`` as root.
 In the override configuration file that is generated the following text must be added:
 
 .. code-block::

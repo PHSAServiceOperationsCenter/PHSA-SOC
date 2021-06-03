@@ -8,6 +8,8 @@ Active Directory Services Monitoring Application Modules
    modules/ad_probe.rst
    modules/admin.rst
    modules/apps.rst
+   modules/ldap_probe_log.rst
+   modules/managers.rst
    modules/models.rst
    modules/signals.rst
    modules/tasks.rst

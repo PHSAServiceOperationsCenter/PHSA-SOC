@@ -25,8 +25,7 @@ The SOC Automation project provides the following:
 
 * **Alert Integration with the Current Monitoring Infrastructure**:
   The team is currently planning and developing integrating alerts/data generated 
-  by the SOC automation components with other monitoring platforms, including Orion, 
-  and Power BI.
+  by the SOC automation components with other monitoring platforms, including Orion.
   
 Docs notes
 ----------

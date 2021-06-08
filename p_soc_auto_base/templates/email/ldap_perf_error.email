@@ -1,11 +1,11 @@
 {% block subject %}
-{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created_on }} on {{ node }}
+{{ tags }} {{ level }}: {{ email_subject }} observed at {{ created }} on {{ node }}
 {% endblock %}
 
 {% block html %}
 <h3>AD Service Performance Degradation Details</h3>
 <div><p><ul>
-<li>AD service performance degradation occurred: {{ created_on }}</li>
+<li>AD service performance degradation occurred: {{ created }}</li>
 <li>
 AD service performance degradation observed for the AD controller on {{ node_url }}
 </li>

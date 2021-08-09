@@ -120,7 +120,7 @@ python-libnmap==0.7.0
 pytimeparse==1.1.8
 pytz==2019.3
 pytzdata==2019.3
-pywin32==225
+pywin32==301
 pywin32-ctypes==0.2.0
 pywinrm==0.3.0
 PyYAML==5.1.2

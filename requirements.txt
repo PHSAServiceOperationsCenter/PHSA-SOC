@@ -96,7 +96,7 @@ persisting-theory==0.2.1
 pexpect==4.7.0
 phonenumbers==8.10.21
 pickleshare==0.7.5
-Pillow==6.2.1
+Pillow==8.3.2
 pip-review==1.0
 pluggy==0.13.0
 prompt-toolkit==2.0.10
